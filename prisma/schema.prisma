@@ -1,0 +1,1203 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Store {
+  id            String   @id @default(uuid())
+  slug          String   @unique
+  name          String
+  status        String   // e.g. "active", "draft", "inactive"
+  primaryDomain String?
+  subdomain     String?
+  locale        String   @default("es-AR")
+  currency      String   @default("ARS")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  branding      StoreBranding?
+  theme         StoreTheme?
+  navigations   StoreNavigation[]
+  pages         StorePage[]
+  blocks        StoreBlock[]
+  snapshots     StorePublishSnapshot[]
+  products      Product[]
+  collections   Collection[]
+  carts         Cart[]
+  checkouts     CheckoutDraft[]
+  orders        Order[]
+  shippingMethods ShippingMethod[]
+  stockMovements StockMovement[]
+  emailLogs      EmailLog[]
+  domains        StoreDomain[]
+  aiDrafts       AIGenerationDraft[]
+  aiConversations AIConversation[]
+  subscription    StoreSubscription?
+  creditBalance   StoreCreditBalance?
+  creditTransactions CreditTransaction[]
+  
+  providerConnections ProviderConnection[]
+  catalogMirrors CatalogMirrorProduct[]
+  channelConnections ChannelConnection[]
+  channelListings ChannelListing[]
+  providerSyncJobs ProviderSyncJob[]
+  externalChannelOrders ExternalChannelOrder[]
+  supplierOrders SupplierOrder[]
+  onboarding     StoreOnboarding?
+  
+  fiscalProfile  FiscalProfile?
+  fiscalInvoices FiscalInvoice[]
+  withdrawalReqs WithdrawalRequest[]
+  legalSettings  StoreLegalSettings?
+  billingTransactions BillingTransaction[]
+  
+  adConnections      AdPlatformConnection[]
+  adCampaignDrafts   AdCampaignDraft[]
+  adRecommendations  AdRecommendation[]
+  adInsights         AdInsightSnapshot[]
+}
+
+model StoreDomain {
+  id        String   @id @default(uuid())
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  hostname  String   @unique
+  type      String   @default("custom") // "subdomain", "custom"
+  status    String   @default("pending") // "active", "pending", "failed"
+  isPrimary Boolean  @default(false)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([storeId])
+}
+
+model StoreBranding {
+  id             String   @id @default(uuid())
+  storeId        String   @unique
+  store          Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  logoUrl        String?
+  faviconUrl     String?
+  primaryColor   String   @default("#0F172A")
+  secondaryColor String   @default("#E2E8F0")
+  fontFamily     String   @default("Inter")
+  tone           String   @default("professional")
+  buttonStyle    String   @default("rounded-sm")
+  updatedAt      DateTime @updatedAt
+}
+
+model StoreTheme {
+  id           String   @id @default(uuid())
+  storeId      String   @unique
+  store        Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  activeTheme  String   @default("minimal")
+  themeVariant String   @default("light")
+  themeStatus  String   @default("published")
+  isPublished  Boolean  @default(true)
+  updatedAt    DateTime @updatedAt
+}
+
+model StoreNavigation {
+  id         String   @id @default(uuid())
+  storeId    String
+  store      Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  group      String   // e.g. "header", "footer_shop", "footer_support"
+  label      String
+  href       String
+  sortOrder  Int      @default(0)
+  isVisible  Boolean  @default(true)
+  updatedAt  DateTime @updatedAt
+  
+  @@unique([storeId, group, label])
+}
+
+model StorePage {
+  id            String   @id @default(uuid())
+  storeId       String
+  store         Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  type          String   // e.g. "custom", "policy", "faq"
+  title         String
+  slug          String
+  status        String   @default("published")
+  seoTitle      String?
+  seoDescription String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model StoreBlock {
+  id           String   @id @default(uuid())
+  storeId      String
+  store        Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  pageType     String   // e.g. "home", "product", "collection"
+  blockType    String   // e.g. "hero", "featured_products", "benefits", "testimonials", "faq", "newsletter"
+  sortOrder    Int      @default(0)
+  isVisible    Boolean  @default(true)
+  settingsJson String   // JSON string containing block specific settings
+  source       String   @default("manual") // "manual", "ai", "theme"
+  state        String   @default("published") // "draft", "published"
+  updatedAt    DateTime @updatedAt
+}
+
+model StorePublishSnapshot {
+  id           String   @id @default(uuid())
+  storeId      String
+  store        Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  snapshotJson String   // Full JSON snapshot of store data at publish time
+  publishedAt  DateTime @default(now())
+  publishedBy  String   @default("system")
+}
+
+model Product {
+  id             String           @id @default(uuid())
+  storeId        String
+  store          Store            @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  handle         String
+  title          String
+  description    String?
+  status         String           @default("draft") // "draft", "published", "archived"
+  category       String?
+  supplier       String?
+  price          Float
+  compareAtPrice Float?
+  cost           Float?
+  featuredImage  String?
+  isFeatured     Boolean          @default(false)
+  isPublished    Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  images         ProductImage[]
+  variants       ProductVariant[]
+  collections    CollectionProduct[]
+  cartItems      CartItem[]
+  orderItems     OrderItem[]
+  stockMovements StockMovement[]
+  catalogMirror  CatalogMirrorProduct?
+  channelListings ChannelListing[]
+
+  @@unique([storeId, handle])
+}
+
+model ProductImage {
+  id        String   @id @default(uuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  alt       String?
+  sortOrder Int      @default(0)
+}
+
+model ProductVariant {
+  id             String   @id @default(uuid())
+  productId      String
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku            String?
+  title          String
+  option1        String?
+  option2        String?
+  option3        String?
+  price          Float
+  compareAtPrice Float?
+  stock          Int      @default(0)
+  reservedStock  Int      @default(0)
+  trackInventory Boolean  @default(true)
+  allowBackorder Boolean  @default(false)
+  isDefault      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  cartItems      CartItem[]
+  stockMovements StockMovement[]
+}
+
+model Collection {
+  id          String              @id @default(uuid())
+  storeId     String
+  store       Store               @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  handle      String
+  title       String
+  description String?
+  isFeatured  Boolean             @default(false)
+  isPublished Boolean             @default(true)
+  imageUrl    String?
+  sortOrder   Int                 @default(0)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  products    CollectionProduct[]
+
+  @@unique([storeId, handle])
+}
+
+model CollectionProduct {
+  id           String     @id @default(uuid())
+  collectionId String
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  productId    String
+  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sortOrder    Int        @default(0)
+
+  @@unique([collectionId, productId])
+}
+
+model Cart {
+  id        String     @id @default(uuid())
+  storeId   String
+  store     Store      @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  sessionId String     // Used to track the anonymous user session cookie
+  currency  String     @default("ARS")
+  status    String     @default("active") // "active", "completed", "abandoned"
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  items     CartItem[]
+  checkouts CheckoutDraft[]
+  orders    Order[]
+
+  @@unique([storeId, sessionId])
+}
+
+model CartItem {
+  id                     String         @id @default(uuid())
+  cartId                 String
+  cart                   Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId              String
+  variantId              String
+  product                Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant                ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  titleSnapshot          String
+  variantTitleSnapshot   String
+  imageSnapshot          String?
+  priceSnapshot          Float
+  compareAtPriceSnapshot Float?
+  quantity               Int            @default(1)
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+
+  @@unique([cartId, variantId])
+}
+
+model CheckoutDraft {
+  id             String   @id @default(uuid())
+  cartId         String
+  cart           Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  storeId        String
+  store          Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  
+  email          String?
+  firstName      String?
+  lastName       String?
+  phone          String?
+  document       String?
+  addressLine1   String?
+  addressLine2   String?
+  city           String?
+  province       String?
+  postalCode     String?
+  country        String?
+  
+  shippingMethodId    String?
+  shippingMethodLabel String?
+  shippingCarrier     String?
+  shippingEstimate    String?
+  paymentMethod  String?
+  
+  subtotal       Float    @default(0)
+  shippingAmount Float    @default(0)
+  total          Float    @default(0)
+  
+  status         String   @default("pending") // "pending", "completed"
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  @@unique([cartId])
+}
+
+model Order {
+  id                String      @id @default(uuid())
+  storeId           String
+  store             Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  orderNumber       String
+  cartId            String?
+  cart              Cart?       @relation(fields: [cartId], references: [id], onDelete: SetNull)
+  
+  email             String
+  firstName         String
+  lastName          String
+  phone             String?
+  document          String?
+  
+  addressLine1      String
+  addressLine2      String?
+  city              String
+  province          String
+  postalCode        String
+  country           String
+  
+  currency          String      @default("ARS")
+  subtotal          Float
+  shippingAmount    Float
+  total             Float
+  
+  shippingMethodId    String?
+  shippingMethodLabel String?
+  shippingCarrier     String?
+  shippingEstimate    String?
+  shippingStatus      String      @default("unfulfilled") // "unfulfilled", "fulfilled", "shipped", "delivered"
+  trackingCode        String?
+  trackingUrl         String?
+  shippedAt           DateTime?
+  deliveredAt         DateTime?
+  
+  status            String      @default("new") // OrderStatus
+  paymentStatus     String      @default("pending") // PaymentStatus
+  channel           String      @default("Storefront") // Channel
+  
+  // Payment provider integration
+  paymentProvider   String?     // "mercadopago", "stripe", etc.
+  mpPreferenceId    String?     // Mercado Pago preference ID for redirect flow
+  mpPaymentId       String?     // Mercado Pago payment ID once paid
+  
+  cancelledAt       DateTime?
+  cancelReason      String?
+  refundedAt        DateTime?
+  refundAmount      Float?
+  mpRefundId        String?
+  
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  
+  items             OrderItem[]
+  payments          Payment[]
+  externalChannelOrder ExternalChannelOrder?
+  supplierOrder        SupplierOrder?
+  fiscalInvoice        FiscalInvoice?
+  
+  @@unique([storeId, orderNumber])
+}
+
+model OrderItem {
+  id                   String   @id @default(uuid())
+  orderId              String
+  order                Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId            String?
+  variantId            String?
+  product              Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  
+  titleSnapshot        String
+  variantTitleSnapshot String
+  skuSnapshot          String?
+  imageSnapshot        String?
+  priceSnapshot        Float
+  quantity             Int
+  lineTotal            Float
+  
+  createdAt            DateTime @default(now())
+}
+
+model Payment {
+  id                String   @id @default(uuid())
+  orderId           String
+  order             Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  provider          String   @default("mercadopago") // "mercadopago", "stripe", etc.
+  status            String   @default("pending") // "pending", "approved", "rejected", "cancelled", "refunded", "in_process", "failed"
+  
+  externalId        String?  // MP payment ID or Stripe charge ID
+  externalReference String?  // Our order ID sent to MP
+  preferenceId      String?  // MP preference ID
+  
+  amount            Float
+  currency          String   @default("ARS")
+  
+  paymentMethod     String?  // "credit_card", "debit_card", "account_money", etc.
+  paymentType       String?  // "visa", "mastercard", etc.
+  installments      Int?
+  
+  paidAt            DateTime?
+  rawResponse       String?  // JSON string of the raw payment notification (for debugging)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([externalId])
+  @@index([orderId])
+}
+
+model ShippingMethod {
+  id               String   @id @default(uuid())
+  storeId          String
+  store            Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  code             String
+  name             String
+  type             String   @default("shipping") // "shipping", "pickup"
+  carrier          String?
+  baseAmount       Float    @default(0)
+  estimatedDaysMin Int?
+  estimatedDaysMax Int?
+  isActive         Boolean  @default(true)
+  isDefault        Boolean  @default(false)
+  sortOrder        Int      @default(0)
+  freeShippingOver Float?
+  zoneRule         String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  @@unique([storeId, code])
+}
+
+model StockMovement {
+  id             String         @id @default(uuid())
+  storeId        String
+  store          Store          @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  productId      String
+  product        Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variantId      String
+  variant        ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  
+  orderId        String?
+  type           String         // "sale", "manual_adjustment", "refund_restore", "cancellation_restore", "initial_seed", "sync_update"
+  quantityDelta  Int
+  reason         String?
+  metadataJson   String?
+  
+  createdAt      DateTime       @default(now())
+  
+  @@index([storeId])
+  @@index([variantId])
+  @@index([orderId])
+}
+
+model EmailLog {
+  id             String   @id @default(uuid())
+  storeId        String
+  store          Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  
+  eventType      String   // "ORDER_CREATED", "PAYMENT_APPROVED", "PAYMENT_PENDING", "PAYMENT_FAILED", "ORDER_SHIPPED"
+  entityType     String   // "order"
+  entityId       String   
+  recipient      String
+  
+  status         String   // "sent", "failed", "pending"
+  provider       String   // "mock", "resend", "smtp"
+  errorMessage   String?
+  
+  createdAt      DateTime @default(now())
+  sentAt         DateTime?
+  
+  // Idempotency constraint: avoid sending the exact same event type for the exact same entity twice
+  @@unique([eventType, entityType, entityId])
+  @@index([storeId])
+}
+
+model CarrierWebhookLog {
+  id             String   @id @default(uuid())
+  provider       String   // "mock_carrier", "andreani"
+  externalEventId String  // The unique ID of the event sent by the carrier
+  trackingCode   String?
+  bodyJson       String   // Raw payload
+  status         String   // "processed", "ignored", "failed"
+  processedAt    DateTime @default(now())
+
+  @@unique([provider, externalEventId])
+  @@index([trackingCode])
+}
+
+model SystemEvent {
+  id           String   @id @default(uuid())
+  storeId      String?  
+  entityType   String   // e.g. "order", "payment", "warehouse", "webhook", "domain"
+  entityId     String?  // The specific ID
+  eventType    String   // e.g. "order_created", "payment_approved", "domain_added"
+  severity     String   @default("info") // "info", "warn", "error", "critical"
+  source       String   // e.g. "mercadopago_webhook", "admin_panel", "system"
+  message      String   // Human readable brief description
+  metadataJson String?  // Flexible JSON payload
+  createdAt    DateTime @default(now())
+
+  @@index([storeId])
+  @@index([entityType, entityId])
+  @@index([eventType])
+}
+
+// ─── AI Store Studio ───
+
+model AIGenerationDraft {
+  id              String   @id @default(uuid())
+  storeId         String
+  store           Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  title           String   @default("Sin título")
+  briefJson       String   // Snapshot of the brief/inputs used
+  style           String   @default("minimal_premium") // "minimal_premium", "high_conversion", "editorial"
+  status          String   @default("draft") // "draft", "generating", "generated", "applied", "discarded"
+  selectedProposalId String?
+  usageTokens     Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  proposals       AIGenerationProposal[]
+
+  @@index([storeId])
+  @@index([status])
+}
+
+model AIGenerationProposal {
+  id              String   @id @default(uuid())
+  draftId         String
+  draft           AIGenerationDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  label           String   // "A", "B", "C"
+  name            String   // "Aura Noir (Minimal Premium)"
+  style           String   // "minimal_premium", "high_conversion", "editorial"
+  summary         String
+  strengthsJson   String   // JSON array of strings
+  outputJson      String   // Full structured AI output (hero, blocks, copy, etc.)
+  createdAt       DateTime @default(now())
+
+  @@index([draftId])
+}
+
+// ─── AI Personal Assistant ───
+
+model AIConversation {
+  id           String   @id @default(uuid())
+  storeId      String
+  store        Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  contextType  String   @default("general") // "general", "store", "catalog", "orders", "marketing", "support"
+  title        String   @default("Nueva conversación")
+  provider     String   @default("managed") // "managed", "openai", "anthropic"
+  mode         String   @default("managed") // "managed", "byok"
+  status       String   @default("active") // "active", "archived"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  messages     AIMessage[]
+
+  @@index([storeId])
+  @@index([contextType])
+}
+
+model AIMessage {
+  id             String   @id @default(uuid())
+  conversationId String
+  conversation   AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String   // "user", "assistant", "system"
+  content        String
+  metadataJson   String?  // Optional context snapshot, tool results, etc.
+  createdAt      DateTime @default(now())
+
+  @@index([conversationId])
+}
+
+model AIUsageLog {
+  id           String   @id @default(uuid())
+  storeId      String
+  contextType  String   // "general", "store", "catalog", etc.
+  provider     String   // "managed", "openai", "anthropic", "mock"
+  feature      String   // "chat", "store_generation", "section_regen", etc.
+  promptTokens Int      @default(0)
+  responseTokens Int    @default(0)
+  totalTokens  Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  @@index([storeId])
+  @@index([provider])
+  @@index([createdAt])
+}
+
+// ─── Billing / Plans / Credits ───
+
+model Plan {
+  id            String   @id @default(uuid())
+  code          String   @unique // "free", "starter", "growth", "pro"
+  name          String
+  status        String   @default("active") // "active", "archived"
+  monthlyPrice  Float    @default(0)
+  currency      String   @default("ARS")
+  configJson    String   // JSON with all plan limits/entitlements
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  subscriptions StoreSubscription[]
+}
+
+model StoreSubscription {
+  id              String    @id @default(uuid())
+  storeId         String    @unique
+  store           Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  planId          String
+  plan            Plan      @relation(fields: [planId], references: [id])
+  status          String    @default("active") // "active", "trialing", "past_due", "cancelled"
+  startedAt       DateTime  @default(now())
+  renewsAt        DateTime?
+  trialEndsAt     DateTime?
+  cancelledAt     DateTime?
+  paymentProvider String?   // "mercadopago", null for free
+  billingReference String?  // External subscription ID
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([planId])
+}
+
+model BillingTransaction {
+  id              String   @id @default(uuid())
+  storeId         String
+  store           Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  type            String   // "plan_upgrade", "credit_pack"
+  provider        String   @default("mercadopago")
+  status          String   @default("pending") // "pending", "approved", "failed", "cancelled"
+  
+  amount          Float
+  currency        String   @default("ARS")
+  
+  externalPaymentId    String?  // MP payment id
+  externalPreferenceId String?  // MP preference id
+  externalReference    String?  // UUID sent as external_reference to MP
+  
+  planId          String?  // If it's a plan upgrade
+  creditAmount    Int?     // If it's a credit pack purchase
+  
+  metadataJson    String?
+  completedAt     DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([storeId])
+  @@index([externalReference])
+}
+
+model StoreCreditBalance {
+  id               String   @id @default(uuid())
+  storeId          String   @unique
+  store            Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  freeCredits      Int      @default(0)
+  paidCredits      Int      @default(0)
+  usedCredits      Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model CreditTransaction {
+  id            String   @id @default(uuid())
+  storeId       String
+  store         Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  type          String   // "grant_free", "grant_paid", "consume", "refund", "expire"
+  amount        Int      // positive = add, negative = consume
+  source        String   // "onboarding", "plan_upgrade", "ai_chat", "ai_studio", "manual", "purchase"
+  referenceId   String?  // e.g. conversationId, draftId, paymentId
+  metadataJson  String?
+  createdAt     DateTime @default(now())
+
+  @@index([storeId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+// ─── Sourcing / Abastecimiento ───
+
+model SourcingProvider {
+  id               String   @id @default(uuid())
+  code             String   @unique // "mock_supplier", "aliexpress", "doba"
+  name             String
+  logoUrl          String?
+  description      String?
+  integrationType  String   // "api", "csv", "feed", "external"
+  supportedChannels String  // "mercadolibre,shopify", "all"
+  categories       String?  // "electronics,home,fashion"
+  status           String   @default("active") // "active", "beta", "coming_soon"
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  connections      ProviderConnection[]
+  products         ProviderProduct[]
+}
+
+model ProviderConnection {
+  id               String   @id @default(uuid())
+  storeId          String
+  store            Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  providerId       String
+  provider         SourcingProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  status           String   @default("active") // "active", "error", "paused"
+  configJson       String?  // Credentials, settings
+  externalAccountId String?
+  lastSyncedAt     DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  catalogMirrors   CatalogMirrorProduct[]
+  syncJobs         ProviderSyncJob[]
+  supplierOrders   SupplierOrder[]
+
+  @@unique([storeId, providerId])
+}
+
+model ProviderProduct {
+  id               String   @id @default(uuid())
+  providerId       String
+  provider         SourcingProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  externalId       String
+  title            String
+  description      String?
+  imagesJson       String   // Array of strings
+  category         String?
+  cost             Float
+  suggestedPrice   Float?
+  stock            Int      @default(0)
+  leadTime         String?  // e.g. "3-5 days"
+  variantsJson     String?  // JSON array of variants
+  rawJson          String?  // Full payload from provider
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  mirrors          CatalogMirrorProduct[]
+
+  @@unique([providerId, externalId])
+}
+
+model CatalogMirrorProduct {
+  id               String   @id @default(uuid())
+  storeId          String
+  store            Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  providerConnectionId String
+  providerConnection  ProviderConnection @relation(fields: [providerConnectionId], references: [id], onDelete: Cascade)
+  providerProductId String
+  providerProduct  ProviderProduct @relation(fields: [providerProductId], references: [id], onDelete: Cascade)
+  
+  // Link to internal unified catalog
+  internalProductId String? @unique
+  internalProduct   Product? @relation(fields: [internalProductId], references: [id], onDelete: SetNull)
+
+  importStatus     String   @default("imported") // "pending", "imported", "failed"
+  publicationStatusML String @default("unlisted") // "unlisted", "published", "paused", "error"
+  publicationStatusShopify String @default("unlisted") // "unlisted", "published", "paused", "error"
+  
+  marginRule       String?  // e.g. "fixed_percent:30", "fixed_amount:500"
+  finalPrice       Float?
+  syncStatus       String   @default("in_sync") // "in_sync", "out_of_sync", "syncing"
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([storeId, providerProductId])
+}
+
+// ─── Multi-Channel Publishing ───
+
+model ChannelConnection {
+  id                 String   @id @default(uuid())
+  storeId            String
+  store              Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  channel            String   // "mercadolibre", "shopify"
+  status             String   @default("disconnected") // "disconnected", "connecting", "connected", "expired", "invalid", "error", "reconnect_required"
+  
+  externalAccountId  String?
+  accountName        String?
+  
+  // Auth Storage (se guardan idealmente encriptados o proxy, para esta fase los mapeamos crudos/configJson logic)
+  accessToken        String?
+  refreshToken       String?
+  tokenExpiresAt     DateTime?
+  scopes             String?
+  
+  configJson         String?
+  
+  lastSyncedAt       DateTime?
+  lastValidatedAt    DateTime?
+  lastError          String?
+  
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([storeId, channel])
+}
+
+model ChannelListing {
+  id                 String   @id @default(uuid())
+  storeId            String
+  store              Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  productId          String
+  product            Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  channel            String   // "mercadolibre", "shopify"
+  
+  status             String   @default("draft") // "draft", "publishing", "published", "paused", "failed", "disconnected"
+  syncStatus         String   @default("synced") // "synced", "syncing", "out_of_sync", "error"
+  externalListingId  String?
+  externalUrl        String?
+  
+  // Overrides por canal
+  syncedTitle        String?
+  syncedDescription  String?
+  syncedPrice        Float?
+  syncedStock        Int?
+  
+  lastPublishedAt    DateTime?
+  lastSyncedAt       DateTime?
+  
+  // Advanced Sync details
+  lastSyncAttemptAt  DateTime?
+  lastSyncSuccessAt  DateTime?
+  outOfSyncReason    String?
+  retryCount         Int      @default(0)
+  lastError          String?
+  
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([storeId, productId, channel])
+}
+
+// ─── Workers & Jobs ───
+
+model ProviderSyncJob {
+  id                 String   @id @default(uuid())
+  storeId            String
+  store              Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  providerConnectionId String
+  providerConnection ProviderConnection @relation(fields: [providerConnectionId], references: [id], onDelete: Cascade)
+  
+  type               String   @default("provider_inventory_sync") // provider_inventory_sync, full_sync
+  status             String   @default("pending") // pending, running, completed, failed, retrying
+  startedAt          DateTime?
+  completedAt        DateTime?
+  failedAt           DateTime?
+  
+  retryCount         Int      @default(0)
+  lastError          String?
+  payloadJson        String?
+  resultJson         String?
+  
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+// ─── External Channel Orders & Supplier Routing ───
+
+model ExternalChannelOrder {
+  id                 String   @id @default(uuid())
+  storeId            String
+  store              Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  channel            String   // "mercadolibre", "shopify"
+  
+  externalOrderId    String
+  externalOrderNumber String?
+  status             String   @default("imported") // "imported", "mapped", "failed", "routed"
+  rawJson            String?  // the raw order dict from the source
+  
+  customerName       String?
+  customerEmail      String?
+  customerPhone      String?
+  shippingAddressJson String?
+  
+  currency           String   @default("ARS")
+  subtotal           Float    @default(0)
+  shippingAmount     Float    @default(0)
+  total              Float    @default(0)
+  
+  mappedOrderId      String?  @unique
+  mappedOrder        Order?   @relation(fields: [mappedOrderId], references: [id], onDelete: SetNull)
+  
+  routingStatus      String   @default("pending") // "pending", "partially_routed", "routed", "no_dropship_needed"
+  
+  items              ExternalChannelOrderItem[]
+  
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([storeId, channel, externalOrderId])
+}
+
+model ExternalChannelOrderItem {
+  id                 String   @id @default(uuid())
+  externalChannelOrderId String
+  externalChannelOrder   ExternalChannelOrder @relation(fields: [externalChannelOrderId], references: [id], onDelete: Cascade)
+  
+  externalLineId     String
+  externalListingId  String?
+  
+  title              String
+  sku                String?
+  quantity           Int      @default(1)
+  unitPrice          Float    @default(0)
+  totalPrice         Float    @default(0)
+  
+  mappedProductId    String?
+  mappedVariantId    String?
+  mappedChannelListingId String?
+  mappedCatalogMirrorProductId String?
+  
+  mappingStatus      String   @default("unmapped") // "unmapped", "mapped", "needs_review", "ignored"
+  
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model SupplierOrder {
+  id                 String   @id @default(uuid())
+  storeId            String
+  store              Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  
+  providerConnectionId String
+  providerConnection   ProviderConnection @relation(fields: [providerConnectionId], references: [id], onDelete: Cascade)
+  
+  internalOrderId    String?  @unique
+  internalOrder      Order?   @relation(fields: [internalOrderId], references: [id], onDelete: Cascade)
+  
+  status             String   @default("pending_supplier") // pending_supplier, supplier_order_created, awaiting_supplier_confirmation, supplier_dispatched, completed, supplier_failed
+  providerOrderId    String?  // ID returned by the actual supplier
+  
+  totalCost          Float    @default(0)
+  currency           String   @default("ARS")
+  notes              String?
+  
+  items              SupplierOrderItem[]
+  
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model SupplierOrderItem {
+  id                 String   @id @default(uuid())
+  supplierOrderId    String
+  supplierOrder      SupplierOrder @relation(fields: [supplierOrderId], references: [id], onDelete: Cascade)
+  
+  providerProductId  String
+  catalogMirrorProductId String?
+  productId          String?
+  variantId          String?
+  
+  quantity           Int      @default(1)
+  costSnapshot       Float    @default(0) 
+  status             String   @default("pending") // pending, confirmed, shipped, cancelled
+  
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+// ─── Onboarding & Activation ───
+
+model StoreOnboarding {
+  id                 String   @id @default(uuid())
+  storeId            String   @unique
+  store              Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  
+  currentStage       String   @default("welcome") // "welcome", "creating_store", "connecting_channels", "sourcing", "completed"
+  completedStepsJson String   @default("[]") // Array of string keys
+  activationScore    Int      @default(0) // 0-100 indicating depth of use
+  firstValueAt       DateTime?
+  
+  hasUsedAI          Boolean  @default(false)
+  hasImportedProduct Boolean  @default(false)
+  hasPublished       Boolean  @default(false)
+  hasConnectedOAuth  Boolean  @default(false)
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+// ─── Legal & Compliance (Argentina) ───
+
+model StoreLegalSettings {
+  id                 String   @id @default(uuid())
+  storeId            String   @unique
+  store              Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  
+  termsOfService     String?  // Markdown or HTML
+  privacyPolicy      String?
+  refundPolicy       String?
+  businessInfo       String?  // Legal name, Address, CUIT
+  
+  btnWithdrawalActive Boolean @default(true) // Show Arrepentimiento button
+  
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model WithdrawalRequest {
+  id                 String   @id @default(uuid())
+  storeId            String
+  store              Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  
+  orderId            String?
+  customerEmail      String
+  customerName       String
+  reason             String?
+  status             String   @default("pending") // pending, resolved, rejected
+  
+  resolvedAt         DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  
+  @@index([storeId])
+}
+
+// ─── Fiscal / ARCA (AFIP) ───
+
+model FiscalProfile {
+  id                 String   @id @default(uuid())
+  storeId            String   @unique
+  store              Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  
+  taxId              String   // CUIT
+  businessName       String
+  ivaCondition       String   // responsable_inscripto, monotributo, exento
+  address            String
+  pointOfSale        Int
+  arcaMode           String   @default("testing") // testing, production
+  
+  certificateJson    String?  // Securely stored credentials for webservice
+  status             String   @default("active") // active, incomplete
+  
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model FiscalInvoice {
+  id                 String   @id @default(uuid())
+  storeId            String
+  store              Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  
+  orderId            String?  @unique
+  order              Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  
+  customerTaxId      String?  // DNI or CUIT of buyer
+  customerName       String
+  invoiceType        String   // Factura C, Factura A, Factura B, Nota de Credito
+  pointOfSale        Int
+  invoiceNumber      Int?
+  
+  parentInvoiceId    String?  // For credit notes to refer back
+  parentInvoice      FiscalInvoice?  @relation("CreditNotes", fields: [parentInvoiceId], references: [id], onDelete: SetNull)
+  creditNotes        FiscalInvoice[] @relation("CreditNotes")
+  
+  subtotal           Float
+  taxAmount          Float
+  total              Float
+  currency           String   @default("ARS")
+  
+  arcaCae            String?  // CAE number
+  caeExpiresAt       DateTime?
+  
+  fiscalStatus       String   @default("draft") // draft, pending, authorized, rejected, cancelled, credited, error
+  rawRequestJson     String?
+  rawResponseJson    String?
+  
+  issuedAt           DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  
+  @@index([storeId])
+  @@index([orderId])
+}
+
+// ─── Ads Copilot & Growth ───
+
+model AdPlatformConnection {
+  id                String   @id @default(uuid())
+  storeId           String
+  store             Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  
+  platform          String   // "meta", "google", "tiktok"
+  status            String   @default("connected") // "connected", "disconnected", "error"
+  externalAccountId String?  // e.g. Facebook Ad Account ID
+  accountName       String?  // e.g. "My Store Ads"
+  
+  accessToken       String?
+  refreshToken      String?
+  tokenExpiresAt    DateTime?
+  scopes            String?
+  configJson        String?  // Store specific pixels, page IDs, etc
+  
+  lastValidatedAt   DateTime?
+  lastError         String?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  campaignDrafts    AdCampaignDraft[]
+  insights          AdInsightSnapshot[]
+  
+  @@unique([storeId, platform])
+  @@index([storeId])
+}
+
+model AdCampaignDraft {
+  id                String   @id @default(uuid())
+  storeId           String
+  store             Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  connectionId      String?
+  connection        AdPlatformConnection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+  
+  platform          String   // "meta", "google", "tiktok"
+  status            String   @default("draft") // "draft", "published", "archived", "publishing"
+  objective         String   // "sales", "traffic", "leads", "awareness"
+  
+  budgetDaily       Float?
+  budgetLifetime    Float?
+  
+  audienceJson      String?  // Targeting configuration (age, locations, interests)
+  targetingJson     String?  // Platform specific targeting details
+  creativeJson      String?  // Image/Video URLs or IDs
+  copyJson          String?  // Headlines, Primary Text, Descriptions
+  
+  destinationType   String   @default("storefront") // "storefront", "product", "collection", "custom"
+  destinationUrl    String?
+  
+  sourceProductIds  String?  // Comma separated list of Product IDs
+  sourceCollectionIds String? // Comma separated list of Collection IDs
+  
+  aiSummary         String?  // Why AI generated this
+  aiScore           Int?     // Confidence score 0-100
+  
+  externalCampaignId String? // Once published
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([storeId])
+  @@index([connectionId])
+}
+
+model AdRecommendation {
+  id                String   @id @default(uuid())
+  storeId           String
+  store             Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  
+  platform          String   // "meta", "google", "tiktok", "all"
+  type              String   // "new_campaign", "budget_increase", "creative_refresh", "audience_expansion"
+  priority          String   @default("medium") // "high", "medium", "low"
+  
+  title             String
+  summary           String
+  recommendationJson String  // Detailed payload for UI rendering
+  
+  createdAt         DateTime @default(now())
+  dismissedAt       DateTime?
+  
+  @@index([storeId])
+}
+
+model AdInsightSnapshot {
+  id                String   @id @default(uuid())
+  storeId           String
+  store             Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  connectionId      String
+  connection        AdPlatformConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  
+  platform          String
+  externalCampaignId String?
+  
+  metricsJson       String   // Spend, Impressions, Clicks, CTR, CPC, Conversions, ROAS
+  snapshotAt        DateTime @default(now())
+  createdAt         DateTime @default(now())
+  
+  @@index([storeId])
+  @@index([connectionId])
+}
