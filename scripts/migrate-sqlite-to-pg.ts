@@ -305,12 +305,20 @@ async function main() {
   // Open SQLite (read-only)
   const sqlite = new Database(SQLITE_PATH, { readonly: true });
 
-  // Connect to PostgreSQL
-  const pgClient = new Client({ connectionString: PG_URL });
+  // Connect to PostgreSQL (SSL + keepAlive for Render external connections)
+  const pgClient = new Client({
+    connectionString: PG_URL,
+    ssl: { rejectUnauthorized: false },
+    keepAlive: true,
+    connectionTimeoutMillis: 60000,
+    statement_timeout: 60000,
+  });
+  pgClient.on("error", (err) => {
+    console.error("  ⚠️  PG client error (non-fatal):", err.message);
+  });
   await pgClient.connect();
 
-  // Disable FK checks during migration for safety
-  await pgClient.query("SET session_replication_role = 'replica'");
+  // FK checks handled by batch ordering (no superuser needed)
 
   const totals = { tables: 0, rows: 0, migrated: 0, errors: 0 };
 
@@ -326,8 +334,7 @@ async function main() {
     }
   }
 
-  // Re-enable FK checks
-  await pgClient.query("SET session_replication_role = 'origin'");
+  // FK ordering ensured by batch sequence
 
   // Validation
   await validateCounts(sqlite, pgClient);
