@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { Sparkles, Megaphone, CheckCircle2, AlertCircle, Plus, Loader2, ArrowRight, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { NexoraAIShell } from "@/components/admin/ai/NexoraAIShell";
 import { generateAdsCopilotRecommendations } from "@/lib/ads/ai/actions";
-import { addMockAdsConnection } from "@/lib/ads/connections/actions";
+import { addAdsConnection } from "@/lib/ads/connections/actions";
 import { createCampaignDraft } from "@/lib/ads/drafts/actions";
 
 export function AdsCopilotView({ storeId, connections, recommendations, drafts, insights }: any) {
@@ -23,10 +24,10 @@ export function AdsCopilotView({ storeId, connections, recommendations, drafts, 
     window.location.reload();
   };
 
-  const handleConnectMock = async (platform: string) => {
+  const handleConnect = async (platform: string) => {
     setIsConnecting(true);
     try {
-      await addMockAdsConnection(storeId, platform, "123456789", `Mock ${platform} Account`);
+      await addAdsConnection(storeId, platform, "123456789", `${platform} Account`);
       window.location.reload();
     } finally {
       setIsConnecting(false);
@@ -44,37 +45,27 @@ export function AdsCopilotView({ storeId, connections, recommendations, drafts, 
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 max-w-6xl mx-auto pb-12 p-6 sm:p-8">
-       {/* Hero Premium Header */}
-       <div className="rounded-3xl border border-[#EAEAEA] bg-gradient-to-br from-[#FAFAFA] to-white p-8 sm:p-10 shadow-sm relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-32 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl" />
-          
-          <div className="relative z-10">
-             <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 border border-emerald-100 px-3 py-1 shadow-sm mb-6">
-                <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                <span className="text-[11px] font-bold tracking-widest text-emerald-700 uppercase">Copilot Activado</span>
-             </div>
-             
-             <h1 className="text-3xl font-black tracking-tight text-[#111111]">Nexora Ads Copilot</h1>
-             <p className="mt-4 text-[15px] leading-relaxed text-[#666666] max-w-3xl font-medium">
-                Nexora usa los datos reales de tu negocio para ayudarte a crear campañas mucho mejores en Meta, Google y TikTok. Sin gastar tu presupuesto ciegamente. Obtené recomendaciones y creá borradores con un clic.
+    <div className="h-[calc(100vh-8rem)]">
+      <NexoraAIShell contextName="Ads & Performance" contextIcon={<Megaphone className="w-5 h-5 text-[#111111]" />}>
+        {/* Quick Actions / Analysis Engine */}
+        <div className="mb-8 p-6 bg-white border border-[#EAEAEA] rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+           <div>
+             <h3 className="font-bold text-[#111111] mb-1">Mapeo Estructural</h3>
+             <p className="text-[13px] text-[#666666]">
+               Generá sugerencias pautables basadas en tus artículos de mayor rentabilidad actual y la disponibilidad de inventario.
              </p>
+           </div>
+           <Button 
+              onClick={handleGenerate} 
+              disabled={isGenerating}
+              className="bg-[#111111] hover:bg-black text-white px-6 font-bold rounded-xl shadow-sm shrink-0"
+           >
+              {isGenerating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2 text-amber-300" />}
+              Analizar negocio
+           </Button>
+        </div>
 
-             <div className="mt-8 flex flex-wrap gap-4">
-                <Button 
-                   onClick={handleGenerate} 
-                   disabled={isGenerating}
-                   className="bg-[#111111] hover:bg-black text-white px-6 py-6 h-auto font-bold rounded-xl shadow-lg shadow-black/10 transition-all hover:-translate-y-0.5"
-                >
-                   {isGenerating ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Sparkles className="w-5 h-5 mr-2 text-amber-300" />}
-                   Analizar tienda y sugerir campañas
-                </Button>
-             </div>
-          </div>
-       </div>
-
-       {/* Tabs Navigation */}
+        {/* Tabs Navigation */}
        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide border-b border-[#EAEAEA]">
          {["recomendaciones", "conexiones", "borradores", "insights"].map(tab => (
            <button 
@@ -104,21 +95,21 @@ export function AdsCopilotView({ storeId, connections, recommendations, drafts, 
                  icon="Facebook / Instagram" 
                  active={!!metaConnection} 
                  loading={isConnecting}
-                 onConnect={() => handleConnectMock("meta")} 
+                 onConnect={() => handleConnect("meta")} 
                />
                <ConnectionCard 
                  title="Google Ads" 
                  icon="Search / Shopping" 
                  active={!!googleConnection} 
                  loading={isConnecting}
-                 onConnect={() => handleConnectMock("google")} 
+                 onConnect={() => handleConnect("google")} 
                />
                <ConnectionCard 
                  title="TikTok Ads" 
                  icon="Video Ads" 
                  active={!!tiktokConnection} 
                  loading={isConnecting}
-                 onConnect={() => handleConnectMock("tiktok")} 
+                 onConnect={() => handleConnect("tiktok")} 
                />
             </div>
          )}
@@ -213,7 +204,7 @@ export function AdsCopilotView({ storeId, connections, recommendations, drafts, 
             </div>
          )}
          
-         {/* INSIGHTS MOCK */}
+         {/* INSIGHTS */}
          {activeTab === "insights" && (
             <div className="rounded-3xl border border-[#EAEAEA] bg-white p-12 text-center shadow-sm">
                <TrendingUp className="w-12 h-12 text-gray-300 mx-auto mb-4" />
@@ -222,6 +213,7 @@ export function AdsCopilotView({ storeId, connections, recommendations, drafts, 
             </div>
          )}
        </div>
+      </NexoraAIShell>
     </div>
   );
 }

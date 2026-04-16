@@ -1,89 +1,184 @@
 "use server";
 
+// ─── Activation Engine v1 ───
+// Signal-based activation state derived from real DB queries.
+// No cosmetic progress — every step is measured against observable state.
+
 import { prisma } from "@/lib/db/prisma";
-import { getDefaultStore } from "@/lib/store-engine/queries";
+import { getCurrentUser, getCurrentStore } from "@/lib/auth/session";
 import { revalidatePath } from "next/cache";
+import type { ActivationState, ActivationStep, ActivationStepStatus } from "@/types/activation";
 
-export async function getStoreOnboardingState(storeId?: string) {
-  let targetId = storeId;
-  if (!targetId) {
-    const defaultStore = await getDefaultStore();
-    if (!defaultStore) return null;
-    targetId = defaultStore.id;
-  }
+export async function getActivationState(): Promise<ActivationState | null> {
+  const [user, store] = await Promise.all([getCurrentUser(), getCurrentStore()]);
+  if (!user || !store) return null;
 
-  // Idempotently create onboarding record
-  let onboarding = await prisma.storeOnboarding.findUnique({ where: { storeId: targetId } });
-  if (!onboarding) {
-    onboarding = await prisma.storeOnboarding.create({
-      data: { storeId: targetId }
-    });
-  }
+  const sid = store.id;
 
-  // Calculate live state (True State representation)
-  const productCount = await prisma.product.count({ where: { storeId: targetId } });
-  const aiDrafts = await prisma.aIGenerationDraft.count({ where: { storeId: targetId } });
-  const channels = await prisma.channelConnection.count({ where: { storeId: targetId, status: "connected" } });
-  const published = await prisma.channelListing.count({ where: { storeId: targetId, status: "published" } });
-  const suppliers = await prisma.catalogMirrorProduct.count({ where: { internalProduct: { storeId: targetId } } });
-  const domains = await prisma.storeDomain.count({ where: { storeId: targetId, type: "custom" } });
+  // ─── All signal queries in parallel ───
+  const [
+    subscription,
+    productCount,
+    publishedProductCount,
+    productsWithCost,
+    channelCount,
+    providerCount,
+    storeStatus,
+  ] = await Promise.all([
+    prisma.storeSubscription.findUnique({ where: { storeId: sid }, select: { status: true, planId: true } }),
+    prisma.product.count({ where: { storeId: sid } }),
+    prisma.product.count({ where: { storeId: sid, isPublished: true } }),
+    prisma.product.count({ where: { storeId: sid, cost: { gt: 0 } } }),
+    prisma.channelConnection.count({ where: { storeId: sid, status: "connected" } }),
+    prisma.providerConnection.count({ where: { storeId: sid, status: "active" } }),
+    Promise.resolve(store.status),
+  ]);
 
-  // Update activation flags
-  const updates: any = {};
-  if (aiDrafts > 0 && !onboarding.hasUsedAI) updates.hasUsedAI = true;
-  if (suppliers > 0 && !onboarding.hasImportedProduct) updates.hasImportedProduct = true;
-  if (published > 0 && !onboarding.hasPublished) updates.hasPublished = true;
-  if (channels > 0 && !onboarding.hasConnectedOAuth) updates.hasConnectedOAuth = true;
+  const emailVerified = user.emailVerified;
+  const hasPlan = !!subscription && ["active", "trialing"].includes(subscription.status);
+  const hasProducts = productCount > 0;
+  const hasPublished = publishedProductCount > 0;
+  const hasCosts = productsWithCost > 0 && (productCount === 0 || productsWithCost / productCount >= 0.5);
+  const hasChannel = channelCount > 0;
+  const isStoreActive = storeStatus === "active";
 
-  if (Object.keys(updates).length > 0) {
-    onboarding = await prisma.storeOnboarding.update({
-      where: { id: onboarding.id },
-      data: updates
-    });
-  }
+  // ─── Build steps ───
+  const steps: ActivationStep[] = [];
 
-  // Calculate activation score and completed steps
-  const stepsCompleted = new Set(JSON.parse(onboarding.completedStepsJson));
-  
-  if (aiDrafts > 0 || productCount > 0) stepsCompleted.add("create_products");
-  if (channels > 0) stepsCompleted.add("connect_channel");
-  if (published > 0) stepsCompleted.add("publish_channel");
-  if (suppliers > 0) stepsCompleted.add("import_supplier");
-  if (domains > 0) stepsCompleted.add("custom_domain");
+  // TIER 1: BLOCKERS — Must resolve to sell
 
-  const newCompletedStepsJson = JSON.stringify(Array.from(stepsCompleted));
-  if (newCompletedStepsJson !== onboarding.completedStepsJson) {
-     onboarding = await prisma.storeOnboarding.update({
-       where: { id: onboarding.id },
-       data: { completedStepsJson: newCompletedStepsJson }
-     });
-  }
+  steps.push({
+    id: "verify_email",
+    tier: "blocker",
+    title: "Verificá tu email",
+    description: "Necesario para operar la cuenta y recibir notificaciones.",
+    status: emailVerified ? "completed" : "pending",
+    href: "/admin/settings",
+    actionLabel: emailVerified ? "Verificado" : "Verificar email",
+    detail: emailVerified ? `${user.email} verificado` : `${user.email} sin verificar`,
+  });
 
-  // Score 0-100 logic
-  const totalSteps = 5;
-  const score = Math.round((stepsCompleted.size / totalSteps) * 100);
+  steps.push({
+    id: "select_plan",
+    tier: "blocker",
+    title: "Activá tu plan",
+    description: "Sin plan activo la cuenta tiene funcionalidad limitada.",
+    status: hasPlan ? "completed" : "pending",
+    href: hasPlan ? "/admin/settings" : "/welcome/plan",
+    actionLabel: hasPlan ? "Plan activo" : "Elegir plan",
+    detail: hasPlan ? `Plan activo` : "Sin plan",
+  });
 
-  if (score !== onboarding.activationScore) {
-     onboarding = await prisma.storeOnboarding.update({
-        where: { id: onboarding.id },
-        data: {
-           activationScore: score,
-           firstValueAt: score > 0 && !onboarding.firstValueAt ? new Date() : onboarding.firstValueAt,
-           currentStage: score === 100 ? "completed" : onboarding.currentStage
-        }
-     });
-  }
+  steps.push({
+    id: "first_product",
+    tier: "blocker",
+    title: "Cargá tu primer producto",
+    description: "Creá manualmente, generá con IA, o importá desde un proveedor.",
+    status: hasProducts ? "completed" : (!hasPlan ? "blocked" : "pending"),
+    href: hasProducts ? "/admin/catalog" : "/admin/ai-store-builder",
+    actionLabel: hasProducts ? `${productCount} producto${productCount !== 1 ? "s" : ""}` : "Crear producto",
+    detail: hasProducts ? `${productCount} en catálogo, ${publishedProductCount} publicado${publishedProductCount !== 1 ? "s" : ""}` : undefined,
+  });
+
+  // TIER 2: ACCELERATORS — Needed to sell effectively
+
+  steps.push({
+    id: "complete_costs",
+    tier: "accelerator",
+    title: "Completá costos del catálogo",
+    description: "Sin costo, Nexora no puede calcular márgenes ni alertar rentabilidad.",
+    status: !hasProducts ? "blocked" : hasCosts ? "completed" : "in_progress",
+    href: "/admin/catalog",
+    actionLabel: hasCosts ? "Costos completos" : "Completar costos",
+    detail: hasProducts ? `${productsWithCost} de ${productCount} con costo cargado` : undefined,
+  });
+
+  steps.push({
+    id: "publish_store",
+    tier: "accelerator",
+    title: "Publicá tu tienda",
+    description: "Tu tienda propia con dominio Nexora, lista para recibir tráfico.",
+    status: !hasProducts ? "blocked" : isStoreActive ? "completed" : "pending",
+    href: "/admin/store",
+    actionLabel: isStoreActive ? "Tienda activa" : "Publicar tienda",
+  });
+
+  steps.push({
+    id: "connect_channel",
+    tier: "accelerator",
+    title: "Conectá un canal de venta",
+    description: "Mercado Libre, Shopify u otro canal para vender donde ya hay tráfico.",
+    status: hasChannel ? "completed" : "pending",
+    href: "/admin/integrations",
+    actionLabel: hasChannel ? `${channelCount} canal${channelCount !== 1 ? "es" : ""}` : "Conectar canal",
+  });
+
+  // TIER 3: RECOMMENDED — Optimize and scale
+
+  steps.push({
+    id: "connect_provider",
+    tier: "recommended",
+    title: "Conectá un proveedor de sourcing",
+    description: "Dropshipping B2B: importá productos de proveedores sin manejar inventario.",
+    status: providerCount > 0 ? "completed" : "pending",
+    href: "/admin/sourcing",
+    actionLabel: providerCount > 0 ? `${providerCount} proveedor${providerCount !== 1 ? "es" : ""}` : "Explorar proveedores",
+  });
+
+  steps.push({
+    id: "review_operations",
+    tier: "recommended",
+    title: "Revisá tu centro operativo",
+    description: "Nexora AI genera alertas y recomendaciones sobre tu negocio en tiempo real.",
+    status: hasProducts && hasPlan ? "pending" : "blocked",
+    href: "/admin/ai",
+    actionLabel: "Ver Nexora AI",
+  });
+
+  // ─── Score ───
+  const completedSteps = steps.filter((s) => s.status === "completed").length;
+  const totalSteps = steps.length;
+  const score = Math.round((completedSteps / totalSteps) * 100);
+  const blockers = steps.filter((s) => s.tier === "blocker" && s.status !== "completed").length;
+
+  // ─── Persist score to StoreOnboarding (idempotent) ───
+  await prisma.storeOnboarding.upsert({
+    where: { storeId: sid },
+    create: { storeId: sid, activationScore: score, currentStage: score === 100 ? "completed" : "welcome" },
+    update: {
+      activationScore: score,
+      currentStage: score === 100 ? "completed" : undefined,
+      hasImportedProduct: providerCount > 0 || undefined,
+      hasPublished: hasPublished || undefined,
+      hasConnectedOAuth: hasChannel || undefined,
+    },
+  });
 
   return {
-    onboarding,
-    stepsCompleted: Array.from(stepsCompleted),
+    steps,
     score,
-    metrics: { aiDrafts, productCount, channels, published, suppliers, domains }
+    totalSteps,
+    completedSteps,
+    blockers,
+    isActivated: score === 100,
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+// ─── Legacy compat ───
+export async function getStoreOnboardingState() {
+  const state = await getActivationState();
+  if (!state) return null;
+  return {
+    onboarding: null,
+    stepsCompleted: state.steps.filter((s) => s.status === "completed").map((s) => s.id),
+    score: state.score,
+    metrics: {},
   };
 }
 
 export async function dismissWelcomeStageAction() {
-   const store = await getDefaultStore();
+   const store = await getCurrentStore();
    if (!store) return;
    await prisma.storeOnboarding.updateMany({
       where: { storeId: store.id },

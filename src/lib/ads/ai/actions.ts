@@ -106,7 +106,7 @@ export async function generateAdsCopilotRecommendations(storeId: string) {
      entityId: created1.id,
      eventType: "ads_recommendation_generated",
      source: "ads_copilot",
-     message: `El Copiloto IA generó 2 recomendaciones basadas en ${context.totalProducts} productos activos.`
+     message: `Nexora AI generó 2 recomendaciones basadas en ${context.totalProducts} productos activos.`
   });
 
   return [created1, created2];

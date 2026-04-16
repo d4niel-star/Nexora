@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, use } from "react"
 import { submitWithdrawalRequestAction } from "@/lib/fiscal/arca/actions"
 import { AlertCircle, CheckCircle2, RotateCcw } from "lucide-react"
 import { useRouter } from "next/navigation"
 
-export default function WithdrawalPage({ params }: { params: { storeSlug: string } }) {
+export default function WithdrawalPage({ params }: { params: Promise<{ storeSlug: string }> }) {
+  const { storeSlug } = use(params);
   const [orderId, setOrderId] = useState("")
   const [email, setEmail] = useState("")
   const [name, setName] = useState("")
@@ -24,7 +25,7 @@ export default function WithdrawalPage({ params }: { params: { storeSlug: string
       const res = await fetch(`/api/storefront/withdrawal`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ storeSlug: params.storeSlug, orderId, email, name, reason })
+        body: JSON.stringify({ storeSlug, orderId, email, name, reason })
       })
 
       if (res.ok) setSuccess(true)
@@ -47,7 +48,7 @@ export default function WithdrawalPage({ params }: { params: { storeSlug: string
         <p className="text-[#666666] leading-relaxed mb-8">
           Hemos registrado tu solicitud de arrepentimiento/revocación. En breve te contactaremos para procesar la devolución de fondos y el retorno logístico según corresponda. El código de tu ticket es {Math.floor(Math.random() * 100000)}.
         </p>
-        <button onClick={() => router.push(`/${params.storeSlug}`)} className="px-6 py-3 bg-[#111111] text-white font-bold text-sm rounded-lg hover:bg-black transition-colors">
+        <button onClick={() => router.push(`/${storeSlug}`)} className="px-6 py-3 bg-[#111111] text-white font-bold text-sm rounded-lg hover:bg-black transition-colors">
           Volver a la tienda
         </button>
       </div>

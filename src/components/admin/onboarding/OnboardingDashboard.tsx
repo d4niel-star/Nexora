@@ -1,139 +1,181 @@
 "use client";
 
-import { CheckCircle2, Circle, ArrowRight, Zap, Target, Globe2, Store, Package } from "lucide-react";
+import {
+  CheckCircle2,
+  Circle,
+  ArrowRight,
+  Lock,
+  AlertTriangle,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { useState } from "react";
+import type { ActivationState, ActivationStep, ActivationTier, ActivationStepStatus } from "@/types/activation";
 
-const STEPS = [
-  {
-    id: "create_products",
-    title: "Crear tu catálogo",
-    description: "Generá productos enteros con AI Studio o cargalos manualmente.",
-    href: "/admin/ai-store-builder",
-    icon: Zap,
-    cta: "Generar con IA"
-  },
-  {
-    id: "connect_channel",
-    title: "Conectar canales",
-    description: "Autenticá Mercado Libre o Shopify para venta exterior.",
-    href: "/admin/channels",
-    icon: Globe2,
-    cta: "Ir a Canales"
-  },
-  {
-    id: "publish_channel",
-    title: "Publicar productos",
-    description: "Sincronizá tu stock interno hacia el canal.",
-    href: "/admin/publications",
-    icon: Target,
-    cta: "Publicar ahora"
-  },
-  {
-    id: "import_supplier",
-    title: "Dropshipping B2B (Opcional)",
-    description: "Importá productos desde un proveedor para re-vender sin inventario.",
-    href: "/admin/sourcing",
-    icon: Package,
-    cta: "Explorar Proveedores"
-  },
-  {
-    id: "custom_domain",
-    title: "Publicar Tienda",
-    description: "Elegí tu dominio y abrí las puertas de tu tienda propia.",
-    href: "/admin/store?tab=dominio",
-    icon: Store,
-    cta: "Configurar Dominio"
-  }
-];
+const TIER_META: Record<ActivationTier, { label: string; color: string }> = {
+  blocker: { label: "Requisito", color: "text-red-600" },
+  accelerator: { label: "Acelerador", color: "text-amber-600" },
+  recommended: { label: "Recomendado", color: "text-blue-500" },
+};
 
-export function OnboardingDashboard({ data }: { data: any }) {
-  const { score, stepsCompleted } = data;
-  
+export function OnboardingDashboard({ data }: { data: ActivationState }) {
+  const { steps, score, completedSteps, totalSteps, blockers } = data;
+
+  const allTiers: ActivationTier[] = ["blocker", "accelerator", "recommended"];
+  const tierGroups = allTiers
+    .map((tier) => ({ tier, steps: steps.filter((s) => s.tier === tier) }))
+    .filter((g) => g.steps.length > 0);
+
   return (
     <div className="mx-auto max-w-4xl pt-8 pb-16 animate-in fade-in duration-500">
+      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-extrabold tracking-tight text-[#111111]">
-          Bienvenido a Nexora
+          Activación de tu negocio
         </h1>
         <p className="mt-2 text-[15px] text-[#555555] max-w-2xl leading-relaxed">
-          Completá estos pasos para activar el ecosistema completo: catálogo centralizado, dropshipping B2B e IA, todo listo para escalar en múltiples canales simultáneamente.
+          {blockers > 0
+            ? `Hay ${blockers} paso${blockers !== 1 ? "s" : ""} bloqueante${blockers !== 1 ? "s" : ""} para empezar a vender. Resolvelos primero.`
+            : score < 100
+              ? "Ya podés vender. Completá los pasos restantes para operar con todo el potencial."
+              : "Tu negocio está completamente activado."}
         </p>
       </div>
 
-      <div className="bg-white border border-[#E5E5E5] rounded-2xl p-6 shadow-sm mb-12">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-[13px] font-bold uppercase tracking-wider text-[#111111]">Tu progreso de activación</h2>
-          <span className="text-[13px] font-bold text-emerald-600">{score}% Completo</span>
+      {/* Progress bar */}
+      <div className="bg-white border border-[#E5E5E5] rounded-2xl p-5 shadow-sm mb-10">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-[11px] font-bold uppercase tracking-widest text-[#111111]">
+            Progreso de activación
+          </h2>
+          <span className="text-[13px] font-bold tabular-nums text-[#111111]">
+            {completedSteps}/{totalSteps}
+            <span className="ml-2 text-emerald-600">{score}%</span>
+          </span>
         </div>
         <div className="w-full bg-[#f0f0f0] rounded-full h-2 overflow-hidden">
-          <div className="bg-emerald-500 h-full transition-all duration-1000 ease-out" style={{ width: `${score}%` }} />
+          <div
+            className="bg-emerald-500 h-full transition-all duration-1000 ease-out rounded-full"
+            style={{ width: `${score}%` }}
+          />
         </div>
       </div>
 
-      <div className="space-y-4">
-        {STEPS.map((step, idx) => {
-          const isDone = stepsCompleted.includes(step.id);
-          const Icon = step.icon;
-          
+      {/* Tier groups */}
+      <div className="space-y-8">
+        {tierGroups.map(({ tier, steps: tierSteps }) => {
+          const meta = TIER_META[tier];
           return (
-            <div 
-              key={step.id}
-              className={cn(
-                "group flex flex-col md:flex-row md:items-center justify-between p-6 rounded-2xl border transition-all duration-300",
-                isDone ? "bg-[#FAFAFA] border-[#E5E5E5] opacity-70" : "bg-white border-[#DDDDDD] hover:border-[#111111] hover:shadow-md"
-              )}
-            >
-              <div className="flex gap-5">
-                <div className="mt-1 flex-shrink-0">
-                  {isDone ? (
-                    <CheckCircle2 className="h-6 w-6 text-emerald-500" />
-                  ) : (
-                    <Circle className="h-6 w-6 text-[#CCCCCC]" />
-                  )}
-                </div>
-                <div>
-                  <h3 className={cn("font-bold text-[16px]", isDone ? "text-[#555555] line-through" : "text-[#111111]")}>
-                    {idx + 1}. {step.title}
-                  </h3>
-                  <p className="mt-1 text-[14px] text-[#777777] max-w-md">
-                    {step.description}
-                  </p>
-                </div>
+            <div key={tier}>
+              <div className="flex items-center gap-2 mb-3">
+                <span className={cn("text-[10px] font-bold uppercase tracking-widest", meta.color)}>
+                  {meta.label}
+                </span>
+                <span className="text-[10px] text-[#BBBBBB] font-bold">
+                  {tierSteps.filter((s) => s.status === "completed").length}/{tierSteps.length}
+                </span>
               </div>
-
-              <div className="mt-6 md:mt-0 md:ml-6 flex-shrink-0">
-                {!isDone ? (
-                   <Link 
-                     href={step.href}
-                     className="inline-flex items-center gap-2 rounded-full bg-[#111111] px-5 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-black focus:ring-2 focus:ring-black focus:ring-offset-2"
-                   >
-                     {step.cta} <ArrowRight className="h-4 w-4" />
-                   </Link>
-                ) : (
-                   <Link 
-                     href={step.href}
-                     className="inline-flex flex-col items-end gap-1 text-[12px] font-semibold text-[#888888] hover:text-[#111111] transition-colors"
-                   >
-                     Revisar ajustes
-                   </Link>
-                )}
+              <div className="space-y-3">
+                {tierSteps.map((step) => (
+                  <StepCard key={step.id} step={step} />
+                ))}
               </div>
             </div>
           );
         })}
       </div>
-      
+
+      {/* Activation complete */}
       {score === 100 && (
-         <div className="mt-12 bg-emerald-50 border border-emerald-200 text-emerald-800 p-6 rounded-2xl flex items-start gap-4">
-            <CheckCircle2 className="h-6 w-6 shrink-0 mt-0.5" />
-            <div>
-               <h3 className="font-bold text-[15px]">¡Activación Completa!</h3>
-               <p className="mt-1 text-[13px]">Has conectado los motores principales. Ya puedes procesar transacciones reales. Visita el dashboard general para métricas de ventas.</p>
-            </div>
-         </div>
+        <div className="mt-10 bg-emerald-50 border border-emerald-200 text-emerald-800 p-5 rounded-2xl flex items-start gap-3">
+          <CheckCircle2 className="h-5 w-5 shrink-0 mt-0.5" />
+          <div>
+            <h3 className="font-bold text-[14px]">Negocio activado</h3>
+            <p className="mt-1 text-[12px]">
+              Todos los motores están conectados. El dashboard mostrará métricas operativas y alertas en tiempo real.
+            </p>
+          </div>
+        </div>
       )}
     </div>
   );
+}
+
+function StepCard({ step }: { step: ActivationStep }) {
+  const isBlocked = step.status === "blocked";
+  const isDone = step.status === "completed";
+
+  return (
+    <div
+      className={cn(
+        "flex flex-col md:flex-row md:items-center justify-between p-5 rounded-xl border transition-all",
+        isDone
+          ? "bg-[#FAFAFA] border-[#E8E8E8]"
+          : isBlocked
+            ? "bg-[#FAFAFA] border-dashed border-[#DDDDDD] opacity-60"
+            : "bg-white border-[#DDDDDD] hover:border-[#111111] hover:shadow-sm"
+      )}
+    >
+      <div className="flex gap-4 min-w-0">
+        <div className="mt-0.5 shrink-0">
+          <StatusIcon status={step.status} />
+        </div>
+        <div className="min-w-0">
+          <h3
+            className={cn(
+              "font-bold text-[14px] leading-snug",
+              isDone ? "text-[#888888]" : isBlocked ? "text-[#AAAAAA]" : "text-[#111111]"
+            )}
+          >
+            {step.title}
+          </h3>
+          <p className="mt-0.5 text-[12px] text-[#777777] leading-relaxed">
+            {step.description}
+          </p>
+          {step.detail && (
+            <p className="mt-1 text-[10px] font-medium text-[#AAAAAA] italic">
+              {step.detail}
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-4 md:mt-0 md:ml-4 shrink-0">
+        {isBlocked ? (
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#BBBBBB]">
+            <Lock className="h-3 w-3" />
+            Bloqueado
+          </span>
+        ) : isDone ? (
+          <Link
+            href={step.href}
+            className="text-[11px] font-bold text-[#AAAAAA] hover:text-[#111111] transition-colors"
+          >
+            Revisar
+          </Link>
+        ) : (
+          <Link
+            href={step.href}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[#111111] px-4 py-2 text-[12px] font-bold text-white transition-colors hover:bg-black"
+          >
+            {step.actionLabel}
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function StatusIcon({ status }: { status: ActivationStepStatus }) {
+  switch (status) {
+    case "completed":
+      return <CheckCircle2 className="h-5 w-5 text-emerald-500" />;
+    case "in_progress":
+      return <AlertTriangle className="h-5 w-5 text-amber-500" />;
+    case "blocked":
+      return <Lock className="h-5 w-5 text-[#CCCCCC]" />;
+    case "pending":
+    default:
+      return <Circle className="h-5 w-5 text-[#CCCCCC]" />;
+  }
 }

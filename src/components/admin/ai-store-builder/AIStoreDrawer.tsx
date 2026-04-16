@@ -128,10 +128,7 @@ function ProposalDetail({ data, onAction }: { data: AIProposal; onAction: (a: st
           ))}
         </div>
       </section>
-      <section className="flex flex-wrap gap-2 pt-4">
-        <DrawerAction icon={<Eye className="h-3.5 w-3.5" />} label="Abrir preview" onClick={() => onAction(`Abriendo preview de ${data.id} (mock)`)} primary />
-        <DrawerAction icon={<RefreshCw className="h-3.5 w-3.5" />} label="Regenerar con variacion" onClick={() => onAction(`Regenerando variante de ${data.id} (mock)`)} />
-      </section>
+
     </>
   );
 }
@@ -145,10 +142,7 @@ function BlockDetail({ data, onAction }: { data: { label: string; description: s
           <InfoRow label="Rol en la pagina" value={data.description} />
         </div>
       </section>
-      <section className="flex flex-wrap gap-2">
-        <DrawerAction icon={<LayoutPanelTop className="h-3.5 w-3.5" />} label="Cambiar variante" onClick={() => onAction(`Cambiando variante de bloque (mock)`)} primary />
-        <DrawerAction icon={<ExternalLink className="h-3.5 w-3.5" />} label="Preview especifico" onClick={() => onAction(`Abriendo preview especifico (mock)`)} />
-      </section>
+
     </>
   );
 }
@@ -162,10 +156,7 @@ function PublishCheckDetail({ data, onAction }: { data: { item: string; status: 
           <p className="text-sm font-medium text-gray-600">{data.detail}</p>
         </div>
       </section>
-      <section className="flex flex-wrap gap-2 pt-4">
-        {!data.status ? <DrawerAction icon={<CheckCircle2 className="h-3.5 w-3.5" />} label="Ignorar y marcar listo" onClick={() => onAction(`Forzando override para ${data.item} (mock)`)} primary /> : null}
-        <DrawerAction icon={<ExternalLink className="h-3.5 w-3.5" />} label="Ir a solucionar" onClick={() => onAction(`Navigando para corregir ${data.item} (mock)`)} />
-      </section>
+
     </>
   );
 }

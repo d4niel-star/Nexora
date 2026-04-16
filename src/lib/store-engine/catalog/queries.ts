@@ -1,4 +1,7 @@
 import { prisma } from "@/lib/db/prisma";
+import { getCurrentStore } from "@/lib/auth/session";
+import { getVariantIntelligenceReport } from "@/lib/replenishment/variant-queries";
+import { getVariantEconomicsReport } from "@/lib/profitability/variant-queries";
 import type { StorefrontProduct, StorefrontCollection, ProductVariant } from "@/types/storefront";
 
 // Utility to safely parse JSON or return empty array
@@ -169,6 +172,12 @@ function mapProductToStorefront(product: any): StorefrontProduct {
 
 // ─── Admin Catalog Queries ───
 
+export interface CatalogSignal {
+  key: string;
+  label: string;
+  severity: "blocker" | "warning" | "info" | "ok";
+}
+
 export interface AdminProduct {
   id: string;
   handle: string;
@@ -178,6 +187,7 @@ export interface AdminProduct {
   supplier: string;
   price: number;
   cost: number;
+  costReal: boolean;
   margin: number;
   totalStock: number;
   image: string;
@@ -185,16 +195,32 @@ export interface AdminProduct {
   isFeatured: boolean;
   variants: { id: string; title: string; price: number; stock: number; reservedStock: number; }[];
   createdAt: string;
+  // Catalog Intelligence v2
+  signals: CatalogSignal[];
+  issueCount: number;
+  hasProvider: boolean;
+  providerName: string | null;
+  mirrorSyncStatus: string | null;
+  channelCount: number;
+  channelSyncIssues: number;
+  firstListingId: string | null;
+  // Catalog Variant Intelligence v1
+  variantRiskCount: number;
+  hiddenVariantCount: number;
+  variantCriticalId: string | null;
+  variantHiddenId: string | null;
+  variantStuckId: string | null;
+  variantNegativeId: string | null;
+  variantUrgentReorderId: string | null;
 }
 
 /**
  * Fetches all products for the active store, adapted for the admin catalog UI.
  * Includes unpublished/draft/archived products unlike the storefront queries.
+ * v1: Includes variant intelligence signals.
  */
 export async function getAdminCatalog(): Promise<AdminProduct[]> {
-  const store = await prisma.store.findFirst({
-    where: { status: "active" },
-  });
+  const store = await getCurrentStore();
 
   if (!store) return [];
 
@@ -208,15 +234,117 @@ export async function getAdminCatalog(): Promise<AdminProduct[]> {
         orderBy: { sortOrder: "asc" },
         take: 1,
       },
+      catalogMirror: {
+        select: {
+          syncStatus: true,
+          providerProduct: {
+            select: { provider: { select: { name: true } } },
+          },
+        },
+      },
+      channelListings: {
+        select: {
+          id: true,
+          channel: true,
+          status: true,
+          syncStatus: true,
+        },
+      },
     },
     orderBy: { createdAt: "desc" },
   });
 
+  // Fetch variant intelligence for variant-level signals
+  const variantEcon = await getVariantEconomicsReport();
+  const variantIntel = await getVariantIntelligenceReport(undefined, variantEcon);
+
   return products.map((p) => {
     const totalStock = p.variants.reduce((acc, v) => acc + v.stock, 0);
-    const cost = p.cost ?? p.price * 0.6;
-    const margin = p.price > 0 ? (p.price - cost) / p.price : 0;
+    const costReal = p.cost !== null && p.cost !== undefined;
+    const cost = costReal ? p.cost! : 0;
+    const margin = costReal && p.price > 0 ? (p.price - cost) / p.price : 0;
     const status: AdminProduct["status"] = p.isPublished ? "active" : (p.status === "archived" ? "archived" : "draft");
+
+    // Channel intelligence
+    const publishedListings = p.channelListings.filter((l) => l.status === "published");
+    const channelSyncIssues = publishedListings.filter((l) => l.syncStatus === "out_of_sync" || l.syncStatus === "error").length;
+    const firstListingWithIssue = publishedListings.find((l) => l.syncStatus === "out_of_sync" || l.syncStatus === "error");
+
+    // Mirror intelligence
+    const hasProvider = !!p.catalogMirror;
+    const providerName = p.catalogMirror?.providerProduct?.provider?.name ?? null;
+    const mirrorSyncStatus = p.catalogMirror?.syncStatus ?? null;
+
+    // Build signals
+    const signals: CatalogSignal[] = [];
+
+    // Cost health
+    if (!costReal) {
+      signals.push({ key: "no_cost", label: "Sin costo", severity: "blocker" });
+    } else if (margin < 0.05) {
+      signals.push({ key: "low_margin", label: `Margen ${Math.round(margin * 100)}%`, severity: "warning" });
+    }
+
+    // Stock
+    if (totalStock === 0) {
+      signals.push({ key: "no_stock", label: "Sin stock", severity: "blocker" });
+    }
+
+    // Draft status
+    if (status === "draft") {
+      signals.push({ key: "draft", label: "Borrador", severity: "warning" });
+    }
+
+    // Channel sync
+    if (channelSyncIssues > 0) {
+      signals.push({ key: "sync_issue", label: `${channelSyncIssues} sync issue${channelSyncIssues !== 1 ? "s" : ""}`, severity: "warning" });
+    }
+
+    // Mirror desync
+    if (mirrorSyncStatus === "out_of_sync") {
+      signals.push({ key: "mirror_desync", label: "Espejo desincronizado", severity: "warning" });
+    }
+
+    // No channels
+    if (status === "active" && publishedListings.length === 0) {
+      signals.push({ key: "no_channel", label: "Sin canal", severity: "info" });
+    }
+
+    // Good health
+    if (signals.length === 0 && status === "active") {
+      signals.push({ key: "healthy", label: "Sano", severity: "ok" });
+    }
+
+    // ─── Variant Intelligence v1 (Catalog-level signals) ───
+    const productVariants = variantIntel.products.find((vp) => vp.productId === p.id);
+    const variantRiskCount = (productVariants?.stockoutVariants ?? 0) + (productVariants?.criticalVariants ?? 0) + (productVariants?.lowVariants ?? 0) || 0;
+    const hiddenVariantCount = productVariants?.hasHiddenRisk ? 1 : 0;
+
+    // Find worst variant IDs for deep-linking
+    const variantCriticalId = productVariants?.variants.find((v) => v.health === "critical" && v.unitsSold30d > 0)?.variantId ?? null;
+    const variantHiddenId = productVariants?.variants.find((v) => v.hiddenByAggregate)?.variantId ?? null;
+    const variantStuckId = productVariants?.variants.find((v) => v.health === "stuck" && v.stock > 0)?.variantId ?? null;
+    const variantNegativeId = productVariants?.variants.find((v) => v.econHealth === "negative")?.variantId ?? null;
+    const variantUrgentReorderId = productVariants?.variants.find((v) => v.action === "reorder" && v.health === "weak" && v.velocityPerDay >= 0.5)?.variantId ?? null;
+
+    // Add variant signals to product signals
+    if (variantCriticalId) {
+      signals.push({ key: "variant_critical", label: "Variante crítica", severity: "blocker" });
+    }
+    if (variantStuckId) {
+      signals.push({ key: "variant_stuck", label: "Variante inmovilizada", severity: "warning" });
+    }
+    if (variantNegativeId) {
+      signals.push({ key: "variant_negative", label: "Variante destruye valor", severity: "warning" });
+    }
+    if (hiddenVariantCount > 0) {
+      signals.push({ key: "variant_hidden", label: "Riesgo oculto por variante", severity: "blocker" });
+    }
+    if (variantUrgentReorderId) {
+      signals.push({ key: "variant_urgent", label: "Variante requiere reposición", severity: "warning" });
+    }
+
+    const issueCount = signals.filter((s) => s.severity === "blocker" || s.severity === "warning").length;
 
     return {
       id: p.id,
@@ -227,6 +355,7 @@ export async function getAdminCatalog(): Promise<AdminProduct[]> {
       supplier: p.supplier ?? "Propio",
       price: p.price,
       cost,
+      costReal,
       margin,
       totalStock,
       image: p.featuredImage ?? p.images[0]?.url ?? "",
@@ -240,6 +369,21 @@ export async function getAdminCatalog(): Promise<AdminProduct[]> {
         reservedStock: v.reservedStock,
       })),
       createdAt: p.createdAt.toISOString(),
+      signals,
+      issueCount,
+      hasProvider,
+      providerName,
+      mirrorSyncStatus,
+      channelCount: publishedListings.length,
+      channelSyncIssues,
+      firstListingId: firstListingWithIssue?.id ?? null,
+      variantRiskCount,
+      hiddenVariantCount,
+      variantCriticalId,
+      variantHiddenId,
+      variantStuckId,
+      variantNegativeId,
+      variantUrgentReorderId,
     };
   });
 }

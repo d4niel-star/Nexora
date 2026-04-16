@@ -1,5 +1,5 @@
-import { AIAssistantPage } from "@/components/admin/ai-assistant/AIAssistantPage";
+import { redirect } from "next/navigation";
 
-export default function AIAssistantRoute() {
-  return <AIAssistantPage />;
+export default function RedirectPage() {
+  redirect("/admin/ai");
 }

@@ -89,17 +89,32 @@ export interface MPPreferenceResponse {
   [key: string]: unknown;
 }
 
+export interface MPFeeDetail {
+  type: string;       // "mercadopago_fee", "coupon_fee", "financing_fee", etc.
+  amount: number;
+  fee_payer: string;  // "collector" or "payer"
+}
+
 export interface MPPaymentResponse {
   id: number;
   status: string; // "approved", "pending", "rejected", etc.
   status_detail: string;
   external_reference: string;
   transaction_amount: number;
+  transaction_amount_refunded: number;
+  net_received_amount: number;
   currency_id: string;
   payment_method_id: string;
   payment_type_id: string;
   installments: number;
   date_approved: string | null;
+  fee_details: MPFeeDetail[];
+  transaction_details?: {
+    net_received_amount: number;
+    total_paid_amount: number;
+    overpaid_amount: number;
+    installment_amount: number;
+  };
   payer: {
     email: string;
     [key: string]: unknown;

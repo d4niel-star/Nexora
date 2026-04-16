@@ -1,5 +1,8 @@
-import { CustomersPage } from "@/components/admin/customers/CustomersPage";
+import { getAggregatedCustomers } from "@/lib/customers/queries";
+import { CustomersClient } from "@/components/admin/customers/CustomersClient";
 
-export default function AdminCustomersPage() {
-  return <CustomersPage />;
+export default async function AdminCustomersPage() {
+  const aggregated = await getAggregatedCustomers();
+  
+  return <CustomersClient initialCustomers={aggregated} />;
 }

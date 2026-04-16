@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/db/prisma";
 import { getDefaultStore } from "@/lib/store-engine/queries";
+import { getAdminStoreId } from "@/lib/store-engine/actions";
 import { revalidatePath } from "next/cache";
 import { seedProviders } from "./seed";
 
@@ -102,138 +103,140 @@ export async function getImportedProductsAction() {
   });
 }
 
-// MOCK: simulate fetching products from a provider
-export async function getMockProviderExternalProductsAction(providerId: string) {
-  // In a real scenario, this would call provider.fetchProducts()
-  return [
-    {
-      externalId: "ext-1001",
-      title: "Auriculares Inalámbricos Premium Z9",
-      description: "Auriculares con cancelación de ruido activa 40dB y 30hs de batería.",
-      cost: 12000,
-      suggestedPrice: 25000,
-      stock: 45,
-      category: "Electrónica",
-      imageUrl: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=800"
-    },
-    {
-      externalId: "ext-1002",
-      title: "Reloj Inteligente Fit Tracker",
-      description: "Monitoreo cardíaco, pasos, calorías y notificaciones.",
-      cost: 8500,
-      suggestedPrice: 19999,
-      stock: 120,
-      category: "Electrónica",
-      imageUrl: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=800"
-    },
-    {
-      externalId: "ext-1003",
-      title: "Lámpara de Escritorio LED Minimalista",
-      description: "Lámpara regulable, cuerpo de aluminio, diseño nórdico.",
-      cost: 6000,
-      suggestedPrice: 15499,
-      stock: 30,
-      category: "Hogar",
-      imageUrl: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&q=80&w=800"
-    }
-  ];
+export async function getProviderExternalProductsAction(providerId: string) {
+  // We fetch standard seeded/synced ProviderProducts from the DB
+  const rawProducts = await prisma.providerProduct.findMany({
+    where: { providerId },
+    orderBy: { createdAt: "desc" },
+    take: 50 // Limit to first 50 for UI
+  });
+
+  // Map to the format the UI expects, parsing imagesJson
+  return rawProducts.map(p => {
+    let images = [];
+    try { images = JSON.parse(p.imagesJson || "[]"); } catch (e) {}
+    
+    return {
+      id: p.id,
+      externalId: p.externalId,
+      title: p.title,
+      description: p.description,
+      cost: p.cost,
+      suggestedPrice: p.suggestedPrice || null,
+      stock: p.stock,
+      category: p.category,
+      imageUrl: images[0] || null
+    };
+  });
 }
 
-export async function importProductAction(connectionId: string, externalData: any) {
-  const store = await getDefaultStore();
-  if (!store) throw new Error("No active store");
+export async function importProductAction(connectionId: string, providerProductId: string) {
+  const storeId = await getAdminStoreId();
+  if (!storeId) throw new Error("No active store session");
 
   const connection = await prisma.providerConnection.findUnique({
-    where: { id: connectionId, storeId: store.id },
+    where: { id: connectionId, storeId },
     include: { provider: true }
   });
-  if (!connection) throw new Error("Connection not found");
+  if (!connection) throw new Error("Provider connection not found or access denied");
 
-  // Create or Update ProviderProduct
-  let providerProd = await prisma.providerProduct.findUnique({
-    where: { providerId_externalId: { providerId: connection.providerId, externalId: externalData.externalId } }
-  });
+  return await prisma.$transaction(async (tx) => {
+    // 1. Validar existencia real del producto del proveedor en la DB local
+    const providerProd = await tx.providerProduct.findUnique({
+      where: { id: providerProductId }
+    });
 
-  if (!providerProd) {
-    providerProd = await prisma.providerProduct.create({
+    if (!providerProd) {
+       throw new Error("El producto del proveedor no existe de forma local.");
+    }
+    if (providerProd.providerId !== connection.providerId) {
+       throw new Error("Violación de integridad: El producto no pertenece al proveedor de esta conexión.");
+    }
+
+    // 2. Check if already imported (Idempotencia Fuerte)
+    let mirror = await tx.catalogMirrorProduct.findUnique({
+      where: { storeId_providerProductId: { storeId, providerProductId: providerProd.id } }
+    });
+
+    if (mirror) {
+      return { success: false, existing: true, message: "Este producto ya se encuentra en tu catálogo espejo." };
+    }
+
+    let images = [];
+    try { images = JSON.parse(providerProd.imagesJson || "[]") } catch(e) {}
+    const firstImage = images[0] || null;
+
+    // 3. Create Internal Product
+    const internalProduct = await tx.product.create({
       data: {
-        providerId: connection.providerId,
-        externalId: externalData.externalId,
-        title: externalData.title,
-        description: externalData.description,
-        cost: externalData.cost,
-        suggestedPrice: externalData.suggestedPrice || null,
-        stock: externalData.stock,
-        category: externalData.category,
-        imagesJson: JSON.stringify([externalData.imageUrl]),
+        storeId,
+        handle: `${providerProd.externalId}-${Date.now()}`,
+        title: providerProd.title,
+        description: providerProd.description,
+        status: "draft", // Start as draft so user can review before publishing
+        category: providerProd.category,
+        supplier: connection.provider.name,
+        cost: providerProd.cost,
+        price: providerProd.suggestedPrice || (providerProd.cost * 1.5), // Default 50% margin
+        featuredImage: firstImage,
       }
     });
-  }
 
-  // Create CatalogMirrorProduct (if not exists)
-  let mirror = await prisma.catalogMirrorProduct.findUnique({
-    where: { storeId_providerProductId: { storeId: store.id, providerProductId: providerProd.id } }
+    // 4. Create standard internal variant
+    const variantId = await tx.productVariant.create({
+      data: {
+        productId: internalProduct.id,
+        title: "Default Title",
+        price: internalProduct.price,
+        stock: providerProd.stock,
+        sku: `PROV-${providerProd.externalId}`,
+        isDefault: true
+      }
+    });
+
+    // 5. Create Mirror linked to Internal Product
+    mirror = await tx.catalogMirrorProduct.create({
+      data: {
+        storeId,
+        providerConnectionId: connection.id,
+        providerProductId: providerProd.id,
+        internalProductId: internalProduct.id,
+        importStatus: "imported",
+        marginRule: "suggested",
+        finalPrice: internalProduct.price,
+      }
+    });
+    
+    // 6. Record StockMovement
+    await tx.stockMovement.create({
+      data: {
+         storeId,
+         productId: internalProduct.id,
+         variantId: variantId.id,
+         type: "initial_seed",
+         quantityDelta: providerProd.stock,
+         reason: "Importación inicial desde proveedor de sourcing"
+      }
+    });
+
+    // 7. Log Observability
+    await tx.systemEvent.create({
+      data: {
+        storeId,
+        entityType: "product",
+        entityId: internalProduct.id,
+        eventType: "product_imported",
+        source: "sourcing_module",
+        message: `Producto importado de ${connection.provider.name}`,
+        metadataJson: JSON.stringify({ externalId: providerProd.externalId, catalogMirrorId: mirror.id }),
+        severity: "info"
+      }
+    });
+
+    revalidatePath("/admin/sourcing");
+    revalidatePath("/admin/catalog");
+    revalidatePath("/admin/inventory");
+    
+    return { success: true, mirror };
   });
-
-  if (mirror) {
-    throw new Error("Producto ya importado.");
-  }
-
-  // 1. Create Internal Product
-  const internalProduct = await prisma.product.create({
-    data: {
-      storeId: store.id,
-      handle: `${providerProd.externalId}-${Date.now()}`,
-      title: providerProd.title,
-      description: providerProd.description,
-      status: "draft", // Start as draft mirror
-      category: providerProd.category,
-      supplier: connection.provider.name,
-      cost: providerProd.cost,
-      price: providerProd.suggestedPrice || (providerProd.cost * 1.5), // Apply 50% margin if no suggested
-      featuredImage: externalData.imageUrl,
-    }
-  });
-
-  // 2. Create standard internal variant
-  await prisma.productVariant.create({
-    data: {
-      productId: internalProduct.id,
-      title: "Default Title",
-      price: internalProduct.price,
-      stock: providerProd.stock,
-      sku: `PROV-${providerProd.externalId}`,
-      isDefault: true
-    }
-  });
-
-  // 3. Create Mirror linked to Internal Product
-  mirror = await prisma.catalogMirrorProduct.create({
-    data: {
-      storeId: store.id,
-      providerConnectionId: connection.id,
-      providerProductId: providerProd.id,
-      internalProductId: internalProduct.id,
-      importStatus: "imported",
-      marginRule: "suggested",
-      finalPrice: internalProduct.price,
-    }
-  });
-
-  // Log Observability
-  await prisma.systemEvent.create({
-    data: {
-      storeId: store.id,
-      entityType: "product",
-      entityId: internalProduct.id,
-      eventType: "product_imported",
-      source: "sourcing_module",
-      message: `Producto importado de ${connection.provider.name}`,
-      metadataJson: JSON.stringify({ externalId: externalData.externalId }),
-      severity: "info"
-    }
-  });
-
-  revalidatePath("/admin/sourcing");
-  return mirror;
 }

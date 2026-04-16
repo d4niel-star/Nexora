@@ -13,6 +13,12 @@ export interface ProductVariant {
   attributes?: Record<string, string>; // e.g., { Color: 'Rojo', Talle: 'M' }
 }
 
+export interface CatalogSignal {
+  key: string;
+  label: string;
+  severity: "blocker" | "warning" | "info" | "ok";
+}
+
 export interface Product {
   id: string;
   image: string;
@@ -23,11 +29,29 @@ export interface Product {
   supplier: Supplier;
   price: number;
   cost: number;
-  margin: number; // Derived as (price - cost) / cost
+  costReal: boolean;
+  margin: number; // Derived as (price - cost) / price
   totalStock: number;
   updatedAt: string;
   tags?: string[];
   variants: ProductVariant[];
+  // Catalog Intelligence v2
+  signals: CatalogSignal[];
+  issueCount: number;
+  hasProvider: boolean;
+  providerName: string | null;
+  mirrorSyncStatus: string | null;
+  channelCount: number;
+  channelSyncIssues: number;
+  firstListingId: string | null;
+  // Catalog Variant Intelligence v1
+  variantRiskCount: number;
+  hiddenVariantCount: number;
+  variantCriticalId: string | null;
+  variantHiddenId: string | null;
+  variantStuckId: string | null;
+  variantNegativeId: string | null;
+  variantUrgentReorderId: string | null;
 }
 
 export interface ImportableProduct {

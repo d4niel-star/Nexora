@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { getCurrentStore } from "@/lib/auth/session";
 import type { Order, OrderStatus, PaymentStatus, Channel } from "@/types/order";
 
 /**
@@ -6,10 +7,7 @@ import type { Order, OrderStatus, PaymentStatus, Channel } from "@/types/order";
  * into the structured `Order` type used by the admin UI.
  */
 export async function getAdminOrders(): Promise<Order[]> {
-  // MVP: Single-tenant — find the first active store
-  const store = await prisma.store.findFirst({
-    where: { status: "active" },
-  });
+  const store = await getCurrentStore();
 
   if (!store) return [];
 

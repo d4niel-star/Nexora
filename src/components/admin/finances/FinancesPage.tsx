@@ -19,21 +19,14 @@ import {
 
 import { FinanceDrawer } from "@/components/admin/finances/FinanceDrawer";
 import { FinanceStatusBadge, MarginHealthBadge, ChannelBadge, ExportTypeBadge } from "@/components/admin/finances/FinanceBadge";
+import { ProfitabilityView } from "@/components/admin/finances/ProfitabilityView";
 import { TableSkeleton } from "@/components/admin/orders/TableSkeleton";
 import { cn, formatCurrency } from "@/lib/utils";
-import {
-  MOCK_MOVEMENTS,
-  MOCK_PENDING,
-  MOCK_REFUNDS,
-  MOCK_COMMISSIONS,
-  MOCK_MARGINS,
-  MOCK_EXPORTS,
-  MOCK_FINANCE_SUMMARY,
-} from "@/lib/mocks/finances";
-import type { FinanceMovement, PendingPayment, Refund, CommissionEntry, MarginEntry, ExportRecord, FinanceStatus } from "@/types/finances";
+import type { FinanceMovement, PendingPayment, Refund, CommissionEntry, MarginEntry, ExportRecord, FinanceStatus, FinanceSummary } from "@/types/finances";
+import type { ProfitabilityReport } from "@/types/profitability";
+import type { AdminFinanceData } from "@/lib/finances/queries";
 
-type TabValue = "resumen" | "cobrado" | "pendiente" | "reembolsos" | "comisiones" | "margenes" | "exportaciones";
-type VisualScenario = "live" | "empty" | "error";
+type TabValue = "resumen" | "cobrado" | "pendiente" | "reembolsos" | "comisiones" | "margenes" | "rentabilidad" | "exportaciones";
 
 type DrawerContent =
   | { kind: "movement"; data: FinanceMovement }
@@ -47,11 +40,10 @@ interface ToastMessage { id: string; title: string; description: string; }
 
 const timeFormatter = new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 
-export function FinancesPage() {
-  const [activeTab, setActiveTab] = useState<TabValue>("resumen");
+export function FinancesPage({ initialData, profitabilityReport, hideHeader = false, initialTab = "resumen" }: { initialData: AdminFinanceData; profitabilityReport?: ProfitabilityReport; hideHeader?: boolean; initialTab?: TabValue }) {
+  const [activeTab, setActiveTab] = useState<TabValue>(initialTab);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | FinanceStatus>("all");
-  const [visualScenario, setVisualScenario] = useState<VisualScenario>("live");
   const [isLoading, setIsLoading] = useState(true);
   const [drawerContent, setDrawerContent] = useState<DrawerContent | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -65,10 +57,11 @@ export function FinancesPage() {
     { label: "Reembolsos", value: "reembolsos", icon: <RotateCcw className="h-3.5 w-3.5" /> },
     { label: "Comisiones", value: "comisiones", icon: <Percent className="h-3.5 w-3.5" /> },
     { label: "Margenes", value: "margenes", icon: <TrendingUp className="h-3.5 w-3.5" /> },
+    { label: "Salud de margen", value: "rentabilidad", icon: <DollarSign className="h-3.5 w-3.5" /> },
     { label: "Exportaciones", value: "exportaciones", icon: <FileSpreadsheet className="h-3.5 w-3.5" /> },
   ];
 
-  const handleTabChange = (v: TabValue) => { if (v === activeTab) return; setActiveTab(v); setSearchQuery(""); setStatusFilter("all"); setVisualScenario("live"); setIsLoading(true); };
+  const handleTabChange = (v: TabValue) => { if (v === activeTab) return; setActiveTab(v); setSearchQuery(""); setStatusFilter("all"); setIsLoading(true); };
 
   const pushToast = (title: string, description: string) => {
     const id = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
@@ -78,11 +71,11 @@ export function FinancesPage() {
 
   const openDrawer = (c: DrawerContent) => setDrawerContent(c);
   const closeDrawer = () => setDrawerContent(null);
-  const handleAction = (action: string) => { pushToast(action, "Accion simulada correctamente (mock)."); };
-  const resetFilters = () => { setSearchQuery(""); setStatusFilter("all"); setVisualScenario("live"); };
+  const handleAction = (action: string) => { pushToast("Aviso", action); };
+  const resetFilters = () => { setSearchQuery(""); setStatusFilter("all"); };
 
-  const showToolbar = activeTab !== "resumen";
-  const showStatusFilter = activeTab !== "comisiones" && activeTab !== "margenes" && activeTab !== "resumen" && activeTab !== "cobrado";
+  const showToolbar = activeTab !== "resumen" && activeTab !== "rentabilidad";
+  const showStatusFilter = activeTab !== "comisiones" && activeTab !== "margenes" && activeTab !== "resumen" && activeTab !== "cobrado" && activeTab !== "rentabilidad";
 
   const statusOptions: string[] = (() => {
     switch (activeTab) {
@@ -96,12 +89,14 @@ export function FinancesPage() {
 
   return (
     <div className="animate-in fade-in space-y-8 pb-32 duration-700">
-      <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-        <div>
-          <h1 className="text-3xl font-black tracking-tight text-[#111111]">Finanzas</h1>
-          <p className="mt-1 text-[15px] font-medium text-[#666666]">Ingresos, egresos, comisiones y margenes del negocio.</p>
+      {!hideHeader && (
+        <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+          <div>
+            <h1 className="text-3xl font-black tracking-tight text-[#111111]">Finanzas</h1>
+            <p className="mt-1 text-[15px] font-medium text-[#666666]">Ingresos, egresos, comisiones y salud de margen del negocio.</p>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="relative overflow-hidden rounded-2xl border border-[#EAEAEA] bg-white shadow-sm">
         <div aria-label="Secciones de finanzas" className="flex items-center gap-8 overflow-x-auto border-b border-[#EAEAEA] bg-[#FAFAFA]/50 px-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden" role="tablist">
@@ -123,7 +118,6 @@ export function FinancesPage() {
               {showStatusFilter ? (
                 <ToolbarSelect icon={<Filter className="h-4 w-4" />} label="Estado" onChange={(v) => setStatusFilter(v as "all" | FinanceStatus)} options={statusOptions} value={statusFilter} />
               ) : null}
-              <ToolbarSelect icon={<AlertTriangle className="h-4 w-4" />} label="Escenario" onChange={(v) => setVisualScenario(v as VisualScenario)} options={["live", "empty", "error"]} value={visualScenario} />
             </div>
           </div>
         ) : null}
@@ -131,24 +125,22 @@ export function FinancesPage() {
         <div className="min-h-[420px] bg-[#FAFAFA]/30">
           {isLoading ? (
             <TableSkeleton />
-          ) : visualScenario === "error" && activeTab !== "resumen" ? (
-            <ErrorState onRetry={() => setVisualScenario("live")} />
-          ) : visualScenario === "empty" && activeTab !== "resumen" ? (
-            <EmptyState onReset={() => setVisualScenario("live")} />
           ) : activeTab === "resumen" ? (
-            <SummaryView onNavigate={handleTabChange} openDrawer={openDrawer} onAction={handleAction} />
+            <SummaryView onNavigate={handleTabChange} openDrawer={openDrawer} onAction={handleAction} data={initialData} />
           ) : activeTab === "cobrado" ? (
-            <CollectedView searchQuery={searchQuery} statusFilter={statusFilter} openDrawer={openDrawer} onReset={resetFilters} />
+            <CollectedView searchQuery={searchQuery} statusFilter={statusFilter} openDrawer={openDrawer} onReset={resetFilters} data={initialData.movements} />
           ) : activeTab === "pendiente" ? (
-            <PendingView searchQuery={searchQuery} statusFilter={statusFilter} openDrawer={openDrawer} onReset={resetFilters} />
+            <PendingView searchQuery={searchQuery} statusFilter={statusFilter} openDrawer={openDrawer} onReset={resetFilters} data={initialData.pending} />
           ) : activeTab === "reembolsos" ? (
-            <RefundsView searchQuery={searchQuery} statusFilter={statusFilter} openDrawer={openDrawer} onReset={resetFilters} />
+            <RefundsView searchQuery={searchQuery} statusFilter={statusFilter} openDrawer={openDrawer} onReset={resetFilters} data={initialData.refunds} />
           ) : activeTab === "comisiones" ? (
-            <CommissionsView searchQuery={searchQuery} openDrawer={openDrawer} onReset={resetFilters} />
+            <CommissionsView searchQuery={searchQuery} openDrawer={openDrawer} onReset={resetFilters} data={initialData.commissions} />
           ) : activeTab === "margenes" ? (
-            <MarginsView searchQuery={searchQuery} openDrawer={openDrawer} onReset={resetFilters} />
+            <MarginsView searchQuery={searchQuery} openDrawer={openDrawer} onReset={resetFilters} data={initialData.margins} />
+          ) : activeTab === "rentabilidad" ? (
+            profitabilityReport ? <ProfitabilityView report={profitabilityReport} /> : <TableSkeleton />
           ) : (
-            <ExportsView searchQuery={searchQuery} statusFilter={statusFilter} openDrawer={openDrawer} onAction={handleAction} onReset={resetFilters} />
+            <ExportsView searchQuery={searchQuery} statusFilter={statusFilter} openDrawer={openDrawer} onAction={handleAction} onReset={resetFilters} data={initialData.exports} />
           )}
         </div>
       </div>
@@ -161,8 +153,8 @@ export function FinancesPage() {
 
 /* ─── Summary ─── */
 
-function SummaryView({ onNavigate, openDrawer, onAction }: { onNavigate: (t: TabValue) => void; openDrawer: (c: DrawerContent) => void; onAction: (a: string) => void }) {
-  const s = MOCK_FINANCE_SUMMARY;
+function SummaryView({ onNavigate, openDrawer, onAction, data }: { onNavigate: (t: TabValue) => void; openDrawer: (c: DrawerContent) => void; onAction: (a: string) => void; data: AdminFinanceData }) {
+  const s = data.summary;
 
   return (
     <div className="space-y-6 p-6">
@@ -180,25 +172,25 @@ function SummaryView({ onNavigate, openDrawer, onAction }: { onNavigate: (t: Tab
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <SummaryCard label="Comisiones totales" value={formatCurrency(s.totalCommissions)} />
-        <SummaryCard label="Costo de envio total" value={formatCurrency(s.totalShipping)} />
+        <SummaryCard label="Envío cobrado al cliente" value={formatCurrency(s.totalShipping)} />
         <SummaryCard label="Pendientes activos" value={s.pendingCount.toString()} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <NavCard icon={<Banknote className="h-5 w-5 text-emerald-500" />} title="Cobrado" description={`${MOCK_MOVEMENTS.length} movimientos`} onClick={() => onNavigate("cobrado")} />
-        <NavCard icon={<Clock className="h-5 w-5 text-amber-500" />} title="Pendiente" description={`${MOCK_PENDING.length} por cobrar`} onClick={() => onNavigate("pendiente")} />
-        <NavCard icon={<RotateCcw className="h-5 w-5 text-gray-500" />} title="Reembolsos" description={`${MOCK_REFUNDS.length} procesados`} onClick={() => onNavigate("reembolsos")} />
+        <NavCard icon={<Banknote className="h-5 w-5 text-emerald-500" />} title="Cobrado" description={`${data.movements.length} movimientos`} onClick={() => onNavigate("cobrado")} />
+        <NavCard icon={<Clock className="h-5 w-5 text-amber-500" />} title="Pendiente" description={`${data.pending.length} por cobrar`} onClick={() => onNavigate("pendiente")} />
+        <NavCard icon={<RotateCcw className="h-5 w-5 text-gray-500" />} title="Reembolsos" description={`${data.refunds.length} procesados`} onClick={() => onNavigate("reembolsos")} />
         <NavCard icon={<Percent className="h-5 w-5 text-blue-500" />} title="Comisiones" description={formatCurrency(s.totalCommissions)} onClick={() => onNavigate("comisiones")} />
         <NavCard icon={<TrendingUp className="h-5 w-5 text-purple-500" />} title="Margenes" description={`${s.estimatedMarginPercent}% estimado`} onClick={() => onNavigate("margenes")} />
-        <NavCard icon={<FileSpreadsheet className="h-5 w-5 text-pink-500" />} title="Exportaciones" description={`${MOCK_EXPORTS.length} archivos`} onClick={() => onNavigate("exportaciones")} />
+        <NavCard icon={<FileSpreadsheet className="h-5 w-5 text-pink-500" />} title="Exportaciones" description={`${data.exports.length} archivos`} onClick={() => onNavigate("exportaciones")} />
       </div>
 
       {/* Alerts */}
-      {MOCK_PENDING.filter(p => p.status === "critical").length > 0 || MOCK_MARGINS.filter(m => m.health === "critical").length > 0 ? (
+      {data.pending.filter(p => p.status === "critical").length > 0 || data.margins.filter(m => m.health === "critical").length > 0 ? (
         <div className="space-y-3">
           <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Alertas financieras</h3>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {MOCK_PENDING.filter(p => p.status === "critical").slice(0, 2).map((p) => (
+            {data.pending.filter(p => p.status === "critical").slice(0, 2).map((p) => (
               <button key={p.id} className="flex items-start gap-3 rounded-2xl border border-[#EAEAEA] bg-white p-4 text-left shadow-sm transition-all hover:border-gray-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" onClick={() => openDrawer({ kind: "pending", data: p })} type="button">
                 <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-50"><AlertTriangle className="h-4 w-4 text-red-500" /></div>
                 <div className="min-w-0">
@@ -207,7 +199,7 @@ function SummaryView({ onNavigate, openDrawer, onAction }: { onNavigate: (t: Tab
                 </div>
               </button>
             ))}
-            {MOCK_MARGINS.filter(m => m.health === "critical").slice(0, 2).map((m) => (
+            {data.margins.filter(m => m.health === "critical").slice(0, 2).map((m) => (
               <button key={m.id} className="flex items-start gap-3 rounded-2xl border border-[#EAEAEA] bg-white p-4 text-left shadow-sm transition-all hover:border-gray-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" onClick={() => openDrawer({ kind: "margin", data: m })} type="button">
                 <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-50"><TrendingUp className="h-4 w-4 text-amber-500" /></div>
                 <div className="min-w-0">
@@ -222,9 +214,9 @@ function SummaryView({ onNavigate, openDrawer, onAction }: { onNavigate: (t: Tab
 
       {/* Quick action */}
       <div className="flex items-center gap-3">
-        <button className="flex items-center gap-2 rounded-xl bg-[#111111] px-5 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" onClick={() => onAction("Exportacion CSV simulada")} type="button">
+        <button disabled className="flex items-center gap-2 rounded-xl bg-[#111111] px-5 py-2.5 text-[13px] font-bold text-white opacity-50" type="button">
           <Download className="h-3.5 w-3.5" />
-          Exportar resumen
+          Exportar (Próximamente)
         </button>
         <button className="flex items-center gap-2 rounded-xl border border-[#EAEAEA] bg-white px-5 py-2.5 text-[13px] font-bold text-[#111111] transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" onClick={() => onNavigate("pendiente")} type="button">
           Revisar pendientes
@@ -236,15 +228,15 @@ function SummaryView({ onNavigate, openDrawer, onAction }: { onNavigate: (t: Tab
 
 /* ─── Collected ─── */
 
-function CollectedView({ searchQuery, statusFilter, openDrawer, onReset }: { searchQuery: string; statusFilter: "all" | FinanceStatus; openDrawer: (c: DrawerContent) => void; onReset: () => void }) {
+function CollectedView({ searchQuery, statusFilter, openDrawer, onReset, data }: { searchQuery: string; statusFilter: "all" | FinanceStatus; openDrawer: (c: DrawerContent) => void; onReset: () => void; data: FinanceMovement[] }) {
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    return MOCK_MOVEMENTS.filter((m) => {
+    return data.filter((m) => {
       const s = !q || m.reference.toLowerCase().includes(q) || m.customer.toLowerCase().includes(q) || m.channel.toLowerCase().includes(q);
       const st = statusFilter === "all" || m.status === statusFilter;
       return s && st;
     });
-  }, [searchQuery, statusFilter]);
+  }, [searchQuery, statusFilter, data]);
 
   if (filtered.length === 0) return <NoResultsState onReset={onReset} />;
 
@@ -282,22 +274,22 @@ function CollectedView({ searchQuery, statusFilter, openDrawer, onReset }: { sea
           </tbody>
         </table>
       </div>
-      <TableFooter count={filtered.length} total={MOCK_MOVEMENTS.length} />
+      <TableFooter count={filtered.length} total={data.length} />
     </div>
   );
 }
 
 /* ─── Pending ─── */
 
-function PendingView({ searchQuery, statusFilter, openDrawer, onReset }: { searchQuery: string; statusFilter: "all" | FinanceStatus; openDrawer: (c: DrawerContent) => void; onReset: () => void }) {
+function PendingView({ searchQuery, statusFilter, openDrawer, onReset, data }: { searchQuery: string; statusFilter: "all" | FinanceStatus; openDrawer: (c: DrawerContent) => void; onReset: () => void; data: PendingPayment[] }) {
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    return MOCK_PENDING.filter((p) => {
+    return data.filter((p) => {
       const s = !q || p.reference.toLowerCase().includes(q) || p.customer.toLowerCase().includes(q) || p.cause.toLowerCase().includes(q);
       const st = statusFilter === "all" || p.status === statusFilter;
       return s && st;
     });
-  }, [searchQuery, statusFilter]);
+  }, [searchQuery, statusFilter, data]);
 
   if (filtered.length === 0) return <NoResultsState onReset={onReset} />;
 
@@ -333,22 +325,22 @@ function PendingView({ searchQuery, statusFilter, openDrawer, onReset }: { searc
           </tbody>
         </table>
       </div>
-      <TableFooter count={filtered.length} total={MOCK_PENDING.length} />
+      <TableFooter count={filtered.length} total={data.length} />
     </div>
   );
 }
 
 /* ─── Refunds ─── */
 
-function RefundsView({ searchQuery, statusFilter, openDrawer, onReset }: { searchQuery: string; statusFilter: "all" | FinanceStatus; openDrawer: (c: DrawerContent) => void; onReset: () => void }) {
+function RefundsView({ searchQuery, statusFilter, openDrawer, onReset, data }: { searchQuery: string; statusFilter: "all" | FinanceStatus; openDrawer: (c: DrawerContent) => void; onReset: () => void; data: Refund[] }) {
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    return MOCK_REFUNDS.filter((r) => {
+    return data.filter((r) => {
       const s = !q || r.reference.toLowerCase().includes(q) || r.customer.toLowerCase().includes(q) || r.reason.toLowerCase().includes(q);
       const st = statusFilter === "all" || r.status === statusFilter;
       return s && st;
     });
-  }, [searchQuery, statusFilter]);
+  }, [searchQuery, statusFilter, data]);
 
   if (filtered.length === 0) return <NoResultsState onReset={onReset} />;
 
@@ -382,21 +374,21 @@ function RefundsView({ searchQuery, statusFilter, openDrawer, onReset }: { searc
           </tbody>
         </table>
       </div>
-      <TableFooter count={filtered.length} total={MOCK_REFUNDS.length} />
+      <TableFooter count={filtered.length} total={data.length} />
     </div>
   );
 }
 
 /* ─── Commissions ─── */
 
-function CommissionsView({ searchQuery, openDrawer, onReset }: { searchQuery: string; openDrawer: (c: DrawerContent) => void; onReset: () => void }) {
+function CommissionsView({ searchQuery, openDrawer, onReset, data }: { searchQuery: string; openDrawer: (c: DrawerContent) => void; onReset: () => void; data: CommissionEntry[] }) {
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    return MOCK_COMMISSIONS.filter((c) => !q || c.source.toLowerCase().includes(q) || c.type.toLowerCase().includes(q));
-  }, [searchQuery]);
+    return data.filter((c) => !q || c.source.toLowerCase().includes(q) || c.type.toLowerCase().includes(q));
+  }, [searchQuery, data]);
 
-  const totalCommissions = MOCK_COMMISSIONS.reduce((sum, c) => sum + c.amount, 0);
-  const totalTransactions = MOCK_COMMISSIONS.reduce((sum, c) => sum + c.transactions, 0);
+  const totalCommissions = data.reduce((sum, c) => sum + c.amount, 0);
+  const totalTransactions = data.reduce((sum, c) => sum + c.transactions, 0);
 
   if (filtered.length === 0) return <NoResultsState onReset={onReset} />;
 
@@ -405,7 +397,7 @@ function CommissionsView({ searchQuery, openDrawer, onReset }: { searchQuery: st
       <div className="grid grid-cols-1 gap-4 p-6 sm:grid-cols-3">
         <SummaryCard label="Comisiones totales" value={formatCurrency(totalCommissions)} accent />
         <SummaryCard label="Transacciones" value={totalTransactions.toString()} />
-        <SummaryCard label="Periodo" value="Abril 2024" />
+        <SummaryCard label="Periodo" value="Acumulado" />
       </div>
       <div className="overflow-hidden">
         <div className="overflow-x-auto">
@@ -434,7 +426,7 @@ function CommissionsView({ searchQuery, openDrawer, onReset }: { searchQuery: st
             </tbody>
           </table>
         </div>
-        <TableFooter count={filtered.length} total={MOCK_COMMISSIONS.length} />
+        <TableFooter count={filtered.length} total={data.length} />
       </div>
     </div>
   );
@@ -442,14 +434,14 @@ function CommissionsView({ searchQuery, openDrawer, onReset }: { searchQuery: st
 
 /* ─── Margins ─── */
 
-function MarginsView({ searchQuery, openDrawer, onReset }: { searchQuery: string; openDrawer: (c: DrawerContent) => void; onReset: () => void }) {
+function MarginsView({ searchQuery, openDrawer, onReset, data }: { searchQuery: string; openDrawer: (c: DrawerContent) => void; onReset: () => void; data: MarginEntry[] }) {
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    return MOCK_MARGINS.filter((m) => !q || m.name.toLowerCase().includes(q) || m.category.toLowerCase().includes(q));
-  }, [searchQuery]);
+    return data.filter((m) => !q || m.name.toLowerCase().includes(q) || m.category.toLowerCase().includes(q));
+  }, [searchQuery, data]);
 
-  const avgMargin = MOCK_MARGINS.reduce((sum, m) => sum + m.marginPercent, 0) / MOCK_MARGINS.length;
-  const criticalCount = MOCK_MARGINS.filter(m => m.health === "critical").length;
+  const avgMargin = data.length > 0 ? data.reduce((sum, m) => sum + m.marginPercent, 0) / data.length : 0;
+  const criticalCount = data.filter(m => m.health === "critical").length;
 
   if (filtered.length === 0) return <NoResultsState onReset={onReset} />;
 
@@ -457,7 +449,7 @@ function MarginsView({ searchQuery, openDrawer, onReset }: { searchQuery: string
     <div className="space-y-0">
       <div className="grid grid-cols-1 gap-4 p-6 sm:grid-cols-3">
         <SummaryCard label="Margen promedio" value={`${avgMargin.toFixed(1)}%`} accent />
-        <SummaryCard label="Productos analizados" value={MOCK_MARGINS.length.toString()} />
+        <SummaryCard label="Productos analizados" value={data.length.toString()} />
         <SummaryCard label="Margenes criticos" value={criticalCount.toString()} />
       </div>
       <div className="overflow-hidden">
@@ -493,7 +485,7 @@ function MarginsView({ searchQuery, openDrawer, onReset }: { searchQuery: string
             </tbody>
           </table>
         </div>
-        <TableFooter count={filtered.length} total={MOCK_MARGINS.length} />
+        <TableFooter count={filtered.length} total={data.length} />
       </div>
     </div>
   );
@@ -501,15 +493,15 @@ function MarginsView({ searchQuery, openDrawer, onReset }: { searchQuery: string
 
 /* ─── Exports ─── */
 
-function ExportsView({ searchQuery, statusFilter, openDrawer, onAction, onReset }: { searchQuery: string; statusFilter: "all" | FinanceStatus; openDrawer: (c: DrawerContent) => void; onAction: (a: string) => void; onReset: () => void }) {
+function ExportsView({ searchQuery, statusFilter, openDrawer, onAction, onReset, data }: { searchQuery: string; statusFilter: "all" | FinanceStatus; openDrawer: (c: DrawerContent) => void; onAction: (a: string) => void; onReset: () => void; data: ExportRecord[] }) {
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    return MOCK_EXPORTS.filter((e) => {
+    return data.filter((e) => {
       const s = !q || e.type.toLowerCase().includes(q) || e.range.toLowerCase().includes(q);
       const st = statusFilter === "all" || e.status === statusFilter;
       return s && st;
     });
-  }, [searchQuery, statusFilter]);
+  }, [searchQuery, statusFilter, data]);
 
   if (filtered.length === 0) return <NoResultsState onReset={onReset} />;
 
@@ -517,7 +509,7 @@ function ExportsView({ searchQuery, statusFilter, openDrawer, onAction, onReset 
     <div className="space-y-0">
       <div className="flex items-center justify-between p-6 pb-4">
         <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Exportaciones recientes</h3>
-        <button className="flex items-center gap-2 rounded-xl bg-[#111111] px-4 py-2 text-[13px] font-bold text-white transition-colors hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" onClick={() => onAction("Nueva exportacion CSV simulada")} type="button">
+        <button disabled className="flex items-center gap-2 rounded-xl bg-[#111111] px-4 py-2 text-[13px] font-bold text-white opacity-50" type="button">
           <Download className="h-3.5 w-3.5" />
           Exportar CSV
         </button>
@@ -547,7 +539,7 @@ function ExportsView({ searchQuery, statusFilter, openDrawer, onAction, onReset 
             </tbody>
           </table>
         </div>
-        <TableFooter count={filtered.length} total={MOCK_EXPORTS.length} />
+        <TableFooter count={filtered.length} total={data.length} />
       </div>
     </div>
   );
@@ -612,27 +604,7 @@ function NoResultsState({ onReset }: { onReset: () => void }) {
   );
 }
 
-function EmptyState({ onReset }: { onReset: () => void }) {
-  return (
-    <div className="flex min-h-[420px] flex-col items-center justify-center px-6 py-20 text-center">
-      <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-gray-100 bg-gray-50 shadow-sm"><DollarSign className="h-8 w-8 text-gray-300" /></div>
-      <h3 className="text-xl font-extrabold text-[#111111]">Todavia no hay datos en esta vista</h3>
-      <p className="mt-2 max-w-md text-[15px] font-medium text-[#888888]">Estado vacio simulado para QA. Regresa a la vista operativa para ver datos.</p>
-      <button className="mt-6 rounded-xl border border-[#EAEAEA] bg-white px-6 py-2.5 text-[13px] font-bold text-[#111111] transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" onClick={onReset} type="button">Volver a la muestra</button>
-    </div>
-  );
-}
 
-function ErrorState({ onRetry }: { onRetry: () => void }) {
-  return (
-    <div className="flex min-h-[420px] flex-col items-center justify-center px-6 py-20 text-center">
-      <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-red-100 bg-red-50 shadow-sm"><AlertTriangle className="h-8 w-8 text-red-400" /></div>
-      <h3 className="text-xl font-extrabold text-[#111111]">No pudimos cargar los datos</h3>
-      <p className="mt-2 max-w-md text-[15px] font-medium text-[#888888]">Estado simulado para QA visual. El retry vuelve a la vista operativa sin tocar datos.</p>
-      <button className="mt-6 rounded-xl bg-[#111111] px-6 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" onClick={onRetry} type="button">Reintentar</button>
-    </div>
-  );
-}
 
 function ToastViewport({ toasts, onDismiss }: { toasts: ToastMessage[]; onDismiss: (id: string) => void }) {
   if (toasts.length === 0) return null;
@@ -663,9 +635,6 @@ function selectLabel(v: string): string {
     case "scheduled": return "Programado";
     case "critical": return "Critico";
     case "stable": return "Estable";
-    case "live": return "Operativa";
-    case "empty": return "Vacio";
-    case "error": return "Error";
     default: return v;
   }
 }

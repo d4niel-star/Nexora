@@ -19,7 +19,8 @@ import {
   UploadCloud,
   XCircle,
   RefreshCw,
-  PlayCircle
+  PlayCircle,
+  TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -27,15 +28,19 @@ import {
   getConnectedProvidersAction,
   getImportedProductsAction,
   connectProviderAction,
-  getMockProviderExternalProductsAction,
+  getProviderExternalProductsAction,
   importProductAction,
 } from "@/lib/sourcing/actions";
 import { enqueueProviderSyncJob, getProviderSyncJobs } from "@/lib/sourcing/workers/actions";
 import type { SourcingProvider, ProviderConnection, CatalogMirrorProduct, ProviderProduct, Product } from "@prisma/client";
+import type { SourcingIntelData } from "@/types/sourcing-intel";
+import type { ProviderScoreReport } from "@/types/provider-score";
+import { SourcingIntelligence } from "./SourcingIntelligence";
+import { ProviderScorePanel } from "./ProviderScorePanel";
 
 // ─── Types ───
 
-type TabKey = "discover" | "connected" | "imports" | "sync";
+type TabKey = "intel" | "scoring" | "discover" | "connected" | "imports" | "sync";
 
 interface ConnectedProviderData extends ProviderConnection {
   provider: SourcingProvider;
@@ -51,8 +56,8 @@ interface MirrorData extends CatalogMirrorProduct {
 
 // ─── Main Component ───
 
-export function SourcingPage() {
-  const [activeTab, setActiveTab] = useState<TabKey>("discover");
+export function SourcingPage({ intelData, scoreReport }: { intelData: SourcingIntelData; scoreReport: ProviderScoreReport }) {
+  const [activeTab, setActiveTab] = useState<TabKey>("intel");
   const [providers, setProviders] = useState<SourcingProvider[]>([]);
   const [connections, setConnections] = useState<ConnectedProviderData[]>([]);
   const [mirrors, setMirrors] = useState<MirrorData[]>([]);
@@ -123,6 +128,22 @@ export function SourcingPage() {
 
       {/* ─── Tabs ─── */}
       <div className="flex items-center gap-6 border-b border-[#E5E5E5] px-1">
+        <TabButton
+          active={activeTab === "intel"}
+          onClick={() => setActiveTab("intel")}
+          icon={<ShoppingCart className="h-3.5 w-3.5" />}
+          badge={intelData.summary.readyToImport + intelData.summary.needsReview + intelData.summary.atRisk || undefined}
+        >
+          Inteligencia
+        </TabButton>
+        <TabButton
+          active={activeTab === "scoring"}
+          onClick={() => setActiveTab("scoring")}
+          icon={<TrendingUp className="h-3.5 w-3.5" />}
+          badge={scoreReport.summary.totalProviders || undefined}
+        >
+          Scoring
+        </TabButton>
         <TabButton active={activeTab === "discover"} onClick={() => setActiveTab("discover")} icon={<Globe2 className="h-3.5 w-3.5" />}>
           Descubrir
         </TabButton>
@@ -153,6 +174,8 @@ export function SourcingPage() {
 
       {/* ─── Content ─── */}
       <div className="mt-6">
+        {activeTab === "intel" && <SourcingIntelligence data={intelData} />}
+        {activeTab === "scoring" && <ProviderScorePanel report={scoreReport} />}
         {activeTab === "discover" && (
           <DiscoverTab providers={providers} connections={connections} onConnect={handleConnectProvider} isPending={isPending} />
         )}
@@ -320,7 +343,7 @@ function ProviderWorkbench({ connection, onBack, onImportSuccess }: { connection
   const [importingIds, setImportingIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    getMockProviderExternalProductsAction(connection.providerId).then(res => {
+    getProviderExternalProductsAction(connection.providerId).then(res => {
       setProducts(res);
       setIsLoading(false);
     });
@@ -329,11 +352,15 @@ function ProviderWorkbench({ connection, onBack, onImportSuccess }: { connection
   const handleImport = async (p: any) => {
     setImportingIds(prev => new Set(prev).add(p.externalId));
     try {
-      await importProductAction(connection.id, p);
-      onImportSuccess();
-    } catch (e) {
+      const res = await importProductAction(connection.id, p.id);
+      if (res?.existing) {
+        alert(res.message); // O un toast más prolijo si tuviésemos
+      } else {
+        onImportSuccess();
+      }
+    } catch (e: any) {
       console.error(e);
-      alert("Error o el producto ya existe.");
+      alert(e.message || "Ocurrió un error en la importación.");
     } finally {
       setImportingIds(prev => {
         const next = new Set(prev);

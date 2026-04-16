@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import type { StorefrontData, BlockType, AdminStoreSummary, AdminStoreInitialData } from "@/types/store-engine";
+import { getCurrentStore } from "@/lib/auth/session";
 
 // ─── Get store by slug or hostname ───
 
@@ -273,16 +274,17 @@ export async function getStorePages(storeId: string) {
 // ─── Get first store (default store shortcut) ───
 
 export async function getDefaultStore() {
-  return prisma.store.findFirst({
-    orderBy: { createdAt: "asc" },
-  });
+  return getCurrentStore();
 }
 
 // ─── Get full admin initial data (single query, serializable) ───
 
 export async function getAdminStoreInitialData(): Promise<AdminStoreInitialData | null> {
-  const store = await prisma.store.findFirst({
-    orderBy: { createdAt: "asc" },
+  const currentStore = await getCurrentStore();
+  if (!currentStore) return null;
+
+  const store = await prisma.store.findUnique({
+    where: { id: currentStore.id },
     include: {
       branding: true,
       theme: true,

@@ -2,7 +2,6 @@ import { StoreHeader } from "@/components/storefront/layout/StoreHeader";
 import { StoreFooter } from "@/components/storefront/layout/StoreFooter";
 import { getStorefrontData } from "@/lib/store-engine/queries";
 import { getCart } from "@/lib/store-engine/cart/queries";
-import { MOCK_STORE_CONFIG } from "@/lib/mocks/storefront";
 import type { StoreConfig } from "@/types/storefront";
 import { notFound } from "next/navigation";
 
@@ -12,18 +11,6 @@ export default async function StorefrontLayout({ children, params }: { children:
 
   // If no store found in DB, check if it matches the mock slug as fallback
   if (!storefrontData) {
-    if (resolvedParams.storeSlug === MOCK_STORE_CONFIG.slug) {
-      // Graceful fallback to mock for initial load before seed
-      return (
-        <div className="min-h-screen bg-white font-sans text-gray-900 selection:bg-black selection:text-white flex flex-col">
-          <StoreHeader config={MOCK_STORE_CONFIG} />
-          <main className="flex-1">
-            {children}
-          </main>
-          <StoreFooter config={MOCK_STORE_CONFIG} />
-        </div>
-      );
-    }
     notFound();
   }
 

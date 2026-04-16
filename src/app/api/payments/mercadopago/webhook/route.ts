@@ -222,14 +222,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Update Order status
+    // Extract real fees from MP API response (fee_details array)
+    // fee_details contains: { type: "mercadopago_fee", amount: X, fee_payer: "collector" }
+    const collectorFees = (mpPayment.fee_details || [])
+      .filter((f) => f.fee_payer === "collector")
+      .reduce((sum, f) => sum + (f.amount || 0), 0);
+
+    // Update Order status + persist real fee data when payment is approved
+    const orderUpdateData: Record<string, unknown> = {
+      paymentStatus: newPaymentStatus,
+      status: newOrderStatus,
+      mpPaymentId: String(mpPayment.id),
+    };
+
+    // Only write paymentFee when we have real fee data from an approved payment
+    if (mpPayment.status === "approved" && collectorFees > 0) {
+      orderUpdateData.paymentFee = collectorFees;
+    }
+
     await prisma.order.update({
       where: { id: order.id },
-      data: {
-        paymentStatus: newPaymentStatus,
-        status: newOrderStatus,
-        mpPaymentId: String(mpPayment.id),
-      }
+      data: orderUpdateData,
     });
 
     // Auditoria
@@ -276,7 +289,7 @@ export async function POST(request: NextRequest) {
           entityId: order.id,
           recipient: order.email,
           data: {
-            storeSlug: store.id, // Store might want a slug conceptually, but id works for base routing 
+            storeSlug: store.slug,
             storeName: store.name,
             customerName: order.firstName,
             orderNumber: order.orderNumber,
@@ -286,7 +299,7 @@ export async function POST(request: NextRequest) {
             total: order.total,
             currency: order.currency,
             shippingMethodLabel: order.shippingMethodLabel || undefined,
-            statusUrl: `${appUrl}/${store.id}/checkout/pending?orderId=${order.id}`,
+            statusUrl: `${appUrl}/${store.slug}/checkout/pending?orderId=${order.id}`,
           }
         }).catch(err => console.error(`[MP Webhook] Background Email Error (${eventType}):`, err));
       }

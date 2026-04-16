@@ -32,6 +32,22 @@ export function proxy(req: NextRequest) {
   const isLocalHost =
     hostname.startsWith('localhost:') || hostname.startsWith('127.0.0.1:')
 
+  // ─── Direct filesystem route passthrough ───
+  // /home/*, /welcome/*, /admin/* are actual app routes in the filesystem.
+  // They must NEVER be rewritten by domain-based proxy logic to avoid double-rewriting
+  // (e.g. /home/login → /home/home/login → 404).
+  if (url.pathname.startsWith('/home') || url.pathname.startsWith('/welcome') || url.pathname.startsWith('/admin')) {
+    return NextResponse.next()
+  }
+
+  // ─── Staging / unconfigured domain passthrough ───
+  // When NEXT_PUBLIC_ROOT_DOMAIN is not set and we're not on localhost,
+  // pass through all requests to avoid rewriting to non-existent storefront routes.
+  // This allows staging/preview deploys to work without domain configuration.
+  if (!process.env.NEXT_PUBLIC_ROOT_DOMAIN && !isLocalHost) {
+    return NextResponse.next()
+  }
+
   // ─── Localhost passthrough for known app-level routes ───
   // /admin/* and /welcome/* live at the root of /src/app, NOT under /home
   if (isLocalHost && (url.pathname.startsWith('/admin') || url.pathname.startsWith('/welcome'))) {
@@ -42,7 +58,7 @@ export function proxy(req: NextRequest) {
   // Any path segment that isn't a known public route is treated as a store slug
   if (isLocalHost && !url.pathname.startsWith('/home') && !url.pathname.startsWith('/admin')) {
     const firstSegment = url.pathname.split('/')[1]
-    const publicRoutes = ['home', 'admin', 'login', 'register', 'pricing', 'welcome']
+    const publicRoutes = ['home', 'admin', 'login', 'register', 'pricing', 'welcome', 'check-email', 'verify-email']
     if (firstSegment && !publicRoutes.includes(firstSegment)) {
       return NextResponse.next()
     }

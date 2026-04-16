@@ -24,6 +24,8 @@ export async function createCampaignDraft(storeId: string, recommendationId: str
     where: { storeId, platform: recommendation.platform }
   });
 
+  const productIds: string[] = Array.isArray(parsed.suggestedProducts) ? parsed.suggestedProducts : [];
+
   const draft = await prisma.adCampaignDraft.create({
     data: {
       storeId,
@@ -34,7 +36,10 @@ export async function createCampaignDraft(storeId: string, recommendationId: str
       audienceJson: JSON.stringify({ description: parsed.audience }),
       copyJson: JSON.stringify({ primaryText: parsed.primaryText, hook: parsed.hook, cta: parsed.cta }),
       creativeJson: JSON.stringify({ angles: parsed.creativeAngles }),
-      sourceProductIds: parsed.suggestedProducts ? parsed.suggestedProducts.join(",") : null,
+      sourceProductIds: productIds.length > 0 ? productIds.join(",") : null,
+      sourceProducts: {
+        create: productIds.map((pid: string) => ({ productId: pid })),
+      },
       aiSummary: recommendation.summary,
       aiScore: 92
     }

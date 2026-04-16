@@ -1,17 +1,20 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db/prisma";
 
-export default async function LegalPage({ params, searchParams }: { params: { storeSlug: string }, searchParams: { policy?: string } }) {
-  // Try to find the store (simplified relation based on slug, in production you may need proper Domain mapping)
-  // I will just get the first one for the MVP.
-  const store = await prisma.store.findFirst();
+export default async function LegalPage({ params, searchParams }: { params: Promise<{ storeSlug: string }>, searchParams: Promise<{ policy?: string }> }) {
+  const resolvedParams = await params;
+  const resolvedSearch = await searchParams;
+  // Find the exact tenant store requested via the URL slug
+  const store = await prisma.store.findUnique({
+    where: { slug: resolvedParams.storeSlug }
+  });
   if (!store) notFound();
 
   const settings = await prisma.storeLegalSettings.findUnique({
     where: { storeId: store.id }
   });
 
-  const policyType = searchParams.policy || "privacy";
+  const policyType = resolvedSearch.policy || "privacy";
   
   let title = "Aviso Legal";
   let content = "Esta tienda aún no ha configurado esta política.";

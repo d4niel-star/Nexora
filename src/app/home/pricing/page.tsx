@@ -27,8 +27,8 @@ export default function PricingPage() {
         </div>
 
         <nav className="flex items-center gap-4 sm:gap-6 text-[13px] font-bold tracking-wide">
-          <Link href="/login" className="text-[#666666] hover:text-[#111111] transition-colors">Ingresar</Link>
-          <Link href="/register" className="px-4 py-2 bg-[#111111] text-white rounded-full hover:bg-[#333333] transition-colors flex items-center gap-1.5">
+          <Link href="/home/login" className="text-[#666666] hover:text-[#111111] transition-colors">Ingresar</Link>
+          <Link href="/home/register" className="px-4 py-2 bg-[#111111] text-white rounded-full hover:bg-[#333333] transition-colors flex items-center gap-1.5">
             Empezar gratis <ChevronRight className="w-3 h-3" />
           </Link>
         </nav>
@@ -83,7 +83,7 @@ export default function PricingPage() {
               </div>
 
               <Link
-                href="/register"
+                href="/home/register"
                 className={cn(
                   "w-full py-3 rounded-xl text-center font-bold text-[14px] transition-all mb-7 flex items-center justify-center gap-2",
                   plan.highlight

@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 model Store {
@@ -54,10 +54,50 @@ model Store {
   legalSettings  StoreLegalSettings?
   billingTransactions BillingTransaction[]
   
+  users          User[]
   adConnections      AdPlatformConnection[]
   adCampaignDrafts   AdCampaignDraft[]
   adRecommendations  AdRecommendation[]
   adInsights         AdInsightSnapshot[]
+}
+
+model User {
+  id             String   @id @default(uuid())
+  email          String   @unique
+  password       String
+  name           String?
+  emailVerified  Boolean  @default(false)
+  storeId        String?
+  store          Store?   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  sessions       Session[]
+  verificationTokens EmailVerificationToken[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  @@index([email])
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  
+  @@index([token])
+  @@index([userId])
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  
+  @@index([userId])
 }
 
 model StoreDomain {
@@ -206,11 +246,13 @@ model ProductVariant {
   reservedStock  Int      @default(0)
   trackInventory Boolean  @default(true)
   allowBackorder Boolean  @default(false)
+  reorderPoint   Int?     // Min stock threshold for reorder alerts. Null = use system default.
   isDefault      Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   
   cartItems      CartItem[]
+  orderItems     OrderItem[]
   stockMovements StockMovement[]
 }
 
@@ -344,6 +386,10 @@ model Order {
   shippingAmount    Float
   total             Float
   
+  // Real Profitability Tracking
+  paymentFee        Float       @default(0)
+  channelFee        Float       @default(0)
+  
   shippingMethodId    String?
   shippingMethodLabel String?
   shippingCarrier     String?
@@ -387,13 +433,15 @@ model OrderItem {
   order                Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   productId            String?
   variantId            String?
-  product              Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  product              Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
+  variant              ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
   
   titleSnapshot        String
   variantTitleSnapshot String
   skuSnapshot          String?
   imageSnapshot        String?
   priceSnapshot        Float
+  costSnapshot         Float    @default(0) // Real profitability tracking
   quantity             Int
   lineTotal            Float
   
@@ -751,7 +799,9 @@ model ProviderProduct {
   cost             Float
   suggestedPrice   Float?
   stock            Int      @default(0)
-  leadTime         String?  // e.g. "3-5 days"
+  leadTime         String?  // e.g. "3-5 days" — kept for backward compat / display
+  leadTimeMinDays  Int?     // Structured: minimum days for delivery
+  leadTimeMaxDays  Int?     // Structured: maximum days for delivery
   variantsJson     String?  // JSON array of variants
   rawJson          String?  // Full payload from provider
   createdAt        DateTime @default(now())
@@ -1150,8 +1200,10 @@ model AdCampaignDraft {
   destinationType   String   @default("storefront") // "storefront", "product", "collection", "custom"
   destinationUrl    String?
   
-  sourceProductIds  String?  // Comma separated list of Product IDs
+  sourceProductIds  String?  // DEPRECATED: use AdCampaignProduct relation. Kept for backward compat.
   sourceCollectionIds String? // Comma separated list of Collection IDs
+  
+  sourceProducts    AdCampaignProduct[]
   
   aiSummary         String?  // Why AI generated this
   aiScore           Int?     // Confidence score 0-100
@@ -1182,6 +1234,18 @@ model AdRecommendation {
   dismissedAt       DateTime?
   
   @@index([storeId])
+}
+
+model AdCampaignProduct {
+  id               String          @id @default(uuid())
+  campaignDraftId  String
+  campaignDraft    AdCampaignDraft @relation(fields: [campaignDraftId], references: [id], onDelete: Cascade)
+  productId        String
+  
+  createdAt        DateTime        @default(now())
+  
+  @@unique([campaignDraftId, productId])
+  @@index([productId])
 }
 
 model AdInsightSnapshot {

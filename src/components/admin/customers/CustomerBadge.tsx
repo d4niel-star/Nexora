@@ -1,9 +1,7 @@
-import type {
-  CustomerChannel,
-  CustomerLifecycleStatus,
-  CustomerSegment,
-} from "@/types/customer";
 import { cn } from "@/lib/utils";
+
+export type CustomerLifecycleStatus = "active" | "inactive" | "risk";
+export type CustomerSegment = "new" | "recurring" | "vip";
 
 type CustomerBadgeTone =
   | CustomerSegment
@@ -30,14 +28,6 @@ const badgeStyles: Record<CustomerBadgeTone, string> = {
   high_value: "bg-emerald-50 text-emerald-700 ring-emerald-600/15",
 };
 
-const channelStyles: Record<CustomerChannel, string> = {
-  Shopify: "bg-[#F4FAE8] text-[#577C24] border-[#DDEBC4]",
-  "Mercado Libre": "bg-[#FFF7C2] text-[#6B5C00] border-[#F3E47D]",
-  "Tienda Nube": "bg-[#EEF2FF] text-[#4F46E5] border-[#DDE4FF]",
-  Instagram: "bg-pink-50 text-pink-700 border-pink-100",
-  Manual: "bg-gray-100 text-gray-600 border-gray-200",
-};
-
 export function CustomerBadge({
   tone,
   className,
@@ -54,26 +44,6 @@ export function CustomerBadge({
       )}
     >
       {badgeLabels[tone]}
-    </span>
-  );
-}
-
-export function CustomerChannelBadge({
-  channel,
-  className,
-}: {
-  channel: CustomerChannel;
-  className?: string;
-}) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-md border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em]",
-        channelStyles[channel],
-        className
-      )}
-    >
-      {channel}
     </span>
   );
 }

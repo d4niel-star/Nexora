@@ -1,16 +1,19 @@
 import { SourcingPage } from "@/components/admin/sourcing/SourcingPage";
-import { getProvidersAction, getConnectedProvidersAction, getImportedProductsAction } from "@/lib/sourcing/actions";
-// Wait, looking at other pages they usually just pass things or let the client component fetch.
-// I will let SourcingPage fetch via Server Actions to match existing patterns.
+import { getSourcingIntelData } from "@/lib/sourcing/intelligence";
+import { getProviderScoreReport } from "@/lib/sourcing/score-queries";
 
 export const metadata = {
   title: "Abastecimiento | Nexora",
 };
 
-export default function Sourcing() {
+export default async function Sourcing() {
+  const [intelData, scoreReport] = await Promise.all([
+    getSourcingIntelData(),
+    getProviderScoreReport(),
+  ]);
   return (
     <div className="mx-auto max-w-6xl">
-      <SourcingPage />
+      <SourcingPage intelData={intelData} scoreReport={scoreReport} />
     </div>
   );
 }

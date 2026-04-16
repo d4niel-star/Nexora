@@ -1,5 +1,11 @@
-import { IntegrationsPage } from "@/components/admin/integrations/IntegrationsPage";
+import { getUnifiedConnections } from "@/lib/integrations/queries";
+import { getHealthCenterData } from "@/lib/integrations/health";
+import { IntegrationsClient } from "@/components/admin/integrations/IntegrationsClient";
 
-export default function AdminIntegrationsPage() {
-  return <IntegrationsPage />;
+export default async function AdminIntegrationsPage() {
+  const [connections, healthData] = await Promise.all([
+    getUnifiedConnections(),
+    getHealthCenterData(),
+  ]);
+  return <IntegrationsClient initialData={connections} healthData={healthData} />;
 }

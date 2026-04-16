@@ -2,7 +2,8 @@ import { getAdminCatalog } from "@/lib/store-engine/catalog/queries";
 import type { Product } from "@/types/product";
 import CatalogClient from "./CatalogClient";
 
-export default async function CatalogPage() {
+export default async function CatalogPage({ searchParams }: { searchParams?: Promise<{ product?: string; focus?: string }> }) {
+  const params = searchParams ? await searchParams : undefined;
   const adminProducts = await getAdminCatalog();
 
   // Map AdminProduct → Product type expected by UI components (drawers, badges)
@@ -15,6 +16,7 @@ export default async function CatalogPage() {
     supplier: p.supplier as Product["supplier"],
     price: p.price,
     cost: p.cost,
+    costReal: p.costReal,
     margin: p.margin,
     totalStock: p.totalStock,
     updatedAt: p.createdAt,
@@ -28,7 +30,22 @@ export default async function CatalogPage() {
       reservedStock: v.reservedStock,
       availableStock: v.stock - (v.reservedStock || 0),
     })),
+    signals: p.signals,
+    issueCount: p.issueCount,
+    hasProvider: p.hasProvider,
+    providerName: p.providerName,
+    mirrorSyncStatus: p.mirrorSyncStatus,
+    channelCount: p.channelCount,
+    channelSyncIssues: p.channelSyncIssues,
+    firstListingId: p.firstListingId,
+    variantRiskCount: p.variantRiskCount,
+    hiddenVariantCount: p.hiddenVariantCount,
+    variantCriticalId: p.variantCriticalId,
+    variantHiddenId: p.variantHiddenId,
+    variantStuckId: p.variantStuckId,
+    variantNegativeId: p.variantNegativeId,
+    variantUrgentReorderId: p.variantUrgentReorderId,
   }));
 
-  return <CatalogClient products={products} />;
+  return <CatalogClient products={products} focusProductId={params?.product} focusSection={params?.focus} />;
 }

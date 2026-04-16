@@ -10,6 +10,7 @@ import {
   PlayCircle,
   RefreshCw,
   Search,
+  ShieldAlert,
   Store,
   X
 } from "lucide-react";
@@ -20,15 +21,21 @@ import {
   pauseChannelListingAction,
   syncChannelListingAction
 } from "@/lib/channels/actions";
+import { getDiffReport } from "@/lib/sync/queries";
+import { DiffCenter } from "./DiffCenter";
+import type { DiffReport } from "@/types/sync-diff";
 
 // Types
 type ProductWithChannels = any; // Will use implicit typing for speed
 type Channel = "mercadolibre" | "shopify";
+type TabView = "listings" | "diffs";
 
 export function PublicationsPage() {
   const [products, setProducts] = useState<ProductWithChannels[]>([]);
+  const [diffReport, setDiffReport] = useState<DiffReport | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
+  const [activeTab, setActiveTab] = useState<TabView>("listings");
 
   const [search, setSearch] = useState("");
   const [filterChannel, setFilterChannel] = useState<"all" | Channel>("all");
@@ -38,8 +45,12 @@ export function PublicationsPage() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const data = await getPublishableProductsAction();
+      const [data, diffs] = await Promise.all([
+        getPublishableProductsAction(),
+        getDiffReport(),
+      ]);
       setProducts(data);
+      setDiffReport(diffs);
     } catch (e) {
       console.error(e);
     } finally {
@@ -116,6 +127,36 @@ export function PublicationsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {/* Tab toggle */}
+          <div className="flex rounded-lg border border-[#E5E5E5] overflow-hidden">
+            <button
+              onClick={() => setActiveTab("listings")}
+              className={cn(
+                "px-3 py-1.5 text-[11px] font-bold transition-colors",
+                activeTab === "listings" ? "bg-[#111111] text-white" : "bg-white text-[#888888] hover:text-[#111111]",
+              )}
+            >
+              Publicaciones
+            </button>
+            <button
+              onClick={() => setActiveTab("diffs")}
+              className={cn(
+                "flex items-center gap-1 px-3 py-1.5 text-[11px] font-bold transition-colors",
+                activeTab === "diffs" ? "bg-[#111111] text-white" : "bg-white text-[#888888] hover:text-[#111111]",
+              )}
+            >
+              <ShieldAlert className="h-3 w-3" />
+              Diferencias
+              {diffReport && diffReport.summary.withDiffs > 0 && (
+                <span className={cn(
+                  "ml-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-black",
+                  activeTab === "diffs" ? "bg-white/20 text-white" : "bg-red-100 text-red-700",
+                )}>
+                  {diffReport.summary.withDiffs}
+                </span>
+              )}
+            </button>
+          </div>
           <button
              onClick={() => {
                 startTransition(async () => {
@@ -136,7 +177,14 @@ export function PublicationsPage() {
         </div>
       </div>
 
-      {/* ─── Filters ─── */}
+      {/* ─── Diff Center Tab ─── */}
+      {activeTab === "diffs" && diffReport && (
+        <DiffCenter report={diffReport} onRefresh={loadData} />
+      )}
+
+      {/* ─── Listings Tab: Filters ─── */}
+      {activeTab === "listings" && (
+      <>
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2 flex-1">
           <div className="relative w-full max-w-sm">
@@ -236,6 +284,9 @@ export function PublicationsPage() {
           })}
         </div>
       </div>
+
+      </>
+      )}
 
       {publishingProd && (
         <PublishModal 

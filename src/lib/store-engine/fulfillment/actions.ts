@@ -51,6 +51,7 @@ export async function updateOrderFulfillment(params: UpdateFulfillmentParams) {
   if (params.shippingStatus !== undefined) dataToUpdate.shippingStatus = params.shippingStatus;
   if (params.trackingCode !== undefined) dataToUpdate.trackingCode = params.trackingCode || null;
   if (params.trackingUrl !== undefined) dataToUpdate.trackingUrl = params.trackingUrl || null;
+  if (params.carrier !== undefined) dataToUpdate.shippingCarrier = params.carrier || null;
   
   if (params.shippingStatus === "shipped" && order.shippingStatus !== "shipped") {
     dataToUpdate.shippedAt = new Date();
@@ -79,7 +80,7 @@ export async function updateOrderFulfillment(params: UpdateFulfillmentParams) {
   // Handle Email Notifications for Status Changes
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const commonData = {
-    storeSlug: order.storeId, // Future improvement: load correct store domain alias/slug
+    storeSlug: order.store.slug,
     storeName: order.store.name,
     customerName: order.firstName,
     orderNumber: order.orderNumber,
@@ -91,7 +92,7 @@ export async function updateOrderFulfillment(params: UpdateFulfillmentParams) {
     shippingMethodLabel: order.shippingMethodLabel || undefined,
     trackingCode: updatedOrder.trackingCode || undefined,
     trackingUrl: updatedOrder.trackingUrl || undefined,
-    statusUrl: `${appUrl}/${order.storeId}/tracking?order=${order.orderNumber}&email=${order.email}`, // Better routing for tracking
+    statusUrl: `${appUrl}/${order.store.slug}/tracking?order=${order.orderNumber}&email=${order.email}`,
   };
 
   // If status transitions to shipped for the FIRST time, trigger email
@@ -137,7 +138,7 @@ export async function updateOrderFulfillment(params: UpdateFulfillmentParams) {
   }
 
   revalidatePath("/admin/orders");
-  revalidatePath(`/${order.storeId}/tracking`);
+  revalidatePath(`/${order.store.slug}/tracking`);
   
   return updatedOrder;
 }

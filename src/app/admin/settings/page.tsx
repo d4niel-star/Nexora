@@ -33,16 +33,16 @@ const sections = [
     title: "Crecimiento",
     items: [
       { name: "Clientes", href: "/admin/customers", icon: Users, desc: "Gestor de usuarios, compras y audiencias" },
-      { name: "Marketing", href: "/admin/marketing", icon: Megaphone, desc: "Mailing, automatizaciones y descuentos" },
-      { name: "Analíticas", href: "/admin/analytics", icon: BarChart3, desc: "Ventas, conversiones y tráfico" }
+      { name: "Marketing", href: "#", icon: Megaphone, desc: "Mailing, automatizaciones y descuentos", comingSoon: true },
+      { name: "Analíticas", href: "#", icon: BarChart3, desc: "Ventas, conversiones y tráfico", comingSoon: true }
     ]
   },
   {
     title: "Plataforma",
     items: [
       { name: "Integraciones", href: "/admin/integrations", icon: Plug, desc: "Apps de terceros, APIs y Webhooks" },
-      { name: "Sistema", href: "/admin/system", icon: Activity, desc: "Team, roles, auditoría y seguridad" },
-      { name: "Soporte", href: "/admin/support", icon: LifeBuoy, desc: "Centro de ayuda y tickets técnicos" }
+      { name: "Sistema", href: "#", icon: Activity, desc: "Team, roles, auditoría y seguridad", comingSoon: true },
+      { name: "Soporte", href: "#", icon: LifeBuoy, desc: "Centro de ayuda y tickets técnicos", comingSoon: true }
     ]
   }
 ];
@@ -70,20 +70,37 @@ export default function SettingsHubPage() {
                  const Icon = item.icon;
                  return (
                    <li key={item.name}>
-                     <Link 
-                       href={item.href}
-                       className="group flex items-start gap-4 p-3 rounded-2xl hover:bg-white hover:shadow-sm border border-transparent hover:border-[#EAEAEA] transition-all"
-                     >
-                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100/50 text-[#888888] transition-colors group-hover:bg-[#111111] group-hover:text-white">
-                         <Icon className="h-4 w-4" />
+                     {item.comingSoon ? (
+                       <div className="group flex items-start gap-4 p-3 rounded-2xl border border-transparent opacity-50 grayscale select-none">
+                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100/50 text-[#888888]">
+                           <Icon className="h-4 w-4" />
+                         </div>
+                         <div className="w-full">
+                           <div className="flex items-center justify-between">
+                             <h3 className="text-sm font-bold text-[#111111]">{item.name}</h3>
+                             <span className="text-[9px] font-black uppercase tracking-widest text-[#888888] bg-gray-100 px-2 py-0.5 rounded-full">Próximamente</span>
+                           </div>
+                           <p className="mt-0.5 text-[13px] font-medium text-[#888888] leading-snug">
+                             {item.desc}
+                           </p>
+                         </div>
                        </div>
-                       <div>
-                         <h3 className="text-sm font-bold text-[#111111]">{item.name}</h3>
-                         <p className="mt-0.5 text-[13px] font-medium text-[#888888] leading-snug">
-                           {item.desc}
-                         </p>
-                       </div>
-                     </Link>
+                     ) : (
+                       <Link 
+                         href={item.href}
+                         className="group flex items-start gap-4 p-3 rounded-2xl hover:bg-white hover:shadow-sm border border-transparent hover:border-[#EAEAEA] transition-all"
+                       >
+                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100/50 text-[#888888] transition-colors group-hover:bg-[#111111] group-hover:text-white">
+                           <Icon className="h-4 w-4" />
+                         </div>
+                         <div>
+                           <h3 className="text-sm font-bold text-[#111111]">{item.name}</h3>
+                           <p className="mt-0.5 text-[13px] font-medium text-[#888888] leading-snug">
+                             {item.desc}
+                           </p>
+                         </div>
+                       </Link>
+                     )}
                    </li>
                  )
                })}

@@ -67,7 +67,12 @@ export async function publishToChannelAction(productId: string, channel: string,
   // Base state definition
   const targetTitle = overrides.title || product.title;
   const targetPrice = overrides.price || product.price;
-  const targetStock = product.variants[0]?.stock || 0;
+  // Aggregate real available stock across variants (stock − reservedStock, clamped at 0)
+  // to match Diff Engine / sync queries and avoid publishing only the first variant's stock.
+  const targetStock = product.variants.reduce(
+    (sum: number, v: { stock: number; reservedStock: number }) => sum + Math.max(v.stock - v.reservedStock, 0),
+    0
+  );
 
   // Validate Real Connection First
   const connection = await prisma.channelConnection.findUnique({

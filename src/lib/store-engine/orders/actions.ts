@@ -11,7 +11,11 @@ export async function createOrderFromDraft(draftId: string) {
     where: { id: draftId },
     include: {
       cart: {
-        include: { items: true }
+        include: { 
+          items: {
+            include: { product: true }
+          }
+        }
       }
     }
   });
@@ -65,6 +69,7 @@ export async function createOrderFromDraft(draftId: string) {
           variantTitleSnapshot: item.variantTitleSnapshot,
           imageSnapshot: item.imageSnapshot,
           priceSnapshot: item.priceSnapshot,
+          costSnapshot: item.product?.cost || 0, // IMPORTANT: Snapshot the cost at the time of purchase
           quantity: item.quantity,
           lineTotal: item.priceSnapshot * item.quantity,
         }))

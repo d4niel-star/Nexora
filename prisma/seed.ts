@@ -1,9 +1,19 @@
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { scryptSync, randomBytes } from "crypto";
+// Schema v2: seed also populates reorderPoint on variants
 
-const adapter = new PrismaBetterSqlite3({ url: process.env.DATABASE_URL ?? "file:./prisma/dev.db" });
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) throw new Error("DATABASE_URL is not set");
+const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
+
+function hashPassword(password: string): string {
+  const salt = randomBytes(16).toString("hex");
+  const derivedKey = scryptSync(password, salt, 64).toString("hex");
+  return `${salt}:${derivedKey}`;
+}
 
 async function main() {
   console.log("🌱 Seeding Nexora store engine...");
@@ -28,6 +38,10 @@ async function main() {
   await prisma.product.deleteMany();
   await prisma.collection.deleteMany();
   
+  // Clean auth tables
+  await prisma.session.deleteMany();
+  await prisma.user.deleteMany();
+  
   await prisma.store.deleteMany();
 
   // ─── Create Store ───
@@ -44,6 +58,18 @@ async function main() {
   });
 
   console.log(`  ✓ Store created: ${store.name} (${store.slug})`);
+
+  // ─── Create Demo User ───
+  const user = await prisma.user.create({
+    data: {
+      email: "admin@nexora.com",
+      password: hashPassword("nexora123"),
+      name: "Admin Nexora",
+      storeId: store.id,
+    },
+  });
+
+  console.log(`  ✓ User created: ${user.email} (password: nexora123)`);
 
   // ─── Branding ───
   await prisma.storeBranding.create({
@@ -355,6 +381,7 @@ async function main() {
                 title: v.title,
                 price: v.price,
                 stock: v.stock,
+                reorderPoint: v.stock > 20 ? 10 : v.stock > 5 ? 3 : null,
                 isDefault: v.title === "Default" || prod.variants.length === 1
             }
         });

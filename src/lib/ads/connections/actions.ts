@@ -10,8 +10,8 @@ export async function getAdsConnections(storeId: string) {
   });
 }
 
-export async function addMockAdsConnection(storeId: string, platform: string, externalAccountId: string, accountName: string) {
-  // Demo connection logic that acts as real for MVP
+export async function addAdsConnection(storeId: string, platform: string, externalAccountId: string, accountName: string) {
+  // Direct connection (MVP — real OAuth will replace this)
   const existing = await prisma.adPlatformConnection.findFirst({
     where: { storeId, platform }
   });

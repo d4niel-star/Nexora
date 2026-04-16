@@ -17,6 +17,7 @@ import {
   TrendingUp,
   Zap,
   Store,
+  Sparkles,
 } from "lucide-react"
 
 export default function MarketingLandingPage() {
@@ -39,9 +40,9 @@ export default function MarketingLandingPage() {
         </div>
 
         <nav className="flex items-center gap-4 sm:gap-6 text-[13px] font-bold tracking-wide">
-          <Link href="/pricing" className="text-[#666666] hover:text-[#111111] transition-colors hidden sm:block">Planes</Link>
-          <Link href="/login" className="text-[#666666] hover:text-[#111111] transition-colors">Ingresar</Link>
-          <Link href="/register" className="px-4 py-2 bg-[#111111] text-white rounded-full hover:bg-[#333333] transition-colors flex items-center gap-1.5 text-[13px]">
+          <Link href="/home/pricing" className="text-[#666666] hover:text-[#111111] transition-colors hidden sm:block">Planes</Link>
+          <Link href="/home/login" className="text-[#666666] hover:text-[#111111] transition-colors">Ingresar</Link>
+          <Link href="/home/register" className="px-4 py-2 bg-[#111111] text-white rounded-full hover:bg-[#333333] transition-colors flex items-center gap-1.5 text-[13px]">
             Empezar <ChevronRight className="w-3 h-3" />
           </Link>
         </nav>
@@ -67,10 +68,10 @@ export default function MarketingLandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="/register" className="px-7 py-3.5 bg-[#111111] text-white rounded-full font-bold text-[14px] hover:bg-[#222222] transition-all shadow-xl shadow-black/10 flex items-center gap-2 w-full sm:w-auto justify-center">
+            <Link href="/home/register" className="px-7 py-3.5 bg-[#111111] text-white rounded-full font-bold text-[14px] hover:bg-[#222222] transition-all shadow-xl shadow-black/10 flex items-center gap-2 w-full sm:w-auto justify-center">
               Empezar ahora <ArrowRight className="h-4 w-4" />
             </Link>
-            <Link href="/pricing" className="px-7 py-3.5 bg-white text-[#111111] border border-[#E5E5E5] rounded-full font-bold text-[14px] hover:bg-[#FAFAFA] hover:border-[#CCCCCC] transition-all w-full sm:w-auto text-center">
+            <Link href="/home/pricing" className="px-7 py-3.5 bg-white text-[#111111] border border-[#E5E5E5] rounded-full font-bold text-[14px] hover:bg-[#FAFAFA] hover:border-[#CCCCCC] transition-all w-full sm:w-auto text-center">
               Ver planes
             </Link>
           </div>
@@ -107,8 +108,7 @@ export default function MarketingLandingPage() {
                   { label: "Catálogo" },
                   { label: "Inventario" },
                   { label: "Canales" },
-                  { label: "Ads Copilot" },
-                  { label: "AI Studio" },
+                  { label: "Nexora AI" },
                 ].map((item, i) => (
                   <div key={i} className={`text-[11px] font-medium py-2 px-2.5 rounded-lg mb-0.5 ${item.active ? "bg-[#F5F5F5] text-[#111111]" : "text-[#999999]"}`}>
                     {item.label}
@@ -142,13 +142,13 @@ export default function MarketingLandingPage() {
                 {/* AI Suggestion card */}
                 <div className="bg-white rounded-xl border border-[#E5E5E5] p-4 mb-4">
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
-                      <Bot className="w-4 h-4 text-emerald-600" />
+                    <div className="w-8 h-8 rounded-lg bg-[#111111] flex items-center justify-center shrink-0 mt-0.5">
+                      <Sparkles className="w-4 h-4 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[12px] font-bold text-[#111111]">Nexora IA</span>
-                        <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">Recomendación</span>
+                        <span className="text-[12px] font-bold text-[#111111]">Nexora AI</span>
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-[#888888] bg-white border border-[#EAEAEA] shadow-sm px-1.5 py-0.5 rounded">Contexto: Inventario</span>
                       </div>
                       <p className="text-[12px] text-[#666666] leading-relaxed">
                         Tus 3 productos más vendidos tienen stock bajo. <span className="font-semibold text-[#111111]">Reponer &quot;Crema Hidratante&quot; (quedan 4 units)</span> podría evitar quiebres esta semana.
@@ -214,13 +214,13 @@ export default function MarketingLandingPage() {
               },
               {
                 icon: Store,
-                title: "Storefront con IA",
-                description: "Tu tienda online generada con IA, checkout integrado y dominio propio."
+                title: "Storefront optimizado",
+                description: "Checkout integrado, dominio propio y listados sincronizados con tu operación."
               },
               {
-                icon: Cpu,
-                title: "AI Studio",
-                description: "Generá páginas, descripciones comerciales y campañas con inteligencia artificial."
+                icon: Sparkles,
+                title: "Nexora AI",
+                description: "Arquitecto de IA integrado que entiende el modelo completo de tu negocio cruzando datos reales."
               },
               {
                 icon: Package,
@@ -234,13 +234,8 @@ export default function MarketingLandingPage() {
               },
               {
                 icon: Megaphone,
-                title: "Ads Copilot",
-                description: "Campañas sugeridas por IA para Meta, Google y TikTok con borradores listos."
-              },
-              {
-                icon: Bot,
-                title: "Asistente IA",
-                description: "Copiloto inteligente para analizar ventas, resolver dudas y optimizar tu operación."
+                title: "AI: Performance & Ads",
+                description: "Media buyer automático. Campañas sugeridas y borradores basados en margen y stock real."
               },
             ].map((feature, i) => (
               <div key={i} className="group">
@@ -265,10 +260,10 @@ export default function MarketingLandingPage() {
             Creá tu cuenta en segundos y accedé a toda la plataforma. Sin tarjeta, sin compromiso.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="/register" className="px-7 py-3.5 bg-[#111111] text-white rounded-full font-bold text-[14px] hover:bg-[#222222] transition-all shadow-xl shadow-black/10 flex items-center gap-2 w-full sm:w-auto justify-center">
+            <Link href="/home/register" className="px-7 py-3.5 bg-[#111111] text-white rounded-full font-bold text-[14px] hover:bg-[#222222] transition-all shadow-xl shadow-black/10 flex items-center gap-2 w-full sm:w-auto justify-center">
               Crear cuenta gratis <ArrowRight className="h-4 w-4" />
             </Link>
-            <Link href="/pricing" className="px-7 py-3.5 bg-white text-[#111111] border border-[#E5E5E5] rounded-full font-bold text-[14px] hover:bg-white hover:border-[#CCCCCC] transition-all w-full sm:w-auto text-center">
+            <Link href="/home/pricing" className="px-7 py-3.5 bg-white text-[#111111] border border-[#E5E5E5] rounded-full font-bold text-[14px] hover:bg-white hover:border-[#CCCCCC] transition-all w-full sm:w-auto text-center">
               Ver planes y precios
             </Link>
           </div>

@@ -1,6 +1,13 @@
 import { ReactNode } from "react";
+import { redirect } from "next/navigation";
+import { getCurrentStore } from "@/lib/auth/session";
 
-export default function WelcomeLayout({ children }: { children: ReactNode }) {
+export default async function WelcomeLayout({ children }: { children: ReactNode }) {
+  const store = await getCurrentStore();
+  if (!store) {
+    redirect("/home/login");
+  }
+
   return (
     <div className="min-h-screen bg-white flex flex-col font-sans antialiased">
       {/* Ultra-minimal header — editorial style */}

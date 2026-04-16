@@ -10,10 +10,12 @@ type TabValue = 'all' | 'new' | 'processing' | 'shipped' | 'cancelled';
 
 interface OrdersClientProps {
   orders: Order[];
+  hideHeader?: boolean;
+  initialTab?: TabValue;
 }
 
-export default function OrdersClient({ orders }: OrdersClientProps) {
-  const [activeTab, setActiveTab] = useState<TabValue>('all');
+export default function OrdersClient({ orders, hideHeader = false, initialTab = 'all' }: OrdersClientProps) {
+  const [activeTab, setActiveTab] = useState<TabValue>(initialTab);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
@@ -54,20 +56,22 @@ export default function OrdersClient({ orders }: OrdersClientProps) {
     <div className="space-y-8 animate-in fade-in duration-700 pb-32">
       
       {/* 1. Page Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <h1 className="text-3xl font-black tracking-tight text-[#111111]">Pedidos</h1>
-          <p className="text-[#666666] text-[15px] mt-1 font-medium">Gestioná el motor logístico corporativo. Todo en un solo lugar.</p>
+      {!hideHeader && (
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <h1 className="text-3xl font-black tracking-tight text-[#111111]">Pedidos</h1>
+            <p className="text-[#666666] text-[15px] mt-1 font-medium">Gestioná el motor logístico corporativo. Todo en un solo lugar.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button className="px-5 py-2.5 text-[13px] font-bold text-[#111111] bg-white border border-[#EAEAEA] rounded-xl hover:bg-gray-50 flex items-center gap-2 transition-all active:scale-95 shadow-sm">
+              <Download className="w-4 h-4" /> Exportar CSV
+            </button>
+            <button className="px-5 py-2.5 text-[13px] font-bold text-white bg-[#111111] rounded-xl hover:bg-black transition-all active:scale-95 shadow-md shadow-black/10">
+              Crear Pedido
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <button className="px-5 py-2.5 text-[13px] font-bold text-[#111111] bg-white border border-[#EAEAEA] rounded-xl hover:bg-gray-50 flex items-center gap-2 transition-all active:scale-95 shadow-sm">
-            <Download className="w-4 h-4" /> Exportar CSV
-          </button>
-          <button className="px-5 py-2.5 text-[13px] font-bold text-white bg-[#111111] rounded-xl hover:bg-black transition-all active:scale-95 shadow-md shadow-black/10">
-            Crear Pedido
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* 2. Main Container (SaaS Data Grid) */}
       <div className="bg-white border rounded-xl border-[#EAEAEA] shadow-none overflow-hidden relative">

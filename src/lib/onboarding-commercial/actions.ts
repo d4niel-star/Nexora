@@ -2,16 +2,14 @@
 
 import { prisma } from "@/lib/db/prisma";
 import { getStorePlanInfo, initializeStoreBilling } from "@/lib/billing/service";
+import { getCurrentStore } from "@/lib/auth/session";
 
 // Resolve post-auth destination based on user/store state
 export async function resolvePostAuthDestination() {
-  // Try to find an active store. In a real system, you'd verify JWT / session here.
-  const store = await prisma.store.findFirst({
-    where: { status: "active" }, // MVP mock
-  });
+  const store = await getCurrentStore();
 
   if (!store) {
-    return { destination: "/login", reason: "no_store" as const };
+    return { destination: "/home/login", reason: "no_store" as const };
   }
 
   const sub = await prisma.storeSubscription.findUnique({
@@ -32,9 +30,7 @@ export async function resolvePostAuthDestination() {
 }
 
 export async function selectFreePlanAction() {
-  const store = await prisma.store.findFirst({
-    where: { status: "active" },
-  });
+  const store = await getCurrentStore();
 
   if (!store) {
     throw new Error("No active store found.");
@@ -55,9 +51,7 @@ export async function selectFreePlanAction() {
 }
 
 export async function checkoutPaidPlanAction(planCode: string) {
-  const store = await prisma.store.findFirst({
-    where: { status: "active" },
-  });
+  const store = await getCurrentStore();
 
   if (!store) {
     throw new Error("No active store found.");

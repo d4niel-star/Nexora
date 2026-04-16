@@ -1,17 +1,21 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState, useTransition, useRef } from "react";
 import { Product } from "../../../types/product";
 import { ProductStatusBadge } from "./ProductStatusBadge";
-import { X, MoreHorizontal, Package, Tag, Layers, RefreshCw, BarChart2 } from "lucide-react";
+import { X, MoreHorizontal, Package, Tag, Layers, RefreshCw, BarChart2, Check, Loader2, Pencil } from "lucide-react";
+import { updateProductCost } from "@/app/admin/ai/execution-actions";
+import { cn } from "@/lib/utils";
 
 interface ProductDrawerProps {
   product: Product | null;
   isOpen: boolean;
   onClose: () => void;
+  onProductUpdated?: () => void;
+  focusSection?: string;
 }
 
-export function ProductDrawer({ product, isOpen, onClose }: ProductDrawerProps) {
+export function ProductDrawer({ product, isOpen, onClose, onProductUpdated, focusSection }: ProductDrawerProps) {
   
   useEffect(() => {
     if (isOpen) {
@@ -20,6 +24,17 @@ export function ProductDrawer({ product, isOpen, onClose }: ProductDrawerProps) 
         if (e.key === 'Escape') onClose();
       };
       window.addEventListener('keydown', handleEsc);
+
+      // Scroll to cost section if focusSection is "cost"
+      if (focusSection === "cost") {
+        setTimeout(() => {
+          const costSection = document.getElementById("pricing-cost-section");
+          if (costSection) {
+            costSection.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        }, 100);
+      }
+
       return () => {
         document.body.style.overflow = 'unset';
         window.removeEventListener('keydown', handleEsc);
@@ -27,7 +42,7 @@ export function ProductDrawer({ product, isOpen, onClose }: ProductDrawerProps) 
     } else {
       document.body.style.overflow = 'unset';
     }
-  }, [isOpen]); // Removed onClose to prevent re-renders breaking state
+  }, [isOpen, focusSection]); // Removed onClose to prevent re-renders breaking state
 
   if (!isOpen || !product) return null;
 
@@ -89,21 +104,13 @@ export function ProductDrawer({ product, isOpen, onClose }: ProductDrawerProps) 
             </div>
           </section>
 
-          {/* Pricing & Margins Grid Minimalist */}
-          <section className="grid grid-cols-1 sm:grid-cols-3 gap-0 border border-[#EAEAEA] rounded-2xl overflow-hidden shadow-sm">
-             <div className="p-5 bg-white border-b sm:border-b-0 sm:border-r border-[#EAEAEA]">
-               <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1 flex items-center gap-1.5"><Layers className="w-3 h-3" /> Costo Base</p>
-               <p className="text-xl font-black text-[#111111] tabular-nums">${product.cost.toLocaleString('es-AR')}</p>
-             </div>
-             <div className="p-5 bg-emerald-50/30 border-b sm:border-b-0 sm:border-r border-[#EAEAEA]">
-               <p className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 mb-1 flex items-center gap-1.5"><BarChart2 className="w-3 h-3" /> Margen Est.</p>
-               <p className="text-xl font-black text-emerald-700 tabular-nums">{(product.margin * 100).toFixed(0)}%</p>
-             </div>
-             <div className="p-5 bg-[#FAFAFA]">
-               <p className="text-[11px] font-bold uppercase tracking-widest text-[#111111] mb-1">PVP Sugerido</p>
-               <p className="text-xl font-black text-[#111111] tabular-nums">${product.price.toLocaleString('es-AR')}</p>
-             </div>
-          </section>
+          {/* Pricing & Margins Grid — Editable Cost */}
+          <div id="pricing-cost-section">
+            <InlineCostSection
+              product={product}
+              onCostSaved={onProductUpdated}
+            />
+          </div>
 
           {/* Variables / Variants Table */}
           <section className="space-y-4">
@@ -157,5 +164,173 @@ export function ProductDrawer({ product, isOpen, onClose }: ProductDrawerProps) 
         </div>
       </div>
     </>
+  );
+}
+
+// ─── Inline Cost Editor ───
+
+function InlineCostSection({ product, onCostSaved }: { product: Product; onCostSaved?: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Live margin calculation based on current input
+  const parsedCost = parseFloat(value);
+  const hasValidInput = value !== "" && !isNaN(parsedCost) && isFinite(parsedCost) && parsedCost >= 0;
+  const liveMargin = hasValidInput && product.price > 0 ? (product.price - parsedCost) / product.price : null;
+
+  // Reset state when product changes
+  useEffect(() => {
+    setEditing(false);
+    setError(null);
+    setSaved(false);
+  }, [product.id]);
+
+  const startEditing = () => {
+    setValue(product.costReal ? String(product.cost) : "");
+    setError(null);
+    setSaved(false);
+    setEditing(true);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  };
+
+  const cancelEditing = () => {
+    setEditing(false);
+    setError(null);
+  };
+
+  const saveCost = () => {
+    if (!hasValidInput) {
+      setError("Ingresá un costo válido (número ≥ 0)");
+      return;
+    }
+    setError(null);
+    startTransition(async () => {
+      const result = await updateProductCost(product.id, parsedCost);
+      if (result.success) {
+        setEditing(false);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2500);
+        onCostSaved?.();
+      } else {
+        setError(result.error || "Error al guardar");
+      }
+    });
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") { e.preventDefault(); saveCost(); }
+    if (e.key === "Escape") { cancelEditing(); }
+  };
+
+  return (
+    <section className="grid grid-cols-1 sm:grid-cols-3 gap-0 border border-[#EAEAEA] rounded-2xl overflow-hidden shadow-sm">
+      {/* Cost cell — editable */}
+      <div className={cn(
+        "p-5 border-b sm:border-b-0 sm:border-r border-[#EAEAEA] transition-colors",
+        editing ? "bg-blue-50/40" : !product.costReal ? "bg-red-50/30" : "bg-white"
+      )}>
+        <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1 flex items-center gap-1.5">
+          <Layers className="w-3 h-3" /> Costo Base
+        </p>
+
+        {editing ? (
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5">
+              <span className="text-lg font-black text-[#111111]">$</span>
+              <input
+                ref={inputRef}
+                type="number"
+                min="0"
+                step="0.01"
+                value={value}
+                onChange={(e) => { setValue(e.target.value); setError(null); }}
+                onKeyDown={handleKeyDown}
+                disabled={isPending}
+                className="w-full text-lg font-black text-[#111111] tabular-nums bg-white border border-[#EAEAEA] rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#111111] focus:ring-1 focus:ring-[#111111] transition-all disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                placeholder="0.00"
+              />
+            </div>
+            {hasValidInput && liveMargin !== null && (
+              <p className={cn("text-[11px] font-bold tabular-nums",
+                liveMargin >= 0.2 ? "text-emerald-600" : liveMargin >= 0.05 ? "text-amber-600" : "text-red-500"
+              )}>
+                Margen resultante: {Math.round(liveMargin * 100)}%
+              </p>
+            )}
+            {error && <p className="text-[11px] font-bold text-red-500">{error}</p>}
+            <div className="flex gap-1.5">
+              <button
+                onClick={saveCost}
+                disabled={isPending || !hasValidInput}
+                className="flex items-center gap-1 px-3 py-1.5 text-[11px] font-bold text-white bg-[#111111] rounded-lg hover:bg-black transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                Guardar
+              </button>
+              <button
+                onClick={cancelEditing}
+                disabled={isPending}
+                className="px-3 py-1.5 text-[11px] font-bold text-gray-500 bg-white border border-[#EAEAEA] rounded-lg hover:bg-gray-50 transition-all disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            {product.costReal ? (
+              <p className="text-xl font-black text-[#111111] tabular-nums">${product.cost.toLocaleString('es-AR')}</p>
+            ) : (
+              <p className="text-sm font-bold text-red-500">Sin costo</p>
+            )}
+            {saved ? (
+              <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 animate-in fade-in">
+                <Check className="w-3 h-3" /> Guardado
+              </span>
+            ) : (
+              <button
+                onClick={startEditing}
+                className={cn(
+                  "p-1.5 rounded-lg transition-all",
+                  product.costReal
+                    ? "text-gray-400 hover:text-[#111111] hover:bg-gray-100"
+                    : "text-red-400 hover:text-red-600 hover:bg-red-50 border border-red-200"
+                )}
+                title={product.costReal ? "Editar costo" : "Cargar costo real"}
+              >
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Margin cell */}
+      <div className={cn(
+        "p-5 border-b sm:border-b-0 sm:border-r border-[#EAEAEA]",
+        product.costReal ? "bg-emerald-50/30" : "bg-gray-50"
+      )}>
+        <p className={cn("text-[11px] font-bold uppercase tracking-widest mb-1 flex items-center gap-1.5",
+          product.costReal ? "text-emerald-600" : "text-gray-400"
+        )}>
+          <BarChart2 className="w-3 h-3" /> Margen Est.
+        </p>
+        {product.costReal ? (
+          <p className="text-xl font-black text-emerald-700 tabular-nums">{(product.margin * 100).toFixed(0)}%</p>
+        ) : (
+          <p className="text-sm font-bold text-gray-400">—</p>
+        )}
+      </div>
+
+      {/* PVP cell */}
+      <div className="p-5 bg-[#FAFAFA]">
+        <p className="text-[11px] font-bold uppercase tracking-widest text-[#111111] mb-1">PVP Sugerido</p>
+        <p className="text-xl font-black text-[#111111] tabular-nums">${product.price.toLocaleString('es-AR')}</p>
+      </div>
+    </section>
   );
 }

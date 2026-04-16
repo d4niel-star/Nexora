@@ -1,11 +1,11 @@
 import { getInvoicesAction, getStoreFiscalProfileAction, getWithdrawalRequestsAction } from "@/lib/fiscal/arca/actions";
-import { prisma } from "@/lib/db/prisma";
+import { getCurrentStore } from "@/lib/auth/session";
 import { AlertCircle, CheckCircle2, RotateCcw, FileText, Send, Building2, Store } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export default async function FiscalDashboardPage() {
-  const store = await prisma.store.findFirst({ where: { status: "active" } });
+  const store = await getCurrentStore();
   if (!store) return null;
 
   const profile = await getStoreFiscalProfileAction(store.id);

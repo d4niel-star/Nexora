@@ -115,10 +115,8 @@ function ThemeDetail({ data, onAction }: { data: StoreTheme; onAction: (a: strin
           <InfoRow label="Colores" value={<div className="flex gap-2">{data.previewColors.map((c) => <ColorDot key={c} color={c} />)}</div>} />
         </div>
       </section>
-      <section className="flex flex-wrap gap-2">
-        {data.status === "draft" ? <DrawerAction icon={<Eye className="h-3.5 w-3.5" />} label="Aplicar tema" onClick={() => onAction(`Tema ${data.name} aplicado (mock)`)} primary /> : null}
-        <DrawerAction icon={<Copy className="h-3.5 w-3.5" />} label="Duplicar" onClick={() => onAction(`Tema ${data.name} duplicado (mock)`)} />
-        <DrawerAction icon={<Eye className="h-3.5 w-3.5" />} label="Ver preview" onClick={() => onAction("Preview abierto (mock)")} />
+      <section className="flex flex-wrap gap-2 text-xs text-gray-400">
+        Gestión desde Nexora AI
       </section>
     </>
   );
@@ -136,10 +134,8 @@ function SectionDetail({ data, onAction }: { data: HomeSection; onAction: (a: st
           <InfoRow label="Estado" value={<StoreStatusBadge status={data.status} />} />
         </div>
       </section>
-      <section className="flex flex-wrap gap-2">
-        <DrawerAction icon={<Pencil className="h-3.5 w-3.5" />} label="Editar contenido" onClick={() => onAction(`Editando ${data.label} (mock)`)} primary />
-        {data.status === "active" ? <DrawerAction icon={<Eye className="h-3.5 w-3.5" />} label="Ocultar" onClick={() => onAction(`${data.label} oculta (mock)`)} /> : <DrawerAction icon={<Eye className="h-3.5 w-3.5" />} label="Mostrar" onClick={() => onAction(`${data.label} visible (mock)`)} />}
-        <DrawerAction icon={<Copy className="h-3.5 w-3.5" />} label="Duplicar" onClick={() => onAction(`${data.label} duplicada (mock)`)} />
+      <section className="flex flex-wrap gap-2 text-xs text-gray-400">
+        Gestión desde Nexora AI
       </section>
     </>
   );
@@ -158,10 +154,8 @@ function NavDetail({ data, onAction }: { data: NavItem; onAction: (a: string) =>
           <InfoRow label="Estado" value={<StoreStatusBadge status={data.status} />} />
         </div>
       </section>
-      <section className="flex flex-wrap gap-2">
-        <DrawerAction icon={<Pencil className="h-3.5 w-3.5" />} label="Editar" onClick={() => onAction(`Editando ${data.label} (mock)`)} primary />
-        {data.status === "active" ? <DrawerAction icon={<Eye className="h-3.5 w-3.5" />} label="Ocultar" onClick={() => onAction(`${data.label} oculto (mock)`)} /> : <DrawerAction icon={<Eye className="h-3.5 w-3.5" />} label="Activar" onClick={() => onAction(`${data.label} activado (mock)`)} />}
-        <DrawerAction icon={<Trash2 className="h-3.5 w-3.5" />} label="Eliminar" onClick={() => onAction(`${data.label} eliminado (mock)`)} />
+      <section className="flex flex-wrap gap-2 text-xs text-gray-400">
+        Gestión desde Nexora AI
       </section>
     </>
   );
@@ -180,10 +174,8 @@ function PageDetail({ data, onAction }: { data: StorePage; onAction: (a: string)
           <InfoRow label="Estado" value={<StoreStatusBadge status={data.status} />} />
         </div>
       </section>
-      <section className="flex flex-wrap gap-2">
-        <DrawerAction icon={<Pencil className="h-3.5 w-3.5" />} label="Editar pagina" onClick={() => onAction(`Editando ${data.name} (mock)`)} primary />
-        {data.status === "published" ? <DrawerAction icon={<Eye className="h-3.5 w-3.5" />} label="Despublicar" onClick={() => onAction(`${data.name} en borrador (mock)`)} /> : <DrawerAction icon={<Eye className="h-3.5 w-3.5" />} label="Publicar" onClick={() => onAction(`${data.name} publicada (mock)`)} />}
-        <DrawerAction icon={<Copy className="h-3.5 w-3.5" />} label="Duplicar" onClick={() => onAction(`${data.name} duplicada (mock)`)} />
+      <section className="flex flex-wrap gap-2 text-xs text-gray-400">
+        Gestión desde Nexora AI
       </section>
     </>
   );
@@ -203,9 +195,7 @@ function DomainDetail({ data, onAction }: { data: StoreDomain; onAction: (a: str
         </div>
       </section>
       <section className="flex flex-wrap gap-2">
-        <DrawerAction icon={<Eye className="h-3.5 w-3.5" />} label="Verificar conexion" onClick={() => onAction("Verificacion DNS simulada")} primary />
         <DrawerAction icon={<Copy className="h-3.5 w-3.5" />} label="Copiar URL" onClick={() => onAction(`URL copiada: ${data.customDomain}`)} />
-        <DrawerAction icon={<Download className="h-3.5 w-3.5" />} label="Revisar configuracion" onClick={() => onAction("Config DNS abierta (mock)")} />
       </section>
     </>
   );

@@ -4,28 +4,16 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Activity,
-  BarChart3,
-  Bot,
   Boxes,
-  Crown,
-  DollarSign,
-  FileText,
   Globe2,
   LayoutDashboard,
-  LifeBuoy,
-  Megaphone,
   Menu,
   Package,
   PackageSearch,
-  Plug,
-  Settings,
   Share2,
   ShoppingCart,
   Sparkles,
-  Store,
   Truck,
-  Users,
   X,
 } from "lucide-react";
 
@@ -43,9 +31,7 @@ const navigation = [
   { href: "/admin/publications", label: "Publicaciones", icon: Globe2 },
   { href: "/admin/operations", label: "Operaciones", icon: PackageSearch },
   { href: "/admin/channels", label: "Canales / OAuth", icon: Share2 },
-  { href: "/admin/ads", label: "Ads Copilot", icon: Megaphone },
-  { href: "/admin/ai-store-builder", label: "Crear tienda con IA", icon: Sparkles },
-  { href: "/admin/ai-assistant", label: "Asistente IA", icon: Bot },
+  { href: "/admin/ai", label: "Nexora AI", icon: Sparkles },
 ];
 
 interface AdminShellProps {

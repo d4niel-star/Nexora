@@ -1,5 +1,4 @@
-import { StockStatus, SyncStatus } from "../../../types/inventory";
-import { CloudOff, CloudSnow, RefreshCw, CheckCircle2, AlertTriangle } from "lucide-react";
+type StockStatus = "in_stock" | "low_stock" | "out_of_stock";
 
 export const StockStatusBadge = ({ status }: { status: StockStatus }) => {
   const styles: Record<StockStatus, string> = {
@@ -19,17 +18,4 @@ export const StockStatusBadge = ({ status }: { status: StockStatus }) => {
       {labels[status]}
     </span>
   );
-};
-
-export const SyncStatusIcon = ({ status }: { status: SyncStatus }) => {
-  switch (status) {
-    case 'synced':
-      return <div className="flex bg-gray-50 border border-[#EAEAEA] px-2 py-1 rounded-md items-center gap-1 text-[11px] font-bold text-gray-500"><CheckCircle2 className="w-3 h-3 text-emerald-500" /> Sincronizado</div>;
-    case 'syncing':
-      return <div className="flex bg-blue-50 border border-blue-100 px-2 py-1 rounded-md items-center gap-1 text-[11px] font-bold text-blue-600"><RefreshCw className="w-3 h-3 animate-spin" /> Sincronizando</div>;
-    case 'error':
-      return <div className="flex bg-red-50 border border-red-100 px-2 py-1 rounded-md items-center gap-1 text-[11px] font-bold text-red-600"><AlertTriangle className="w-3 h-3" /> Error API</div>;
-    case 'unlinked':
-      return <div className="flex bg-gray-50 border border-[#EAEAEA] px-2 py-1 rounded-md items-center gap-1 text-[11px] font-bold text-gray-400"><CloudOff className="w-3 h-3" /> Manual</div>;
-  }
 };

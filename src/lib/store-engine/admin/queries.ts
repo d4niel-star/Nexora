@@ -1,13 +1,11 @@
 import { prisma } from "@/lib/db/prisma";
+import { getCurrentStore } from "@/lib/auth/session";
 
 /**
  * Fetches KPI metrics for the admin dashboard from the active store.
  */
 export async function getDashboardMetrics() {
-  // Find the store - prioritize active, fallback to draft
-  const store = await prisma.store.findFirst({
-    orderBy: { status: "asc" }, // "active" sorts before "draft"
-  });
+  const store = await getCurrentStore();
 
   if (!store) {
     return {
@@ -75,11 +73,7 @@ export async function getDashboardMetrics() {
  * Fetches the active store info for the admin topbar.
  */
 export async function getActiveStoreInfo() {
-  // Find the store - prioritize active, fallback to draft
-  const store = await prisma.store.findFirst({
-    orderBy: { status: "asc" }, // "active" sorts before "draft"
-    select: { id: true, name: true, slug: true },
-  });
+  const store = await getCurrentStore();
 
   return store ?? { id: "", name: "Sin tienda", slug: "" };
 }

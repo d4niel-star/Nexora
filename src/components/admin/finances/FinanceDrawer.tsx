@@ -135,7 +135,6 @@ function MovementDetail({ data, onAction }: { data: FinanceMovement; onAction: (
         </div>
       </section>
       <section className="flex flex-wrap gap-2">
-        <DrawerAction icon={<Download className="h-3.5 w-3.5" />} label="Exportar detalle" onClick={() => onAction("Detalle exportado (mock)")} />
         <DrawerAction icon={<Copy className="h-3.5 w-3.5" />} label="Copiar referencia" onClick={() => onAction(`Referencia copiada: ${data.reference}`)} />
       </section>
     </>
@@ -160,13 +159,6 @@ function PendingDetail({ data, onAction }: { data: PendingPayment; onAction: (a:
         </div>
       </section>
       <section className="flex flex-wrap gap-2">
-        {data.status === "critical" || data.status === "pending" ? (
-          <DrawerAction icon={<RefreshCw className="h-3.5 w-3.5" />} label="Reintentar cobro" onClick={() => onAction("Reintento de cobro simulado")} primary />
-        ) : data.status === "review" ? (
-          <DrawerAction icon={<RefreshCw className="h-3.5 w-3.5" />} label="Revisar caso" onClick={() => onAction("Caso en revision (mock)")} primary />
-        ) : data.status === "partial" ? (
-          <DrawerAction icon={<RefreshCw className="h-3.5 w-3.5" />} label="Completar cobro" onClick={() => onAction("Cobro parcial completado (mock)")} primary />
-        ) : null}
         <DrawerAction icon={<Copy className="h-3.5 w-3.5" />} label="Copiar referencia" onClick={() => onAction(`Referencia copiada: ${data.reference}`)} />
       </section>
     </>
@@ -190,7 +182,6 @@ function RefundDetail({ data, onAction }: { data: Refund; onAction: (a: string) 
         </div>
       </section>
       <section className="flex flex-wrap gap-2">
-        {data.status === "review" ? <DrawerAction icon={<RefreshCw className="h-3.5 w-3.5" />} label="Marcar en revision" onClick={() => onAction("Marcado en revision (mock)")} primary /> : null}
         <DrawerAction icon={<Copy className="h-3.5 w-3.5" />} label="Copiar referencia" onClick={() => onAction(`Referencia copiada: ${data.reference}`)} />
       </section>
     </>
@@ -239,7 +230,6 @@ function MarginDetail({ data, onAction }: { data: MarginEntry; onAction: (a: str
         </div>
       </section>
       <section className="flex flex-wrap gap-2">
-        {data.health === "critical" ? <DrawerAction icon={<RefreshCw className="h-3.5 w-3.5" />} label="Revisar margen" onClick={() => onAction("Revision de margen critico simulada")} primary /> : null}
         <DrawerAction icon={<Copy className="h-3.5 w-3.5" />} label="Copiar detalle" onClick={() => onAction(`Margen ${data.name} copiado`)} />
       </section>
     </>
@@ -260,7 +250,6 @@ function ExportDetail({ data, onAction }: { data: ExportRecord; onAction: (a: st
         </div>
       </section>
       <section className="flex flex-wrap gap-2">
-        {data.status === "exported" ? <DrawerAction icon={<Download className="h-3.5 w-3.5" />} label="Descargar CSV" onClick={() => onAction("Descarga CSV simulada")} primary /> : null}
         <DrawerAction icon={<Copy className="h-3.5 w-3.5" />} label="Copiar ID" onClick={() => onAction(`ID copiado: ${data.id}`)} />
       </section>
     </>

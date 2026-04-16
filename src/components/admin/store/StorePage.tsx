@@ -29,23 +29,13 @@ import { StoreStatusBadge, SectionTypeBadge, PageTypeBadge, NavGroupBadge, Color
 import { DomainSettingsView } from "@/components/admin/store/tabs/DomainSettingsView";
 import { TableSkeleton } from "@/components/admin/orders/TableSkeleton";
 import { cn } from "@/lib/utils";
-import {
-  MOCK_THEMES,
-  MOCK_BRANDING,
-  MOCK_HOME_SECTIONS,
-  MOCK_NAV_ITEMS,
-  MOCK_PAGES,
-  MOCK_DOMAIN,
-  MOCK_PREVIEW,
-  MOCK_STORE_SUMMARY,
-} from "@/lib/mocks/store";
+
 import { publishStoreAction, saveStoreBranding as saveStoreBrandingAction } from "@/lib/store-engine/actions";
 import { addCustomDomain, setPrimaryDomain, removeCustomDomain, verifyDomainStatus } from "@/lib/store-engine/domains/actions";
 import type { AdminStoreInitialData } from "@/types/store-engine";
 import type { StoreTheme, StoreBranding, StoreSummary, HomeSection, NavItem, StorePage as StorePageType, StoreDomain, StoreStatus } from "@/types/store";
 
 type TabValue = "resumen" | "tema" | "branding" | "home" | "navegacion" | "paginas" | "dominio" | "preview";
-type VisualScenario = "live" | "empty" | "error";
 
 type DrawerContent =
   | { kind: "theme"; data: StoreTheme }
@@ -63,7 +53,6 @@ export function StorePage({ initialData }: { initialData?: AdminStoreInitialData
   const initialTab = (searchParams.get("tab") as TabValue) || "resumen";
   const [activeTab, setActiveTab] = useState<TabValue>(initialTab);
   const [searchQuery, setSearchQuery] = useState("");
-  const [visualScenario, setVisualScenario] = useState<VisualScenario>("live");
   const [isLoading, setIsLoading] = useState(true);
   const [drawerContent, setDrawerContent] = useState<DrawerContent | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -80,7 +69,18 @@ export function StorePage({ initialData }: { initialData?: AdminStoreInitialData
     pagesCount: initialData.pages.length,
     navItemsCount: initialData.navigation.length,
     homeSectionsCount: initialData.homeBlocks.length,
-  } : MOCK_STORE_SUMMARY;
+  } : {
+    themeName: "Sin configuración",
+    themeStatus: "draft",
+    hasLogo: false,
+    primaryColor: "#111111",
+    secondaryColor: "#10B981",
+    domain: "Sin configurar",
+    publishStatus: "draft",
+    pagesCount: 0,
+    navItemsCount: 0,
+    homeSectionsCount: 0,
+  };
 
   const brandingData: StoreBranding = initialData?.branding ? {
     storeName: initialData.store.name,
@@ -90,7 +90,15 @@ export function StorePage({ initialData }: { initialData?: AdminStoreInitialData
     secondaryColor: initialData.branding.secondaryColor,
     fontFamily: initialData.branding.fontFamily,
     buttonStyle: (initialData.branding.buttonStyle === "rounded-sm" ? "rounded" : initialData.branding.buttonStyle) as "rounded" | "square" | "pill",
-  } : MOCK_BRANDING;
+  } : {
+    storeName: "Nueva Tienda",
+    logoUrl: "",
+    faviconUrl: "",
+    primaryColor: "#111111",
+    secondaryColor: "#10B981",
+    fontFamily: "Inter",
+    buttonStyle: "rounded",
+  };
 
   const homeSections: HomeSection[] = initialData ? initialData.homeBlocks.map(b => ({
     id: b.id,
@@ -99,7 +107,7 @@ export function StorePage({ initialData }: { initialData?: AdminStoreInitialData
     status: (b.isVisible ? "active" : "hidden") as StoreStatus,
     order: b.sortOrder,
     description: `Bloque ${b.source} \u2013 ${b.state}`,
-  })) : MOCK_HOME_SECTIONS;
+  })) : [];
 
   const navItems: NavItem[] = initialData ? initialData.navigation.map(n => ({
     id: n.id,
@@ -108,7 +116,7 @@ export function StorePage({ initialData }: { initialData?: AdminStoreInitialData
     group: (n.group === "header" ? "main" : n.group.startsWith("footer") ? "footer" : "quick-links") as NavItem["group"],
     status: (n.isVisible ? "active" : "hidden") as StoreStatus,
     order: n.sortOrder,
-  })) : MOCK_NAV_ITEMS;
+  })) : [];
 
   const storePages: StorePageType[] = initialData ? initialData.pages.map(p => ({
     id: p.id,
@@ -117,7 +125,7 @@ export function StorePage({ initialData }: { initialData?: AdminStoreInitialData
     status: (p.status === "active" ? "published" : p.status) as StoreStatus,
     lastModified: p.updatedAt,
     type: p.type as "system" | "custom",
-  })) : MOCK_PAGES;
+  })) : [];
 
   useEffect(() => { if (!isLoading) return; const t = window.setTimeout(() => setIsLoading(false), 720); return () => window.clearTimeout(t); }, [isLoading]);
 
@@ -132,7 +140,7 @@ export function StorePage({ initialData }: { initialData?: AdminStoreInitialData
     { label: "Vista previa", value: "preview", icon: <Monitor className="h-3.5 w-3.5" /> },
   ];
 
-  const handleTabChange = (v: TabValue) => { if (v === activeTab) return; setActiveTab(v); setSearchQuery(""); setVisualScenario("live"); setIsLoading(true); };
+  const handleTabChange = (v: TabValue) => { if (v === activeTab) return; setActiveTab(v); setSearchQuery(""); setIsLoading(true); };
 
   const pushToast = (title: string, description: string) => {
     const id = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
@@ -142,7 +150,7 @@ export function StorePage({ initialData }: { initialData?: AdminStoreInitialData
 
   const openDrawer = (c: DrawerContent) => setDrawerContent(c);
   const closeDrawer = () => setDrawerContent(null);
-  const handleAction = (action: string) => { pushToast(action, "Accion simulada correctamente (mock)."); };
+  const handleAction = (action: string) => { pushToast("Información", action); };
 
   const showToolbar = activeTab === "paginas" || activeTab === "navegacion";
 
@@ -172,7 +180,6 @@ export function StorePage({ initialData }: { initialData?: AdminStoreInitialData
                 <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 transition-colors group-focus-within:text-emerald-500" />
                 <input aria-label="Buscar en la vista" className="w-full rounded-xl border border-transparent bg-gray-50 py-2.5 pl-10 pr-4 text-[13px] font-medium text-[#111111] transition-all placeholder:text-gray-400 focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20" onChange={(e) => setSearchQuery(e.target.value)} placeholder="Buscar..." type="text" value={searchQuery} />
               </div>
-              <ToolbarSelect icon={<AlertTriangle className="h-4 w-4" />} label="Escenario" onChange={(v) => setVisualScenario(v as VisualScenario)} options={["live", "empty", "error"]} value={visualScenario} />
             </div>
           </div>
         ) : null}
@@ -180,10 +187,6 @@ export function StorePage({ initialData }: { initialData?: AdminStoreInitialData
         <div className="min-h-[420px] bg-[#FAFAFA]/30" role="tabpanel">
           {isLoading ? (
             <TableSkeleton />
-          ) : visualScenario === "error" && showToolbar ? (
-            <ErrorState onRetry={() => setVisualScenario("live")} />
-          ) : visualScenario === "empty" && showToolbar ? (
-            <EmptyState onReset={() => setVisualScenario("live")} />
           ) : activeTab === "resumen" ? (
             <SummaryView onNavigate={handleTabChange} onAction={handleAction} summary={storeSummary} />
           ) : activeTab === "tema" ? (
@@ -266,28 +269,12 @@ function ThemeView({ openDrawer, onAction }: { openDrawer: (c: DrawerContent) =>
       <div className="flex items-center justify-between">
         <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Temas disponibles</h3>
       </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {MOCK_THEMES.map((theme) => (
-          <button key={theme.id} className="group rounded-2xl border border-[#EAEAEA] bg-white p-0 text-left shadow-sm transition-all hover:border-gray-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" onClick={() => openDrawer({ kind: "theme", data: theme })} type="button">
-            <div className="flex h-28 items-end gap-1 rounded-t-2xl bg-gradient-to-br from-gray-50 to-gray-100 p-4">
-              {theme.previewColors.map((c) => (
-                <div key={c} className="h-full w-8 rounded-lg shadow-sm" style={{ backgroundColor: c }} />
-              ))}
-            </div>
-            <div className="space-y-2 p-5">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-bold text-[#111111]">{theme.name}</p>
-                <StoreStatusBadge status={theme.status} />
-              </div>
-              <p className="line-clamp-2 text-xs font-medium text-gray-500">{theme.description}</p>
-              <p className="text-[11px] font-bold tabular-nums text-gray-400">v{theme.version} · {timeFormatter.format(new Date(theme.lastModified))}</p>
-            </div>
-          </button>
-        ))}
+      <div className="flex h-32 items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50 text-xs font-medium text-gray-400">
+        Gestión de temas en construcción
       </div>
       <div className="flex items-center gap-3">
-        <button className="flex items-center gap-2 rounded-xl border border-[#EAEAEA] bg-white px-5 py-2.5 text-[13px] font-bold text-[#111111] transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" onClick={() => onAction("Tema restablecido (mock)")} type="button">
-          Restablecer tema
+        <button disabled className="flex items-center gap-2 rounded-xl border border-[#EAEAEA] bg-white px-5 py-2.5 text-[13px] font-bold text-[#111111] opacity-50" type="button">
+          Gestión manual próximamente
         </button>
       </div>
     </div>
@@ -314,17 +301,15 @@ function BrandingView({ onAction, branding }: { onAction: (a: string) => void; b
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="rounded-2xl border border-[#EAEAEA] bg-white p-5 shadow-sm">
             <p className="text-xs font-bold text-[#111111]">Logo</p>
-            <div className="mt-3 flex h-20 w-full items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50 text-xs font-medium text-gray-400">
-              {b.logoUrl ? "logo-techstore.png" : "Sin logo"}
+            <div className="mt-3 flex h-20 w-full items-center justify-center rounded-xl border border-[#EAEAEA] bg-white">
+              {b.logoUrl ? <img src={b.logoUrl} alt="Logo" className="max-h-full max-w-full object-contain p-2" /> : <span className="text-xs text-gray-400">Sin logo</span>}
             </div>
-            <button className="mt-3 text-[13px] font-bold text-emerald-600 transition-colors hover:text-emerald-700" onClick={() => onAction("Logo subido (mock)")} type="button">Cambiar logo</button>
           </div>
           <div className="rounded-2xl border border-[#EAEAEA] bg-white p-5 shadow-sm">
             <p className="text-xs font-bold text-[#111111]">Favicon</p>
-            <div className="mt-3 flex h-20 w-full items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50 text-xs font-medium text-gray-400">
-              {b.faviconUrl ? "favicon-techstore.png" : "Sin favicon"}
+            <div className="mt-3 flex h-20 w-full items-center justify-center rounded-xl border border-[#EAEAEA] bg-white">
+              {b.faviconUrl ? <img src={b.faviconUrl} alt="Favicon" className="max-h-full max-w-full object-contain p-2" /> : <span className="text-xs text-gray-400">Sin favicon</span>}
             </div>
-            <button className="mt-3 text-[13px] font-bold text-emerald-600 transition-colors hover:text-emerald-700" onClick={() => onAction("Favicon subido (mock)")} type="button">Cambiar favicon</button>
           </div>
         </div>
       </div>
@@ -339,19 +324,8 @@ function BrandingView({ onAction, branding }: { onAction: (a: string) => void; b
 
       <div className="space-y-4">
         <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Estilo de botones</h3>
-        <div className="flex gap-3">
-          {(["rounded", "square", "pill"] as const).map((style) => (
-            <button key={style} className={cn("rounded-xl border px-5 py-2.5 text-[13px] font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30", style === b.buttonStyle ? "border-[#111111] bg-[#111111] text-white" : "border-[#EAEAEA] bg-white text-[#111111] hover:bg-gray-50")} onClick={() => onAction(`Estilo ${style} aplicado (mock)`)} type="button">
-              {style === "rounded" ? "Redondeado" : style === "square" ? "Cuadrado" : "Pill"}
-            </button>
-          ))}
-        </div>
+        <p className="text-[12px] text-gray-500">Configuración gestionada desde Nexora AI Store Builder.</p>
       </div>
-
-      <button className="flex items-center gap-2 rounded-xl bg-[#111111] px-5 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" onClick={async () => { try { await saveStoreBrandingAction({ primaryColor: b.primaryColor, secondaryColor: b.secondaryColor, fontFamily: b.fontFamily, buttonStyle: b.buttonStyle, logoUrl: b.logoUrl || null, faviconUrl: b.faviconUrl || null }); onAction("Branding guardado correctamente"); } catch { onAction("Error al guardar branding"); } }} type="button">
-        <Save className="h-3.5 w-3.5" />
-        Guardar branding
-      </button>
     </div>
   );
 }
@@ -477,7 +451,7 @@ function PagesView({ searchQuery, openDrawer, onAction, pages }: { searchQuery: 
 /* ─── Preview ─── */
 
 function PreviewView({ onAction }: { onAction: (a: string) => void }) {
-  const p = MOCK_PREVIEW;
+  const p = { status: "draft", publishedAt: new Date().toISOString() };
 
   return (
     <div className="space-y-6 p-6">
@@ -517,13 +491,8 @@ function PreviewView({ onAction }: { onAction: (a: string) => void }) {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <button className="flex items-center gap-2 rounded-xl bg-[#111111] px-5 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" onClick={() => onAction("Publicacion simulada")} type="button">
-          <Eye className="h-3.5 w-3.5" />
-          Publicar cambios
-        </button>
-        <button className="flex items-center gap-2 rounded-xl border border-[#EAEAEA] bg-white px-5 py-2.5 text-[13px] font-bold text-[#111111] transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" onClick={() => onAction("Preview abierto (mock)")} type="button">
-          <Monitor className="h-3.5 w-3.5" />
-          Abrir preview
+        <button disabled className="flex items-center gap-2 rounded-xl border border-[#EAEAEA] bg-white px-5 py-2.5 text-[13px] font-bold text-[#111111] opacity-50" type="button">
+          Previsualizar en Vivo Mpróximamente
         </button>
       </div>
     </div>
@@ -571,20 +540,7 @@ function ColorField({ label, color, onAction }: { label: string; color: string; 
         <ColorDot color={color} />
         <span className="font-mono text-xs font-bold text-gray-500">{color}</span>
       </div>
-      <button className="mt-3 text-[13px] font-bold text-emerald-600 transition-colors hover:text-emerald-700" onClick={() => onAction(`Color ${label} cambiado (mock)`)} type="button">Cambiar</button>
     </div>
-  );
-}
-
-function ToolbarSelect({ icon, label, onChange, options, value }: { icon: React.ReactNode; label: string; onChange: (v: string) => void; options: string[]; value: string }) {
-  return (
-    <label className="flex min-w-[170px] items-center gap-2 rounded-xl border border-[#EAEAEA] bg-white px-3 py-2.5 text-[13px] font-bold text-gray-600 shadow-sm">
-      <span className="shrink-0 text-gray-400">{icon}</span>
-      <span className="text-[#666666]">{label}</span>
-      <select className="w-full bg-transparent text-right font-semibold text-[#111111] outline-none" onChange={(e) => onChange(e.target.value)} value={value}>
-        {options.map((o) => <option key={o} value={o}>{selectLabel(o)}</option>)}
-      </select>
-    </label>
   );
 }
 
@@ -595,31 +551,11 @@ function TableHead({ label }: { label: string }) {
 function NoResultsState({ onReset }: { onReset: () => void }) {
   return (
     <div className="flex min-h-[420px] flex-col items-center justify-center px-6 py-20 text-center">
-      <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-gray-100 bg-gray-50 shadow-sm"><Search className="h-8 w-8 text-gray-300" /></div>
+      <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-gray-100 bg-gray-50 shadow-sm">
+        <Search className="h-8 w-8 text-gray-300" />
+      </div>
       <h3 className="text-xl font-extrabold text-[#111111]">No encontramos resultados</h3>
-      <p className="mt-2 max-w-md text-[15px] font-medium text-[#888888]">Ajusta la busqueda y vuelve a intentarlo.</p>
-    </div>
-  );
-}
-
-function EmptyState({ onReset }: { onReset: () => void }) {
-  return (
-    <div className="flex min-h-[420px] flex-col items-center justify-center px-6 py-20 text-center">
-      <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-gray-100 bg-gray-50 shadow-sm"><Store className="h-8 w-8 text-gray-300" /></div>
-      <h3 className="text-xl font-extrabold text-[#111111]">Todavia no hay datos en esta vista</h3>
-      <p className="mt-2 max-w-md text-[15px] font-medium text-[#888888]">Estado vacio simulado para QA.</p>
-      <button className="mt-6 rounded-xl border border-[#EAEAEA] bg-white px-6 py-2.5 text-[13px] font-bold text-[#111111] transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" onClick={onReset} type="button">Volver a la muestra</button>
-    </div>
-  );
-}
-
-function ErrorState({ onRetry }: { onRetry: () => void }) {
-  return (
-    <div className="flex min-h-[420px] flex-col items-center justify-center px-6 py-20 text-center">
-      <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-red-100 bg-red-50 shadow-sm"><AlertTriangle className="h-8 w-8 text-red-400" /></div>
-      <h3 className="text-xl font-extrabold text-[#111111]">No pudimos cargar los datos</h3>
-      <p className="mt-2 max-w-md text-[15px] font-medium text-[#888888]">Estado simulado para QA visual.</p>
-      <button className="mt-6 rounded-xl bg-[#111111] px-6 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" onClick={onRetry} type="button">Reintentar</button>
+      <p className="mt-2 max-w-md text-[15px] font-medium text-[#888888]">Ajusta la búsqueda y vuelve a intentarlo.</p>
     </div>
   );
 }
@@ -638,15 +574,6 @@ function ToastViewport({ toasts, onDismiss }: { toasts: ToastMessage[]; onDismis
       ))}
     </div>
   );
-}
-
-function selectLabel(v: string): string {
-  switch (v) {
-    case "live": return "Operativa";
-    case "empty": return "Vacio";
-    case "error": return "Error";
-    default: return v;
-  }
 }
 
 function blockLabel(blockType: string): string {

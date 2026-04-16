@@ -1,26 +1,38 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Search, Download, Filter, MoreHorizontal, ChevronDown, Package, Plus, Star, Box, Trash2, Edit } from "lucide-react";
-import { Product, ImportableProduct } from "../../../types/product";
-import { MOCK_IMPORTABLES } from "../../../lib/mocks/catalog";
+import { useState, useEffect, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { Search, Filter, Package, Plus, Trash2, Edit, AlertTriangle, CheckCircle2, RefreshCw, Upload, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Product, CatalogSignal } from "../../../types/product";
+import { publishDraftProduct, resyncListing } from "@/app/admin/ai/execution-actions";
+import { buildVariantHref } from "@/lib/navigation/hrefs";
+
 import { ProductStatusBadge } from "../../../components/admin/catalog/ProductStatusBadge";
 import { ProductDrawer } from "../../../components/admin/catalog/ProductDrawer";
-import { ImportPreviewDrawer } from "../../../components/admin/catalog/ImportPreviewDrawer";
 
-type TabValue = 'all' | 'active' | 'draft' | 'archived' | 'out_of_stock' | 'import';
+
+type TabValue = 'all' | 'active' | 'draft' | 'archived' | 'out_of_stock' | 'issues';
 
 interface CatalogClientProps {
   products: Product[];
+  hideHeader?: boolean;
+  initialTab?: TabValue;
+  focusProductId?: string;
+  focusSection?: string;
 }
 
-export default function CatalogClient({ products }: CatalogClientProps) {
-  const [activeTab, setActiveTab] = useState<TabValue>('all');
+export default function CatalogClient({ products, hideHeader = false, initialTab = 'all', focusProductId, focusSection }: CatalogClientProps) {
+  const [activeTab, setActiveTab] = useState<TabValue>(initialTab);
   const [searchQuery, setSearchQuery] = useState("");
+  const router = useRouter();
+  const [, startTransition] = useTransition();
+  const [actioningId, setActioningId] = useState<string | null>(null);
+  const [actionFeedback, setActionFeedback] = useState<{ id: string; label: string } | null>(null);
   
   // Selection States
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [selectedImportable, setSelectedImportable] = useState<ImportableProduct | null>(null);
+
   
   // Bulk Actions
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
@@ -29,6 +41,26 @@ export default function CatalogClient({ products }: CatalogClientProps) {
     setSelectedRows([]);
   }, [activeTab]);
 
+  // Sync open drawer with refreshed product data (e.g. after inline cost edit)
+  useEffect(() => {
+    if (selectedProduct) {
+      const updated = products.find((p) => p.id === selectedProduct.id);
+      if (updated && updated !== selectedProduct) {
+        setSelectedProduct(updated);
+      }
+    }
+  }, [products]);
+
+  // Auto-open drawer when focusProductId is provided (deep-link from variant cost review)
+  useEffect(() => {
+    if (focusProductId && !selectedProduct) {
+      const targetProduct = products.find((p) => p.id === focusProductId);
+      if (targetProduct) {
+        setSelectedProduct(targetProduct);
+      }
+    }
+  }, [focusProductId, products]);
+
   // Filtering Logic
   const filteredCatalog = products.filter(product => {
     let matchesTab = true;
@@ -36,16 +68,41 @@ export default function CatalogClient({ products }: CatalogClientProps) {
     if (activeTab === 'draft') matchesTab = product.status === 'draft';
     if (activeTab === 'archived') matchesTab = product.status === 'archived';
     if (activeTab === 'out_of_stock') matchesTab = product.totalStock === 0;
+    if (activeTab === 'issues') matchesTab = product.issueCount > 0;
 
     const matchesSearch = product.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           product.category.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesTab && matchesSearch;
   });
 
-  const filteredImports = MOCK_IMPORTABLES.filter(prod => 
-    prod.originalTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    prod.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const issueCount = products.filter(p => p.issueCount > 0).length;
+
+  // Inline actions
+  const handlePublish = (productId: string) => {
+    setActioningId(productId);
+    startTransition(async () => {
+      const result = await publishDraftProduct(productId);
+      setActioningId(null);
+      if (result.success) {
+        setActionFeedback({ id: productId, label: "Publicado" });
+        setTimeout(() => setActionFeedback(null), 2000);
+        router.refresh();
+      }
+    });
+  };
+
+  const handleResync = (listingId: string, productId: string) => {
+    setActioningId(productId);
+    startTransition(async () => {
+      await resyncListing(listingId);
+      setActioningId(null);
+      setActionFeedback({ id: productId, label: "Resincronizado" });
+      setTimeout(() => setActionFeedback(null), 2000);
+      router.refresh();
+    });
+  };
+
+
 
   const tabs: { label: string, value: TabValue, count?: number, isSpecial?: boolean }[] = [
     { label: "Catálogo", value: "all", count: products.length },
@@ -53,7 +110,7 @@ export default function CatalogClient({ products }: CatalogClientProps) {
     { label: "Borradores", value: "draft", count: products.filter(p => p.status === 'draft').length },
     { label: "Archivados", value: "archived", count: products.filter(p => p.status === 'archived').length },
     { label: "Sin Stock", value: "out_of_stock", count: products.filter(p => p.totalStock === 0).length },
-    { label: "Importador Dropshipping", value: "import", isSpecial: true },
+    { label: "Con Problemas", value: "issues", count: issueCount, isSpecial: issueCount > 0 },
   ];
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -72,20 +129,22 @@ export default function CatalogClient({ products }: CatalogClientProps) {
     <div className="space-y-8 animate-in fade-in duration-700 pb-32">
       
       {/* 1. Page Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <h1 className="text-3xl font-black tracking-tight text-[#111111]">Catálogo de Productos</h1>
-          <p className="text-[#666666] text-[15px] mt-1 font-medium">Administra tu inventario y descubre productos ganadores listos para importar.</p>
+      {!hideHeader && (
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <h1 className="text-3xl font-black tracking-tight text-[#111111]">Catálogo de Productos</h1>
+            <p className="text-[#666666] text-[15px] mt-1 font-medium">Administra tu inventario y descubre productos ganadores listos para importar.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button className="px-5 py-2.5 text-[13px] font-bold text-[#111111] bg-white border border-[#EAEAEA] rounded-xl hover:bg-gray-50 transition-all active:scale-95 shadow-sm">
+              Exportar CSV
+            </button>
+            <button className="px-5 py-2.5 text-[13px] font-bold text-white bg-[#111111] rounded-xl hover:bg-black transition-all active:scale-95 shadow-md shadow-black/10 flex items-center gap-2">
+              <Plus className="w-4 h-4" /> Agregar Manual
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <button className="px-5 py-2.5 text-[13px] font-bold text-[#111111] bg-white border border-[#EAEAEA] rounded-xl hover:bg-gray-50 transition-all active:scale-95 shadow-sm">
-            Exportar CSV
-          </button>
-          <button className="px-5 py-2.5 text-[13px] font-bold text-white bg-[#111111] rounded-xl hover:bg-black transition-all active:scale-95 shadow-md shadow-black/10 flex items-center gap-2">
-            <Plus className="w-4 h-4" /> Agregar Manual
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* 2. Main Container Layer */}
       <div className="bg-white border rounded-xl border-[#EAEAEA] shadow-none overflow-hidden relative">
@@ -97,10 +156,10 @@ export default function CatalogClient({ products }: CatalogClientProps) {
               key={tab.value}
               onClick={() => setActiveTab(tab.value)}
               className={`relative py-4 text-[13px] font-bold whitespace-nowrap transition-colors flex items-center gap-2 group
-                ${activeTab === tab.value ? (tab.isSpecial ? "text-emerald-600" : "text-[#111111]") : "text-[#888888] hover:text-[#111111]"}
+                ${activeTab === tab.value ? (tab.isSpecial ? "text-amber-600" : "text-[#111111]") : "text-[#888888] hover:text-[#111111]"}
               `}
             >
-              {tab.isSpecial && <Box className={`w-4 h-4 ${activeTab === tab.value ? 'text-emerald-500' : 'text-[#888888]'}`} />}
+              {tab.isSpecial && <AlertTriangle className={`w-3.5 h-3.5 ${activeTab === tab.value ? 'text-amber-500' : 'text-[#888888]'}`} />}
               {tab.label}
               {tab.count !== undefined && tab.count > 0 && (
                 <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider font-extrabold transition-colors ${activeTab === tab.value ? 'bg-gray-100 text-[#111111]' : 'bg-transparent text-gray-500 group-hover:bg-gray-50'}`}>
@@ -108,7 +167,7 @@ export default function CatalogClient({ products }: CatalogClientProps) {
                 </span>
               )}
               {activeTab === tab.value && (
-                <div className={`absolute bottom-0 left-0 right-0 h-[2px] ${tab.isSpecial ? 'bg-emerald-500' : 'bg-[#111111]'}`} />
+                <div className={`absolute bottom-0 left-0 right-0 h-[2px] ${tab.isSpecial ? 'bg-amber-500' : 'bg-[#111111]'}`} />
               )}
             </button>
           ))}
@@ -120,7 +179,7 @@ export default function CatalogClient({ products }: CatalogClientProps) {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-black transition-colors" />
             <input 
               type="text" 
-              placeholder={activeTab === 'import' ? "Buscar dropshippers o productos..." : "Buscar SKU o nombre de producto..."}
+              placeholder="Buscar SKU o nombre de producto..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-4 py-1.5 text-[13px] font-medium bg-transparent border border-transparent focus:outline-none text-[#111111] transition-all placeholder:text-gray-400"
@@ -135,9 +194,7 @@ export default function CatalogClient({ products }: CatalogClientProps) {
 
         {/* 3. Dynamic Rendering based on Tab */}
         <div className="min-h-[400px] bg-[#FAFAFA]/30">
-          <>
-            {/* --- VIEW: CATALOG (Standard Table) --- */}
-            {activeTab !== 'import' && (
+
               <div className="overflow-x-auto">
                 <table className="w-full text-left whitespace-nowrap">
                   <thead>
@@ -151,18 +208,17 @@ export default function CatalogClient({ products }: CatalogClientProps) {
                         />
                       </th>
                       <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#888888]">Producto</th>
-                      <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#888888]">Proveedor</th>
-                      <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#888888]">Rentabilidad</th>
-                      <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#888888]">Reglas Precio</th>
+                      <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#888888]">Salud</th>
+                      <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#888888]">Precio</th>
                       <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#888888]">Estado</th>
                       <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#888888] text-right">Stock</th>
-                      <th className="px-6 py-4 w-12"></th>
+                      <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#888888] text-right">Acciones</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#EAEAEA]/80">
                     {filteredCatalog.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="px-6 py-24 text-center">
+                        <td colSpan={7} className="px-6 py-24 text-center">
                           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-50 mb-6 border border-gray-100 shadow-sm">
                             <Package className="w-8 h-8 text-gray-300" />
                           </div>
@@ -203,16 +259,26 @@ export default function CatalogClient({ products }: CatalogClientProps) {
                               </div>
                             </td>
                             <td className="px-6 py-5">
-                              <span className={`text-[11px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${product.supplier === 'Own' ? 'bg-gray-100 text-gray-700' : 'bg-blue-50 text-blue-700'}`}>
-                                {product.supplier}
-                              </span>
-                            </td>
-                            <td className="px-6 py-5">
-                              <p className="text-sm font-bold text-emerald-700 tabular-nums">+{Math.round(product.margin * 100)}%</p>
-                              <p className="text-[11px] font-medium text-gray-500 mt-0.5 tabular-nums">Costo: ${product.cost.toLocaleString()}</p>
+                              <SignalChips
+                                signals={product.signals}
+                                providerName={product.providerName}
+                                channelCount={product.channelCount}
+                                variantCriticalId={product.variantCriticalId}
+                                variantHiddenId={product.variantHiddenId}
+                                variantStuckId={product.variantStuckId}
+                                variantNegativeId={product.variantNegativeId}
+                                variantUrgentReorderId={product.variantUrgentReorderId}
+                              />
                             </td>
                             <td className="px-6 py-5">
                               <p className="text-[15px] font-black text-[#111111] tabular-nums tracking-tight">${product.price.toLocaleString('es-AR')}</p>
+                              {product.costReal ? (
+                                <p className={cn("text-[11px] font-bold mt-0.5 tabular-nums", product.margin >= 0.2 ? "text-emerald-600" : product.margin >= 0.05 ? "text-amber-600" : "text-red-500")}>
+                                  Margen {Math.round(product.margin * 100)}% &middot; Costo ${product.cost.toLocaleString('es-AR')}
+                                </p>
+                              ) : (
+                                <p className="text-[11px] font-bold text-red-400 mt-0.5">Sin costo real</p>
+                              )}
                             </td>
                             <td className="px-6 py-5"><ProductStatusBadge status={product.status} /></td>
                             <td className="px-6 py-5 text-right font-black text-[#111111] text-sm tabular-nums">
@@ -222,10 +288,44 @@ export default function CatalogClient({ products }: CatalogClientProps) {
                                 <span className="text-red-500">Agotado</span>
                               )}
                             </td>
-                            <td className="px-6 py-5 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button className="p-2 hover:bg-white border hover:border-[#EAEAEA] border-transparent shadow-sm rounded-lg text-gray-500 hover:text-[#111111] transition-all">
-                                  <Edit className="w-4 h-4" />
-                              </button>
+                            <td className="px-6 py-5 text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                {actionFeedback?.id === product.id ? (
+                                  <span className="text-[11px] font-bold text-emerald-600 animate-in fade-in">{actionFeedback.label}</span>
+                                ) : (
+                                  <>
+                                    {product.status === 'draft' && (
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); handlePublish(product.id); }}
+                                        disabled={actioningId === product.id}
+                                        className="p-1.5 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-all disabled:opacity-50 flex items-center gap-1"
+                                        title="Publicar producto"
+                                      >
+                                        {actioningId === product.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                                        <span className="hidden lg:inline">Publicar</span>
+                                      </button>
+                                    )}
+                                    {product.channelSyncIssues > 0 && product.firstListingId && (
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); handleResync(product.firstListingId!, product.id); }}
+                                        disabled={actioningId === product.id}
+                                        className="p-1.5 text-[11px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-all disabled:opacity-50 flex items-center gap-1"
+                                        title="Resincronizar canal"
+                                      >
+                                        {actioningId === product.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                                        <span className="hidden lg:inline">Resync</span>
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); setSelectedProduct(product); }}
+                                      className="p-1.5 hover:bg-gray-100 border border-transparent hover:border-[#EAEAEA] rounded-lg text-gray-400 hover:text-[#111111] transition-all"
+                                      title="Ver detalle"
+                                    >
+                                      <Edit className="w-3.5 h-3.5" />
+                                    </button>
+                                  </>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         );
@@ -247,58 +347,11 @@ export default function CatalogClient({ products }: CatalogClientProps) {
                   </div>
                 )}
               </div>
-            )}
-
-            {/* --- VIEW: IMPORT DROPSHIPPING (Grid) --- */}
-            {activeTab === 'import' && (
-              <div className="p-6">
-                 {filteredImports.length === 0 ? (
-                    <div className="py-24 text-center">
-                      <h3 className="text-xl font-extrabold text-[#111111]">No hay dropshippers para esto</h3>
-                      <p className="text-[15px] font-medium text-[#888888] mt-2">Busca términos como "Gamer", "Tecnología".</p>
-                    </div>
-                 ) : (
-                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                     {filteredImports.map(prod => (
-                       <div 
-                         key={prod.id} 
-                         onClick={() => setSelectedImportable(prod)}
-                         className="group bg-white border border-[#EAEAEA] rounded-2xl overflow-hidden hover:border-emerald-500/50 hover:shadow-xl hover:shadow-emerald-500/10 transition-all cursor-pointer flex flex-col"
-                       >
-                         <div className="aspect-video w-full bg-gray-100 overflow-hidden relative">
-                           <img src={prod.images[0]} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                           <div className="absolute top-3 left-3 bg-[#111111]/80 backdrop-blur text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full flex items-center gap-1">
-                             <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" /> {prod.rating}
-                           </div>
-                         </div>
-                         <div className="p-5 flex-1 flex flex-col justify-between">
-                           <div>
-                             <p className="text-[11px] font-black text-emerald-600 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Box className="w-3 h-3" /> Mayorista {prod.supplier}</p>
-                             <h3 className="text-sm font-bold text-[#111111] leading-snug line-clamp-2 mb-4">{prod.originalTitle}</h3>
-                           </div>
-                           <div className="flex items-end justify-between mt-4">
-                             <div>
-                               <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Costo NETO</p>
-                               <p className="text-xl font-black text-[#111111] tabular-nums tracking-tight">${prod.baseCost.toLocaleString()}</p>
-                             </div>
-                             <div className="text-right">
-                               <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Margen Sugerido</p>
-                               <p className="text-sm font-black text-emerald-600 tabular-nums">+{Math.round(prod.estimatedMargin * 100)}%</p>
-                             </div>
-                           </div>
-                         </div>
-                       </div>
-                     ))}
-                   </div>
-                 )}
-              </div>
-            )}
-          </>
         </div>
       </div>
 
       {/* Floating Bulk Actions Toolbar */}
-      {selectedRows.length > 0 && activeTab !== 'import' && (
+      {selectedRows.length > 0 && (
         <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-[#111111] text-white px-2 py-2 rounded-2xl shadow-2xl flex items-center gap-2 animate-in slide-in-from-bottom-5 fade-in duration-300 z-30">
            <div className="px-4 border-r border-gray-700">
              <span className="text-[13px] font-bold">{selectedRows.length} seleccionados</span>
@@ -318,17 +371,93 @@ export default function CatalogClient({ products }: CatalogClientProps) {
       )}
 
       {/* Drawers */}
-      <ProductDrawer 
-        product={selectedProduct} 
-        isOpen={selectedProduct !== null} 
-        onClose={() => setSelectedProduct(null)} 
-      />
-      <ImportPreviewDrawer
-        product={selectedImportable}
-        isOpen={selectedImportable !== null}
-        onClose={() => setSelectedImportable(null)}
+      <ProductDrawer
+        product={selectedProduct}
+        isOpen={selectedProduct !== null}
+        onClose={() => setSelectedProduct(null)}
+        onProductUpdated={() => router.refresh()}
+        focusSection={focusSection}
       />
 
+
+    </div>
+  );
+}
+
+// ─── Catalog Intelligence: Signal Chips ───
+
+function SignalChips({
+  signals,
+  providerName,
+  channelCount,
+  variantCriticalId,
+  variantHiddenId,
+  variantStuckId,
+  variantNegativeId,
+  variantUrgentReorderId,
+}: {
+  signals: CatalogSignal[];
+  providerName: string | null;
+  channelCount: number;
+  variantCriticalId: string | null;
+  variantHiddenId: string | null;
+  variantStuckId: string | null;
+  variantNegativeId: string | null;
+  variantUrgentReorderId: string | null;
+}) {
+  const router = useRouter();
+
+  // Map variant signal keys to their variant IDs and actions
+  const variantSignalMap: Record<string, { variantId: string | null; action?: "adjust" | "reorder" }> = {
+    variant_critical: { variantId: variantCriticalId, action: "adjust" },
+    variant_stuck: { variantId: variantStuckId },
+    variant_negative: { variantId: variantNegativeId },
+    variant_hidden: { variantId: variantHiddenId }, // Use specific hidden variant ID
+    variant_urgent: { variantId: variantUrgentReorderId, action: "reorder" },
+  };
+
+  const handleVariantSignalClick = (e: React.MouseEvent, variantId: string, action?: "adjust" | "reorder") => {
+    e.stopPropagation();
+    if (!variantId) return; // Prevent navigation if variantId is empty
+    router.push(buildVariantHref(variantId, action));
+  };
+
+  return (
+    <div className="flex flex-wrap gap-1 max-w-[220px]">
+      {signals.map((s) => {
+        const variantInfo = variantSignalMap[s.key];
+        const isVariantSignal = variantInfo && variantInfo.variantId;
+
+        return (
+          <span
+            key={s.key}
+            className={cn(
+              "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold transition-colors",
+              s.severity === "blocker" ? "bg-red-50 text-red-700 border border-red-200" :
+              s.severity === "warning" ? "bg-amber-50 text-amber-700 border border-amber-200" :
+              s.severity === "ok" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" :
+              "bg-gray-50 text-gray-500 border border-gray-200",
+              isVariantSignal && "cursor-pointer hover:bg-opacity-80 underline decoration-dotted underline-offset-2"
+            )}
+            onClick={(e) => isVariantSignal ? handleVariantSignalClick(e, variantInfo.variantId!, variantInfo.action) : undefined}
+            title={isVariantSignal ? "Ver en inventory" : undefined}
+          >
+            {s.severity === "blocker" && <AlertTriangle className="w-2.5 h-2.5" />}
+            {s.severity === "ok" && <CheckCircle2 className="w-2.5 h-2.5" />}
+            {s.label}
+          </span>
+        );
+      })}
+      {providerName && (
+        <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-200">
+          {providerName}
+        </span>
+      )}
+      {channelCount > 0 && (
+        <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold bg-purple-50 text-purple-600 border border-purple-200">
+          {channelCount} canal{channelCount !== 1 ? "es" : ""}
+        </span>
+      )}
     </div>
   );
 }
