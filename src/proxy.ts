@@ -42,10 +42,10 @@ export function proxy(req: NextRequest) {
 
   // ─── Staging / unconfigured domain passthrough ───
   // When NEXT_PUBLIC_ROOT_DOMAIN is not set and we're not on localhost,
-  // pass through all requests to avoid rewriting to non-existent storefront routes.
-  // This allows staging/preview deploys to work without domain configuration.
+  // rewrite public paths to /home/* (same as localhost behavior) so the
+  // landing page, login, register, etc. work on Render/staging deploys.
   if (!process.env.NEXT_PUBLIC_ROOT_DOMAIN && !isLocalHost) {
-    return NextResponse.next()
+    return NextResponse.rewrite(new URL(`/home${path}`, req.url))
   }
 
   // ─── Localhost passthrough for known app-level routes ───
