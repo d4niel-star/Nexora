@@ -239,7 +239,7 @@ export function AIStoreStudioPage() {
         {outOfCredits && (
            <UpgradePrompt 
               title="Límite de créditos alcanzado" 
-              description="Te quedaste sin créditos de IA. Comprá más créditos o mejorá tu plan para seguir generando store concepts de altísimo nivel."
+              description="Sin créditos de IA disponibles. Podés comprar créditos adicionales o actualizar tu plan desde la sección de facturación."
               feature="ai_credits"
               className="mb-8"
            />

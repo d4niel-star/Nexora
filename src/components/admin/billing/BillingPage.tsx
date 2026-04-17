@@ -96,6 +96,13 @@ export function BillingPage() {
   const creditPercent = data.credits.total > 0 ? Math.round((data.credits.used / data.credits.total) * 100) : 0;
   const currentPlanIdx = plans.findIndex(p => p.code === data.plan.code);
 
+  const formatARS = (v: number) =>
+    new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
+      maximumFractionDigits: 0,
+    }).format(v);
+
   return (
     <div className="animate-in fade-in duration-500 space-y-10">
       {/* ─── Header ─── */}
@@ -120,10 +127,10 @@ export function BillingPage() {
             <span className="text-[32px] font-extrabold tracking-tight text-[#111111] leading-none">{data.plan.name}</span>
             {data.plan.monthlyPrice > 0 && (
               <p className="mt-1.5 text-sm text-[#999999]">
-                <span className="text-[#111111] font-semibold">${data.plan.monthlyPrice.toLocaleString("es-AR")}</span> /mes
+                <span className="text-[#111111] font-semibold">{formatARS(data.plan.monthlyPrice)}</span> /mes
               </p>
             )}
-            {data.plan.monthlyPrice === 0 && <p className="mt-1.5 text-sm text-[#999999]">Sin cargo</p>}
+            {data.plan.monthlyPrice === 0 && <p className="mt-1.5 text-sm text-[#999999]">Consultar</p>}
           </div>
         </div>
 
@@ -150,7 +157,7 @@ export function BillingPage() {
               disabled={isPending}
               className="mt-4 w-full py-2 bg-[#FAFAFA] border border-[#EAEAEA] rounded hover:bg-[#F0F0F0] text-xs font-bold transition-colors disabled:opacity-50"
             >
-              Comprar 1,000 Créditos Extras ($20.000)
+              Comprar 1.000 créditos extras ({formatARS(20000)})
             </button>
           </div>
         </div>
@@ -213,27 +220,27 @@ export function BillingPage() {
                   <div className="mt-3 flex items-baseline gap-1">
                     {plan.monthlyPrice === 0 ? (
                       <span className={cn("text-[28px] font-extrabold tracking-tight leading-none", isCurrent ? "text-white" : "text-[#111111]")}>
-                        Gratis
+                        Consultar
                       </span>
                     ) : (
                       <>
                         <span className={cn("text-[28px] font-extrabold tracking-tight leading-none", isCurrent ? "text-white" : "text-[#111111]")}>
-                          ${(plan.monthlyPrice / 1000).toFixed(0)}k
+                          {formatARS(plan.monthlyPrice)}
                         </span>
-                        <span className={cn("text-xs font-medium", isCurrent ? "text-white/40" : "text-[#BBBBBB]")}>/mes</span>
+                        <span className={cn("text-xs font-medium", isCurrent ? "text-white/40" : "text-[#BBBBBB]")}>/ mes</span>
                       </>
                     )}
                   </div>
 
                   <div className={cn("mt-6 space-y-2.5", isCurrent ? "text-white/70" : "")}>
-                    <PlanLine text={`${plan.config.aiCredits} créditos IA`} active={isCurrent} />
+                    <PlanLine text={plan.config.aiCredits === 0 ? "Créditos a medida" : `${plan.config.aiCredits} créditos IA`} active={isCurrent} />
                     <PlanLine text={plan.config.maxProducts === 0 ? "Productos ilimitados" : `${plan.config.maxProducts} productos`} active={isCurrent} />
                     <PlanLine text={plan.config.maxOrdersPerMonth === 0 ? "Pedidos ilimitados" : `${plan.config.maxOrdersPerMonth} pedidos/mes`} active={isCurrent} />
                     {plan.config.customDomain && <PlanLine text="Dominio custom" active={isCurrent} />}
                     {plan.config.byokEnabled && <PlanLine text="BYOK — tu propia IA" active={isCurrent} />}
                     {plan.config.aiStudioAdvanced && <PlanLine text="AI Studio avanzado" active={isCurrent} />}
                     {plan.config.advancedCarriers && <PlanLine text="Logística avanzada" active={isCurrent} />}
-                    <PlanLine text={`${plan.config.maxStaff} ${plan.config.maxStaff === 1 ? "usuario" : "usuarios"}`} active={isCurrent} />
+                    <PlanLine text={plan.config.maxStaff === 0 ? "Usuarios ilimitados" : `${plan.config.maxStaff} ${plan.config.maxStaff === 1 ? "usuario" : "usuarios"}`} active={isCurrent} />
                   </div>
                 </div>
 

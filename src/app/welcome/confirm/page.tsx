@@ -16,7 +16,7 @@ export default async function ConfirmPage({
   const params = await searchParams;
   const paymentStatus = params.payment || "unknown";
 
-  // ─── Free plan confirmation (no payment param) ───
+  // ─── Plan confirmation (no payment param) ───
   if (paymentStatus === "unknown") {
     return (
       <div className="max-w-lg mx-auto text-center space-y-8 animate-in fade-in zoom-in-95 duration-700 pt-12 sm:pt-20">
@@ -35,8 +35,8 @@ export default async function ConfirmPage({
             Todo listo para empezar
           </h1>
           <p className="text-[#888888] text-[15px] leading-relaxed max-w-sm mx-auto">
-            Tu plan Free y créditos iniciales fueron asignados. 
-            Ya podés acceder al panel y comenzar a construir.
+            Tu plan y créditos iniciales fueron asignados.
+            Ya podés acceder al panel y comenzar a operar.
           </p>
         </div>
 

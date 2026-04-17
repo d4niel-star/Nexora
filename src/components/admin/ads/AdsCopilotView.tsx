@@ -5,18 +5,33 @@ import { Sparkles, Megaphone, CheckCircle2, AlertCircle, Plus, Loader2, ArrowRig
 import { Button } from "@/components/ui/button";
 import { NexoraAIShell } from "@/components/admin/ai/NexoraAIShell";
 import { generateAdsCopilotRecommendations } from "@/lib/ads/ai/actions";
-import { addAdsConnection } from "@/lib/ads/connections/actions";
 import { createCampaignDraft } from "@/lib/ads/drafts/actions";
+import { syncAdsInsights } from "@/lib/ads/sync/actions";
 
 export function AdsCopilotView({ storeId, connections, recommendations, drafts, insights }: any) {
   const [activeTab, setActiveTab] = useState("recomendaciones");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [syncLoading, setSyncLoading] = useState<string | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   const metaConnection = connections.find((c: any) => c.platform === "meta");
   const googleConnection = connections.find((c: any) => c.platform === "google");
   const tiktokConnection = connections.find((c: any) => c.platform === "tiktok");
+
+  const handleSync = async (connectionId: string) => {
+     setSyncLoading(connectionId);
+     setSyncError(null);
+     try {
+       await syncAdsInsights(connectionId);
+       window.location.reload();
+     } catch (e: any) {
+       setSyncError(e.message);
+     } finally {
+       setSyncLoading(null);
+     }
+  };
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -24,14 +39,9 @@ export function AdsCopilotView({ storeId, connections, recommendations, drafts, 
     window.location.reload();
   };
 
-  const handleConnect = async (platform: string) => {
+  const handleConnect = (platform: string) => {
     setIsConnecting(true);
-    try {
-      await addAdsConnection(storeId, platform, "123456789", `${platform} Account`);
-      window.location.reload();
-    } finally {
-      setIsConnecting(false);
-    }
+    window.location.href = `/api/ads/oauth/${platform}/start`;
   };
 
   const handleCreateDraft = async (recoId: string) => {
@@ -93,25 +103,40 @@ export function AdsCopilotView({ storeId, connections, recommendations, drafts, 
                <ConnectionCard 
                  title="Meta Ads" 
                  icon="Facebook / Instagram" 
-                 active={!!metaConnection} 
+                 connection={metaConnection}
                  loading={isConnecting}
+                 syncLoading={syncLoading === metaConnection?.id}
                  onConnect={() => handleConnect("meta")} 
+                 onSync={metaConnection ? () => handleSync(metaConnection.id) : undefined}
                />
                <ConnectionCard 
                  title="Google Ads" 
                  icon="Search / Shopping" 
-                 active={!!googleConnection} 
+                 connection={googleConnection}
                  loading={isConnecting}
+                 syncLoading={syncLoading === googleConnection?.id}
                  onConnect={() => handleConnect("google")} 
+                 onSync={googleConnection ? () => handleSync(googleConnection.id) : undefined}
                />
                <ConnectionCard 
                  title="TikTok Ads" 
                  icon="Video Ads" 
-                 active={!!tiktokConnection} 
+                 connection={tiktokConnection}
                  loading={isConnecting}
+                 syncLoading={syncLoading === tiktokConnection?.id}
                  onConnect={() => handleConnect("tiktok")} 
+                 onSync={tiktokConnection ? () => handleSync(tiktokConnection.id) : undefined}
                />
-            </div>
+             </div>
+         )}
+         {activeTab === "conexiones" && syncError && (
+             <div className="mt-6 p-4 bg-red-50 text-red-700 border border-red-100 rounded-xl flex items-start gap-3">
+               <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+               <div>
+                 <p className="font-bold">Error de sincronización</p>
+                 <p className="text-sm mt-1">{syncError}</p>
+               </div>
+             </div>
          )}
 
          {/* RECOMENDACIONES TAB */}
@@ -206,10 +231,46 @@ export function AdsCopilotView({ storeId, connections, recommendations, drafts, 
          
          {/* INSIGHTS */}
          {activeTab === "insights" && (
-            <div className="rounded-3xl border border-[#EAEAEA] bg-white p-12 text-center shadow-sm">
-               <TrendingUp className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-               <h3 className="text-xl font-bold text-[#111111]">Insights y Performance</h3>
-               <p className="text-gray-500 mt-2">Conectá cuentas publicitarias con campañas activas para ver el ROAS real del negocio integrado con tus ventas de Nexora.</p>
+            <div className="space-y-4">
+               {insights?.length === 0 ? (
+                 <div className="rounded-3xl border border-[#EAEAEA] bg-white p-12 text-center shadow-sm">
+                    <TrendingUp className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-xl font-bold text-[#111111]">Insights y Performance</h3>
+                    <p className="text-gray-500 mt-2">Conectá cuentas publicitarias con campañas activas y sincronizalas para ver el ROAS real del negocio integrado con tus ventas de Nexora.</p>
+                 </div>
+               ) : (
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                   {insights.slice(0, 6).map((insight: any) => {
+                     const metrics = JSON.parse(insight.metricsJson || "{}");
+                     return (
+                       <div key={insight.id} className="rounded-2xl border border-[#EAEAEA] bg-white p-6 shadow-sm flex flex-col justify-between">
+                         <div className="flex justify-between items-start mb-4">
+                           <span className="px-2 py-0.5 rounded bg-gray-100 text-gray-600 text-[10px] font-black uppercase tracking-wider">{insight.platform}</span>
+                           <span className="text-[10px] text-gray-400 font-bold">{new Date(insight.snapshotAt).toLocaleDateString("es-AR")}</span>
+                         </div>
+                         <div className="space-y-3">
+                           <div className="flex justify-between">
+                             <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Inversión (30d)</span>
+                             <span className="text-sm font-black text-[#111111]">${Number(metrics.spend || 0).toLocaleString("es-AR", { maximumFractionDigits: 0 })}</span>
+                           </div>
+                           <div className="flex justify-between">
+                             <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Impresiones</span>
+                             <span className="text-sm font-black text-[#111111]">{Number(metrics.impressions || 0).toLocaleString("es-AR")}</span>
+                           </div>
+                           <div className="flex justify-between">
+                             <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Clics</span>
+                             <span className="text-sm font-black text-[#111111]">{Number(metrics.clicks || 0).toLocaleString("es-AR")}</span>
+                           </div>
+                           <div className="flex justify-between border-t border-gray-100 pt-2">
+                             <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Conversiones</span>
+                             <span className="text-sm font-black text-emerald-600">{Number(metrics.conversions || 0).toLocaleString("es-AR")}</span>
+                           </div>
+                         </div>
+                       </div>
+                     )
+                   })}
+                 </div>
+               )}
             </div>
          )}
        </div>
@@ -218,20 +279,40 @@ export function AdsCopilotView({ storeId, connections, recommendations, drafts, 
   );
 }
 
-function ConnectionCard({ title, icon, active, loading, onConnect }: any) {
+function ConnectionCard({ title, icon, connection, loading, syncLoading, onConnect, onSync }: any) {
+  const active = !!connection;
+  const status = connection?.status;
+  const lastError = connection?.lastError;
+
   return (
     <div className="rounded-3xl border border-[#EAEAEA] bg-white p-6 sm:p-8 shadow-sm flex flex-col h-full hover:shadow-md transition-shadow">
        <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center mb-6 border border-gray-100">
          <Megaphone className="w-6 h-6 text-gray-600" />
        </div>
        <h3 className="text-xl font-black tracking-tight text-[#111111]">{title}</h3>
-       <p className="text-[13px] font-bold text-gray-400 uppercase tracking-widest mt-1 mb-8">{icon}</p>
+       <p className="text-[13px] font-bold text-gray-400 uppercase tracking-widest mt-1 mb-6">{icon}</p>
        
-       <div className="mt-auto">
+       <div className="mt-auto space-y-3">
          {active ? (
-           <div className="flex items-center gap-2 text-emerald-600 font-bold bg-emerald-50 py-3 px-4 rounded-xl">
-             <CheckCircle2 className="w-5 h-5" /> Cuenta Conectada
-           </div>
+           <>
+             <div className="flex items-center gap-2 text-emerald-600 font-bold bg-emerald-50 py-3 px-4 rounded-xl mb-3">
+               <CheckCircle2 className="w-5 h-5 shrink-0" /> <span className="truncate">{connection.accountName || "Cuenta Conectada"}</span>
+             </div>
+             {status === "error" && lastError && (
+               <p className="text-[11px] font-medium text-red-600 bg-red-50 p-2 rounded-lg line-clamp-2">
+                 {lastError}
+               </p>
+             )}
+             <Button 
+               variant="outline" 
+               className="w-full border-gray-200 text-[#111111] hover:bg-gray-50 font-bold"
+               onClick={onSync}
+               disabled={syncLoading}
+             >
+               {syncLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <TrendingUp className="w-4 h-4 mr-2" />}
+               Sincronizar Métricas
+             </Button>
+           </>
          ) : (
            <Button 
              variant="outline" 

@@ -31,11 +31,9 @@ export async function upgradePlanAction(planCode: string) {
   const plan = PLAN_DEFINITIONS.find(p => p.code === planCode);
   if (!plan) throw new Error("Plan inválido");
 
-  if (plan.monthlyPrice === 0) {
-    // Immediate downgrade/upgrade for free
-    const result = await upgradePlan(store.id, planCode);
-    revalidatePath("/admin/billing");
-    return { success: true, redirectUrl: null };
+  if (plan.code === "enterprise") {
+    // Enterprise requires custom handling, not self-service
+    throw new Error("El plan Enterprise requiere contacto con ventas.");
   }
 
   // Create payment preference for the upgrade

@@ -7,10 +7,7 @@ import {
   ChevronRight,
   Globe,
   Database,
-  Cpu,
-  Layers,
   Package,
-  Bot,
   Megaphone,
   ShoppingCart,
   Truck,
@@ -69,7 +66,7 @@ export default function MarketingLandingPage() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link href="/home/register" className="px-7 py-3.5 bg-[#111111] text-white rounded-full font-bold text-[14px] hover:bg-[#222222] transition-all shadow-xl shadow-black/10 flex items-center gap-2 w-full sm:w-auto justify-center">
-              Empezar ahora <ArrowRight className="h-4 w-4" />
+              Empezar <ArrowRight className="h-4 w-4" />
             </Link>
             <Link href="/home/pricing" className="px-7 py-3.5 bg-white text-[#111111] border border-[#E5E5E5] rounded-full font-bold text-[14px] hover:bg-[#FAFAFA] hover:border-[#CCCCCC] transition-all w-full sm:w-auto text-center">
               Ver planes
@@ -254,17 +251,17 @@ export default function MarketingLandingPage() {
       <section className="border-t border-[#E5E5E5] bg-[#FAFAFA] py-20 sm:py-24 px-5 sm:px-6 relative z-10">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#111111] mb-4">
-            Empezá gratis. Escalá sin límites.
+            Operación centralizada. Control real.
           </h2>
           <p className="text-[#666666] text-[15px] font-medium mb-8 leading-relaxed">
-            Creá tu cuenta en segundos y accedé a toda la plataforma. Sin tarjeta, sin compromiso.
+            Creá tu cuenta y accedé a la infraestructura operativa que tu negocio necesita.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link href="/home/register" className="px-7 py-3.5 bg-[#111111] text-white rounded-full font-bold text-[14px] hover:bg-[#222222] transition-all shadow-xl shadow-black/10 flex items-center gap-2 w-full sm:w-auto justify-center">
-              Crear cuenta gratis <ArrowRight className="h-4 w-4" />
+              Crear cuenta <ArrowRight className="h-4 w-4" />
             </Link>
             <Link href="/home/pricing" className="px-7 py-3.5 bg-white text-[#111111] border border-[#E5E5E5] rounded-full font-bold text-[14px] hover:bg-white hover:border-[#CCCCCC] transition-all w-full sm:w-auto text-center">
-              Ver planes y precios
+              Ver planes
             </Link>
           </div>
         </div>

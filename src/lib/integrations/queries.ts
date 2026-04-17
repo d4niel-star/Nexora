@@ -8,7 +8,7 @@ export interface UnifiedConnection {
   type: "channel" | "provider" | "ad_platform" | "payment";
   name: string;
   platform: string;
-  status: "connected" | "disconnected" | "error" | "pending";
+  status: "connected" | "disconnected" | "error" | "pending" | "expired";
   health: "operational" | "degraded" | "critical";
   lastSync: Date | null;
   description: string;
@@ -31,8 +31,8 @@ export async function getUnifiedConnections(): Promise<UnifiedConnection[]> {
       type: "channel",
       platform: ch.channel,
       name: ch.channel === "mercadolibre" ? "Mercado Libre" : ch.channel === "shopify" ? "Shopify" : String(ch.channel),
-      status: (ch.status as "connected" | "disconnected" | "error") || "disconnected",
-      health: ch.status === "error" ? "critical" : "operational",
+      status: (ch.status as "connected" | "disconnected" | "error" | "expired") || "disconnected",
+      health: (ch.status === "error" || ch.status === "expired") ? "critical" : "operational",
       lastSync: ch.lastValidatedAt,
       description: "Canal de venta externo",
     });
@@ -49,8 +49,8 @@ export async function getUnifiedConnections(): Promise<UnifiedConnection[]> {
       type: "ad_platform",
       platform: ad.platform,
       name: ad.platform === "meta" ? "Meta Ads" : ad.platform === "google" ? "Google Ads" : String(ad.platform),
-      status: (ad.status as "connected" | "disconnected" | "error") || "disconnected",
-      health: ad.status === "error" ? "critical" : "operational",
+      status: (ad.status as "connected" | "disconnected" | "error" | "pending") || "disconnected",
+      health: ad.status === "error" ? "critical" : ad.status === "pending" ? "degraded" : "operational",
       lastSync: ad.lastValidatedAt,
       description: "Plataforma publicitaria",
     });

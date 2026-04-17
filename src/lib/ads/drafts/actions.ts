@@ -41,7 +41,8 @@ export async function createCampaignDraft(storeId: string, recommendationId: str
         create: productIds.map((pid: string) => ({ productId: pid })),
       },
       aiSummary: recommendation.summary,
-      aiScore: 92
+      aiScore: 92,
+      status: "draft_local_only" // Brutal honesty: we do not publish to Meta/TikTok yet
     }
   });
 
@@ -50,9 +51,9 @@ export async function createCampaignDraft(storeId: string, recommendationId: str
      storeId,
      entityType: "ads_draft",
      entityId: draft.id,
-     eventType: "ads_draft_created",
+     eventType: "ads_draft_created_local",
      source: "ads_copilot",
-     message: `Borrador de campaña creado para ${recommendation.platform}`
+     message: `Borrador guardado localmente para ${recommendation.platform} (Sin publicar al proveedor)`
   });
 
   revalidatePath("/admin/ads");

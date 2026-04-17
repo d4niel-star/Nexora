@@ -105,7 +105,7 @@ export async function getStudioDataAction() {
   const draft = await getLatestAIDraft(store.id);
   const planInfo = await getStorePlanInfo(store.id);
   const credits = planInfo?.credits || { total: 0, used: 0, remaining: 0 };
-  const plan = planInfo?.plan || { code: 'free', name: 'Free', monthlyPrice: 0, currency: 'ARS' };
+  const plan = planInfo?.plan || { code: 'core', name: 'Core', monthlyPrice: 59900, currency: 'ARS' };
 
   return {
     storeId: store.id,

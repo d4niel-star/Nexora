@@ -255,7 +255,7 @@ export function AIAssistantPage() {
                  <div className="border-t border-[#F0F0F0] bg-[#FAFAFA] p-4">
                     <UpgradePrompt 
                        title="Se agotaron tus créditos de IA" 
-                       description="Alcanzaste el límite de créditos para este mes. Mejorá tu plan para seguir revolucionando tus operaciones multicanal."
+                       description="Alcanzaste el límite de créditos incluidos en tu plan. Podés comprar créditos adicionales o actualizar a un plan con mayor capacidad."
                        feature="ai_credits"
                     />
                  </div>

@@ -29,7 +29,7 @@ export async function resolvePostAuthDestination() {
   return { destination: "/admin/dashboard", reason: "active" as const };
 }
 
-export async function selectFreePlanAction() {
+export async function selectCorePlanAction() {
   const store = await getCurrentStore();
 
   if (!store) {
@@ -44,7 +44,7 @@ export async function selectFreePlanAction() {
     throw new Error("Store already has a subscription.");
   }
 
-  // Use the initialization which correctly handles free plan creation
+  // Initialize on Core plan with initial credits
   await initializeStoreBilling(store.id);
 
   return { success: true };

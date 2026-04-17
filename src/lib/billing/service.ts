@@ -29,15 +29,15 @@ export async function seedPlans() {
   }
 }
 
-// ─── Initialize store on free plan with free credits ───
+// ─── Initialize store on Core plan with initial credits ───
 
 export async function initializeStoreBilling(storeId: string) {
   await seedPlans();
 
-  const freePlan = await prisma.plan.findUnique({ where: { code: "free" } });
-  if (!freePlan) throw new Error("Free plan not found. Run seedPlans first.");
+  const corePlan = await prisma.plan.findUnique({ where: { code: "core" } });
+  if (!corePlan) throw new Error("Core plan not found. Run seedPlans first.");
 
-  const config = JSON.parse(freePlan.configJson) as PlanConfig;
+  const config = JSON.parse(corePlan.configJson) as PlanConfig;
 
   // Create subscription if not exists
   const existing = await prisma.storeSubscription.findUnique({ where: { storeId } });
@@ -45,7 +45,7 @@ export async function initializeStoreBilling(storeId: string) {
     await prisma.storeSubscription.create({
       data: {
         storeId,
-        planId: freePlan.id,
+        planId: corePlan.id,
         status: "active",
       },
     });
@@ -70,7 +70,7 @@ export async function initializeStoreBilling(storeId: string) {
         type: "grant_free",
         amount: config.aiCredits,
         source: "onboarding",
-        metadataJson: JSON.stringify({ plan: "free", initialGrant: true }),
+        metadataJson: JSON.stringify({ plan: "core", initialGrant: true }),
       },
     });
 
@@ -80,8 +80,8 @@ export async function initializeStoreBilling(storeId: string) {
       eventType: "credits_granted",
       severity: "info",
       source: "billing",
-      message: `${config.aiCredits} créditos iniciales otorgados (plan Free)`,
-      metadata: { credits: config.aiCredits, plan: "free" },
+      message: `${config.aiCredits} créditos iniciales otorgados (plan Core)`,
+      metadata: { credits: config.aiCredits, plan: "core" },
     });
   }
 }
@@ -138,17 +138,17 @@ export async function checkFeatureAccess(storeId: string, feature: string): Prom
     case "custom_domain":
       return info.entitlements.customDomain
         ? { allowed: true }
-        : { allowed: false, reason: "Dominios personalizados requieren plan Starter o superior" };
+        : { allowed: false, reason: "Dominios personalizados incluidos en todos los planes" };
 
     case "byok":
       return info.entitlements.byokEnabled
         ? { allowed: true }
-        : { allowed: false, reason: "Bring Your Own Key requiere plan Pro" };
+        : { allowed: false, reason: "Bring Your Own Key requiere plan Scale o superior" };
 
     case "ai_studio_advanced":
       return info.entitlements.aiStudioAdvanced
         ? { allowed: true }
-        : { allowed: false, reason: "AI Studio avanzado requiere plan Starter o superior" };
+        : { allowed: false, reason: "AI Studio avanzado requiere plan Growth o superior" };
 
     case "advanced_carriers":
       return info.entitlements.advancedCarriers

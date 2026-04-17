@@ -3,11 +3,13 @@ import { getDefaultStore } from "@/lib/store-engine/queries";
 import { getMLAuthUrl } from "@/lib/channels/oauth/mercadolibre";
 import { prisma } from "@/lib/db/prisma";
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
 export async function GET(req: NextRequest) {
   try {
     const store = await getDefaultStore();
     if (!store) {
-      return NextResponse.json({ error: "No store context found" }, { status: 400 });
+      return NextResponse.redirect(`${APP_URL}/admin/channels?error=no_store`);
     }
 
     await prisma.systemEvent.create({
@@ -25,6 +27,8 @@ export async function GET(req: NextRequest) {
     const url = getMLAuthUrl(store.id);
     return NextResponse.redirect(url);
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    console.error("[ML Start Error]", e.message);
+    const detail = encodeURIComponent(e.message || "Error desconocido");
+    return NextResponse.redirect(`${APP_URL}/admin/channels?error=config_error&detail=${detail}`);
   }
 }

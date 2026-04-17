@@ -27,3 +27,16 @@ databases:
   - name: nexora-db
     plan: free
     databaseName: nexora
+
+  - type: cron
+    name: nexora-ads-sync
+    runtime: node
+    repo: https://github.com/d4niel-star/Nexora
+    branch: main
+    schedule: "0 2 * * *" # Run at 2:00 AM every day
+    command: "curl -H \"Authorization: Bearer $CRON_SECRET\" $NEXT_PUBLIC_APP_URL/api/ads/sync"
+    envVars:
+      - key: CRON_SECRET
+        sync: false
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
