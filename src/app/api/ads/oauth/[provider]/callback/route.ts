@@ -21,15 +21,26 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ prov
     return NextResponse.redirect(`${APP_URL}/admin/ai/ads?error=${reason}&detail=${msg}`);
   }
 
-  if (!code || !state) {
+  const storeIdCookie = req.cookies.get("oauth_store_id")?.value;
+
+  if (!code) {
     return NextResponse.redirect(`${APP_URL}/admin/ai/ads?error=missing_params`);
   }
 
   try {
-    const stateObj = JSON.parse(Buffer.from(state, 'base64').toString('utf-8'));
-    const storeId = stateObj.storeId;
+    let storeId = storeIdCookie;
+    
+    // Fallback if state is actually returned
+    if (!storeId && state) {
+      try {
+        const stateObj = JSON.parse(Buffer.from(state, 'base64').toString('utf-8'));
+        storeId = stateObj.storeId;
+      } catch (e) {
+        // ignore
+      }
+    }
 
-    if (!storeId) throw new Error("State no contiene storeId");
+    if (!storeId) throw new Error("No se pudo identificar la tienda (sesión expirada o storeId faltante)");
 
     if (provider === "meta") {
        await handleMetaCallback(code, storeId);

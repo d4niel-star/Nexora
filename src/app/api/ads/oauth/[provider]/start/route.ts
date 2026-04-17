@@ -35,7 +35,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ prov
     else if (provider === "google") url = getGoogleAuthUrl(store.id);
     else throw new Error(`Proveedor de Ads desconocido: ${provider}`);
 
-    return NextResponse.redirect(url);
+    const res = NextResponse.redirect(url);
+    res.cookies.set("oauth_store_id", store.id, { path: "/", httpOnly: true, maxAge: 60 * 15 });
+    return res;
   } catch (e: any) {
     console.error(`[Ads Start Error: ${provider}]`, e.message);
     const detail = encodeURIComponent(e.message || "Error desconocido");

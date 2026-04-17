@@ -5,7 +5,7 @@ import { getStoreRecommendations } from "@/lib/ads/ai/actions";
 import { getCampaignDrafts, getInsightSnapshots } from "@/lib/ads/drafts/actions";
 import { unstable_noStore as noStore } from "next/cache";
 
-export default async function AdsPage() {
+export default async function AdsPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   noStore();
   
   const { getAdminStoreInitialData } = await import("@/lib/store-engine/queries");
@@ -20,6 +20,8 @@ export default async function AdsPage() {
     getInsightSnapshots(storeId)
   ]);
 
+  const resolvedSearchParams = await searchParams;
+
   return (
     <Suspense fallback={<div>Cargando Nexora AI...</div>}>
       <AdsCopilotView 
@@ -28,6 +30,7 @@ export default async function AdsPage() {
         recommendations={recommendations}
         drafts={drafts}
         insights={insights}
+        searchParams={resolvedSearchParams}
       />
     </Suspense>
   );

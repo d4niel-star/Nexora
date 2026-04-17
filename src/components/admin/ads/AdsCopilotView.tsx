@@ -8,7 +8,7 @@ import { generateAdsCopilotRecommendations } from "@/lib/ads/ai/actions";
 import { createCampaignDraft } from "@/lib/ads/drafts/actions";
 import { syncAdsInsights } from "@/lib/ads/sync/actions";
 
-export function AdsCopilotView({ storeId, connections, recommendations, drafts, insights }: any) {
+export function AdsCopilotView({ storeId, connections, recommendations, drafts, insights, searchParams }: any) {
   const [activeTab, setActiveTab] = useState("recomendaciones");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -74,6 +74,19 @@ export function AdsCopilotView({ storeId, connections, recommendations, drafts, 
               Analizar negocio
            </Button>
         </div>
+
+        {/* OAuth Error Rendering */}
+        {searchParams?.error && (
+          <div className="mb-8 rounded-xl bg-red-50 border border-red-200 p-4 flex items-center gap-3">
+            <AlertCircle className="h-5 w-5 text-red-600 shrink-0" />
+            <div>
+              <p className="text-[13px] font-bold text-red-800">
+                Error de autorización: {searchParams.error === "missing_params" ? "Flujo cancelado o inválido." : searchParams.error === "auth_denied" ? "El usuario denegó los permisos." : "Hubo un error al intentar conectar la cuenta."}
+              </p>
+              {searchParams.detail && <p className="text-[12px] text-red-700 mt-0.5">{decodeURIComponent(searchParams.detail)}</p>}
+            </div>
+          </div>
+        )}
 
         {/* Tabs Navigation */}
        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide border-b border-[#EAEAEA]">

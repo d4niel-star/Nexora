@@ -69,23 +69,23 @@ export default function PricingPage() {
     }).format(v);
 
   return (
-    <div className="min-h-screen bg-[#07070A] text-white font-sans selection:bg-white/10 selection:text-white">
+    <div className="min-h-screen bg-white text-[#111111] font-sans selection:bg-[#111111]/10 selection:text-[#111111]">
       {/* Header */}
       <header className="absolute top-0 w-full px-5 sm:px-6 py-5 flex justify-between items-center z-50 max-w-7xl left-1/2 -translate-x-1/2">
         <div className="flex items-center gap-2.5">
           <Link href="/" className="flex items-center gap-2.5">
             <div className="relative w-8 h-8 flex items-center justify-center overflow-hidden">
-              <div className="absolute inset-0 bg-white rounded-[10px] rotate-12" />
-              <div className="absolute w-2.5 h-2.5 bg-[#07070A] rounded-sm -ml-2 -mt-2" />
-              <div className="absolute w-2.5 h-2.5 bg-[#07070A]/30 rounded-sm ml-2 mt-2" />
+              <div className="absolute inset-0 bg-[#111111] rounded-[10px] rotate-12" />
+              <div className="absolute w-2.5 h-2.5 bg-white rounded-sm -ml-2 -mt-2" />
+              <div className="absolute w-2.5 h-2.5 bg-white/30 rounded-sm ml-2 mt-2" />
             </div>
-            <span className="font-extrabold tracking-tighter text-xl text-white">nexora</span>
+            <span className="font-extrabold tracking-tighter text-xl text-[#111111]">nexora</span>
           </Link>
         </div>
 
         <nav className="flex items-center gap-4 sm:gap-6 text-[13px] font-bold tracking-wide">
-          <Link href="/home/login" className="text-[#666666] hover:text-white transition-colors">Ingresar</Link>
-          <Link href="/home/register" className="px-4 py-2 bg-white text-[#07070A] rounded-full hover:bg-[#E5E5E5] transition-colors flex items-center gap-1.5">
+          <Link href="/home/login" className="text-[#666666] hover:text-[#111111] transition-colors">Ingresar</Link>
+          <Link href="/home/register" className="px-4 py-2 bg-[#111111] text-white rounded-full hover:bg-black transition-colors flex items-center gap-1.5">
             Empezar <ArrowRight className="w-3 h-3" />
           </Link>
         </nav>
@@ -228,16 +228,16 @@ export default function PricingPage() {
       </div>
 
       {/* Bottom note */}
-      <section className="border-t border-[#141418] py-16 px-5 sm:px-6 text-center">
-        <p className="text-[#3A3A3A] text-[13px] font-medium mb-1.5">
+      <section className="border-t border-[#EAEAEA] py-16 px-5 sm:px-6 text-center">
+        <p className="text-[#666666] text-[13px] font-medium mb-1.5">
           Todos los planes incluyen storefront, checkout con Mercado Pago y soporte por email.
         </p>
-        <p className="text-[#444444] text-[13px] font-medium mb-1">¿Necesitás una configuración a medida?</p>
-        <p className="text-[#666666] text-[14px] font-semibold">ventas@nexora.io</p>
+        <p className="text-[#888888] text-[13px] font-medium mb-1">¿Necesitás una configuración a medida?</p>
+        <p className="text-[#111111] text-[14px] font-semibold">ventas@nexora.io</p>
       </section>
 
       {/* Footer */}
-      <footer className="py-8 text-center text-[#333338] text-[12px] font-medium border-t border-[#141418]">
+      <footer className="py-8 text-center text-[#888888] text-[12px] font-medium border-t border-[#EAEAEA]">
         <p>&copy; {new Date().getFullYear()} Nexora. Infraestructura operativa para ecommerce.</p>
       </footer>
     </div>
