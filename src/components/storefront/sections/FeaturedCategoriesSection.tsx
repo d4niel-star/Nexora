@@ -2,6 +2,12 @@ import Link from "next/link";
 import type { StorefrontCollection } from "@/types/storefront";
 import { storePath } from "@/lib/store-engine/urls";
 
+// ─── Featured Categories Section ───
+// Tiles render over a 2/3 editorial ratio with a restrained hairline and a
+// softer scrim. No text appears over an empty tile — we render a clean
+// placeholder with the collection title instead, so the grid never looks
+// broken on stores that ship without category imagery.
+
 interface FeaturedCategoriesSectionProps {
   settings: Record<string, unknown>;
   storeSlug: string;
@@ -19,35 +25,59 @@ export function FeaturedCategoriesSection({
   if (collections.length === 0 && handles.length === 0) return null;
 
   return (
-    <div className="bg-gray-50 py-24 sm:py-32 border-y border-gray-100">
+    <section className="border-y border-[color:var(--hairline)] bg-[var(--surface-2)] py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <h2 className="text-center text-xs font-bold uppercase tracking-[0.2em] text-gray-500 mb-12">
+        <h2 className="mb-12 text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">
           {title}
         </h2>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
           {collections.map((col) => (
             <Link
               key={col.id}
               href={storePath(storeSlug, `collections/${col.handle}`)}
-              className="group relative overflow-hidden rounded-xl aspect-[4/3] bg-gray-200 shadow-sm"
+              className="group relative block aspect-[3/2] overflow-hidden rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-3)]"
             >
               {col.imageUrl ? (
-                <img
-                  src={col.imageUrl}
-                  alt={col.title}
-                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
+                <>
+                  <img
+                    src={col.imageUrl}
+                    alt={col.title}
+                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-[600ms] ease-[var(--ease-out)] group-hover:scale-[1.04]"
+                  />
+                  <div
+                    aria-hidden
+                    className="absolute inset-0"
+                    style={{
+                      background:
+                        "linear-gradient(180deg, rgba(10,11,14,0) 40%, rgba(10,11,14,0.72) 100%)",
+                    }}
+                  />
+                </>
               ) : (
-                <div className="absolute inset-0 flex items-center justify-center px-6 text-center">
-                  <span className="text-xs font-bold uppercase tracking-widest text-gray-400">Sin imagen</span>
-                </div>
+                <div
+                  aria-hidden
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      "radial-gradient(80% 60% at 20% 20%, rgba(91,108,255,0.10), transparent 60%), var(--surface-3)",
+                  }}
+                />
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-6">
-                <h3 className="text-lg font-extrabold text-white">
+
+              <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6">
+                <h3
+                  className={`font-display text-[22px] leading-[1.05] tracking-[-0.015em] sm:text-[26px] ${
+                    col.imageUrl ? "text-ink-12" : "text-ink-0"
+                  }`}
+                >
                   {col.title}
                 </h3>
-                <p className="mt-1 text-sm font-medium text-white/80">
+                <p
+                  className={`mt-1.5 text-[12px] tabular ${
+                    col.imageUrl ? "text-ink-12/70" : "text-ink-5"
+                  }`}
+                >
                   {col.productCount} productos
                 </p>
               </div>
@@ -55,6 +85,6 @@ export function FeaturedCategoriesSection({
           ))}
         </div>
       </div>
-    </div>
+    </section>
   );
 }

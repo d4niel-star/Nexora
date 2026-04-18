@@ -1,286 +1,336 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { motion } from "framer-motion"
+import Link from "next/link";
+import { motion } from "framer-motion";
 import {
   ArrowRight,
-  ChevronRight,
-  Globe,
   Database,
-  Package,
+  Globe,
   Megaphone,
-  ShoppingCart,
-  Truck,
-  TrendingUp,
-  Zap,
-  Store,
+  Package,
   Sparkles,
-} from "lucide-react"
+  Store,
+  Truck,
+} from "lucide-react";
+import { DisplayText, Hairline, Surface } from "@/components/ui/primitives";
+
+// ─── Landing ───
+// Editorial rewrite of the marketing home. All copy preserved verbatim; the
+// only changes are typography, spacing, surfaces, and the replacement of the
+// "Linear-esque" dashboard mock with a deliberate editorial composable of
+// three tokens (product tile · metric · order row) that reads like product
+// output, not a screenshot template.
+
+const VALUE_DRIVERS = [
+  {
+    icon: Database,
+    title: "Catálogo centralizado",
+    description:
+      "Administrá productos, variantes, precios y atributos desde un solo lugar.",
+  },
+  {
+    icon: Globe,
+    title: "Operación centralizada",
+    description:
+      "Publica tu tienda propia con stock validado y operaciones centralizadas.",
+  },
+  {
+    icon: Store,
+    title: "Storefront optimizado",
+    description:
+      "Checkout integrado, dominio propio y listados sincronizados con tu operación.",
+  },
+  {
+    icon: Sparkles,
+    title: "Nexora AI",
+    description:
+      "Arquitecto de IA integrado que entiende el modelo completo de tu negocio cruzando datos reales.",
+  },
+  {
+    icon: Package,
+    title: "Abastecimiento B2B",
+    description:
+      "Recepción de compras y routing automático hacia proveedores dropshipping.",
+  },
+  {
+    icon: Truck,
+    title: "Logística integrada",
+    description:
+      "Fulfillment, tracking y carriers avanzados con soporte multi-proveedor.",
+  },
+  {
+    icon: Megaphone,
+    title: "AI: Performance & Ads",
+    description:
+      "Media buyer automático. Campañas sugeridas y borradores basados en margen y stock real.",
+  },
+];
+
+function Wordmark({ size = "sm" }: { size?: "sm" | "md" }) {
+  const dim = size === "md" ? "h-3 w-3" : "h-2.5 w-2.5";
+  const label = size === "md" ? "text-[15px]" : "text-[13px]";
+  return (
+    <div className="flex items-center gap-2">
+      <span className="relative inline-flex items-center justify-center">
+        <span className={`block rounded-[3px] bg-ink-0 ${dim} translate-x-[2px] translate-y-[2px]`} />
+        <span className={`absolute rounded-[3px] bg-[var(--accent-500)] ${dim} -translate-x-[2px] -translate-y-[2px]`} />
+      </span>
+      <span className={`font-display leading-none tracking-[-0.02em] text-ink-0 ${label}`}>
+        nexora
+      </span>
+    </div>
+  );
+}
 
 export default function MarketingLandingPage() {
   return (
-    <div className="min-h-screen bg-white text-[#111111] font-sans selection:bg-black selection:text-white relative overflow-x-hidden">
+    <div className="relative min-h-screen bg-[var(--surface-1)] text-ink-0 selection:bg-ink-0 selection:text-ink-12 overflow-x-hidden">
+      {/* Silent grid — 2% opacity, acts as texture without noise */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-0 opacity-[0.025]"
+        style={{
+          backgroundImage:
+            "linear-gradient(var(--ink-0) 1px, transparent 1px), linear-gradient(90deg, var(--ink-0) 1px, transparent 1px)",
+          backgroundSize: "64px 64px",
+        }}
+      />
 
-      {/* Subtle Grid Background */}
-      <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none"
-           style={{ backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
-
-      {/* Header */}
-      <header className="absolute top-0 w-full px-5 sm:px-6 py-5 flex justify-between items-center z-50 max-w-7xl left-1/2 -translate-x-1/2">
-        <div className="flex items-center gap-2.5">
-          <div className="relative w-8 h-8 flex items-center justify-center overflow-hidden">
-             <div className="absolute inset-0 bg-[#111111] rounded-[10px] rotate-12" />
-             <div className="absolute w-2.5 h-2.5 bg-emerald-500 rounded-sm -ml-2 -mt-2" />
-             <div className="absolute w-2.5 h-2.5 bg-white rounded-sm ml-2 mt-2" />
-          </div>
-          <span className="font-extrabold tracking-tighter text-xl">nexora</span>
-        </div>
-
-        <nav className="flex items-center gap-4 sm:gap-6 text-[13px] font-bold tracking-wide">
-          <Link href="/home/pricing" className="text-[#666666] hover:text-[#111111] transition-colors hidden sm:block">Planes</Link>
-          <Link href="/home/login" className="text-[#666666] hover:text-[#111111] transition-colors">Ingresar</Link>
-          <Link href="/home/register" className="px-4 py-2 bg-[#111111] text-white rounded-full hover:bg-[#333333] transition-colors flex items-center gap-1.5 text-[13px]">
-            Empezar <ChevronRight className="w-3 h-3" />
+      {/* ─── Header ─── */}
+      <header className="relative z-50">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-8">
+          <Link href="/" aria-label="Nexora">
+            <Wordmark size="md" />
           </Link>
-        </nav>
+          <nav className="flex items-center gap-6 text-[13px]">
+            <Link
+              href="/home/pricing"
+              className="hidden text-ink-5 transition-colors hover:text-ink-0 sm:inline"
+            >
+              Planes
+            </Link>
+            <Link
+              href="/home/login"
+              className="text-ink-5 transition-colors hover:text-ink-0"
+            >
+              Ingresar
+            </Link>
+            <Link
+              href="/home/register"
+              className="inline-flex h-9 items-center gap-1.5 rounded-full bg-ink-0 px-4 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
+            >
+              Empezar
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </nav>
+        </div>
+        <Hairline />
       </header>
 
       {/* ─── Hero ─── */}
-      <main className="flex flex-col items-center justify-start pt-32 sm:pt-36 pb-0 px-5 sm:px-6 max-w-5xl mx-auto text-center relative z-10 w-full">
-
-        <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6 }} className="w-full flex flex-col items-center">
-
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#F5F5F5] rounded-full text-[11px] font-bold uppercase tracking-[0.12em] text-[#666666] mb-6 border border-[#E5E5E5]">
-            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            Plataforma de Ecommerce Operativo
-          </div>
-
-          <h1 className="text-[42px] sm:text-[56px] md:text-[68px] font-extrabold tracking-tighter leading-[1.0] mb-5 max-w-4xl">
-            Gestioná todo.<br/>
-            <span className="text-[#888888]">Vendé en todos lados.</span>
-          </h1>
-
-          <p className="text-[16px] sm:text-[17px] text-[#666666] max-w-xl mx-auto leading-relaxed mb-8 font-medium">
-            Catálogo centralizado, storefront propio, IA integrada, checkout con Mercado Pago y operación centralizada. Todo desde un solo lugar.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="/home/register" className="px-7 py-3.5 bg-[#111111] text-white rounded-full font-bold text-[14px] hover:bg-[#222222] transition-all shadow-xl shadow-black/10 flex items-center gap-2 w-full sm:w-auto justify-center">
-              Empezar <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link href="/home/pricing" className="px-7 py-3.5 bg-white text-[#111111] border border-[#E5E5E5] rounded-full font-bold text-[14px] hover:bg-[#FAFAFA] hover:border-[#CCCCCC] transition-all w-full sm:w-auto text-center">
-              Ver planes
-            </Link>
-          </div>
-        </motion.div>
-
-        {/* ─── Dashboard Preview ─── */}
-        <motion.div initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.8, delay: 0.15 }} className="mt-14 w-full max-w-5xl mx-auto">
-          <div className="rounded-2xl border border-[#E5E5E5] bg-[#FAFAFA] overflow-hidden shadow-2xl shadow-black/[0.06]">
-            {/* Top bar */}
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-[#E5E5E5] bg-white">
-              <div className="flex gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-[#E5E5E5]" />
-                <div className="w-2.5 h-2.5 rounded-full bg-[#E5E5E5]" />
-                <div className="w-2.5 h-2.5 rounded-full bg-[#E5E5E5]" />
-              </div>
-              <div className="flex-1 flex justify-center">
-                <div className="px-4 py-1 bg-[#F5F5F5] rounded-md text-[10px] font-medium text-[#999999] tracking-wide">app.nexora.io/dashboard</div>
-              </div>
+      <main className="relative z-10">
+        <section className="mx-auto max-w-6xl px-5 pb-24 pt-20 sm:px-8 sm:pb-32 sm:pt-28">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            className="max-w-3xl"
+          >
+            <div className="mb-7 inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">
+              <span className="h-[5px] w-[5px] rounded-full bg-[var(--accent-500)]" />
+              Plataforma de ecommerce operativo
             </div>
 
-            {/* Content grid */}
-            <div className="grid grid-cols-12 gap-0 min-h-[320px] sm:min-h-[380px]">
-              {/* Sidebar mock */}
-              <div className="col-span-3 border-r border-[#E5E5E5] bg-white p-4 hidden sm:block">
-                <div className="flex items-center gap-2 mb-6">
-                  <div className="w-6 h-6 bg-[#111111] rounded-md flex items-center justify-center">
-                    <div className="w-2 h-2 bg-white rounded-[2px]" />
-                  </div>
-                  <span className="text-[12px] font-bold text-[#111111]">Nexora</span>
-                </div>
-                {[
-                  { label: "Panel de Control", active: true },
-                  { label: "Pedidos" },
-                  { label: "Catálogo" },
-                  { label: "Inventario" },
-                  { label: "Tienda" },
-                  { label: "Nexora AI" },
-                ].map((item, i) => (
-                  <div key={i} className={`text-[11px] font-medium py-2 px-2.5 rounded-lg mb-0.5 ${item.active ? "bg-[#F5F5F5] text-[#111111]" : "text-[#999999]"}`}>
-                    {item.label}
-                  </div>
-                ))}
-              </div>
+            <DisplayText as="h1" size="xl" className="mb-6">
+              Gestioná todo.
+              <br />
+              <span className="text-ink-5">Vendé en todos lados.</span>
+            </DisplayText>
 
-              {/* Main content area */}
-              <div className="col-span-12 sm:col-span-9 p-5 sm:p-6 bg-[#FAFAFA]">
-                {/* Top row — KPIs */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-                  {[
-                    { label: "Ventas hoy", value: "$182.400", change: "+12%", icon: TrendingUp },
-                    { label: "Pedidos", value: "47", change: "+8%", icon: ShoppingCart },
-                    { label: "Productos", value: "234", change: "", icon: Package },
-                    { label: "Créditos IA", value: "412", change: "", icon: Zap },
-                  ].map((kpi, i) => (
-                    <div key={i} className="bg-white rounded-xl border border-[#E5E5E5] p-3.5">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] font-semibold uppercase tracking-wider text-[#999999]">{kpi.label}</span>
-                        <kpi.icon className="w-3.5 h-3.5 text-[#CCCCCC]" />
-                      </div>
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="text-[18px] font-bold text-[#111111] tracking-tight">{kpi.value}</span>
-                        {kpi.change && <span className="text-[10px] font-bold text-emerald-500">{kpi.change}</span>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            <p className="mb-10 max-w-xl text-[17px] leading-[1.55] text-ink-4">
+              Catálogo centralizado, storefront propio, IA integrada, checkout con
+              Mercado Pago y operación centralizada. Todo desde un solo lugar.
+            </p>
 
-                {/* AI Suggestion card */}
-                <div className="bg-white rounded-xl border border-[#E5E5E5] p-4 mb-4">
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-[#111111] flex items-center justify-center shrink-0 mt-0.5">
-                      <Sparkles className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[12px] font-bold text-[#111111]">Nexora AI</span>
-                        <span className="text-[9px] font-bold uppercase tracking-wider text-[#888888] bg-white border border-[#EAEAEA] shadow-sm px-1.5 py-0.5 rounded">Contexto: Inventario</span>
-                      </div>
-                      <p className="text-[12px] text-[#666666] leading-relaxed">
-                        Tus 3 productos más vendidos tienen stock bajo. <span className="font-semibold text-[#111111]">Reponer &quot;Crema Hidratante&quot; (quedan 4 units)</span> podría evitar quiebres esta semana.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Recent orders table mock */}
-                <div className="bg-white rounded-xl border border-[#E5E5E5] overflow-hidden">
-                  <div className="px-4 py-3 border-b border-[#E5E5E5] flex items-center justify-between">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#999999]">Últimos pedidos</span>
-                    <span className="text-[11px] font-medium text-emerald-600">Ver todos</span>
-                  </div>
-                  {[
-                    { id: "#4821", customer: "María G.", amount: "$12.400", status: "Enviado", statusColor: "bg-emerald-500" },
-                    { id: "#4820", customer: "Lucas R.", amount: "$8.900", status: "Preparando", statusColor: "bg-amber-500" },
-                    { id: "#4819", customer: "Ana P.", amount: "$24.100", status: "Pagado", statusColor: "bg-blue-500" },
-                  ].map((order, i) => (
-                    <div key={i} className="px-4 py-2.5 flex items-center justify-between border-b border-[#F5F5F5] last:border-0">
-                      <div className="flex items-center gap-3">
-                        <span className="text-[11px] font-bold text-[#111111] font-mono">{order.id}</span>
-                        <span className="text-[11px] text-[#999999]">{order.customer}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-[11px] font-bold text-[#111111]">{order.amount}</span>
-                        <span className="flex items-center gap-1.5">
-                          <span className={`w-1.5 h-1.5 rounded-full ${order.statusColor}`} />
-                          <span className="text-[10px] font-medium text-[#999999]">{order.status}</span>
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Link
+                href="/home/register"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-ink-0 px-6 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
+              >
+                Empezar
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link
+                href="/home/pricing"
+                className="inline-flex h-12 items-center justify-center rounded-full border border-[color:var(--hairline-strong)] bg-transparent px-6 text-[14px] font-medium text-ink-0 transition-colors hover:bg-ink-11"
+              >
+                Ver planes
+              </Link>
             </div>
-          </div>
-        </motion.div>
-      </main>
+          </motion.div>
 
-      {/* ─── Value Drivers ─── */}
-      <section className="bg-white pt-20 sm:pt-24 pb-20 sm:pb-24 px-5 sm:px-6 relative z-10">
-        <div className="max-w-6xl mx-auto">
-
-          <div className="text-center mb-14">
-            <p className="text-emerald-600 text-[11px] font-bold uppercase tracking-[0.15em] mb-3">Infraestructura completa</p>
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#111111]">
-              Todo lo que necesitás para operar
-            </h2>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-            {[
-              {
-                icon: Database,
-                title: "Catálogo centralizado",
-                description: "Administrá productos, variantes, precios y atributos desde un solo lugar."
-              },
-              {
-                icon: Globe,
-                title: "Operación centralizada",
-                description: "Publica tu tienda propia con stock validado y operaciones centralizadas."
-              },
-              {
-                icon: Store,
-                title: "Storefront optimizado",
-                description: "Checkout integrado, dominio propio y listados sincronizados con tu operación."
-              },
-              {
-                icon: Sparkles,
-                title: "Nexora AI",
-                description: "Arquitecto de IA integrado que entiende el modelo completo de tu negocio cruzando datos reales."
-              },
-              {
-                icon: Package,
-                title: "Abastecimiento B2B",
-                description: "Recepción de compras y routing automático hacia proveedores dropshipping."
-              },
-              {
-                icon: Truck,
-                title: "Logística integrada",
-                description: "Fulfillment, tracking y carriers avanzados con soporte multi-proveedor."
-              },
-              {
-                icon: Megaphone,
-                title: "AI: Performance & Ads",
-                description: "Media buyer automático. Campañas sugeridas y borradores basados en margen y stock real."
-              },
-            ].map((feature, i) => (
-              <div key={i} className="group">
-                <div className="w-10 h-10 rounded-xl bg-[#F5F5F5] border border-[#E5E5E5] flex items-center justify-center mb-4 group-hover:border-emerald-200 group-hover:bg-emerald-50 transition-colors">
-                  <feature.icon className="h-[18px] w-[18px] text-[#111111] group-hover:text-emerald-600 transition-colors" />
+          {/* ─── Editorial composable ─── */}
+          {/* Replaces the prior dashboard screenshot cliché. Three honest
+              primitives (product frame · metric line · order row) rendered
+              with the same surface/hairline tokens the product actually ships. */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+            className="mt-20 grid grid-cols-1 gap-4 sm:mt-24 sm:grid-cols-12 sm:gap-5"
+          >
+            {/* Product frame */}
+            <Surface
+              level={0}
+              hairline
+              radius="lg"
+              className="sm:col-span-5 overflow-hidden"
+            >
+              <div className="relative aspect-[4/5] w-full bg-[var(--ink-11)]">
+                <div
+                  aria-hidden
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      "radial-gradient(120% 80% at 20% 10%, rgba(91,108,255,0.12), transparent 60%), radial-gradient(80% 80% at 90% 90%, rgba(10,11,14,0.06), transparent 60%)",
+                  }}
+                />
+                <div className="absolute left-5 top-5 text-[10px] font-medium uppercase tracking-[0.18em] text-ink-5">
+                  Catálogo
                 </div>
-                <h3 className="font-bold text-[15px] tracking-tight text-[#111111] mb-1.5">{feature.title}</h3>
-                <p className="text-[#666666] text-[13px] leading-relaxed">{feature.description}</p>
+                <div className="absolute bottom-5 left-5 right-5">
+                  <div className="font-display text-[26px] leading-[1.05] tracking-[-0.015em] text-ink-0">
+                    Edición otoño
+                  </div>
+                  <div className="mt-1 text-[12px] text-ink-5 tabular">
+                    42 referencias · stock sincronizado
+                  </div>
+                </div>
+              </div>
+            </Surface>
+
+            {/* Metric */}
+            <Surface
+              level={0}
+              hairline
+              radius="lg"
+              className="flex flex-col justify-between p-6 sm:col-span-4"
+            >
+              <div>
+                <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-5">
+                  Rendimiento
+                </div>
+                <div className="mt-5 font-display text-[56px] leading-none tracking-[-0.02em] text-ink-0 tabular">
+                  2.4×
+                </div>
+                <p className="mt-3 text-[13px] leading-[1.55] text-ink-4">
+                  Ritmo operativo sostenido con stock validado en tiempo real.
+                </p>
+              </div>
+              <Hairline className="my-5" />
+              <div className="flex items-center justify-between text-[12px] text-ink-5">
+                <span>Enero → Marzo</span>
+                <span className="tabular text-ink-0">+18%</span>
+              </div>
+            </Surface>
+
+            {/* Order row */}
+            <Surface
+              level={0}
+              hairline
+              radius="lg"
+              className="flex flex-col justify-between p-6 sm:col-span-3"
+            >
+              <div>
+                <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-5">
+                  Último pedido
+                </div>
+                <div className="mt-5 font-mono text-[13px] text-ink-0">
+                  #4821
+                </div>
+                <div className="mt-1 text-[13px] text-ink-4">
+                  Confirmado · envío a CABA
+                </div>
+              </div>
+              <div className="mt-6 flex items-center gap-2 text-[12px] text-ink-5">
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--signal-success)]" />
+                En preparación
+              </div>
+            </Surface>
+          </motion.div>
+        </section>
+
+        <Hairline />
+
+        {/* ─── Value drivers ─── */}
+        <section className="mx-auto max-w-6xl px-5 py-24 sm:px-8 sm:py-32">
+          <div className="mb-16 max-w-2xl">
+            <div className="mb-4 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">
+              Infraestructura completa
+            </div>
+            <DisplayText as="h2" size="md">
+              Todo lo que necesitás para operar.
+            </DisplayText>
+          </div>
+
+          <div className="grid grid-cols-1 gap-x-10 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
+            {VALUE_DRIVERS.map(({ icon: Icon, title, description }) => (
+              <div key={title} className="group">
+                <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] text-ink-0 transition-colors group-hover:border-[color:var(--hairline-strong)]">
+                  <Icon className="h-[18px] w-[18px]" strokeWidth={1.5} />
+                </div>
+                <h3 className="mb-2 text-[15px] font-semibold tracking-[-0.01em] text-ink-0">
+                  {title}
+                </h3>
+                <p className="text-[14px] leading-[1.55] text-ink-5">
+                  {description}
+                </p>
               </div>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ─── CTA Final ─── */}
-      <section className="border-t border-[#E5E5E5] bg-[#FAFAFA] py-20 sm:py-24 px-5 sm:px-6 relative z-10">
-        <div className="max-w-2xl mx-auto text-center">
-          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#111111] mb-4">
-            Operación centralizada. Control real.
-          </h2>
-          <p className="text-[#666666] text-[15px] font-medium mb-8 leading-relaxed">
-            Creá tu cuenta y accedé a la infraestructura operativa que tu negocio necesita.
+        <Hairline />
+
+        {/* ─── Closing CTA ─── */}
+        <section className="mx-auto max-w-3xl px-5 py-24 text-center sm:px-8 sm:py-32">
+          <DisplayText as="h2" size="md" className="mb-5">
+            Operación centralizada.
+            <br />
+            <span className="text-ink-5">Control real.</span>
+          </DisplayText>
+          <p className="mx-auto mb-10 max-w-md text-[15px] leading-[1.55] text-ink-4">
+            Creá tu cuenta y accedé a la infraestructura operativa que tu
+            negocio necesita.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="/home/register" className="px-7 py-3.5 bg-[#111111] text-white rounded-full font-bold text-[14px] hover:bg-[#222222] transition-all shadow-xl shadow-black/10 flex items-center gap-2 w-full sm:w-auto justify-center">
-              Crear cuenta <ArrowRight className="h-4 w-4" />
+          <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link
+              href="/home/register"
+              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-ink-0 px-7 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2 sm:w-auto"
+            >
+              Crear cuenta
+              <ArrowRight className="h-4 w-4" />
             </Link>
-            <Link href="/home/pricing" className="px-7 py-3.5 bg-white text-[#111111] border border-[#E5E5E5] rounded-full font-bold text-[14px] hover:bg-white hover:border-[#CCCCCC] transition-all w-full sm:w-auto text-center">
+            <Link
+              href="/home/pricing"
+              className="inline-flex h-12 w-full items-center justify-center rounded-full border border-[color:var(--hairline-strong)] bg-transparent px-7 text-[14px] font-medium text-ink-0 transition-colors hover:bg-ink-11 sm:w-auto"
+            >
               Ver planes
             </Link>
           </div>
-        </div>
-      </section>
+        </section>
+      </main>
 
-      {/* Footer */}
-      <footer className="py-10 bg-white text-center text-[#999999] text-[12px] font-medium border-t border-[#E5E5E5]">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center px-5 sm:px-6 gap-4">
-           <div className="flex items-center gap-2">
-             <div className="relative w-5 h-5 flex items-center justify-center overflow-hidden">
-               <div className="absolute inset-0 bg-[#111111] rounded-md rotate-12" />
-               <div className="absolute w-1.5 h-1.5 bg-emerald-500 rounded-[1px] -ml-1 -mt-1" />
-               <div className="absolute w-1.5 h-1.5 bg-white rounded-[1px] ml-1 mt-1" />
-             </div>
-             <span className="text-[#111111] font-bold text-[13px]">nexora</span>
-           </div>
-           <p>© {new Date().getFullYear()} Nexora Inc. Infraestructura para ecommerce inteligente.</p>
+      {/* ─── Footer ─── */}
+      <footer className="relative z-10 border-t border-[color:var(--hairline)] bg-[var(--surface-1)]">
+        <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-4 px-5 py-10 sm:flex-row sm:items-center sm:px-8">
+          <Wordmark size="sm" />
+          <p className="text-[12px] text-ink-5">
+            © {new Date().getFullYear()} Nexora Inc. Infraestructura para
+            ecommerce inteligente.
+          </p>
         </div>
       </footer>
     </div>
-  )
+  );
 }

@@ -2,44 +2,83 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { normalizeStorefrontHref, storePath } from "@/lib/store-engine/urls";
 
-export function HeroSection({ settings, storeSlug }: { settings: Record<string, any>, storeSlug: string }) {
-  const primaryActionLink = typeof settings.primaryActionLink === "string"
-    ? settings.primaryActionLink.replace("/aura-essentials", storePath(storeSlug))
-    : "products";
+// ─── Storefront Hero ───
+// Editorial, ink-first hero. Keeps the optional background image but tones it
+// down with a neutral gradient so headlines stay readable at all scales. Copy
+// and routing props remain identical; only typography and surfaces changed.
+
+export function HeroSection({
+  settings,
+  storeSlug,
+}: {
+  settings: Record<string, any>;
+  storeSlug: string;
+}) {
+  const primaryActionLink =
+    typeof settings.primaryActionLink === "string"
+      ? settings.primaryActionLink.replace("/aura-essentials", storePath(storeSlug))
+      : "products";
   const primaryHref = normalizeStorefrontHref(primaryActionLink, storeSlug);
 
   return (
-    <div className="relative isolate overflow-hidden bg-gray-900 pb-16 pt-14 sm:pb-20">
-      <img
-        src={settings.backgroundImageUrl}
-        alt=""
-        className="absolute inset-0 -z-10 h-full w-full object-cover opacity-60 mix-blend-overlay"
-      />
-      <div className="absolute inset-0 -z-10 bg-gradient-to-t from-gray-900/80 via-gray-900/40" />
-      
-      <div className="mx-auto max-w-7xl px-6 lg:px-8 pt-20 sm:pt-32 lg:pt-40 text-center">
-        <div className="mx-auto max-w-2xl">
-          <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-6xl">
+    <section className="relative isolate overflow-hidden bg-ink-0 text-ink-12">
+      {settings.backgroundImageUrl ? (
+        <>
+          <img
+            src={settings.backgroundImageUrl}
+            alt=""
+            className="absolute inset-0 -z-10 h-full w-full object-cover opacity-55"
+          />
+          <div
+            aria-hidden
+            className="absolute inset-0 -z-10"
+            style={{
+              background:
+                "linear-gradient(180deg, rgba(10,11,14,0.25) 0%, rgba(10,11,14,0.65) 60%, rgba(10,11,14,0.85) 100%)",
+            }}
+          />
+        </>
+      ) : (
+        <div
+          aria-hidden
+          className="absolute inset-0 -z-10"
+          style={{
+            background:
+              "radial-gradient(80% 60% at 20% 10%, rgba(91,108,255,0.20), transparent 60%), radial-gradient(70% 60% at 90% 100%, rgba(91,108,255,0.10), transparent 60%), #0A0B0E",
+          }}
+        />
+      )}
+
+      <div className="mx-auto max-w-6xl px-5 pb-24 pt-20 sm:px-8 sm:pb-32 sm:pt-32 lg:pt-40">
+        <div className="max-w-3xl">
+          <h1 className="font-display text-[44px] leading-[0.98] tracking-[-0.02em] text-ink-12 sm:text-[72px]">
             {settings.headline}
           </h1>
-          <p className="mt-6 text-lg leading-8 text-gray-300 font-medium">
-            {settings.subheadline}
-          </p>
-          <div className="mt-10 flex items-center justify-center gap-x-6">
+          {settings.subheadline && (
+            <p className="mt-6 max-w-xl text-[16px] leading-[1.55] text-ink-12/70 sm:text-[17px]">
+              {settings.subheadline}
+            </p>
+          )}
+          <div className="mt-10 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
             <Link
               href={primaryHref}
-              className="rounded-sm bg-white px-8 py-3.5 text-sm font-extrabold text-gray-900 uppercase tracking-widest shadow-sm hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white transition-colors"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-ink-12 px-7 text-[14px] font-medium text-ink-0 transition-colors hover:bg-ink-11"
             >
               {settings.primaryActionLabel}
+              <ArrowRight className="h-4 w-4" strokeWidth={2} />
             </Link>
             {settings.secondaryActionLabel && (
-              <a href="#" className="text-sm font-bold leading-6 text-white uppercase tracking-widest flex items-center gap-1 hover:text-gray-300 transition-colors">
-                {settings.secondaryActionLabel} <ArrowRight className="h-4 w-4" />
+              <a
+                href="#"
+                className="inline-flex h-12 items-center justify-center gap-1.5 rounded-full border border-ink-12/20 bg-transparent px-7 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-12/10"
+              >
+                {settings.secondaryActionLabel}
+                <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
               </a>
             )}
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

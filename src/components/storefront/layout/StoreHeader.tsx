@@ -8,32 +8,42 @@ import { cn } from "@/lib/utils";
 import type { StoreConfig } from "@/types/storefront";
 import { storePath } from "@/lib/store-engine/urls";
 
+// ─── Store Header ───
+// Editorial rewrite. No glassmorphism: a solid surface with a single hairline
+// reads cleaner at any scroll position and plays better with tenant logos on
+// dark backgrounds. Nav typography dropped from uppercase-widest to a sober
+// sentence case with tight tracking.
 export function StoreHeader({ config }: { config: StoreConfig }) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white/80 backdrop-blur-md">
+    <header className="sticky top-0 z-50 w-full border-b border-[color:var(--hairline)] bg-[var(--surface-0)]">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        
         {/* Mobile menu trigger */}
         <div className="flex flex-1 items-center lg:hidden">
-          <button 
-            type="button" 
-            className="p-2 -ml-2 text-gray-500 hover:text-gray-900"
+          <button
+            type="button"
+            className="-ml-2 inline-flex h-11 w-11 items-center justify-center rounded-[var(--r-md)] text-ink-4 transition-colors hover:bg-ink-11 hover:text-ink-0"
             onClick={() => setMobileMenuOpen(true)}
             aria-label="Abrir menu"
           >
-            <Menu className="h-5 w-5" />
+            <Menu className="h-5 w-5" strokeWidth={1.75} />
           </button>
         </div>
 
         {/* Logo */}
-        <Link href={storePath(config.slug)} className="flex shrink-0 items-center justify-center lg:flex-1 lg:justify-start outline-none focus-visible:ring-2 focus-visible:ring-black rounded-sm">
+        <Link
+          href={storePath(config.slug)}
+          className="flex shrink-0 items-center justify-center rounded-[var(--r-xs)] outline-none focus-visible:shadow-[var(--shadow-focus)] lg:flex-1 lg:justify-start"
+        >
           {config.logoUrl ? (
-            <img src={config.logoUrl} alt={config.name} className="h-8 w-auto" />
+            <img src={config.logoUrl} alt={config.name} className="h-7 w-auto" />
           ) : (
-            <span className="text-xl font-extrabold tracking-tight text-gray-900 uppercase" style={{ color: config.primaryColor }}>
+            <span
+              className="font-display text-[22px] leading-none tracking-[-0.015em] text-ink-0"
+              style={{ color: config.primaryColor }}
+            >
               {config.name}
             </span>
           )}
@@ -42,32 +52,44 @@ export function StoreHeader({ config }: { config: StoreConfig }) {
         {/* Desktop Nav */}
         <nav className="hidden lg:flex lg:gap-x-8">
           {config.headerNavigation.map((item) => {
-             const isActive = pathname === item.href;
-             return (
-               <Link 
-                 key={item.href} 
-                 href={item.href} 
-                 className={cn(
-                   "text-[13px] uppercase tracking-widest font-bold transition-colors outline-none rounded-sm focus-visible:ring-2 focus-visible:ring-black",
-                   isActive ? "text-gray-900" : "text-gray-500 hover:text-gray-900"
-                 )}
-               >
-                 {item.label}
-               </Link>
-             );
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "relative text-[14px] font-medium tracking-[-0.005em] transition-colors rounded-[var(--r-xs)] outline-none focus-visible:shadow-[var(--shadow-focus)]",
+                  isActive ? "text-ink-0" : "text-ink-5 hover:text-ink-0",
+                )}
+              >
+                {item.label}
+                {isActive && (
+                  <span className="absolute -bottom-[22px] left-0 right-0 h-px bg-ink-0" />
+                )}
+              </Link>
+            );
           })}
         </nav>
 
         {/* Actions */}
-        <div className="flex flex-1 items-center justify-end gap-x-4">
-          <button type="button" className="p-2 text-gray-500 hover:text-gray-900 hidden sm:block outline-none focus-visible:ring-2 rounded-sm focus-visible:ring-black" aria-label="Buscar">
-            <Search className="h-5 w-5" />
+        <div className="flex flex-1 items-center justify-end gap-x-1">
+          <button
+            type="button"
+            className="hidden h-11 w-11 items-center justify-center rounded-[var(--r-md)] text-ink-4 transition-colors hover:bg-ink-11 hover:text-ink-0 sm:inline-flex"
+            aria-label="Buscar"
+          >
+            <Search className="h-[18px] w-[18px]" strokeWidth={1.75} />
           </button>
-          
-          <Link href={storePath(config.slug, "cart")} className="group flex items-center p-2 text-gray-500 hover:text-gray-900 outline-none rounded-sm focus-visible:ring-2 focus-visible:ring-black">
+
+          <Link
+            href={storePath(config.slug, "cart")}
+            className="group inline-flex h-11 items-center gap-2 rounded-[var(--r-md)] px-3 text-ink-4 transition-colors hover:bg-ink-11 hover:text-ink-0 outline-none focus-visible:shadow-[var(--shadow-focus)]"
+          >
             <span className="sr-only">Ver carrito</span>
-            <ShoppingBag className="h-5 w-5 shrink-0" aria-hidden="true" />
-            <span className="ml-2 text-xs font-bold text-gray-900 group-hover:text-gray-800">{config.cartItemCount || 0}</span>
+            <ShoppingBag className="h-[18px] w-[18px]" strokeWidth={1.75} aria-hidden />
+            <span className="tabular text-[13px] font-medium text-ink-0">
+              {config.cartItemCount || 0}
+            </span>
           </Link>
         </div>
       </div>
@@ -75,28 +97,40 @@ export function StoreHeader({ config }: { config: StoreConfig }) {
       {/* Mobile Menu */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} aria-hidden="true" />
-          <div className="fixed inset-y-0 left-0 w-full max-w-xs bg-white px-6 py-6 border-r border-gray-100 shadow-xl overflow-y-auto">
-            <div className="flex items-center justify-between">
-              <span className="text-lg font-extrabold tracking-tight text-gray-900 uppercase">{config.name}</span>
-              <button type="button" className="-m-2 p-2 text-gray-500" onClick={() => setMobileMenuOpen(false)} aria-label="Cerrar menu">
-                <X className="h-5 w-5" />
+          <div
+            className="fixed inset-0 bg-ink-0/40"
+            onClick={() => setMobileMenuOpen(false)}
+            aria-hidden="true"
+          />
+          <div className="fixed inset-y-0 left-0 flex w-full max-w-xs flex-col border-r border-[color:var(--hairline)] bg-[var(--surface-0)]">
+            <div className="flex h-16 items-center justify-between border-b border-[color:var(--hairline)] px-5">
+              <span className="font-display text-[20px] tracking-[-0.015em] text-ink-0">
+                {config.name}
+              </span>
+              <button
+                type="button"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-[var(--r-md)] text-ink-4 transition-colors hover:bg-ink-11 hover:text-ink-0"
+                onClick={() => setMobileMenuOpen(false)}
+                aria-label="Cerrar menu"
+              >
+                <X className="h-5 w-5" strokeWidth={1.75} />
               </button>
             </div>
-            <div className="mt-8">
-              <div className="space-y-6">
+            <nav className="flex-1 overflow-y-auto px-2 py-4">
+              <ul className="flex flex-col">
                 {config.headerNavigation.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="-m-2 block p-2 text-base font-bold text-gray-900"
-                  >
-                    {item.label}
-                  </Link>
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center rounded-[var(--r-md)] px-4 py-3 text-[15px] font-medium text-ink-0 transition-colors hover:bg-ink-11"
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
                 ))}
-              </div>
-            </div>
+              </ul>
+            </nav>
           </div>
         </div>
       )}
