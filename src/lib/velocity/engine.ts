@@ -9,7 +9,7 @@
 // - Cross with profitability contribution when available
 // - Provider aggregation when mirror data exists
 //
-// No forecasting. No ML. No invented demand.
+// No forecasting. No machine learning. No invented demand.
 
 import type {
   RotationTier,

@@ -23,11 +23,11 @@ import type {
   ProductAptitude,
 } from "@/types/aptitude";
 
-type TabView = "channel" | "ads";
+type TabView = "store" | "ads";
 type VerdictFilter = "all" | AptitudeVerdict;
 
 export function AptitudePanel({ report }: { report: AptitudeReport }) {
-  const [tab, setTab] = useState<TabView>("channel");
+  const [tab, setTab] = useState<TabView>("store");
   const [verdictFilter, setVerdictFilter] = useState<VerdictFilter>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -36,13 +36,13 @@ export function AptitudePanel({ report }: { report: AptitudeReport }) {
   const filtered = useMemo(() => {
     if (verdictFilter === "all") return report.products;
     return report.products.filter((p) =>
-      tab === "channel" ? p.generalVerdict === verdictFilter : p.adsAptitude.verdict === verdictFilter,
+      tab === "store" ? p.generalVerdict === verdictFilter : p.adsAptitude.verdict === verdictFilter,
     );
   }, [report.products, verdictFilter, tab]);
 
-  const channelCounts = { apt: s.channelApt, review: s.channelReview, not_apt: s.channelNotApt, insufficient_data: s.channelInsufficient };
+  const storeCounts = { apt: s.channelApt, review: s.channelReview, not_apt: s.channelNotApt, insufficient_data: s.channelInsufficient };
   const adsCounts = { apt: s.adsApt, review: s.adsReview, not_apt: s.adsNotApt, insufficient_data: s.adsInsufficient };
-  const counts = tab === "channel" ? channelCounts : adsCounts;
+  const counts = tab === "store" ? storeCounts : adsCounts;
 
   if (s.totalProducts === 0) {
     return (
@@ -61,9 +61,9 @@ export function AptitudePanel({ report }: { report: AptitudeReport }) {
     <div className="space-y-6">
       {/* Header */}
       <div className="rounded-2xl border border-[#EAEAEA] bg-[#FAFAFA] p-4 shadow-sm">
-        <p className="text-sm font-bold text-[#111111]">Channel & Ads Aptitude v1</p>
+        <p className="text-sm font-bold text-[#111111]">Aptitud de tienda y Ads v1</p>
         <p className="mt-1 text-xs leading-relaxed text-[#666666]">
-          Evaluación por producto basada en señales reales: stock, costo, estado, publicación, sync, y contribución neta.
+          Evaluación por producto basada en señales reales: stock, costo, estado, tienda, proveedor y contribución neta.
           No hay scores inventados — cada veredicto se explica con evidencia observable.
         </p>
       </div>
@@ -71,13 +71,13 @@ export function AptitudePanel({ report }: { report: AptitudeReport }) {
       {/* Tab toggle */}
       <div className="flex gap-2">
         <button
-          onClick={() => { setTab("channel"); setVerdictFilter("all"); }}
+          onClick={() => { setTab("store"); setVerdictFilter("all"); }}
           className={cn(
             "flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all",
-            tab === "channel" ? "bg-[#111111] text-white" : "bg-white border border-[#EAEAEA] text-[#888888] hover:text-[#111111]",
+            tab === "store" ? "bg-[#111111] text-white" : "bg-white border border-[#EAEAEA] text-[#888888] hover:text-[#111111]",
           )}
         >
-          <Store className="h-3.5 w-3.5" /> Canal
+          <Store className="h-3.5 w-3.5" /> Tienda
         </button>
         <button
           onClick={() => { setTab("ads"); setVerdictFilter("all"); }}
@@ -176,8 +176,8 @@ function VerdictCard({ verdict, count, total, active, onClick }: { verdict: Apti
 }
 
 function ProductAptitudeRow({ product, tab, expanded, onToggle }: { product: ProductAptitude; tab: TabView; expanded: boolean; onToggle: () => void }) {
-  const verdict = tab === "channel" ? product.generalVerdict : product.adsAptitude.verdict;
-  const signals = tab === "channel" ? product.generalSignals : product.adsAptitude.signals;
+  const verdict = tab === "store" ? product.generalVerdict : product.adsAptitude.verdict;
+  const signals = tab === "store" ? product.generalSignals : product.adsAptitude.signals;
   const config = verdictConfig(verdict);
   const aptitude = tab === "ads" ? product.adsAptitude : null;
 
@@ -210,8 +210,8 @@ function ProductAptitudeRow({ product, tab, expanded, onToggle }: { product: Pro
             {signals.map((s, i) => (
               <SignalRow key={`${s.key}-${i}`} signal={s} />
             ))}
-            {/* Channel-specific signals if in channel tab */}
-            {tab === "channel" && product.channelAptitudes.length > 0 && (
+            {/* Store-specific signals if in store tab */}
+            {tab === "store" && product.channelAptitudes.length > 0 && (
               <div className="mt-2 space-y-1.5 border-t border-dashed border-[#EAEAEA] pt-2">
                 {product.channelAptitudes.map((ca) => (
                   <div key={ca.channel} className="space-y-1">
@@ -230,7 +230,7 @@ function ProductAptitudeRow({ product, tab, expanded, onToggle }: { product: Pro
 
           {/* CTA */}
           <div className="flex items-center gap-2">
-            {tab === "channel" && product.channelAptitudes.length > 0 ? (
+            {tab === "store" && product.channelAptitudes.length > 0 ? (
               product.channelAptitudes
                 .filter((ca) => ca.verdict !== "apt")
                 .slice(0, 2)

@@ -29,6 +29,7 @@ export async function getAdminOrders(): Promise<Order[]> {
     number: o.orderNumber,
     createdAt: o.createdAt.toISOString(),
     status: o.status as OrderStatus,
+    publicStatus: o.publicStatus,
     paymentStatus: o.paymentStatus as PaymentStatus,
     channel: o.channel as Channel,
     total: o.total,
@@ -57,6 +58,8 @@ export async function getAdminOrders(): Promise<Order[]> {
     },
     items: o.items.map((item) => ({
       id: item.id,
+      productId: item.productId,
+      variantId: item.variantId,
       sku: item.skuSnapshot,
       title: item.titleSnapshot,
       variantTitle: item.variantTitleSnapshot,
@@ -67,6 +70,7 @@ export async function getAdminOrders(): Promise<Order[]> {
     })),
     paymentProvider: o.paymentProvider,
     mpPaymentId: o.mpPaymentId,
+    mpPreferenceId: o.mpPreferenceId,
     fiscalInvoice: o.fiscalInvoice,
   }));
 }
@@ -75,8 +79,12 @@ export async function getAdminOrders(): Promise<Order[]> {
  * Fetches a single order by ID for the admin drawer/detail view.
  */
 export async function getAdminOrderById(orderId: string): Promise<Order | null> {
-  const dbOrder = await prisma.order.findUnique({
-    where: { id: orderId },
+  const store = await getCurrentStore();
+
+  if (!store) return null;
+
+  const dbOrder = await prisma.order.findFirst({
+    where: { id: orderId, storeId: store.id },
     include: {
       items: {
         include: {
@@ -94,6 +102,7 @@ export async function getAdminOrderById(orderId: string): Promise<Order | null> 
     number: dbOrder.orderNumber,
     createdAt: dbOrder.createdAt.toISOString(),
     status: dbOrder.status as OrderStatus,
+    publicStatus: dbOrder.publicStatus,
     paymentStatus: dbOrder.paymentStatus as PaymentStatus,
     channel: dbOrder.channel as Channel,
     total: dbOrder.total,
@@ -122,6 +131,8 @@ export async function getAdminOrderById(orderId: string): Promise<Order | null> 
     },
     items: dbOrder.items.map((item) => ({
       id: item.id,
+      productId: item.productId,
+      variantId: item.variantId,
       sku: item.skuSnapshot,
       title: item.titleSnapshot,
       variantTitle: item.variantTitleSnapshot,
@@ -132,6 +143,7 @@ export async function getAdminOrderById(orderId: string): Promise<Order | null> 
     })),
     paymentProvider: dbOrder.paymentProvider,
     mpPaymentId: dbOrder.mpPaymentId,
+    mpPreferenceId: dbOrder.mpPreferenceId,
     fiscalInvoice: dbOrder.fiscalInvoice,
   };
 }

@@ -16,7 +16,7 @@ export function getDefaultBlockSettings(
         headline: ctx.heroText ?? `Descubrí ${ctx.brandName}`,
         subheadline: `Productos de calidad pensados para vos. Explorá nuestra colección curada.`,
         primaryActionLabel: "Comprar ahora",
-        primaryActionLink: `/${ctx.storeSlug}/collections`,
+        primaryActionLink: `/store/${ctx.storeSlug}/products`,
         secondaryActionLabel: "Conocer más",
         backgroundImageUrl:
           "https://images.unsplash.com/photo-1556228578-0d85b1a4d571?auto=format&fit=crop&q=80&w=2000",

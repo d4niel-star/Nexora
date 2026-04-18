@@ -1,25 +1,22 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import {
-  ArrowRight,
-  Box,
+  AlertCircle,
   CheckCircle2,
   ChevronRight,
   Download,
-  ExternalLink,
+  FileText,
   Globe2,
   LayoutGrid,
+  Link2,
   Loader2,
   Network,
   PackageCheck,
-  Search,
   ShoppingCart,
-  Truck,
   UploadCloud,
   XCircle,
   RefreshCw,
-  PlayCircle,
   TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -30,17 +27,24 @@ import {
   connectProviderAction,
   getProviderExternalProductsAction,
   importProductAction,
+  previewCsvImportAction,
+  importCsvProductsAction,
+  previewFeedImportAction,
+  importFeedProductsAction,
+  previewApiImportAction,
+  importApiProductsAction,
 } from "@/lib/sourcing/actions";
-import { enqueueProviderSyncJob, getProviderSyncJobs } from "@/lib/sourcing/workers/actions";
+import { getProviderSyncJobs } from "@/lib/sourcing/workers/actions";
 import type { SourcingProvider, ProviderConnection, CatalogMirrorProduct, ProviderProduct, Product } from "@prisma/client";
 import type { SourcingIntelData } from "@/types/sourcing-intel";
 import type { ProviderScoreReport } from "@/types/provider-score";
+import { SOURCING_CSV_TEMPLATE, type SourcingImportPreview, type SourcingImportSource } from "@/lib/sourcing/import-parsers";
 import { SourcingIntelligence } from "./SourcingIntelligence";
 import { ProviderScorePanel } from "./ProviderScorePanel";
 
 // ─── Types ───
 
-type TabKey = "intel" | "scoring" | "discover" | "connected" | "imports" | "sync";
+type TabKey = "intel" | "scoring" | "real-import" | "discover" | "connected" | "imports" | "sync";
 
 interface ConnectedProviderData extends ProviderConnection {
   provider: SourcingProvider;
@@ -127,7 +131,7 @@ export function SourcingPage({ intelData, scoreReport }: { intelData: SourcingIn
       </div>
 
       {/* ─── Tabs ─── */}
-      <div className="flex items-center gap-6 border-b border-[#E5E5E5] px-1">
+      <div className="flex items-center gap-6 overflow-x-auto border-b border-[#E5E5E5] px-1">
         <TabButton
           active={activeTab === "intel"}
           onClick={() => setActiveTab("intel")}
@@ -143,6 +147,13 @@ export function SourcingPage({ intelData, scoreReport }: { intelData: SourcingIn
           badge={scoreReport.summary.totalProviders || undefined}
         >
           Scoring
+        </TabButton>
+        <TabButton
+          active={activeTab === "real-import"}
+          onClick={() => setActiveTab("real-import")}
+          icon={<UploadCloud className="h-3.5 w-3.5" />}
+        >
+          Import real
         </TabButton>
         <TabButton active={activeTab === "discover"} onClick={() => setActiveTab("discover")} icon={<Globe2 className="h-3.5 w-3.5" />}>
           Descubrir
@@ -168,7 +179,7 @@ export function SourcingPage({ intelData, scoreReport }: { intelData: SourcingIn
           onClick={() => setActiveTab("sync")}
           icon={<RefreshCw className="h-3.5 w-3.5" />}
         >
-          Workers & Sync
+          Historial
         </TabButton>
       </div>
 
@@ -176,6 +187,7 @@ export function SourcingPage({ intelData, scoreReport }: { intelData: SourcingIn
       <div className="mt-6">
         {activeTab === "intel" && <SourcingIntelligence data={intelData} />}
         {activeTab === "scoring" && <ProviderScorePanel report={scoreReport} />}
+        {activeTab === "real-import" && <RealImportTab onImportComplete={loadData} />}
         {activeTab === "discover" && (
           <DiscoverTab providers={providers} connections={connections} onConnect={handleConnectProvider} isPending={isPending} />
         )}
@@ -194,7 +206,7 @@ function TabButton({ active, onClick, children, icon, badge }: { active: boolean
     <button
       onClick={onClick}
       className={cn(
-        "group relative flex items-center gap-2 pb-3 text-[13px] font-semibold transition-colors",
+        "group relative flex shrink-0 items-center gap-2 pb-3 text-[13px] font-semibold transition-colors",
         active ? "text-[#111111]" : "text-[#999999] hover:text-[#111111]"
       )}
     >
@@ -210,7 +222,430 @@ function TabButton({ active, onClick, children, icon, badge }: { active: boolean
   );
 }
 
+function RealImportTab({ onImportComplete }: { onImportComplete: () => void }) {
+  const [sourceType, setSourceType] = useState<SourcingImportSource>("csv");
+  const [csvText, setCsvText] = useState("");
+  const [feedUrl, setFeedUrl] = useState("");
+  const [apiUrl, setApiUrl] = useState("");
+  const [apiKey, setApiKey] = useState("");
+  const [preview, setPreview] = useState<SourcingImportPreview | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  const selectedProducts = useMemo(() => {
+    if (!preview) return [];
+    return preview.products.filter((product) => selectedIds.has(product.externalId));
+  }, [preview, selectedIds]);
+
+  const switchSource = (next: SourcingImportSource) => {
+    setSourceType(next);
+    setPreview(null);
+    setSelectedIds(new Set());
+    setError(null);
+    setSuccess(null);
+  };
+
+  const downloadTemplate = () => {
+    const blob = new Blob([SOURCING_CSV_TEMPLATE], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "nexora-sourcing-template.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleCsvFile = async (file: File | null) => {
+    if (!file) return;
+    const text = await file.text();
+    setCsvText(text);
+    setPreview(null);
+    setSelectedIds(new Set());
+    setError(null);
+    setSuccess(null);
+  };
+
+  const runPreview = () => {
+    startTransition(async () => {
+      try {
+        setError(null);
+        setSuccess(null);
+        const nextPreview =
+          sourceType === "csv"
+            ? await previewCsvImportAction(csvText)
+            : sourceType === "feed"
+              ? await previewFeedImportAction(feedUrl)
+              : await previewApiImportAction(apiUrl, apiKey);
+
+        setPreview(nextPreview);
+        setSelectedIds(new Set(nextPreview.products.map((product) => product.externalId)));
+        if (nextPreview.products.length === 0) {
+          setError(nextPreview.errors[0]?.message || "La fuente no trajo productos validos.");
+        }
+      } catch (previewError) {
+        setError(previewError instanceof Error ? previewError.message : "No se pudo leer la fuente.");
+        setPreview(null);
+        setSelectedIds(new Set());
+      }
+    });
+  };
+
+  const runImport = () => {
+    if (selectedIds.size === 0) {
+      setError("Selecciona al menos un producto para importar.");
+      return;
+    }
+
+    startTransition(async () => {
+      try {
+        setError(null);
+        setSuccess(null);
+        const selected = Array.from(selectedIds);
+        const result =
+          sourceType === "csv"
+            ? await importCsvProductsAction(csvText, selected)
+            : sourceType === "feed"
+              ? await importFeedProductsAction(feedUrl, selected)
+              : await importApiProductsAction(apiUrl, selected, apiKey);
+
+        setSuccess(`Importados: ${result.importedCount}. Existentes omitidos: ${result.skippedExistingCount}.`);
+        setPreview(null);
+        setSelectedIds(new Set());
+        onImportComplete();
+      } catch (importError) {
+        setError(importError instanceof Error ? importError.message : "No se pudo importar la seleccion.");
+      }
+    });
+  };
+
+  const toggleProduct = (externalId: string) => {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(externalId)) next.delete(externalId);
+      else next.add(externalId);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (!preview) return;
+    if (selectedIds.size === preview.products.length) {
+      setSelectedIds(new Set());
+      return;
+    }
+    setSelectedIds(new Set(preview.products.map((product) => product.externalId)));
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-xl border border-[#E5E5E5] bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h2 className="text-[18px] font-extrabold text-[#111111]">Abastecimiento real</h2>
+            <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-[#777777]">
+              Importa productos que vienen de un archivo, feed o API real. Nexora normaliza nombres, categorias y
+              variantes sin inventar productos ni marcar sync cuando la fuente no responde.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={downloadTemplate}
+            className="inline-flex items-center justify-center gap-2 rounded-md border border-[#E5E5E5] bg-white px-3 py-2 text-[12px] font-bold text-[#111111] shadow-sm transition-colors hover:bg-[#F5F5F5]"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Template CSV
+          </button>
+        </div>
+
+        <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
+          <SourceButton
+            active={sourceType === "csv"}
+            title="CSV manual"
+            description="Archivo local con columnas exactas y validacion fila por fila."
+            icon={<FileText className="h-4 w-4" />}
+            onClick={() => switchSource("csv")}
+          />
+          <SourceButton
+            active={sourceType === "feed"}
+            title="Feed URL"
+            description="XML, JSON o CSV publicado por el proveedor."
+            icon={<Link2 className="h-4 w-4" />}
+            onClick={() => switchSource("feed")}
+          />
+          <SourceButton
+            active={sourceType === "api"}
+            title="API proveedor"
+            description="Endpoint que devuelve productos reales. API key opcional."
+            icon={<Globe2 className="h-4 w-4" />}
+            onClick={() => switchSource("api")}
+          />
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-[#E5E5E5] bg-white p-6 shadow-sm">
+        {sourceType === "csv" && (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
+            <label className="block">
+              <span className="text-[12px] font-bold text-[#111111]">Subir CSV del proveedor</span>
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                onChange={(event) => handleCsvFile(event.target.files?.[0] ?? null)}
+                className="mt-2 block w-full rounded-md border border-[#E5E5E5] bg-[#FAFAFA] px-3 py-2 text-[13px] text-[#555555] file:mr-3 file:rounded file:border-0 file:bg-[#111111] file:px-3 file:py-1.5 file:text-[12px] file:font-bold file:text-white"
+              />
+              <span className="mt-2 block text-[12px] text-[#999999]">
+                Columnas obligatorias: externalId, title, cost, stock. Variantes por fila con el mismo externalId.
+              </span>
+            </label>
+            <button
+              type="button"
+              onClick={runPreview}
+              disabled={isPending || csvText.trim().length === 0}
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-[#111111] px-4 py-2.5 text-[12px] font-bold text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UploadCloud className="h-3.5 w-3.5" />}
+              Previsualizar
+            </button>
+          </div>
+        )}
+
+        {sourceType === "feed" && (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
+            <label className="block">
+              <span className="text-[12px] font-bold text-[#111111]">URL del feed</span>
+              <input
+                value={feedUrl}
+                onChange={(event) => {
+                  setFeedUrl(event.target.value);
+                  setPreview(null);
+                }}
+                placeholder="https://proveedor.com/feed.csv"
+                className="mt-2 w-full rounded-md border border-[#E5E5E5] bg-[#FAFAFA] px-3 py-2 text-[13px] text-[#111111] outline-none transition-colors placeholder:text-[#BBBBBB] focus:border-[#111111] focus:bg-white"
+              />
+              <span className="mt-2 block text-[12px] text-[#999999]">Acepta CSV, JSON o XML si la URL responde publicamente.</span>
+            </label>
+            <button
+              type="button"
+              onClick={runPreview}
+              disabled={isPending || feedUrl.trim().length === 0}
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-[#111111] px-4 py-2.5 text-[12px] font-bold text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UploadCloud className="h-3.5 w-3.5" />}
+              Consultar feed
+            </button>
+          </div>
+        )}
+
+        {sourceType === "api" && (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_260px_auto] lg:items-end">
+            <label className="block">
+              <span className="text-[12px] font-bold text-[#111111]">URL base / endpoint de productos</span>
+              <input
+                value={apiUrl}
+                onChange={(event) => {
+                  setApiUrl(event.target.value);
+                  setPreview(null);
+                }}
+                placeholder="https://api.proveedor.com/products"
+                className="mt-2 w-full rounded-md border border-[#E5E5E5] bg-[#FAFAFA] px-3 py-2 text-[13px] text-[#111111] outline-none transition-colors placeholder:text-[#BBBBBB] focus:border-[#111111] focus:bg-white"
+              />
+            </label>
+            <label className="block">
+              <span className="text-[12px] font-bold text-[#111111]">API key opcional</span>
+              <input
+                value={apiKey}
+                onChange={(event) => setApiKey(event.target.value)}
+                placeholder="No se muestra en logs"
+                type="password"
+                className="mt-2 w-full rounded-md border border-[#E5E5E5] bg-[#FAFAFA] px-3 py-2 text-[13px] text-[#111111] outline-none transition-colors placeholder:text-[#BBBBBB] focus:border-[#111111] focus:bg-white"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={runPreview}
+              disabled={isPending || apiUrl.trim().length === 0}
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-[#111111] px-4 py-2.5 text-[12px] font-bold text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UploadCloud className="h-3.5 w-3.5" />}
+              Consultar API
+            </button>
+          </div>
+        )}
+      </div>
+
+      {error && (
+        <div role="alert" className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {success && (
+        <div role="status" className="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-[13px] text-emerald-700">
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{success}</span>
+        </div>
+      )}
+
+      {preview && (
+        <div className="rounded-xl border border-[#E5E5E5] bg-white shadow-sm">
+          <div className="flex flex-col gap-3 border-b border-[#E5E5E5] bg-[#FAFAFA] px-6 py-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h3 className="text-[14px] font-extrabold text-[#111111]">Preview de productos reales</h3>
+              <p className="mt-1 text-[12px] text-[#888888]">
+                {preview.products.length} producto(s) validos, {preview.errors.length} alerta(s) de validacion.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={toggleAll}
+                disabled={preview.products.length === 0}
+                className="rounded-md border border-[#E5E5E5] bg-white px-3 py-2 text-[12px] font-bold text-[#111111] shadow-sm transition-colors hover:bg-[#F5F5F5] disabled:opacity-50"
+              >
+                {selectedIds.size === preview.products.length ? "Deseleccionar" : "Seleccionar todo"}
+              </button>
+              <button
+                type="button"
+                onClick={runImport}
+                disabled={isPending || selectedProducts.length === 0}
+                className="inline-flex items-center justify-center gap-2 rounded-md bg-[#111111] px-4 py-2 text-[12px] font-bold text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                Importar {selectedProducts.length}
+              </button>
+            </div>
+          </div>
+
+          {preview.errors.length > 0 && (
+            <div className="border-b border-[#F0F0F0] px-6 py-4">
+              <div className="mb-2 flex items-center gap-2 text-[12px] font-bold text-red-700">
+                <XCircle className="h-3.5 w-3.5" />
+                Errores por fila
+              </div>
+              <div className="max-h-36 overflow-auto rounded-md border border-red-100 bg-red-50">
+                {preview.errors.slice(0, 12).map((item, index) => (
+                  <div key={`${item.row}-${item.field}-${index}`} className="grid grid-cols-[64px_120px_1fr] gap-3 border-b border-red-100 px-3 py-2 text-[12px] last:border-b-0">
+                    <span className="font-bold text-red-700">Fila {item.row}</span>
+                    <span className="text-red-600">{item.field}</span>
+                    <span className="text-red-700">{item.message}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {preview.products.length === 0 ? (
+            <div className="flex flex-col items-center justify-center px-6 py-14 text-center">
+              <PackageCheck className="mb-4 h-8 w-8 text-[#CCCCCC]" />
+              <h3 className="text-[15px] font-bold text-[#111111]">Sin productos validos</h3>
+              <p className="mt-1 max-w-sm text-[13px] text-[#999999]">Corrige los errores de formato y vuelve a previsualizar.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[760px] text-left text-[13px]">
+                <thead className="border-b border-[#E5E5E5] bg-[#FAFAFA] text-[11px] font-bold uppercase tracking-[0.08em] text-[#888888]">
+                  <tr>
+                    <th className="w-12 px-6 py-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.size === preview.products.length}
+                        onChange={toggleAll}
+                        aria-label="Seleccionar todos los productos"
+                        className="h-4 w-4 rounded border-[#CCCCCC]"
+                      />
+                    </th>
+                    <th className="px-4 py-3">Producto</th>
+                    <th className="px-4 py-3">Categoria</th>
+                    <th className="px-4 py-3 text-right">Costo</th>
+                    <th className="px-4 py-3 text-right">Precio</th>
+                    <th className="px-4 py-3 text-right">Stock</th>
+                    <th className="px-4 py-3 text-right">Variantes</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#F0F0F0]">
+                  {preview.products.map((product) => {
+                    const selected = selectedIds.has(product.externalId);
+                    const price = product.suggestedPrice ?? product.cost;
+                    return (
+                      <tr key={product.externalId} className={cn("transition-colors hover:bg-[#FAFAFA]", selected && "bg-[#FCFCFC]")}>
+                        <td className="px-6 py-4">
+                          <input
+                            type="checkbox"
+                            checked={selected}
+                            onChange={() => toggleProduct(product.externalId)}
+                            aria-label={`Seleccionar ${product.title}`}
+                            className="h-4 w-4 rounded border-[#CCCCCC]"
+                          />
+                        </td>
+                        <td className="px-4 py-4">
+                          <p className="max-w-[280px] truncate font-bold text-[#111111]" title={product.title}>{product.title}</p>
+                          <p className="mt-0.5 max-w-[280px] truncate text-[11px] text-[#999999]" title={product.externalId}>ID: {product.externalId}</p>
+                        </td>
+                        <td className="px-4 py-4 text-[#777777]">{product.category || "-"}</td>
+                        <td className="px-4 py-4 text-right font-semibold text-[#111111]">${product.cost.toLocaleString("es-AR")}</td>
+                        <td className="px-4 py-4 text-right font-semibold text-[#111111]">${price.toLocaleString("es-AR")}</td>
+                        <td className="px-4 py-4 text-right text-[#777777]">{product.stock}</td>
+                        <td className="px-4 py-4 text-right text-[#777777]">{product.variants.length}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SourceButton({
+  active,
+  title,
+  description,
+  icon,
+  onClick,
+}: {
+  active: boolean;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "rounded-lg border p-4 text-left transition-colors",
+        active ? "border-[#111111] bg-[#FAFAFA]" : "border-[#E5E5E5] bg-white hover:border-[#CCCCCC]",
+      )}
+    >
+      <span className={cn("mb-3 flex h-8 w-8 items-center justify-center rounded-md border", active ? "border-[#111111] bg-white text-[#111111]" : "border-[#E5E5E5] bg-[#FAFAFA] text-[#777777]")}>
+        {icon}
+      </span>
+      <span className="block text-[13px] font-extrabold text-[#111111]">{title}</span>
+      <span className="mt-1 block text-[12px] leading-relaxed text-[#888888]">{description}</span>
+    </button>
+  );
+}
+
 function DiscoverTab({ providers, connections, onConnect, isPending }: { providers: SourcingProvider[]; connections: ConnectedProviderData[]; onConnect: (id: string) => void; isPending: boolean }) {
+  if (providers.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[#E5E5E5] bg-[#FAFAFA] py-20 text-center">
+        <Globe2 className="mb-4 h-8 w-8 text-[#CCCCCC]" />
+        <h3 className="text-[15px] font-bold text-[#111111]">Sin proveedores cargados</h3>
+        <p className="mt-1 max-w-sm text-[13px] text-[#999999]">
+          Carga un proveedor real desde CSV, feed o API. No hay proveedores preinventados.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -243,7 +678,7 @@ function DiscoverTab({ providers, connections, onConnect, isPending }: { provide
                   </div>
                   <div className="flex items-center gap-2 text-[12px] text-[#999999]">
                     <ShoppingCart className="h-3.5 w-3.5" />
-                    <span>{p.supportedChannels.split(",").join(" · ")}</span>
+                    <span>Integracion {p.integrationType}</span>
                   </div>
                 </div>
               </div>
@@ -281,7 +716,7 @@ function ConnectedTab({ connections, onRefresh }: { connections: ConnectedProvid
       <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[#E5E5E5] bg-[#FAFAFA] py-20 text-center">
         <Network className="h-8 w-8 text-[#CCCCCC] mb-4" />
         <h3 className="text-[15px] font-bold text-[#111111]">Ningún proveedor conectado</h3>
-        <p className="mt-1 max-w-sm text-[13px] text-[#999999]">Buscá en la pestaña "Descubrir" e integrá tu cuenta con proveedores de dropshipping.</p>
+        <p className="mt-1 max-w-sm text-[13px] text-[#999999]">Usa "Import real" para cargar productos desde CSV, feed o API de tu proveedor.</p>
       </div>
     );
   }
@@ -441,7 +876,7 @@ function ImportsTab({ mirrors }: { mirrors: MirrorData[] }) {
         <div>Producto Interno</div>
         <div className="w-28">Proveedor</div>
         <div className="w-24 text-right">Costo/Precio</div>
-        <div className="w-32">Estado Canales</div>
+        <div className="w-32">Estado interno</div>
         <div className="w-24 text-right">Acciones</div>
       </div>
       <div className="divide-y divide-[#F0F0F0]">
@@ -475,12 +910,12 @@ function ImportsTab({ mirrors }: { mirrors: MirrorData[] }) {
 
             <div className="w-32 space-y-1">
               <div className="flex items-center gap-1.5">
-                <span className={cn("h-1.5 w-1.5 rounded-full", m.publicationStatusML === "published" ? "bg-emerald-500" : "bg-[#CCCCCC]")}/>
-                <span className="text-[11px] font-medium text-[#777777]">M. Libre</span>
+                <span className={cn("h-1.5 w-1.5 rounded-full", m.importStatus === "imported" ? "bg-emerald-500" : "bg-[#CCCCCC]")}/>
+                <span className="text-[11px] font-medium text-[#777777]">Importado</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className={cn("h-1.5 w-1.5 rounded-full", m.publicationStatusShopify === "published" ? "bg-emerald-500" : "bg-[#CCCCCC]")}/>
-                <span className="text-[11px] font-medium text-[#777777]">Shopify</span>
+                <span className={cn("h-1.5 w-1.5 rounded-full", m.syncStatus === "in_sync" ? "bg-emerald-500" : "bg-amber-500")}/>
+                <span className="text-[11px] font-medium text-[#777777]">{m.syncStatus.replace(/_/g, " ")}</span>
               </div>
             </div>
 
@@ -527,8 +962,8 @@ function SyncTab({ jobs, connections, onReload }: { jobs: any[], connections: Co
       <div className="rounded-xl border border-[#E5E5E5] bg-white p-6 shadow-sm">
         <h3 className="text-[16px] font-extrabold text-[#111111] mb-2">Disparar Sincronización</h3>
         <p className="text-[13px] text-[#777777] mb-6 max-w-2xl">
-          Ejecutá los workers de fondo para consultar catálogos vivos de los proveedores activos.
-          Las variaciones de costo y stock impactarán la base de datos interna de Nexora instantáneamente.
+          Ejecuta una lectura real contra feeds o APIs configuradas. Si hay diferencias, Nexora marca el catalogo espejo
+          como pendiente de revision y no inventa cambios de stock ni precio.
         </p>
 
         <div className="flex gap-3 flex-wrap">
@@ -554,7 +989,7 @@ function SyncTab({ jobs, connections, onReload }: { jobs: any[], connections: Co
       {/* Logs / Queue Table */}
       <div className="rounded-xl border border-[#E5E5E5] bg-white overflow-hidden shadow-sm">
         <div className="border-b border-[#E5E5E5] bg-[#FAFAFA] px-6 py-4">
-          <h3 className="text-[14px] font-extrabold text-[#111111]">Historial de Tareas (Workers)</h3>
+          <h3 className="text-[14px] font-extrabold text-[#111111]">Historial de imports y sync</h3>
         </div>
 
         {jobs.length === 0 ? (

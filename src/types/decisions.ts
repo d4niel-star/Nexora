@@ -1,9 +1,9 @@
 // ─── IA de Decisión v1 Types ───
 
-export type DecisionDomain = "operations" | "finance" | "sourcing" | "channels" | "ads" | "aptitude";
+export type DecisionDomain = "operations" | "finance" | "sourcing" | "ads" | "aptitude";
 export type DecisionSeverity = "critical" | "high" | "normal" | "info";
 export type DecisionImpact = "revenue" | "risk" | "efficiency" | "quality";
-export type ExecutionActionType = "publish_product" | "mark_preparing" | "retry_sync" | "resync_listing" | "batch_publish" | "batch_prepare" | "batch_resync";
+export type ExecutionActionType = "publish_product" | "mark_preparing" | "retry_sync" | "batch_publish" | "batch_prepare";
 
 export interface ExecutableAction {
   type: ExecutionActionType;

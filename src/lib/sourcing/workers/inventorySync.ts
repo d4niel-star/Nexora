@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
-import { detectOutOfSyncListings } from "@/lib/channels/sync";
+import { fetchSupplierProducts } from "@/lib/sourcing/import-parsers";
+import { LEGACY_SEEDED_PROVIDER_CODES } from "@/lib/sourcing/constants";
 
 interface SyncOptions {
   jobId: string;
@@ -7,131 +8,149 @@ interface SyncOptions {
   providerConnectionId: string;
 }
 
+interface ProviderConnectionConfig {
+  sourceType?: "feed" | "api" | "csv";
+  sourceUrl?: string | null;
+}
+
+function parseConnectionConfig(configJson: string | null): ProviderConnectionConfig {
+  if (!configJson) return {};
+  try {
+    const parsed = JSON.parse(configJson) as ProviderConnectionConfig;
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
 export async function runInventorySyncJob({ jobId, storeId, providerConnectionId }: SyncOptions) {
   await prisma.providerSyncJob.update({
     where: { id: jobId },
-    data: { status: "running", startedAt: new Date() }
+    data: { status: "running", startedAt: new Date() },
   });
 
   try {
     const connection = await prisma.providerConnection.findUnique({
       where: { id: providerConnectionId },
-      include: { 
-         provider: true,
-         catalogMirrors: {
-           include: {
-              providerProduct: true,
-              internalProduct: {
-                 include: { variants: true }
-              }
-           }
-         }
-      }
+      include: {
+        provider: true,
+      },
     });
 
-    if (!connection) throw new Error("Conexión de proveedor inválida");
+    if (!connection || connection.storeId !== storeId) {
+      throw new Error("Conexion de proveedor invalida o fuera del tenant activo.");
+    }
+    if (LEGACY_SEEDED_PROVIDER_CODES.includes(connection.provider.code)) {
+      throw new Error("Esta conexion pertenece a datos legacy y no puede sincronizarse como fuente real.");
+    }
 
-    // MOCK PROVIDER BEHAVIOR: Simulate receiving a raw payload from provider.
-    // In a real world, this would call HTTP GET to the supplier's external REST API.
-    // We will simulate that one product dropped stock randomly and increased cost by 5%.
-    
-    let productsUpdatedCount = 0;
+    const config = parseConnectionConfig(connection.configJson);
+    if ((config.sourceType !== "feed" && config.sourceType !== "api") || !config.sourceUrl) {
+      throw new Error("Esta conexion no tiene una fuente externa real configurada para sincronizar.");
+    }
 
-    for (const mirror of connection.catalogMirrors) {
-      if (!mirror.internalProduct) continue;
-      
-      const rawProd = mirror.providerProduct;
-      const internalProd = mirror.internalProduct;
-      const primaryVariant = internalProd.variants[0];
+    const preview = await fetchSupplierProducts({
+      sourceType: config.sourceType,
+      url: config.sourceUrl,
+    });
 
-      if (!primaryVariant) continue;
+    if (preview.products.length === 0) {
+      throw new Error(
+        preview.errors[0]?.message || "La fuente respondio, pero no trajo productos validos para sincronizar.",
+      );
+    }
 
-      // Simulate Supplier Diff
-      const newSupplierStock = Math.max(0, rawProd.stock - Math.floor(Math.random() * 3));
-      const newSupplierCost = typeof rawProd.cost === "number" ? rawProd.cost * 1.05 : 0; // 5% inflation simulation
+    let providerProductsChanged = 0;
+    let mirrorsMarkedOutOfSync = 0;
 
-      let hasDiff = false;
-      const updateData: any = {};
-      
-      // Stock diff
-      if (newSupplierStock !== rawProd.stock) {
-        hasDiff = true;
-        updateData.stock = newSupplierStock;
-      }
-      
-      // Cost diff
-      if (newSupplierCost !== rawProd.cost) {
-        hasDiff = true;
-        updateData.cost = newSupplierCost;
-      }
+    for (const product of preview.products) {
+      const existing = await prisma.providerProduct.findUnique({
+        where: {
+          providerId_externalId: {
+            providerId: connection.providerId,
+            externalId: product.externalId,
+          },
+        },
+      });
 
-      if (hasDiff) {
-        // Update raw ProviderProduct
-        await prisma.providerProduct.update({
-          where: { id: rawProd.id },
-          data: updateData
-        });
+      const changed = Boolean(
+        existing &&
+          (existing.cost !== product.cost ||
+            existing.stock !== product.stock ||
+            existing.suggestedPrice !== product.suggestedPrice ||
+            existing.title !== product.title),
+      );
 
-        // RE-PRICING AND MARGIN RULE ENGINE
-        // Standard implementation implies taking cost + marginRule
-        let newFinalPrice = internalProd.price;
-        if (updateData.cost !== undefined && mirror.marginRule) {
-           const [type, val] = mirror.marginRule.split(":");
-           const marginVal = parseFloat(val);
-           if (type === "fixed_percent") {
-              newFinalPrice = updateData.cost * (1 + (marginVal / 100));
-           } else if (type === "fixed_amount") {
-              newFinalPrice = updateData.cost + marginVal;
-           }
-        }
+      const providerProduct = await prisma.providerProduct.upsert({
+        where: {
+          providerId_externalId: {
+            providerId: connection.providerId,
+            externalId: product.externalId,
+          },
+        },
+        create: {
+          providerId: connection.providerId,
+          externalId: product.externalId,
+          title: product.title,
+          description: product.description,
+          imagesJson: JSON.stringify(product.imageUrls),
+          category: product.category,
+          cost: product.cost,
+          suggestedPrice: product.suggestedPrice,
+          stock: product.stock,
+          leadTimeMinDays: product.leadTimeMinDays,
+          leadTimeMaxDays: product.leadTimeMaxDays,
+          variantsJson: JSON.stringify(product.variants),
+          rawJson: JSON.stringify(product.raw),
+        },
+        update: {
+          title: product.title,
+          description: product.description,
+          imagesJson: JSON.stringify(product.imageUrls),
+          category: product.category,
+          cost: product.cost,
+          suggestedPrice: product.suggestedPrice,
+          stock: product.stock,
+          leadTimeMinDays: product.leadTimeMinDays,
+          leadTimeMaxDays: product.leadTimeMaxDays,
+          variantsJson: JSON.stringify(product.variants),
+          rawJson: JSON.stringify(product.raw),
+        },
+      });
 
-        // Apply diff to Mirror
-        await prisma.catalogMirrorProduct.update({
-          where: { id: mirror.id },
+      if (changed) {
+        providerProductsChanged += 1;
+        const updateResult = await prisma.catalogMirrorProduct.updateMany({
+          where: {
+            storeId,
+            providerProductId: providerProduct.id,
+          },
           data: {
-             finalPrice: newFinalPrice,
-             syncStatus: "in_sync",
-             updatedAt: new Date()
-          }
+            syncStatus: "out_of_sync",
+          },
         });
-
-        // Apply diff to Internal Catalog 
-        // 🚨 IMPORTANT: This mutates the internal unified catalog automatically (stock and calculated price)
-        await prisma.productVariant.update({
-           where: { id: primaryVariant.id },
-           data: { stock: updateData.stock !== undefined ? updateData.stock : primaryVariant.stock }
-        });
-
-        if (newFinalPrice !== internalProd.price) {
-           await prisma.product.update({
-              where: { id: internalProd.id },
-              data: { price: newFinalPrice } // Reflect repricing immediately
-           });
-           await prisma.productVariant.update({
-              where: { id: primaryVariant.id },
-              data: { price: newFinalPrice } // Reflect repricing explicitly in default checkout variant
-           });
-        }
-        
-        productsUpdatedCount++;
+        mirrorsMarkedOutOfSync += updateResult.count;
       }
     }
 
-    // Determine impact on channel listings.
-    // If the internal price or stock changed, detectOutOfSyncListings will catch it and flag "out_of_sync".
-    await detectOutOfSyncListings(storeId);
+    await prisma.providerConnection.update({
+      where: { id: connection.id },
+      data: { lastSyncedAt: new Date(), status: "active" },
+    });
 
-    // Finalize Job Correctly
     await prisma.providerSyncJob.update({
       where: { id: jobId },
       data: {
         status: "completed",
         completedAt: new Date(),
-        resultJson: JSON.stringify({ updatedItems: productsUpdatedCount })
-      }
+        resultJson: JSON.stringify({
+          fetchedProducts: preview.products.length,
+          providerProductsChanged,
+          mirrorsMarkedOutOfSync,
+        }),
+      },
     });
 
-    // Audit Log
     await prisma.systemEvent.create({
       data: {
         storeId,
@@ -139,20 +158,28 @@ export async function runInventorySyncJob({ jobId, storeId, providerConnectionId
         entityId: jobId,
         eventType: "provider_sync_completed",
         source: "sourcing_worker",
-        message: `Sync entrante finalizado. ${productsUpdatedCount} item(s) de proveedor impactados.`,
+        message: `Sync real finalizado desde ${connection.provider.name}.`,
         severity: "info",
-      }
+        metadataJson: JSON.stringify({
+          sourceType: config.sourceType,
+          sourceUrl: config.sourceUrl,
+          fetchedProducts: preview.products.length,
+          providerProductsChanged,
+          mirrorsMarkedOutOfSync,
+        }),
+      },
     });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Error desconocido en sync de proveedor.";
 
-  } catch (error: any) {
     await prisma.providerSyncJob.update({
       where: { id: jobId },
       data: {
         status: "failed",
         failedAt: new Date(),
-        lastError: error.message,
-        retryCount: { increment: 1 }
-      }
+        lastError: message,
+        retryCount: { increment: 1 },
+      },
     });
 
     await prisma.systemEvent.create({
@@ -162,9 +189,9 @@ export async function runInventorySyncJob({ jobId, storeId, providerConnectionId
         entityId: jobId,
         eventType: "provider_sync_failed",
         source: "sourcing_worker",
-        message: `Sync entrante falló: ${error.message}`,
+        message: `Sync entrante fallo: ${message}`,
         severity: "error",
-      }
+      },
     });
   }
 }

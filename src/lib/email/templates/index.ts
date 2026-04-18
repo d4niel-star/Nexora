@@ -1,4 +1,4 @@
-import { OrderEmailData } from "../types";
+import { OrderEmailData, StockCriticalEmailData, AbandonedCartEmailData } from "../types";
 
 // Base Layout for all emails
 const formatCurrency = (amount: number, currency: string) => {
@@ -110,6 +110,29 @@ export function generatePaymentApprovedTemplate(data: OrderEmailData) {
   return BaseTemplate("Tu pago fue aprobado", data.storeName, content, data.statusUrl, "Ver recibo");
 }
 
+export function generateOwnerPaymentApprovedTemplate(data: OrderEmailData) {
+  const content = `
+    <h2 style="margin: 0 0 20px 0; font-size: 20px; font-weight: 700; color: #111111;">Pago confirmado</h2>
+    <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.5; color: #374151;">
+      Se acredito el pago del pedido <strong>${data.orderNumber}</strong> en <strong>${data.storeName}</strong>.
+    </p>
+    <div style="background-color: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 6px; padding: 20px; margin-top: 30px;">
+      <h3 style="margin: 0 0 15px 0; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #6B7280;">Resumen</h3>
+      <table width="100%" border="0" cellspacing="0" cellpadding="0" style="font-size: 15px; color: #374151;">
+        <tr>
+          <td style="padding: 8px 0;">Cliente</td>
+          <td align="right" style="padding: 8px 0; font-weight: 600;">${data.customerName}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0;">Total pagado</td>
+          <td align="right" style="padding: 8px 0; font-weight: 800; color: #111111;">${formatCurrency(data.total, data.currency)}</td>
+        </tr>
+      </table>
+    </div>
+  `;
+  return BaseTemplate("Nuevo pago confirmado", data.storeName, content, data.statusUrl, "Ver ordenes");
+}
+
 export function generatePaymentPendingTemplate(data: OrderEmailData) {
   const content = `
     <h2 style="margin: 0 0 20px 0; font-size: 20px; font-weight: 700; color: #111111;">Pago Pendiente de Confirmación</h2>
@@ -217,4 +240,89 @@ export function generateOrderDeliveredTemplate(data: OrderEmailData) {
     </p>
   `;
   return BaseTemplate("¡Pedido entregado con éxito!", data.storeName, content, data.statusUrl, "Ver detalles del Pedido");
+}
+
+export function generateStockCriticalTemplate(data: StockCriticalEmailData) {
+  const variantLabel = data.variantTitle ? ` · <strong>${data.variantTitle}</strong>` : "";
+  const skuLabel = data.sku ? `<span style="font-family: monospace; font-size: 13px; color: #6B7280;"> (SKU: ${data.sku})</span>` : "";
+
+  const content = `
+    <h2 style="margin: 0 0 20px 0; font-size: 20px; font-weight: 700; color: #B91C1C;">Stock crítico detectado</h2>
+    <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.5; color: #374151;">
+      Un producto de tu tienda llegó al punto de reposición tras una venta reciente.
+      Reponelo antes de que se agote para no perder ventas.
+    </p>
+
+    <div style="background-color: #FEF2F2; border: 1px solid #FECACA; border-radius: 6px; padding: 20px; margin-top: 20px;">
+      <h3 style="margin: 0 0 8px 0; font-size: 15px; font-weight: 700; color: #991B1B;">
+        ${data.productTitle}${variantLabel}
+      </h3>
+      ${skuLabel}
+      <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-top: 14px; font-size: 15px; color: #374151;">
+        <tr>
+          <td style="padding: 6px 0;">Stock actual</td>
+          <td align="right" style="padding: 6px 0; font-weight: 700; color: #B91C1C;">${data.currentStock} u.</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0;">Punto de reposición</td>
+          <td align="right" style="padding: 6px 0; font-weight: 500;">${data.reorderPoint} u.</td>
+        </tr>
+      </table>
+    </div>
+
+    <p style="margin: 24px 0 0 0; font-size: 14px; line-height: 1.5; color: #6B7280;">
+      Entrá al panel de inventario para reponer ahora. Si el producto tiene proveedor conectado,
+      podés generar la orden directamente desde Nexora.
+    </p>
+  `;
+  return BaseTemplate(
+    "Stock crítico en tu tienda",
+    data.storeName,
+    content,
+    data.inventoryUrl,
+    "Reponer stock ahora",
+  );
+}
+
+export function generateAbandonedCartTemplate(data: AbandonedCartEmailData) {
+  const itemRows = data.cartItems
+    .map(
+      (item) => `
+        <tr>
+          <td style="padding: 12px 0; border-bottom: 1px solid #F3F4F6;">
+            <strong>${item.title}</strong>${item.variantTitle ? ` · ${item.variantTitle}` : ""}
+            <div style="font-size: 13px; color: #6B7280;">x${item.quantity}</div>
+          </td>
+          <td align="right" style="padding: 12px 0; border-bottom: 1px solid #F3F4F6; font-weight: 500;">
+            ${formatCurrency(item.price * item.quantity, data.currency)}
+          </td>
+        </tr>`,
+    )
+    .join("");
+
+  const content = `
+    <h2 style="margin: 0 0 16px 0; font-size: 22px; font-weight: 700; color: #111111;">Hola ${data.customerName || "cliente"}, dejaste algo en tu carrito</h2>
+    <p style="margin: 0 0 24px 0; font-size: 16px; line-height: 1.5; color: #374151;">
+      Guardamos tu selección en ${data.storeName}. Si aún querés completar la compra, seguí donde la dejaste con un clic.
+    </p>
+
+    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-top: 10px; font-size: 15px; color: #374151;">
+      ${itemRows}
+      <tr>
+        <td style="padding: 16px 0 0 0; font-weight: 700;">Subtotal</td>
+        <td align="right" style="padding: 16px 0 0 0; font-weight: 700;">${formatCurrency(data.subtotal, data.currency)}</td>
+      </tr>
+    </table>
+
+    <p style="margin: 28px 0 0 0; font-size: 13px; color: #9CA3AF;">
+      Si no reconocés esta compra podés ignorar este correo.
+    </p>
+  `;
+  return BaseTemplate(
+    `Completá tu compra en ${data.storeName}`,
+    data.storeName,
+    content,
+    data.recoveryUrl,
+    "Retomar mi compra",
+  );
 }

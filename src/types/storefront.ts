@@ -26,6 +26,7 @@ export interface StorefrontProduct {
   handle: string;
   title: string;
   description: string;
+  category?: string | null;
   price: number;
   compareAtPrice?: number;
   featuredImage: string;

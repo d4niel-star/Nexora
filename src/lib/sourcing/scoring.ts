@@ -52,7 +52,6 @@ export interface ImportInput {
   providerTier: ProviderTier;
   estimatedMarginPercent: number | null;
   // Aptitude signals if available
-  hasChannelListing: boolean;
   hasAdDraft: boolean;
 }
 
@@ -307,10 +306,6 @@ export function scoreImport(input: ImportInput): ImportScore {
   }
 
   // ─── Channel/Ads readiness (bonus signals) ───
-  if (input.hasChannelListing) {
-    signals.push({ key: "has_listing", label: "Producto similar ya publicado en canal", impact: "positive" });
-    positiveCount++;
-  }
   if (input.hasAdDraft) {
     signals.push({ key: "has_ad", label: "Borrador de ad existe", impact: "positive" });
     positiveCount++;

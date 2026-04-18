@@ -1,6 +1,6 @@
 export type FinanceStatus = "collected" | "pending" | "refunded" | "partial" | "failed" | "review" | "exported" | "scheduled" | "critical" | "stable";
 export type FinanceSeverity = "info" | "warning" | "error" | "critical";
-export type FinanceChannel = "Mercado Libre" | "Shopify" | "Tienda propia" | "WhatsApp";
+export type FinanceChannel = "Tienda propia" | "WhatsApp" | "Manual";
 export type RefundReason = "Producto defectuoso" | "Error de envio" | "Cancelacion cliente" | "Producto incorrecto" | "Garantia";
 export type ExportType = "ventas" | "reembolsos" | "comisiones" | "margenes" | "pendientes" | "completo";
 

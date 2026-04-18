@@ -1,7 +1,7 @@
 // ─── Daily Operations Center v1 Types ───
 
 export type OpSeverity = "critical" | "high" | "normal" | "info";
-export type OpCategory = "orders" | "margin" | "catalog" | "inventory" | "sourcing" | "channels" | "ai";
+export type OpCategory = "orders" | "margin" | "catalog" | "inventory" | "sourcing" | "ai";
 
 export interface OperationalItem {
   id: string;

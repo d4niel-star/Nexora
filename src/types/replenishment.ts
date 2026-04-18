@@ -1,5 +1,5 @@
 // ─── Sell-Through + Reorder / Replenishment Intelligence v2 Types ───
-// All classifications are evidence-based. No forecasting, no ML.
+// All classifications are evidence-based. No forecasting, no machine learning.
 // v2: lead-time-adjusted urgency, reorderPoint, leadTimeRiskLabel.
 // Observable signals only: stock, velocity, coverage, provider availability.
 

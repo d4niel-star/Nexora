@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
-import { encryptToken } from "@/lib/channels/oauth/crypto";
+import { encryptToken } from "@/lib/security/token-crypto";
 
 const FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID || "";
 const FACEBOOK_APP_SECRET = process.env.FACEBOOK_APP_SECRET || "";

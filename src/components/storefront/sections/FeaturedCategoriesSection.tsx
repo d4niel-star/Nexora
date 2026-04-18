@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { StorefrontCollection } from "@/types/storefront";
+import { storePath } from "@/lib/store-engine/urls";
 
 interface FeaturedCategoriesSectionProps {
   settings: Record<string, unknown>;
@@ -27,14 +28,20 @@ export function FeaturedCategoriesSection({
           {collections.map((col) => (
             <Link
               key={col.id}
-              href={`/${storeSlug}/collections/${col.handle}`}
+              href={storePath(storeSlug, `collections/${col.handle}`)}
               className="group relative overflow-hidden rounded-xl aspect-[4/3] bg-gray-200 shadow-sm"
             >
-              <img
-                src={col.imageUrl}
-                alt={col.title}
-                className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-              />
+              {col.imageUrl ? (
+                <img
+                  src={col.imageUrl}
+                  alt={col.title}
+                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center px-6 text-center">
+                  <span className="text-xs font-bold uppercase tracking-widest text-gray-400">Sin imagen</span>
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 p-6">
                 <h3 className="text-lg font-extrabold text-white">

@@ -61,7 +61,7 @@ export default function MarketingLandingPage() {
           </h1>
 
           <p className="text-[16px] sm:text-[17px] text-[#666666] max-w-xl mx-auto leading-relaxed mb-8 font-medium">
-            Catálogo centralizado, storefront propio, IA integrada, checkout con Mercado Pago y sincronización multicanal. Todo desde un solo lugar.
+            Catálogo centralizado, storefront propio, IA integrada, checkout con Mercado Pago y operación centralizada. Todo desde un solo lugar.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -104,7 +104,7 @@ export default function MarketingLandingPage() {
                   { label: "Pedidos" },
                   { label: "Catálogo" },
                   { label: "Inventario" },
-                  { label: "Canales" },
+                  { label: "Tienda" },
                   { label: "Nexora AI" },
                 ].map((item, i) => (
                   <div key={i} className={`text-[11px] font-medium py-2 px-2.5 rounded-lg mb-0.5 ${item.active ? "bg-[#F5F5F5] text-[#111111]" : "text-[#999999]"}`}>
@@ -206,8 +206,8 @@ export default function MarketingLandingPage() {
               },
               {
                 icon: Globe,
-                title: "Sincronización multicanal",
-                description: "Publicá en Mercado Libre y Shopify con stock bidireccional 1:1."
+                title: "Operación centralizada",
+                description: "Publica tu tienda propia con stock validado y operaciones centralizadas."
               },
               {
                 icon: Store,

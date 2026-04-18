@@ -1,10 +1,15 @@
 "use server";
 
 import { prisma } from "@/lib/db/prisma";
+import { getCurrentStore } from "@/lib/auth/session";
 import { revalidatePath } from "next/cache";
 import { sendEmailEvent } from "@/lib/email/events";
 import { logSystemEvent } from "../../observability/audit";
 import { issueCreditNoteForInvoice } from "@/lib/fiscal/arca/services";
+import { createRefund } from "@/lib/payments/mercadopago/client";
+import { getMercadoPagoCredentialsForStore } from "@/lib/payments/mercadopago/tenant";
+import { storePath } from "@/lib/store-engine/urls";
+import { restoreOrderStock } from "@/lib/store-engine/inventory/actions";
 
 export async function createOrderFromDraft(draftId: string) {
   const draft = await prisma.checkoutDraft.findUnique({
@@ -104,12 +109,12 @@ export async function createOrderFromDraft(draftId: string) {
   return order.id;
 }
 
-import { createRefund } from "@/lib/payments/mercadopago/client";
-import { restoreOrderStock } from "@/lib/store-engine/inventory/actions";
-
 export async function cancelOrder(orderId: string, reason: string, doRefund: boolean) {
-  const order = await prisma.order.findUnique({
-    where: { id: orderId },
+  const currentStore = await getCurrentStore();
+  if (!currentStore) throw new Error("No hay tienda activa.");
+
+  const order = await prisma.order.findFirst({
+    where: { id: orderId, storeId: currentStore.id },
     include: { store: true, fiscalInvoice: true }
   });
 
@@ -146,7 +151,9 @@ export async function cancelOrder(orderId: string, reason: string, doRefund: boo
 
     if (payment && payment.externalId) {
       try {
+        const mpCredentials = await getMercadoPagoCredentialsForStore(order.storeId);
         const mpRefund = await createRefund(
+          mpCredentials.accessToken,
           payment.externalId, 
           undefined, // Full refund
           `refund_${order.id}_${Date.now()}` // Idempotency key
@@ -203,6 +210,7 @@ export async function cancelOrder(orderId: string, reason: string, doRefund: boo
     data: {
       status: "cancelled",
       paymentStatus: paymentStatus,
+      publicStatus: refundSuccess ? "REFUNDED" : "CANCELLED",
       cancelledAt: now,
       cancelReason: reason,
       refundedAt,
@@ -257,7 +265,7 @@ export async function cancelOrder(orderId: string, reason: string, doRefund: boo
     shippingAmount: order.shippingAmount,
     total: order.total,
     currency: order.currency,
-    statusUrl: `${storeUrl}/${order.store.slug}/checkout/pending?orderId=${order.id}`,
+    statusUrl: `${storeUrl}${storePath(order.store.slug, `checkout/pending?orderId=${order.id}`)}`,
     shippingMethodLabel: order.shippingMethodLabel || undefined,
   };
 

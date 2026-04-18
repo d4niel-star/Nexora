@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   Check,
-  Copy,
+  CreditCard,
   Eye,
   FileText,
   Globe,
@@ -19,23 +20,26 @@ import {
   Palette,
   Save,
   Search,
+  Share2,
   Smartphone,
-  Store,
   X,
 } from "lucide-react";
 
 import { StoreDrawer } from "@/components/admin/store/StoreDrawer";
-import { StoreStatusBadge, SectionTypeBadge, PageTypeBadge, NavGroupBadge, ColorDot } from "@/components/admin/store/StoreBadge";
+import { StoreStatusBadge, SectionTypeBadge, PageTypeBadge, ColorDot } from "@/components/admin/store/StoreBadge";
 import { DomainSettingsView } from "@/components/admin/store/tabs/DomainSettingsView";
 import { TableSkeleton } from "@/components/admin/orders/TableSkeleton";
 import { cn } from "@/lib/utils";
 
-import { publishStoreAction, saveStoreBranding as saveStoreBrandingAction } from "@/lib/store-engine/actions";
-import { addCustomDomain, setPrimaryDomain, removeCustomDomain, verifyDomainStatus } from "@/lib/store-engine/domains/actions";
+import {
+  createFirstStoreProductAction,
+  publishStoreAction,
+  saveStoreProfileAction,
+} from "@/lib/store-engine/actions";
 import type { AdminStoreInitialData } from "@/types/store-engine";
 import type { StoreTheme, StoreBranding, StoreSummary, HomeSection, NavItem, StorePage as StorePageType, StoreDomain, StoreStatus } from "@/types/store";
 
-type TabValue = "resumen" | "tema" | "branding" | "home" | "navegacion" | "paginas" | "dominio" | "preview";
+type TabValue = "resumen" | "tema" | "branding" | "home" | "navegacion" | "paginas" | "dominio" | "pagos" | "preview";
 
 type DrawerContent =
   | { kind: "theme"; data: StoreTheme }
@@ -50,7 +54,9 @@ const timeFormatter = new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: 
 
 export function StorePage({ initialData }: { initialData?: AdminStoreInitialData | null }) {
   const searchParams = useSearchParams();
-  const initialTab = (searchParams.get("tab") as TabValue) || "resumen";
+  const router = useRouter();
+  const tabParam = searchParams.get("tab");
+  const initialTab: TabValue = tabParam === "tema" || tabParam === "branding" || tabParam === "home" || tabParam === "navegacion" || tabParam === "paginas" || tabParam === "dominio" || tabParam === "pagos" || tabParam === "preview" ? tabParam : "resumen";
   const [activeTab, setActiveTab] = useState<TabValue>(initialTab);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -127,6 +133,12 @@ export function StorePage({ initialData }: { initialData?: AdminStoreInitialData
     type: p.type as "system" | "custom",
   })) : [];
 
+  const publicPath = initialData?.publicUrl ?? (initialData ? `/store/${initialData.store.slug}` : "#");
+  const publicUrl = typeof window === "undefined" || publicPath === "#" ? publicPath : `${window.location.origin}${publicPath}`;
+  const paymentStatus = initialData?.paymentProvider?.status ?? "disconnected";
+  const isMercadoPagoConnected = paymentStatus === "connected" && !!initialData?.paymentProvider;
+  const isLive = initialData?.store.status === "active" && (initialData?.counts.sellableProducts ?? 0) > 0;
+
   useEffect(() => { if (!isLoading) return; const t = window.setTimeout(() => setIsLoading(false), 720); return () => window.clearTimeout(t); }, [isLoading]);
 
   const tabs: Array<{ label: string; value: TabValue; icon: React.ReactNode }> = [
@@ -137,6 +149,7 @@ export function StorePage({ initialData }: { initialData?: AdminStoreInitialData
     { label: "Navegacion", value: "navegacion", icon: <Navigation className="h-3.5 w-3.5" /> },
     { label: "Paginas", value: "paginas", icon: <FileText className="h-3.5 w-3.5" /> },
     { label: "Dominio", value: "dominio", icon: <Globe className="h-3.5 w-3.5" /> },
+    { label: "Pagos", value: "pagos", icon: <CreditCard className="h-3.5 w-3.5" /> },
     { label: "Vista previa", value: "preview", icon: <Monitor className="h-3.5 w-3.5" /> },
   ];
 
@@ -148,8 +161,24 @@ export function StorePage({ initialData }: { initialData?: AdminStoreInitialData
     window.setTimeout(() => setToasts((c) => c.filter((t) => t.id !== id)), 3200);
   };
 
+  useEffect(() => {
+    const mp = searchParams.get("mp");
+    if (!mp) return;
+
+    if (mp === "connected") {
+      pushToast("Mercado Pago conectado", "El checkout de la tienda quedo habilitado para pagos reales.");
+    } else if (mp === "missing_config") {
+      pushToast("Falta configuracion", "MP_CLIENT_ID, MP_CLIENT_SECRET o NEXT_PUBLIC_APP_URL no estan configurados.");
+    } else if (mp === "invalid_state") {
+      pushToast("Conexion rechazada", "La respuesta OAuth no pertenece a esta sesion.");
+    } else if (mp === "error") {
+      pushToast("No se pudo conectar", "Mercado Pago no devolvio credenciales validas.");
+    }
+  }, [searchParams]);
+
   const openDrawer = (c: DrawerContent) => setDrawerContent(c);
   const closeDrawer = () => setDrawerContent(null);
+  const refreshData = () => router.refresh();
   const handleAction = (action: string) => { pushToast("Información", action); };
 
   const showToolbar = activeTab === "paginas" || activeTab === "navegacion";
@@ -188,11 +217,21 @@ export function StorePage({ initialData }: { initialData?: AdminStoreInitialData
           {isLoading ? (
             <TableSkeleton />
           ) : activeTab === "resumen" ? (
-            <SummaryView onNavigate={handleTabChange} onAction={handleAction} summary={storeSummary} />
+            <SummaryView
+              initialData={initialData ?? null}
+              isLive={isLive}
+              isMercadoPagoConnected={isMercadoPagoConnected}
+              onAction={handleAction}
+              onNavigate={handleTabChange}
+              onRefresh={refreshData}
+              publicPath={publicPath}
+              publicUrl={publicUrl}
+              summary={storeSummary}
+            />
           ) : activeTab === "tema" ? (
             <ThemeView openDrawer={openDrawer} onAction={handleAction} />
           ) : activeTab === "branding" ? (
-            <BrandingView onAction={handleAction} branding={brandingData} />
+            <BrandingView initialData={initialData ?? null} onAction={handleAction} onRefresh={refreshData} branding={brandingData} />
           ) : activeTab === "home" ? (
             <HomeView openDrawer={openDrawer} onAction={handleAction} sections={homeSections} />
           ) : activeTab === "navegacion" ? (
@@ -201,6 +240,8 @@ export function StorePage({ initialData }: { initialData?: AdminStoreInitialData
             <PagesView searchQuery={searchQuery} openDrawer={openDrawer} onAction={handleAction} pages={storePages} />
           ) : activeTab === "dominio" ? (
             <DomainSettingsView initialData={initialData!} onAction={handleAction} storeId={initialData?.store.id} />
+          ) : activeTab === "pagos" ? (
+            <PaymentsView initialData={initialData ?? null} isConnected={isMercadoPagoConnected} onAction={handleAction} publicPath={publicPath} />
           ) : (
             <PreviewView onAction={handleAction} />
           )}
@@ -215,14 +256,59 @@ export function StorePage({ initialData }: { initialData?: AdminStoreInitialData
 
 /* ─── Summary ─── */
 
-function SummaryView({ onNavigate, onAction, summary }: { onNavigate: (t: TabValue) => void; onAction: (a: string) => void; summary: StoreSummary }) {
+function SummaryView({
+  initialData,
+  isLive,
+  isMercadoPagoConnected,
+  onNavigate,
+  onAction,
+  onRefresh,
+  publicPath,
+  publicUrl,
+  summary,
+}: {
+  initialData: AdminStoreInitialData | null;
+  isLive: boolean;
+  isMercadoPagoConnected: boolean;
+  onNavigate: (t: TabValue) => void;
+  onAction: (a: string) => void;
+  onRefresh: () => void;
+  publicPath: string;
+  publicUrl: string;
+  summary: StoreSummary;
+}) {
   const s = summary;
+  const [isPublishing, startPublishing] = useTransition();
+  const productCount = initialData?.counts.products ?? 0;
+  const sellableProducts = initialData?.counts.sellableProducts ?? 0;
+
+  const handlePublish = () => {
+    startPublishing(async () => {
+      try {
+        await publishStoreAction();
+        onAction("Tienda publicada correctamente.");
+        onRefresh();
+      } catch (error) {
+        onAction(error instanceof Error ? error.message : "No se pudo publicar la tienda.");
+      }
+    });
+  };
+
+  const handleShare = async () => {
+    if (!isLive) return;
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      onAction("Link publico copiado.");
+    } catch {
+      onAction("No se pudo copiar el link automaticamente.");
+    }
+  };
 
   return (
     <div className="space-y-6 p-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <SummaryCard label="Tema activo" value={s.themeName} accent />
-        <SummaryCard label="Estado" value={s.themeStatus === "published" ? "Publicado" : "Borrador"} />
+        <SummaryCard label="Estado" value={isLive ? "Live" : "Borrador"} />
         <SummaryCard label="Dominio" value={s.domain} />
       </div>
 
@@ -241,6 +327,57 @@ function SummaryView({ onNavigate, onAction, summary }: { onNavigate: (t: TabVal
         <SummaryCard label="Secciones home" value={s.homeSectionsCount.toString()} />
       </div>
 
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="rounded-2xl border border-[#EAEAEA] bg-white p-5 shadow-sm lg:col-span-2">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">URL publica</p>
+              <p className="mt-2 break-all font-mono text-sm font-semibold text-[#111111]">{publicPath}</p>
+              <p className="mt-2 text-[12px] font-medium text-[#777777]">
+                {isLive
+                  ? isMercadoPagoConnected
+                    ? "La tienda esta publicada y el checkout esta habilitado con la cuenta MP conectada."
+                    : "La tienda esta publicada. El checkout queda desactivado hasta conectar Mercado Pago."
+                  : "La URL queda activa cuando publiques una tienda con productos disponibles."}
+              </p>
+            </div>
+            <div className="flex shrink-0 flex-wrap gap-2">
+              {isLive ? (
+                <Link className="inline-flex items-center gap-2 rounded-xl bg-[#111111] px-4 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" href={publicPath} target="_blank">
+                  <Eye className="h-3.5 w-3.5" />
+                  Ver mi tienda
+                </Link>
+              ) : (
+                <button className="inline-flex cursor-not-allowed items-center gap-2 rounded-xl bg-[#111111] px-4 py-2.5 text-[13px] font-bold text-white opacity-40" disabled type="button">
+                  <Eye className="h-3.5 w-3.5" />
+                  Ver mi tienda
+                </button>
+              )}
+              <button className="inline-flex items-center gap-2 rounded-xl border border-[#EAEAEA] bg-white px-4 py-2.5 text-[13px] font-bold text-[#111111] transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" disabled={!isLive} onClick={handleShare} type="button">
+                <Share2 className="h-3.5 w-3.5" />
+                Compartir tienda
+              </button>
+            </div>
+          </div>
+        </div>
+        <div className="rounded-2xl border border-[#EAEAEA] bg-white p-5 shadow-sm">
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Checkout</p>
+          <p className={cn("mt-2 text-sm font-black", isMercadoPagoConnected ? "text-emerald-700" : "text-amber-700")}>
+            {isMercadoPagoConnected ? "Mercado Pago conectado" : "Mercado Pago pendiente"}
+          </p>
+          <p className="mt-2 text-[12px] font-medium leading-relaxed text-[#777777]">
+            {isMercadoPagoConnected ? "Las compras redirigen a la cuenta propia del dueno de la tienda." : "La tienda se puede preparar y publicar, pero no cobra hasta conectar una cuenta real."}
+          </p>
+          <button className="mt-4 text-[12px] font-bold text-[#111111] underline underline-offset-4" onClick={() => onNavigate("pagos")} type="button">
+            Revisar pagos
+          </button>
+        </div>
+      </div>
+
+      {productCount === 0 ? (
+        <FirstProductPanel onAction={onAction} onRefresh={onRefresh} />
+      ) : null}
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <NavCard icon={<Palette className="h-5 w-5 text-purple-500" />} title="Tema" description={s.themeName} onClick={() => onNavigate("tema")} />
         <NavCard icon={<Paintbrush className="h-5 w-5 text-blue-500" />} title="Branding" description="Logo, colores, fuentes" onClick={() => onNavigate("branding")} />
@@ -249,15 +386,64 @@ function SummaryView({ onNavigate, onAction, summary }: { onNavigate: (t: TabVal
       </div>
 
       <div className="flex items-center gap-3">
-        <button className="flex items-center gap-2 rounded-xl bg-[#111111] px-5 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" onClick={async () => { try { await publishStoreAction(); onAction("Tienda publicada correctamente"); } catch { onAction("Error al publicar tienda"); } }} type="button">
+        <button className="flex items-center gap-2 rounded-xl bg-[#111111] px-5 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" disabled={isPublishing || sellableProducts === 0} onClick={handlePublish} type="button">
           <Eye className="h-3.5 w-3.5" />
-          Publicar tienda
+          {isPublishing ? "Publicando..." : "Publicar tienda"}
         </button>
         <button className="flex items-center gap-2 rounded-xl border border-[#EAEAEA] bg-white px-5 py-2.5 text-[13px] font-bold text-[#111111] transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" onClick={() => onNavigate("preview")} type="button">
           Ver vista previa
         </button>
       </div>
     </div>
+  );
+}
+
+function FirstProductPanel({ onAction, onRefresh }: { onAction: (a: string) => void; onRefresh: () => void }) {
+  const [isPending, startTransition] = useTransition();
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+
+    startTransition(async () => {
+      try {
+        await createFirstStoreProductAction(formData);
+        form.reset();
+        onAction("Primer producto creado con variante, precio y stock.");
+        onRefresh();
+      } catch (error) {
+        onAction(error instanceof Error ? error.message : "No se pudo crear el producto.");
+      }
+    });
+  };
+
+  return (
+    <form className="rounded-2xl border border-[#EAEAEA] bg-white p-5 shadow-sm" onSubmit={handleSubmit}>
+      <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Primer producto</p>
+          <h3 className="mt-2 text-lg font-black tracking-tight text-[#111111]">Carga un SKU vendible</h3>
+          <p className="mt-1 max-w-xl text-[13px] font-medium leading-relaxed text-[#777777]">
+            Crea un producto real en la DB con una variante, precio y stock. Despues podes editarlo desde Catalogo e Inventario.
+          </p>
+        </div>
+        <button className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[#111111] px-5 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" disabled={isPending} type="submit">
+          <Save className="h-3.5 w-3.5" />
+          {isPending ? "Creando..." : "Crear producto"}
+        </button>
+      </div>
+
+      <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <input className="rounded-xl border border-[#EAEAEA] bg-white px-3 py-2.5 text-sm font-medium text-[#111111] outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20" name="title" placeholder="Nombre del producto" required />
+        <input className="rounded-xl border border-[#EAEAEA] bg-white px-3 py-2.5 text-sm font-medium text-[#111111] outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20" name="variantTitle" placeholder="Variante, ej. Default" />
+        <input className="rounded-xl border border-[#EAEAEA] bg-white px-3 py-2.5 text-sm font-medium text-[#111111] outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20" min="1" name="price" placeholder="Precio" required step="0.01" type="number" />
+        <input className="rounded-xl border border-[#EAEAEA] bg-white px-3 py-2.5 text-sm font-medium text-[#111111] outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20" min="0" name="stock" placeholder="Stock" required step="1" type="number" />
+        <input className="rounded-xl border border-[#EAEAEA] bg-white px-3 py-2.5 text-sm font-medium text-[#111111] outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 md:col-span-2" name="category" placeholder="Categoria" />
+        <input className="rounded-xl border border-[#EAEAEA] bg-white px-3 py-2.5 text-sm font-medium text-[#111111] outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 md:col-span-2" name="featuredImage" placeholder="URL de imagen publica" type="url" />
+        <textarea className="min-h-24 rounded-xl border border-[#EAEAEA] bg-white px-3 py-2.5 text-sm font-medium text-[#111111] outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 md:col-span-2 xl:col-span-4" name="description" placeholder="Descripcion breve" />
+      </div>
+    </form>
   );
 }
 
@@ -283,11 +469,70 @@ function ThemeView({ openDrawer, onAction }: { openDrawer: (c: DrawerContent) =>
 
 /* ─── Branding ─── */
 
-function BrandingView({ onAction, branding }: { onAction: (a: string) => void; branding: StoreBranding }) {
+function BrandingView({
+  initialData,
+  onAction,
+  onRefresh,
+  branding,
+}: {
+  initialData: AdminStoreInitialData | null;
+  onAction: (a: string) => void;
+  onRefresh: () => void;
+  branding: StoreBranding;
+}) {
   const b = branding;
+  const [isPending, startTransition] = useTransition();
+
+  const handleProfileSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+
+    startTransition(async () => {
+      try {
+        await saveStoreProfileAction(formData);
+        onAction("Perfil publico actualizado.");
+        onRefresh();
+      } catch (error) {
+        onAction(error instanceof Error ? error.message : "No se pudo guardar la tienda.");
+      }
+    });
+  };
 
   return (
     <div className="space-y-8 p-6">
+      <form className="space-y-4 rounded-2xl border border-[#EAEAEA] bg-white p-5 shadow-sm" onSubmit={handleProfileSubmit}>
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div>
+            <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Datos publicos de tienda</h3>
+            <p className="mt-2 max-w-xl text-[13px] font-medium leading-relaxed text-[#777777]">
+              Estos datos alimentan el storefront real y validan slug unico antes de publicar.
+            </p>
+          </div>
+          <button className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[#111111] px-5 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" disabled={isPending} type="submit">
+            <Save className="h-3.5 w-3.5" />
+            {isPending ? "Guardando..." : "Guardar tienda"}
+          </button>
+        </div>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <label className="space-y-2">
+            <span className="text-xs font-bold text-[#111111]">Nombre</span>
+            <input className="w-full rounded-xl border border-[#EAEAEA] bg-white px-3 py-2.5 text-sm font-medium text-[#111111] outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20" defaultValue={initialData?.store.name ?? b.storeName} name="name" required />
+          </label>
+          <label className="space-y-2">
+            <span className="text-xs font-bold text-[#111111]">Slug publico</span>
+            <input className="w-full rounded-xl border border-[#EAEAEA] bg-white px-3 py-2.5 font-mono text-sm font-medium text-[#111111] outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20" defaultValue={initialData?.store.slug ?? ""} name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" required />
+          </label>
+          <label className="space-y-2 lg:col-span-2">
+            <span className="text-xs font-bold text-[#111111]">Descripcion</span>
+            <textarea className="min-h-24 w-full rounded-xl border border-[#EAEAEA] bg-white px-3 py-2.5 text-sm font-medium text-[#111111] outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20" defaultValue={initialData?.store.description ?? ""} maxLength={280} name="description" />
+          </label>
+          <label className="space-y-2 lg:col-span-2">
+            <span className="text-xs font-bold text-[#111111]">Logo URL</span>
+            <input className="w-full rounded-xl border border-[#EAEAEA] bg-white px-3 py-2.5 text-sm font-medium text-[#111111] outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20" defaultValue={initialData?.store.logo ?? b.logoUrl} name="logo" placeholder="https://..." type="url" />
+          </label>
+        </div>
+      </form>
+
       <div className="space-y-4">
         <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Identidad de marca</h3>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -449,6 +694,73 @@ function PagesView({ searchQuery, openDrawer, onAction, pages }: { searchQuery: 
 
 
 /* ─── Preview ─── */
+
+function PaymentsView({
+  initialData,
+  isConnected,
+  onAction,
+  publicPath,
+}: {
+  initialData: AdminStoreInitialData | null;
+  isConnected: boolean;
+  onAction: (a: string) => void;
+  publicPath: string;
+}) {
+  const provider = initialData?.paymentProvider ?? null;
+  const connectedAt = provider?.connectedAt ? timeFormatter.format(new Date(provider.connectedAt)) : null;
+
+  return (
+    <div className="space-y-6 p-6">
+      <div className={cn("rounded-2xl border p-5 shadow-sm", isConnected ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50")}>
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div>
+            <p className={cn("text-[11px] font-bold uppercase tracking-[0.18em]", isConnected ? "text-emerald-700" : "text-amber-800")}>
+              Mercado Pago por tenant
+            </p>
+            <h3 className="mt-2 text-xl font-black tracking-tight text-[#111111]">
+              {isConnected ? "Cuenta conectada" : "Checkout desactivado"}
+            </h3>
+            <p className="mt-2 max-w-2xl text-[13px] font-medium leading-relaxed text-[#555555]">
+              {isConnected
+                ? "Nexora guarda el access token cifrado por tienda. Las ordenes solo pasan a pagadas cuando Mercado Pago confirma el webhook."
+                : "La tienda puede publicarse y compartirse, pero el comprador no puede pagar hasta que el dueno conecte su propia cuenta de Mercado Pago."}
+            </p>
+          </div>
+          <Link className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#111111] px-5 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" href="/api/payments/mercadopago/oauth/start">
+            <CreditCard className="h-3.5 w-3.5" />
+            {isConnected ? "Reconectar" : "Conectar Mercado Pago"}
+          </Link>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <SummaryCard label="Estado" value={isConnected ? "Conectado" : "Pendiente"} accent={isConnected} />
+        <SummaryCard label="Cuenta MP" value={provider?.externalAccountId ?? "Sin conectar"} />
+        <SummaryCard label="Ultima validacion" value={provider?.lastValidatedAt ? timeFormatter.format(new Date(provider.lastValidatedAt)) : "Sin validar"} />
+      </div>
+
+      <div className="rounded-2xl border border-[#EAEAEA] bg-white p-5 shadow-sm">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <FormBlock label="Proveedor" value="Mercado Pago" />
+          <FormBlock label="Conectado" value={connectedAt ?? "No conectado"} />
+          <FormBlock label="Checkout publico" value={isConnected ? publicPath : "Desactivado hasta conectar MP"} />
+          <FormBlock label="Token" value={isConnected ? "Cifrado en DB por tienda" : "No guardado"} />
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-[#EAEAEA] bg-white p-5 shadow-sm">
+        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Regla operativa</p>
+        <p className="mt-2 max-w-2xl text-sm font-medium leading-relaxed text-[#666666]">
+          No se guarda tarjeta en Nexora. No se marca una orden como pagada desde la vuelta del checkout. El estado pagado depende del webhook firmado y del pago consultado con el token de esta tienda.
+        </p>
+        <button className="mt-4 inline-flex items-center gap-2 rounded-xl border border-[#EAEAEA] bg-white px-4 py-2.5 text-[13px] font-bold text-[#111111] transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" onClick={() => onAction("El checkout sigue bloqueado sin una cuenta MP conectada.")} type="button">
+          <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+          Verificar regla
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function PreviewView({ onAction }: { onAction: (a: string) => void }) {
   const p = { status: "draft", publishedAt: new Date().toISOString() };

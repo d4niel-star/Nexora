@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
 import { validatePasswordPolicy } from "@/lib/auth/password-policy";
 import { createAndSendVerificationEmail, resendVerificationEmail } from "@/lib/auth/verification";
+import { normalizeSlug } from "@/lib/store-engine/slug";
 
 function hashPassword(password: string): string {
   const salt = randomBytes(16).toString("hex");
@@ -19,6 +20,20 @@ function verifyPassword(password: string, storedHash: string): boolean {
   const keyBuffer = Buffer.from(key, "hex");
   const derivedKey = scryptSync(password, salt, 64);
   return timingSafeEqual(keyBuffer, derivedKey);
+}
+
+async function generateUniqueStoreSlug(companyName: string): Promise<string> {
+  const normalized = normalizeSlug(companyName);
+  const base = (normalized.length > 60 ? normalized.slice(0, 60).replace(/-+$/g, "") : normalized) || `tienda-${randomBytes(3).toString("hex")}`;
+  let slug = base;
+  let suffix = 2;
+
+  while (await prisma.store.findUnique({ where: { slug }, select: { id: true } })) {
+    slug = `${base}-${suffix}`;
+    suffix += 1;
+  }
+
+  return slug;
 }
 
 export async function loginAction(prevState: any, formData: FormData) {
@@ -76,8 +91,8 @@ export async function registerAction(prevState: any, formData: FormData) {
     return { error: "El email ya está registrado." };
   }
 
-  // Create Store + User at the same time
-  const slug = companyName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') + '-' + Math.floor(Math.random() * 10000);
+  // Create Store + User at the same time with deterministic uniqueness.
+  const slug = await generateUniqueStoreSlug(companyName);
 
   const user = await prisma.user.create({
     data: {

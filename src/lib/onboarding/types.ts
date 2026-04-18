@@ -1,4 +1,4 @@
-export type OnboardingStage = "welcome" | "creating_store" | "connecting_channels" | "sourcing" | "completed";
+export type OnboardingStage = "welcome" | "creating_store" | "sourcing" | "completed";
 
 export interface OnboardingStepProps {
   id: string;

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Package, Truck, CheckCircle2, Clock, CreditCard, MapPin, ChevronRight, AlertCircle } from "lucide-react";
+import { storePath } from "@/lib/store-engine/urls";
 
 interface TrackedOrderItem {
   id: string;
@@ -97,7 +98,7 @@ export function TrackingClient({ storeSlug, locale, currency, initialOrder, init
       order: orderNumber.trim(),
       email: email.trim().toLowerCase(),
     });
-    router.push(`/${storeSlug}/tracking?${params.toString()}`);
+    router.push(`${storePath(storeSlug, "tracking")}?${params.toString()}`);
     
     // After a small delay, check if we have an order
     setTimeout(() => {

@@ -13,7 +13,7 @@ const parseImages = (images: any): string[] => {
 
 export async function getStoreProducts(storeId: string): Promise<StorefrontProduct[]> {
   const products = await prisma.product.findMany({
-    where: { storeId, isPublished: true },
+    where: { storeId, isPublished: true, status: { not: "archived" } },
     include: {
       images: { orderBy: { sortOrder: 'asc' } },
       variants: true,
@@ -21,7 +21,7 @@ export async function getStoreProducts(storeId: string): Promise<StorefrontProdu
     orderBy: { createdAt: 'desc' },
   });
 
-  return products.map(mapProductToStorefront);
+  return products.map(mapProductToStorefront).filter((product) => product.inStock);
 }
 
 export async function getStoreCollections(storeId: string): Promise<StorefrontCollection[]> {
@@ -45,13 +45,13 @@ export async function getStoreCollections(storeId: string): Promise<StorefrontCo
   }));
 }
 
-export async function getStoreProductByHandle(storeId: string, handle: string): Promise<StorefrontProduct | null> {
-  const product = await prisma.product.findUnique({
+export async function getStoreProductByIdentifier(storeId: string, identifier: string): Promise<StorefrontProduct | null> {
+  const product = await prisma.product.findFirst({
     where: {
-      storeId_handle: {
-        storeId,
-        handle
-      }
+      storeId,
+      isPublished: true,
+      status: { not: "archived" },
+      OR: [{ handle: identifier }, { id: identifier }],
     },
     include: {
       images: { orderBy: { sortOrder: 'asc' } },
@@ -59,9 +59,13 @@ export async function getStoreProductByHandle(storeId: string, handle: string): 
     }
   });
 
-  if (!product || !product.isPublished) return null;
+  if (!product) return null;
 
   return mapProductToStorefront(product);
+}
+
+export async function getStoreProductByHandle(storeId: string, handle: string): Promise<StorefrontProduct | null> {
+  return getStoreProductByIdentifier(storeId, handle);
 }
 
 export async function getRelatedProducts(storeId: string, currentProductId: string, limit: number = 4): Promise<StorefrontProduct[]> {
@@ -69,6 +73,7 @@ export async function getRelatedProducts(storeId: string, currentProductId: stri
     where: {
       storeId,
       isPublished: true,
+      status: { not: "archived" },
       id: { not: currentProductId }
     },
     take: limit,
@@ -79,7 +84,7 @@ export async function getRelatedProducts(storeId: string, currentProductId: stri
     orderBy: { createdAt: 'desc' }
   });
 
-  return products.map(mapProductToStorefront);
+  return products.map(mapProductToStorefront).filter((product) => product.inStock);
 }
 
 export async function getStoreCollectionByHandle(storeId: string, handle: string): Promise<{ collection: StorefrontCollection; products: StorefrontProduct[] } | null> {
@@ -111,8 +116,9 @@ export async function getStoreCollectionByHandle(storeId: string, handle: string
   if (!collection || !collection.isPublished) return null;
 
   const validProducts = collection.products
-    .filter(cp => cp.product.isPublished)
-    .map(cp => mapProductToStorefront(cp.product));
+    .filter(cp => cp.product.isPublished && cp.product.status !== "archived")
+    .map(cp => mapProductToStorefront(cp.product))
+    .filter((product) => product.inStock);
 
   return {
     collection: {
@@ -139,13 +145,6 @@ function mapProductToStorefront(product: any): StorefrontProduct {
       inStock,
       availableStock,
       allowBackorder: v.allowBackorder || false,
-      // Extensible raw mapping if needed by UI
-      raw: {
-        title: v.title,
-        price: v.price,
-        stock: v.stock,
-        compareAtPrice: v.compareAtPrice,
-      }
     };
   });
 
@@ -156,6 +155,7 @@ function mapProductToStorefront(product: any): StorefrontProduct {
     handle: product.handle,
     title: product.title,
     description: product.description || "",
+    category: product.category,
     price: product.price,
     compareAtPrice: product.compareAtPrice || undefined,
     featuredImage: product.featuredImage || product.images?.[0]?.url || "",
@@ -201,9 +201,6 @@ export interface AdminProduct {
   hasProvider: boolean;
   providerName: string | null;
   mirrorSyncStatus: string | null;
-  channelCount: number;
-  channelSyncIssues: number;
-  firstListingId: string | null;
   // Catalog Variant Intelligence v1
   variantRiskCount: number;
   hiddenVariantCount: number;
@@ -242,14 +239,6 @@ export async function getAdminCatalog(): Promise<AdminProduct[]> {
           },
         },
       },
-      channelListings: {
-        select: {
-          id: true,
-          channel: true,
-          status: true,
-          syncStatus: true,
-        },
-      },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -264,11 +253,6 @@ export async function getAdminCatalog(): Promise<AdminProduct[]> {
     const cost = costReal ? p.cost! : 0;
     const margin = costReal && p.price > 0 ? (p.price - cost) / p.price : 0;
     const status: AdminProduct["status"] = p.isPublished ? "active" : (p.status === "archived" ? "archived" : "draft");
-
-    // Channel intelligence
-    const publishedListings = p.channelListings.filter((l) => l.status === "published");
-    const channelSyncIssues = publishedListings.filter((l) => l.syncStatus === "out_of_sync" || l.syncStatus === "error").length;
-    const firstListingWithIssue = publishedListings.find((l) => l.syncStatus === "out_of_sync" || l.syncStatus === "error");
 
     // Mirror intelligence
     const hasProvider = !!p.catalogMirror;
@@ -295,19 +279,9 @@ export async function getAdminCatalog(): Promise<AdminProduct[]> {
       signals.push({ key: "draft", label: "Borrador", severity: "warning" });
     }
 
-    // Channel sync
-    if (channelSyncIssues > 0) {
-      signals.push({ key: "sync_issue", label: `${channelSyncIssues} sync issue${channelSyncIssues !== 1 ? "s" : ""}`, severity: "warning" });
-    }
-
     // Mirror desync
     if (mirrorSyncStatus === "out_of_sync") {
       signals.push({ key: "mirror_desync", label: "Espejo desincronizado", severity: "warning" });
-    }
-
-    // No channels
-    if (status === "active" && publishedListings.length === 0) {
-      signals.push({ key: "no_channel", label: "Sin canal", severity: "info" });
     }
 
     // Good health
@@ -374,9 +348,6 @@ export async function getAdminCatalog(): Promise<AdminProduct[]> {
       hasProvider,
       providerName,
       mirrorSyncStatus,
-      channelCount: publishedListings.length,
-      channelSyncIssues,
-      firstListingId: firstListingWithIssue?.id ?? null,
       variantRiskCount,
       hiddenVariantCount,
       variantCriticalId,
@@ -387,4 +358,3 @@ export async function getAdminCatalog(): Promise<AdminProduct[]> {
     };
   });
 }
-

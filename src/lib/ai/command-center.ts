@@ -3,7 +3,7 @@
 // No DB access. Pure merge + prioritization of engine outputs.
 // Not a new engine — an intelligent merger of existing intelligence.
 
-import type { CommandCenterData, CommandDirective, CommandKpis, CommandPriority, CommandDomain } from "@/types/command-center";
+import type { CommandCenterData, CommandDirective, CommandKpis, CommandPriority, CommandDomain, CommandTopSeller } from "@/types/command-center";
 import { buildVariantHref, buildProductHref } from "@/lib/navigation/hrefs";
 import type { VelocityReport } from "@/types/velocity";
 import type { ReplenishmentReport } from "@/types/replenishment";
@@ -12,6 +12,7 @@ import type { DecisionEngineResult } from "@/types/decisions";
 import type { OperationsCenterData } from "@/types/operations";
 import type { VariantIntelligenceReport } from "@/types/variant-intelligence";
 import type { VariantEconomicsReport } from "@/types/variant-economics";
+import type { CatalogAnalysisReport } from "@/lib/ai/builder/types";
 
 export function buildCommandCenter(
   velocity: VelocityReport,
@@ -21,6 +22,8 @@ export function buildCommandCenter(
   operations: OperationsCenterData,
   variantIntelligence?: VariantIntelligenceReport,
   variantEconomics?: VariantEconomicsReport,
+  catalogReport?: CatalogAnalysisReport,
+  paidOrdersLast30d: number = 0,
 ): CommandCenterData {
   const directives: CommandDirective[] = [];
 
@@ -170,24 +173,10 @@ export function buildCommandCenter(
   }
 
   // ════════════════════════════════════════════
-  // CHANNEL / SOURCING DIRECTIVES (from decisions)
+  // SOURCING DIRECTIVES (from decisions)
   // ════════════════════════════════════════════
 
   for (const rec of decisions.recommendations) {
-    // Channel friction: sync issues, listing problems
-    if (rec.domain === "channels" && rec.severity === "critical") {
-      directives.push({
-        id: `cmd-channel-${rec.id}`,
-        priority: "critical",
-        domain: "channel",
-        title: rec.title,
-        reason: rec.reason,
-        evidence: rec.evidence,
-        href: rec.href,
-        actionLabel: rec.actionLabel,
-      });
-    }
-
     // Critical sourcing: failed sync, provider down
     if (rec.domain === "sourcing" && (rec.severity === "critical" || rec.severity === "high")) {
       directives.push({
@@ -501,6 +490,50 @@ export function buildCommandCenter(
   }
 
   // ════════════════════════════════════════════
+  // CATALOG COMPLETENESS DIRECTIVES (from catalog analyzer — real data)
+  // ════════════════════════════════════════════
+
+  if (catalogReport) {
+    const missingDesc = catalogReport.issues.filter((i) => i.type === "missing_description");
+    if (missingDesc.length > 0) {
+      const sample = missingDesc[0];
+      const extra = missingDesc.length - 1;
+      directives.push({
+        id: "cmd-catalog-missing-description",
+        priority: "high",
+        domain: "revenue",
+        title: `${missingDesc.length} producto${missingDesc.length !== 1 ? "s" : ""} sin descripción`,
+        reason: "Sin descripción los compradores no tienen información para decidir. Productos que no convierten.",
+        evidence: extra > 0
+          ? `"${sample.productTitle}" y ${extra} más sin descripción.`
+          : `"${sample.productTitle}" sin descripción.`,
+        href: sample.actionHref,
+        actionLabel: "Agregar descripciones",
+        productCount: missingDesc.length,
+      });
+    }
+
+    const noImage = catalogReport.issues.filter((i) => i.type === "no_image");
+    if (noImage.length > 0) {
+      const sample = noImage[0];
+      const extra = noImage.length - 1;
+      directives.push({
+        id: "cmd-catalog-no-image",
+        priority: "critical",
+        domain: "revenue",
+        title: `${noImage.length} producto${noImage.length !== 1 ? "s" : ""} sin imagen`,
+        reason: "Los productos sin foto prácticamente no venden. Impacto directo en conversión.",
+        evidence: extra > 0
+          ? `"${sample.productTitle}" y ${extra} más sin imagen.`
+          : `"${sample.productTitle}" sin imagen.`,
+        href: sample.actionHref,
+        actionLabel: "Subir imágenes",
+        productCount: noImage.length,
+      });
+    }
+  }
+
+  // ════════════════════════════════════════════
   // OPERATIONS DIRECTIVES (only highest-impact)
   // ════════════════════════════════════════════
 
@@ -577,9 +610,44 @@ export function buildCommandCenter(
     negativeVariants = variantEconomics.summary.negativeVariants;
   }
 
+  // ════════════════════════════════════════════
+  // REAL 30-DAY METRICS (from paid orders only)
+  // ════════════════════════════════════════════
+  // velocity.summary.totalRevenue is all-time. Real 30d values live inside each
+  // product's windows[0] (the 30d window). We sum them here to get the true KPIs.
+  let real30dRevenue = 0;
+  let real30dUnits = 0;
+  for (const p of velocity.products) {
+    const window30 = p.windows.find((w) => w.days === 30);
+    if (window30) {
+      real30dRevenue += window30.revenue;
+      real30dUnits += window30.unitsSold;
+    }
+  }
+  real30dRevenue = Math.round(real30dRevenue * 100) / 100;
+
+  // ════════════════════════════════════════════
+  // TOP SELLERS (real units in last 30d, paid orders)
+  // ════════════════════════════════════════════
+  const topSellers: CommandTopSeller[] = velocity.products
+    .map((p) => {
+      const w30 = p.windows.find((w) => w.days === 30);
+      return {
+        productId: p.productId,
+        title: p.title,
+        unitsSold30d: w30?.unitsSold ?? 0,
+        revenue30d: w30?.revenue ?? 0,
+        href: p.href,
+      };
+    })
+    .filter((s) => s.unitsSold30d > 0)
+    .sort((a, b) => b.unitsSold30d - a.unitsSold30d)
+    .slice(0, 5);
+
   const kpis: CommandKpis = {
-    revenue30d: velocity.summary.totalRevenue,
-    unitsSold30d: velocity.summary.totalUnitsSold,
+    revenue30d: real30dRevenue,
+    unitsSold30d: real30dUnits,
+    paidOrdersLast30d,
     avgMarginPercent: profitability.summary.ordersAnalyzed > 0 ? Math.round(profitability.summary.netContributionPercent) : null,
     productsPublished: operations.kpis.productsPublished,
     totalProducts: operations.kpis.totalProducts,
@@ -601,6 +669,7 @@ export function buildCommandCenter(
   return {
     directives: deduped,
     kpis,
+    topSellers,
     generatedAt: new Date().toISOString(),
   };
 }

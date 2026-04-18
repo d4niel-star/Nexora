@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { ProductCard } from "@/components/storefront/product/ProductCard";
 import { StorefrontProduct } from "@/types/storefront";
+import { storePath } from "@/lib/store-engine/urls";
 
 export function FeaturedProductsSection({ 
   settings, 
@@ -20,7 +21,7 @@ export function FeaturedProductsSection({
             <h2 className="text-3xl font-extrabold tracking-tight text-gray-900">{settings.title}</h2>
             {settings.subtitle && <p className="mt-2 text-sm font-medium text-gray-500">{settings.subtitle}</p>}
           </div>
-          <Link href={`/${storeSlug}/collections`} className="hidden sm:flex text-sm font-bold uppercase tracking-widest text-gray-900 items-center gap-2 hover:text-gray-500 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black rounded-sm">
+          <Link href={storePath(storeSlug, "collections")} className="hidden sm:flex text-sm font-bold uppercase tracking-widest text-gray-900 items-center gap-2 hover:text-gray-500 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black rounded-sm">
             Ver colección <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
@@ -32,7 +33,7 @@ export function FeaturedProductsSection({
         </div>
         
         <div className="mt-12 flex justify-center sm:hidden">
-          <Link href={`/${storeSlug}/collections`} className="flex w-full items-center justify-center rounded-sm border border-gray-300 bg-white px-8 py-3.5 text-sm font-extrabold uppercase tracking-widest text-gray-900 shadow-sm hover:bg-gray-50">
+          <Link href={storePath(storeSlug, "collections")} className="flex w-full items-center justify-center rounded-sm border border-gray-300 bg-white px-8 py-3.5 text-sm font-extrabold uppercase tracking-widest text-gray-900 shadow-sm hover:bg-gray-50">
             Ver todo
           </Link>
         </div>

@@ -22,3 +22,11 @@ export interface CartType {
   subtotal: number;
   totalQuantity: number;
 }
+
+export interface CartStockIssue {
+  itemId: string;
+  title: string;
+  variantTitle: string;
+  requested: number;
+  available: number;
+}

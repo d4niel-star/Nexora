@@ -5,6 +5,7 @@ import { StorefrontProduct } from "@/types/storefront";
 import { addToCart } from "@/lib/store-engine/cart/actions";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { storePath } from "@/lib/store-engine/urls";
 
 export function AddToCartForm({
   product,
@@ -22,15 +23,17 @@ export function AddToCartForm({
   
   const selectedVariant = product.variants.find(v => v.id === selectedVariantId) || product.variants[0];
   const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleAddToCart = async () => {
     if (!selectedVariantId) return;
     setIsPending(true);
+    setError(null);
     try {
       await addToCart(storeId, storeSlug, product.id, selectedVariantId, 1);
-      router.push(`/${storeSlug}/cart`);
-    } catch (error) {
-      console.error(error);
+      router.push(storePath(storeSlug, "cart"));
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : "No pudimos agregar el producto al carrito.");
       setIsPending(false);
     }
   };
@@ -67,6 +70,17 @@ export function AddToCartForm({
 
       {/* Add to Cart Button */}
       <div className="mt-10 flex flex-col gap-2">
+        {selectedVariant && (
+          <p className={selectedVariant.inStock ? "text-sm font-medium text-emerald-700" : "text-sm font-medium text-gray-500"}>
+            {selectedVariant.inStock
+              ? selectedVariant.allowBackorder
+                ? "Disponible bajo pedido"
+                : selectedVariant.availableStock > 0
+                  ? `Disponible: ${selectedVariant.availableStock} unidades`
+                  : "Disponible"
+              : "Sin stock"}
+          </p>
+        )}
         <button
           type="button"
           onClick={handleAddToCart}
@@ -88,6 +102,11 @@ export function AddToCartForm({
            <p className="text-sm font-medium text-amber-600">
              ¡Solo quedan {selectedVariant.availableStock} disponibles!
            </p>
+        )}
+        {error && (
+          <p className="rounded-sm border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+            {error}
+          </p>
         )}
       </div>
     </div>

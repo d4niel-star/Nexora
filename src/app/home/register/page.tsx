@@ -149,7 +149,7 @@ export default function RegisterPage() {
 
           <div className="mt-8 text-center text-sm border-t border-gray-100 pt-6">
             <p className="text-gray-500">
-              ¿Ya tenés una cuenta? <Link href="/home/login" className="text-emerald-600 underline font-semibold hover:text-emerald-700">Ingresar ahora</Link>
+              ¿Ya tenés una cuenta? <Link href="/login" className="text-emerald-600 underline font-semibold hover:text-emerald-700">Ingresar ahora</Link>
             </p>
           </div>
         </CardContent>

@@ -5,12 +5,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Boxes,
-  Globe2,
   LayoutDashboard,
   Menu,
   Package,
   PackageSearch,
-  Share2,
   ShoppingCart,
   Sparkles,
   Truck,
@@ -28,9 +26,7 @@ const navigation = [
   { href: "/admin/catalog", label: "Catálogo", icon: Package },
   { href: "/admin/inventory", label: "Inventario", icon: Boxes },
   { href: "/admin/sourcing", label: "Abastecimiento", icon: Truck },
-  { href: "/admin/publications", label: "Publicaciones", icon: Globe2 },
   { href: "/admin/operations", label: "Operaciones", icon: PackageSearch },
-  { href: "/admin/channels", label: "Canales / OAuth", icon: Share2 },
   { href: "/admin/ai", label: "Nexora AI", icon: Sparkles },
 ];
 

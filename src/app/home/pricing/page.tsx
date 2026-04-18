@@ -36,14 +36,14 @@ const PLAN_FEATURES: Record<string, { tagline: string; features: string[] }> = {
     ],
   },
   scale: {
-    tagline: "Volumen, equipo y operación multicanal intensiva.",
+    tagline: "Volumen, equipo y operación comercial intensiva.",
     features: [
       "Todo en Growth",
       "Productos ilimitados",
       "Ventas ilimitadas",
       "BYOK — tu propia clave de IA",
       "2.000 créditos IA / mes",
-      "Sincronización multicanal avanzada",
+      "Operación centralizada avanzada",
       "15 usuarios",
     ],
   },

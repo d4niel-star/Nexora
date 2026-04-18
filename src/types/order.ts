@@ -1,9 +1,11 @@
 export type OrderStatus = 'new' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded' | 'approved' | 'in_process' | 'rejected' | 'cancelled';
-export type Channel = 'Mercado Libre' | 'Shopify' | 'Manual' | 'Tienda Nube' | 'Storefront';
+export type Channel = 'Manual' | 'Tienda Nube' | 'Storefront';
 
 export interface OrderItem {
   id: string;
+  productId?: string | null;
+  variantId?: string | null;
   sku: string | null;
   title: string;
   variantTitle: string;
@@ -54,7 +56,9 @@ export interface Order {
   shipping: ShippingDetails;
   items: OrderItem[];
   notes?: string;
+  publicStatus?: string;
   paymentProvider?: string | null;
   mpPaymentId?: string | null;
+  mpPreferenceId?: string | null;
   fiscalInvoice?: any;
 }

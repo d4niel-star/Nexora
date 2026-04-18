@@ -134,7 +134,7 @@ export default async function AIGeneralPage() {
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Canal apto</p>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Tienda apta</p>
                     <p className="text-[16px] font-black text-emerald-600 tabular-nums">{aptitude.summary.channelApt}</p>
                   </div>
                   <div>

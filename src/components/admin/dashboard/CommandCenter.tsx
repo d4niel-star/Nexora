@@ -13,7 +13,6 @@ import {
   Sparkles,
   TrendingUp,
   Truck,
-  Unplug,
   Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -42,7 +41,7 @@ export function CommandCenter({ data }: { data: CommandCenterData }) {
           </h1>
         </div>
         <p className="text-sm font-medium text-[#666666]">
-          Decisiones priorizadas para tu negocio hoy. Basado en ventas, margen, stock y canales reales.
+          Decisiones priorizadas para tu negocio hoy. Basado en ventas, margen, stock y operación real.
         </p>
       </header>
 
@@ -243,7 +242,6 @@ function DomainIcon({ domain, priority }: { domain: CommandDomain; priority: Com
     case "revenue": return <TrendingUp className={cls} />;
     case "margin": return <CircleDollarSign className={cls} />;
     case "stock": return <Box className={cls} />;
-    case "channel": return <Unplug className={cls} />;
     case "sourcing": return <Truck className={cls} />;
     case "operations": return <ShoppingCart className={cls} />;
     default: return <Sparkles className={cls} />;

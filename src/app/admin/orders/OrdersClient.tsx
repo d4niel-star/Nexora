@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Download, Filter, MoreHorizontal, Handshake, ChevronDown, Package, FileText, Ban, X, ShoppingBag } from "lucide-react";
+import { Search, Download, Filter, MoreHorizontal, ChevronDown, Package, FileText, Ban, X, ShoppingBag, CalendarDays } from "lucide-react";
 import { Order } from "../../../types/order";
 import { OrderStatusBadge, PaymentStatusBadge } from "../../../components/admin/orders/StatusBadge";
 import { OrderDrawer } from "../../../components/admin/orders/OrderDrawer";
 
-type TabValue = 'all' | 'new' | 'processing' | 'shipped' | 'cancelled';
+type TabValue = 'all' | 'new' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
 
 interface OrdersClientProps {
   orders: Order[];
@@ -17,22 +17,37 @@ interface OrdersClientProps {
 export default function OrdersClient({ orders, hideHeader = false, initialTab = 'all' }: OrdersClientProps) {
   const [activeTab, setActiveTab] = useState<TabValue>(initialTab);
   const [searchQuery, setSearchQuery] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
 
   const filteredOrders = orders.filter(order => {
     const matchesTab = activeTab === 'all' || order.status === activeTab;
     const matchesSearch = order.number.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          order.customer.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesTab && matchesSearch;
+                          order.customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          order.customer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          order.items.some((item) => item.title.toLowerCase().includes(searchQuery.toLowerCase()));
+    const orderDate = new Date(order.createdAt);
+    const matchesDateFrom = !dateFrom || orderDate >= new Date(`${dateFrom}T00:00:00`);
+    const matchesDateTo = !dateTo || orderDate <= new Date(`${dateTo}T23:59:59`);
+    return matchesTab && matchesSearch && matchesDateFrom && matchesDateTo;
   });
+
+  const realSales = orders.filter((order) => order.paymentStatus === "paid" && !["cancelled", "refunded"].includes(order.status));
+  const pendingPayment = orders.filter((order) => order.paymentStatus === "pending" || order.paymentStatus === "in_process");
+  const toPrepare = realSales.filter((order) => ["paid", "processing", "new"].includes(order.status) && order.shipping.shippingStatus !== "shipped" && order.shipping.shippingStatus !== "delivered");
+  const realRevenue = realSales.reduce((acc, order) => acc + order.total, 0);
 
   const tabs: { label: string, value: TabValue, count?: number }[] = [
     { label: "Todos", value: "all", count: orders.length },
     { label: "Nuevos", value: "new", count: orders.filter(o => o.status === 'new').length },
+    { label: "Pagados", value: "paid", count: orders.filter(o => o.status === 'paid').length },
     { label: "Preparando", value: "processing", count: orders.filter(o => o.status === 'processing').length },
     { label: "Enviados", value: "shipped", count: orders.filter(o => o.status === 'shipped').length },
+    { label: "Entregados", value: "delivered", count: orders.filter(o => o.status === 'delivered').length },
     { label: "Cancelados", value: "cancelled", count: orders.filter(o => o.status === 'cancelled').length },
+    { label: "Reembolsados", value: "refunded", count: orders.filter(o => o.status === 'refunded').length },
   ];
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,6 +88,26 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
         </div>
       )}
 
+      {!hideHeader && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="rounded-xl border border-[#EAEAEA] bg-white px-5 py-4 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#888888]">Ventas reales</p>
+            <p className="mt-1 text-2xl font-black text-[#111111] tabular-nums">${realRevenue.toLocaleString("es-AR")}</p>
+            <p className="mt-1 text-xs font-medium text-[#888888]">Solo pagos confirmados por webhook.</p>
+          </div>
+          <div className="rounded-xl border border-[#EAEAEA] bg-white px-5 py-4 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#888888]">Pendientes de pago</p>
+            <p className="mt-1 text-2xl font-black text-amber-700 tabular-nums">{pendingPayment.length}</p>
+            <p className="mt-1 text-xs font-medium text-[#888888]">No cuentan como venta real.</p>
+          </div>
+          <div className="rounded-xl border border-[#EAEAEA] bg-white px-5 py-4 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#888888]">Por preparar</p>
+            <p className="mt-1 text-2xl font-black text-[#111111] tabular-nums">{toPrepare.length}</p>
+            <p className="mt-1 text-xs font-medium text-[#888888]">Pagados sin despacho final.</p>
+          </div>
+        </div>
+      )}
+
       {/* 2. Main Container (SaaS Data Grid) */}
       <div className="bg-white border rounded-xl border-[#EAEAEA] shadow-none overflow-hidden relative">
         
@@ -100,7 +135,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
         </div>
 
         {/* Toolbar (Filters & Search) */}
-        <div className="p-3 flex flex-col md:flex-row gap-4 justify-between items-center bg-white border-b border-[#EAEAEA]">
+        <div className="p-3 flex flex-col xl:flex-row gap-4 justify-between items-center bg-white border-b border-[#EAEAEA]">
           <div className="relative w-full md:max-w-md group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-black transition-colors" />
             <input 
@@ -111,9 +146,31 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
               className="w-full pl-9 pr-4 py-1.5 text-[13px] font-medium bg-transparent border border-transparent focus:outline-none text-[#111111] transition-all placeholder:text-gray-400"
             />
           </div>
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            <button className="w-full md:w-auto px-3 py-1.5 text-[12px] font-bold text-gray-600 bg-white border border-[#EAEAEA] rounded-md hover:bg-gray-50 flex items-center justify-center gap-2 transition-colors">
-              <Filter className="w-3.5 h-3.5" /> Filtros
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full xl:w-auto">
+            <label className="flex items-center gap-2 rounded-md border border-[#EAEAEA] bg-white px-3 py-1.5 text-[12px] font-bold text-gray-600">
+              <CalendarDays className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Desde</span>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="bg-transparent text-[12px] font-semibold text-[#111111] outline-none"
+              />
+            </label>
+            <label className="flex items-center gap-2 rounded-md border border-[#EAEAEA] bg-white px-3 py-1.5 text-[12px] font-bold text-gray-600">
+              <span className="hidden sm:inline">Hasta</span>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="bg-transparent text-[12px] font-semibold text-[#111111] outline-none"
+              />
+            </label>
+            <button
+              onClick={() => { setSearchQuery(""); setDateFrom(""); setDateTo(""); setActiveTab("all"); }}
+              className="w-full sm:w-auto px-3 py-1.5 text-[12px] font-bold text-gray-600 bg-white border border-[#EAEAEA] rounded-md hover:bg-gray-50 flex items-center justify-center gap-2 transition-colors"
+            >
+              <Filter className="w-3.5 h-3.5" /> Limpiar
             </button>
           </div>
         </div>
@@ -146,6 +203,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
                   <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#888888]">Pedido</th>
                   <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#888888]">Fecha</th>
                   <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#888888]">Cliente</th>
+                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#888888]">Productos</th>
                   <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#888888]">Origen</th>
                   <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#888888]">Estado Cobro</th>
                   <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#888888]">Logística</th>
@@ -156,13 +214,13 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
               <tbody className="divide-y divide-[#EAEAEA]/80">
                 {filteredOrders.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-6 py-24 text-center">
+                    <td colSpan={10} className="px-6 py-24 text-center">
                       <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-50 mb-6 border border-gray-100 shadow-sm">
                          <Search className="w-8 h-8 text-gray-300" />
                       </div>
                       <h3 className="text-xl font-extrabold text-[#111111]">No encontramos tu orden</h3>
                       <p className="text-[15px] font-medium text-[#888888] mt-2 max-w-sm mx-auto">Limpiá los filtros o asegurate de haber escrito bien el ID de seguimiento.</p>
-                      <button onClick={() => {setSearchQuery(''); setActiveTab('all')}} className="mt-6 px-6 py-2.5 bg-white border border-[#EAEAEA] text-[#111111] font-bold text-[13px] rounded-xl hover:bg-gray-50 transition-colors">
+                      <button onClick={() => {setSearchQuery(''); setDateFrom(''); setDateTo(''); setActiveTab('all')}} className="mt-6 px-6 py-2.5 bg-white border border-[#EAEAEA] text-[#111111] font-bold text-[13px] rounded-xl hover:bg-gray-50 transition-colors">
                         Limpiar Filtros
                       </button>
                     </td>
@@ -191,15 +249,13 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
                         <div className="text-xs font-medium text-[#888888] truncate max-w-[150px] mt-0.5">{order.customer.email}</div>
                       </td>
                       <td className="px-6 py-5">
-                        {order.channel === 'Mercado Libre' ? (
-                           <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#FFE600] text-[#2D3277] text-[10px] font-black uppercase tracking-widest rounded-md w-fit shadow-sm">
-                              <Handshake className="w-3 h-3" /> ML
-                           </div>
-                        ) : order.channel === 'Shopify' ? (
-                           <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#95BF47] text-white text-[10px] font-black uppercase tracking-widest rounded-md w-fit shadow-sm">
-                              Shopify
-                           </div>
-                        ) : order.channel === 'Storefront' ? (
+                        <div className="text-sm font-bold text-[#111111]">{order.items.length} item{order.items.length !== 1 ? "s" : ""}</div>
+                        <div className="text-xs font-medium text-[#888888] truncate max-w-[180px] mt-0.5">
+                          {order.items[0]?.title || "Sin items"}
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        {order.channel === 'Storefront' ? (
                            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase tracking-widest rounded-md w-fit shadow-sm">
                               <ShoppingBag className="w-3 h-3" /> Tienda
                            </div>
@@ -211,7 +267,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
                       <td className="px-6 py-5"><OrderStatusBadge status={order.status} /></td>
                       <td className="px-6 py-5 text-right font-black text-[#111111] tabular-nums tracking-tight text-[15px]">${order.total.toLocaleString('es-AR')}</td>
                       <td className="px-6 py-5 opacity-0 group-hover:opacity-100 transition-opacity">
-                         <button className="p-2 hover:bg-white border hover:border-[#EAEAEA] border-transparent shadow-sm hover:shadow-gray-200/50 rounded-lg text-gray-500 hover:text-[#111111] transition-all">
+                         <button onClick={(e) => e.stopPropagation()} className="p-2 hover:bg-white border hover:border-[#EAEAEA] border-transparent shadow-sm hover:shadow-gray-200/50 rounded-lg text-gray-500 hover:text-[#111111] transition-all">
                             <MoreHorizontal className="w-4 h-4" />
                          </button>
                       </td>

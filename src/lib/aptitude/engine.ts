@@ -31,7 +31,7 @@ export interface ProductAptitudeInput {
   totalStock: number;
   hasVariantsTracking: boolean;
 
-  // Per-channel listing state (from ChannelListing)
+  // Legacy-ready listing state. No marketplace publication source is queried in v1.
   listings: {
     channel: string;
     status: string;
@@ -52,8 +52,6 @@ export interface ProductAptitudeInput {
 
 function channelLabel(ch: string): string {
   switch (ch) {
-    case "mercadolibre": return "Mercado Libre";
-    case "shopify": return "Shopify";
     case "storefront": return "Tienda propia";
     default: return ch;
   }
@@ -181,14 +179,14 @@ function evaluateChannelAptitude(
   }
 
   // Determine CTA
-  let actionHref = "/admin/publications";
+  let actionHref = "/admin/catalog";
   let actionLabel = "Revisar publicaciones";
   if (verdict === "not_apt" && signals.some((s) => s.key === "no_stock" || s.key === "no_cost")) {
     actionHref = "/admin/catalog";
     actionLabel = "Completar producto";
   }
   if (listing?.syncStatus === "error" || listing?.syncStatus === "out_of_sync") {
-    actionHref = "/admin/publications";
+    actionHref = "/admin/catalog";
     actionLabel = "Reparar sync";
   }
 

@@ -67,24 +67,16 @@ RESEND_FROM_EMAIL=Nexora <noreply@yourdomain.com>
 3. Set `RESEND_FROM_EMAIL` with verified domain.
 4. Set `NEXT_PUBLIC_APP_URL` to production URL.
 
-### Payments (Mercado Pago) — Optional
+### Payments (Mercado Pago) — Storefront checkout
 
 ```env
-MERCADOPAGO_ACCESS_TOKEN=your_mp_access_token
+MP_CLIENT_ID=your_mp_oauth_client_id
+MP_CLIENT_SECRET=your_mp_oauth_client_secret
+MP_WEBHOOK_SECRET=your_mp_webhook_secret
+ENCRYPTION_KEY=32_plus_chars_for_token_encryption
 ```
 
-Required only if payment processing is active. Without it, payment flows will fail.
-
-### Channels / OAuth — Optional
-
-```env
-MERCADOLIBRE_CLIENT_ID=your_ml_client_id
-MERCADOLIBRE_CLIENT_SECRET=your_ml_secret
-SHOPIFY_CLIENT_ID=your_shopify_client_id
-SHOPIFY_CLIENT_SECRET=your_shopify_secret
-```
-
-Required only if marketplace channel integrations are active.
+Checkout uses tenant-owned Mercado Pago accounts. Access tokens are stored encrypted per store in `StorePaymentProvider`; do not use a global access token for storefront checkout. Without a connected store credential, the checkout remains disabled for that store.
 
 ## Deploy on Render
 
@@ -108,7 +100,10 @@ Create a PostgreSQL instance on Render. Copy the **Internal Database URL**.
 | `NEXT_PUBLIC_ROOT_DOMAIN` | **Yes** | Root domain for multi-tenant proxy (e.g., `yourdomain.com`) |
 | `RESEND_API_KEY` | **Yes** for email | Resend API key |
 | `RESEND_FROM_EMAIL` | **Yes** for email | Verified sender (e.g., `Nexora <noreply@yourdomain.com>`) |
-| `MERCADOPAGO_ACCESS_TOKEN` | Optional | For payment processing |
+| `MP_CLIENT_ID` | Yes for MP OAuth | Mercado Pago OAuth app client ID |
+| `MP_CLIENT_SECRET` | Yes for MP OAuth | Mercado Pago OAuth app client secret |
+| `MP_WEBHOOK_SECRET` | Yes for MP checkout | Secret used to validate Mercado Pago webhook signatures |
+| `ENCRYPTION_KEY` | Yes for token storage | Key used to encrypt tenant payment tokens in DB |
 | `NODE_ENV` | Auto | Render sets this to `production` automatically |
 
 ### 4. Initialize Database
@@ -157,7 +152,6 @@ All 47 Nexora tables in correct FK dependency order:
 - **AI**: AIGenerationDraft, AIGenerationProposal, AIConversation, AIMessage, AIUsageLog
 - **Billing**: Plan, StoreSubscription, BillingTransaction, StoreCreditBalance, CreditTransaction
 - **Sourcing**: SourcingProvider, ProviderConnection, ProviderProduct, CatalogMirrorProduct
-- **Channels**: ChannelConnection, ChannelListing, ExternalChannelOrder, ExternalChannelOrderItem
 - **Supplier**: SupplierOrder, SupplierOrderItem, ProviderSyncJob
 - **Config**: StoreBranding, StoreTheme, StoreNavigation, StorePage, StoreBlock, StorePublishSnapshot, StoreDomain
 - **Onboarding**: StoreOnboarding

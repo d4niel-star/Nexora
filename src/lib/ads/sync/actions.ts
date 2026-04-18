@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/db/prisma";
 import { revalidatePath } from "next/cache";
-import { decryptToken } from "@/lib/channels/oauth/crypto";
+import { decryptToken } from "@/lib/security/token-crypto";
 
 export async function syncAdsInsights(connectionId: string) {
   const connection = await prisma.adPlatformConnection.findUnique({
@@ -170,7 +170,7 @@ async function fetchGoogleInsights(connection: any, token: string) {
       const newToken = await refreshGoogleToken(refreshToken);
       if (newToken) {
          // Update in DB
-         const { encryptToken } = await import("@/lib/channels/oauth/crypto");
+         const { encryptToken } = await import("@/lib/security/token-crypto");
          await prisma.adPlatformConnection.update({
            where: { id: connection.id },
            data: { accessToken: encryptToken(newToken) }

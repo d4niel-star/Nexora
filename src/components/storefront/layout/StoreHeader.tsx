@@ -6,6 +6,7 @@ import { Search, ShoppingBag, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import type { StoreConfig } from "@/types/storefront";
+import { storePath } from "@/lib/store-engine/urls";
 
 export function StoreHeader({ config }: { config: StoreConfig }) {
   const pathname = usePathname();
@@ -28,7 +29,7 @@ export function StoreHeader({ config }: { config: StoreConfig }) {
         </div>
 
         {/* Logo */}
-        <Link href={`/${config.slug}`} className="flex shrink-0 items-center justify-center lg:flex-1 lg:justify-start outline-none focus-visible:ring-2 focus-visible:ring-black rounded-sm">
+        <Link href={storePath(config.slug)} className="flex shrink-0 items-center justify-center lg:flex-1 lg:justify-start outline-none focus-visible:ring-2 focus-visible:ring-black rounded-sm">
           {config.logoUrl ? (
             <img src={config.logoUrl} alt={config.name} className="h-8 w-auto" />
           ) : (
@@ -63,7 +64,7 @@ export function StoreHeader({ config }: { config: StoreConfig }) {
             <Search className="h-5 w-5" />
           </button>
           
-          <Link href={`/${config.slug}/cart`} className="group flex items-center p-2 text-gray-500 hover:text-gray-900 outline-none rounded-sm focus-visible:ring-2 focus-visible:ring-black">
+          <Link href={storePath(config.slug, "cart")} className="group flex items-center p-2 text-gray-500 hover:text-gray-900 outline-none rounded-sm focus-visible:ring-2 focus-visible:ring-black">
             <span className="sr-only">Ver carrito</span>
             <ShoppingBag className="h-5 w-5 shrink-0" aria-hidden="true" />
             <span className="ml-2 text-xs font-bold text-gray-900 group-hover:text-gray-800">{config.cartItemCount || 0}</span>

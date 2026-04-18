@@ -27,7 +27,7 @@ export async function getAptitudeReport(): Promise<AptitudeReport> {
   const sid = store.id;
 
   // ─── Fetch all data in parallel ───
-  const [products, listings, channelConns, adDrafts, adRecos, orders] = await Promise.all([
+  const [products, adDrafts, adRecos, orders] = await Promise.all([
     prisma.product.findMany({
       where: { storeId: sid },
       include: {
@@ -35,14 +35,6 @@ export async function getAptitudeReport(): Promise<AptitudeReport> {
         images: { take: 1, orderBy: { sortOrder: "asc" }, select: { url: true } },
       },
       orderBy: { createdAt: "desc" },
-    }),
-    prisma.channelListing.findMany({
-      where: { storeId: sid },
-      select: { productId: true, channel: true, status: true, syncStatus: true },
-    }),
-    prisma.channelConnection.findMany({
-      where: { storeId: sid, status: "connected" },
-      select: { channel: true },
     }),
     prisma.adCampaignDraft.findMany({
       where: { storeId: sid },
@@ -120,14 +112,6 @@ export async function getAptitudeReport(): Promise<AptitudeReport> {
     }
   }
 
-  // ─── Build listing lookup (productId → listings[]) ───
-  const listingsByProduct = new Map<string, { channel: string; status: string; syncStatus: string }[]>();
-  for (const l of listings) {
-    const arr = listingsByProduct.get(l.productId) ?? [];
-    arr.push({ channel: l.channel, status: l.status, syncStatus: l.syncStatus });
-    listingsByProduct.set(l.productId, arr);
-  }
-
   // ─── Build ad context lookup (productId → boolean) ───
   const productsWithAdContext = new Set<string>();
   for (const d of adDrafts) {
@@ -151,13 +135,6 @@ export async function getAptitudeReport(): Promise<AptitudeReport> {
     }
   }
 
-  // ─── Known connected channels ───
-  const knownChannels = Array.from(new Set(channelConns.map((c) => c.channel)));
-  // Always include storefront
-  if (!knownChannels.includes("storefront")) {
-    knownChannels.unshift("storefront");
-  }
-
   // ─── Build engine inputs ───
   const inputs: ProductAptitudeInput[] = products.map((p) => {
     const totalStock = p.variants.reduce((sum, v) => sum + Math.max(v.stock - v.reservedStock, 0), 0);
@@ -176,7 +153,7 @@ export async function getAptitudeReport(): Promise<AptitudeReport> {
       image: p.featuredImage ?? p.images[0]?.url ?? "",
       totalStock,
       hasVariantsTracking,
-      listings: listingsByProduct.get(p.id) ?? [],
+      listings: [],
       contributionPerUnit: prof?.contributionPerUnit ?? null,
       netContributionPercent: prof?.netContributionPercent ?? null,
       marginHealth: prof?.health ?? null,
@@ -185,5 +162,5 @@ export async function getAptitudeReport(): Promise<AptitudeReport> {
     };
   });
 
-  return calculateAptitudeReport(inputs, knownChannels);
+  return calculateAptitudeReport(inputs, []);
 }

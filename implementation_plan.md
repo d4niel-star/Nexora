@@ -187,7 +187,7 @@ Este plan de ejecución define el alcance exacto y las decisiones técnicas para
 
 ### 1. PRD DEL MVP (Product Requirements Document)
 *   **Objetivo del producto:** Permitir a emprendedores argentinos crear un ecommerce propio en minutos para vender productos de un catálogo de dropshipping sin manejar stock físico y cobrando sus ventas directo a su billetera.
-*   **Usuario ideal:** Emprendedores no técnicos, influencers o revendedores en Argentina que buscan un ingreso extra pero no tienen capital para stock ni conocimientos para armar un Shopify o Tiendanube.
+*   **Usuario ideal:** Emprendedores no técnicos, influencers o revendedores en Argentina que buscan un ingreso extra pero no tienen capital para stock ni conocimientos para armar una tienda online propia.
 *   **Problema que resuelve:** La barrera técnica y financiera de montar una tienda, lidiar con integraciones de envíos, y la necesidad de conseguir proveedores confiables.
 *   **Propuesta de valor:** "Armá tu tienda en 2 clics. Elegí qué vender, nuestro catálogo se encarga del envío."
 *   **Alcance exacto del MVP:**

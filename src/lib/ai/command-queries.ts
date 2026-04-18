@@ -3,7 +3,7 @@
 // IMPORTANT: Does NOT call getDecisionRecommendations() because that internally
 // calls velocity + replenishment + 6 other engines, causing a massive cascade.
 // Instead, calls the lightweight sources (operations + health) directly for
-// the channel/sourcing signals the command center needs.
+// the sourcing signals the command center needs.
 
 "use server";
 
@@ -14,19 +14,41 @@ import { getProfitabilityReport } from "@/lib/profitability/queries";
 import { getVariantEconomicsReport } from "@/lib/profitability/variant-queries";
 import { getOperationsCenterData } from "@/lib/operations/queries";
 import { getHealthCenterData } from "@/lib/integrations/health";
+import { analyzeCatalog } from "@/lib/ai/builder/catalog-analyzer";
+import { prisma } from "@/lib/db/prisma";
+import { getCurrentStore } from "@/lib/auth/session";
 import { buildCommandCenter } from "./command-center";
 import type { CommandCenterData } from "@/types/command-center";
 import type { DecisionEngineResult, DecisionRecommendation } from "@/types/decisions";
 
 export async function getCommandCenterData(): Promise<CommandCenterData> {
+  const store = await getCurrentStore();
+  const storeId = store?.id ?? null;
+
   // Step 1: Fetch velocity once (heaviest call — orders + profitability internally).
   // Then pass it to replenishment so it doesn't re-fetch.
-  const [velocity, profitability, operations, health, variantEcon] = await Promise.all([
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
+
+  const [velocity, profitability, operations, health, variantEcon, catalogReport, paidOrdersLast30d] = await Promise.all([
     getVelocityReport(),
     getProfitabilityReport(),
     getOperationsCenterData(),
     getHealthCenterData(),
     getVariantEconomicsReport(),
+    storeId ? analyzeCatalog(storeId) : Promise.resolve(undefined),
+    // Count of distinct paid orders in the last 30 days — real executive metric.
+    // Mirrors the same paid filter as velocity/profitability (paid/approved, excluding
+    // cancelled/refunded that never had settled payment). PENDING is never counted.
+    storeId
+      ? prisma.order.count({
+          where: {
+            storeId,
+            createdAt: { gte: thirtyDaysAgo },
+            paymentStatus: { in: ["approved", "paid"] },
+            status: { notIn: ["cancelled", "refunded"] },
+          },
+        })
+      : Promise.resolve(0),
   ]);
 
   // Step 2: Replenishment uses the pre-computed velocity report — zero redundancy.
@@ -36,7 +58,7 @@ export async function getCommandCenterData(): Promise<CommandCenterData> {
   const variantIntel = await getVariantIntelligenceReport(replenishment, variantEcon);
 
   // Build a lightweight decision-like structure from operations + health
-  // so the command center orchestrator can extract channel/sourcing signals
+  // so the command center orchestrator can extract sourcing signals
   // without needing the full decision engine cascade.
   const lightDecisions: DecisionEngineResult = {
     recommendations: buildLightRecommendations(operations, health),
@@ -44,10 +66,20 @@ export async function getCommandCenterData(): Promise<CommandCenterData> {
     generatedAt: new Date().toISOString(),
   };
 
-  return buildCommandCenter(velocity, replenishment, profitability, lightDecisions, operations, variantIntel, variantEcon);
+  return buildCommandCenter(
+    velocity,
+    replenishment,
+    profitability,
+    lightDecisions,
+    operations,
+    variantIntel,
+    variantEcon,
+    catalogReport,
+    paidOrdersLast30d,
+  );
 }
 
-// Extracts only the channel/sourcing critical signals that the command center uses.
+// Extracts only the sourcing critical signals that the command center uses.
 // This replaces the full decision engine call, avoiding the 5x velocity cascade.
 function buildLightRecommendations(
   operations: Awaited<ReturnType<typeof getOperationsCenterData>>,
@@ -55,21 +87,7 @@ function buildLightRecommendations(
 ): DecisionRecommendation[] {
   const recs: DecisionRecommendation[] = [];
 
-  // Channel errors from operations
   for (const item of operations.items) {
-    if (item.category === "channels" && item.severity === "critical") {
-      recs.push({
-        id: `dec-ops-${item.id}`,
-        domain: "channels",
-        severity: "critical",
-        impact: "risk",
-        title: item.title,
-        reason: item.description,
-        evidence: item.metric ?? item.description,
-        href: item.href,
-        actionLabel: item.actionLabel,
-      });
-    }
     if (item.category === "sourcing" && (item.severity === "critical" || item.severity === "high")) {
       recs.push({
         id: `dec-ops-${item.id}`,
@@ -90,7 +108,7 @@ function buildLightRecommendations(
     if (signal.severity === "critical") {
       recs.push({
         id: `dec-health-${signal.id}`,
-        domain: "channels",
+        domain: signal.href.includes("/admin/sourcing") ? "sourcing" : "ads",
         severity: "critical",
         impact: "risk",
         title: signal.title,

@@ -266,8 +266,8 @@ function ScopeBanner() {
       <p className="text-sm font-bold text-[#111111]">Sourcing Intelligence v1</p>
       <p className="mt-1 text-xs leading-relaxed text-[#666666]">
         Clasifica productos de proveedor por disponibilidad, costo, stock y estado de importación.
-        El margen estimado usa precio sugerido vs costo — no incluye fees de canal ni shipping.
-        Score por proveedor, aptitud por canal y recomendación de Ads no están incluidos en esta versión.
+        El margen estimado usa precio sugerido vs costo — no incluye fees externos ni shipping.
+        Score por proveedor, aptitud de tienda y recomendación de Ads no están incluidos en esta versión.
       </p>
     </div>
   );

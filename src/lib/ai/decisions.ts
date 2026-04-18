@@ -11,7 +11,6 @@ import { getOperationsCenterData } from "@/lib/operations/queries";
 import { getHealthCenterData } from "@/lib/integrations/health";
 import { getSourcingIntelData } from "@/lib/sourcing/intelligence";
 import { getAptitudeReport } from "@/lib/aptitude/queries";
-import { getDiffReport } from "@/lib/sync/queries";
 import { getProviderScoreReport } from "@/lib/sourcing/score-queries";
 import { getVelocityReport } from "@/lib/velocity/queries";
 import { getReplenishmentReport } from "@/lib/replenishment/queries";
@@ -30,12 +29,11 @@ import type {
 export async function getDecisionRecommendations(): Promise<DecisionEngineResult> {
   // ─── Consume all data sources in parallel ───
   // Velocity is fetched once and passed to replenishment to avoid double-fetch.
-  const [opsData, healthData, sourcingData, aptitudeData, diffData, scoreData, velocityData] = await Promise.all([
+  const [opsData, healthData, sourcingData, aptitudeData, scoreData, velocityData] = await Promise.all([
     getOperationsCenterData(),
     getHealthCenterData(),
     getSourcingIntelData(),
     getAptitudeReport(),
-    getDiffReport(),
     getProviderScoreReport(),
     getVelocityReport(),
   ]);
@@ -47,7 +45,7 @@ export async function getDecisionRecommendations(): Promise<DecisionEngineResult
   const store = await getCurrentStore();
   const sid = store?.id ?? "";
 
-  const [firstUnfulfilledOrder, unfulfilledCount, failedSyncConnection, draftProductCount, firstOutOfSyncListing] = await Promise.all([
+  const [firstUnfulfilledOrder, unfulfilledCount, failedSyncConnection, draftProductCount] = await Promise.all([
     sid ? prisma.order.findFirst({
       where: { storeId: sid, paymentStatus: { in: ["approved", "paid"] }, shippingStatus: "unfulfilled", status: { notIn: ["cancelled", "refunded"] } },
       select: { id: true, orderNumber: true },
@@ -64,10 +62,6 @@ export async function getDecisionRecommendations(): Promise<DecisionEngineResult
     sid ? prisma.product.count({
       where: { storeId: sid, isPublished: false, status: { in: ["draft", "active"] }, price: { gt: 0 } },
     }) : 0,
-    sid ? prisma.channelListing.findFirst({
-      where: { storeId: sid, syncStatus: { in: ["out_of_sync", "error"] }, status: { in: ["published", "paused"] } },
-      select: { id: true },
-    }) : null,
   ]);
 
   const recs: DecisionRecommendation[] = [];
@@ -118,14 +112,13 @@ export async function getDecisionRecommendations(): Promise<DecisionEngineResult
   // ════════════════════════════════════════════
 
   for (const signal of healthData.signals) {
-    // Avoid duplicating channel errors already captured from Ops Center
-    if (recs.some((r) => r.domain === "channels" && r.severity === "critical" && signal.severity === "critical" && r.title.includes(signal.title.split(":")[0]))) {
+    if (recs.some((r) => r.severity === "critical" && signal.severity === "critical" && r.title.includes(signal.title.split(":")[0]))) {
       continue;
     }
 
     recs.push({
       id: `dec-health-${signal.id}`,
-      domain: "channels",
+      domain: signal.href.includes("/admin/sourcing") ? "sourcing" : "ads",
       severity: signal.severity as DecisionSeverity,
       impact: signal.severity === "critical" ? "risk" : "efficiency",
       title: signal.title,
@@ -134,44 +127,6 @@ export async function getDecisionRecommendations(): Promise<DecisionEngineResult
       href: signal.href,
       actionLabel: signal.actionLabel,
     });
-  }
-
-  // Listing sync health — enriched with Diff Engine v2 field-level data
-  if (diffData.summary.withDiffs > 0 || healthData.listings.syncError > 0) {
-    const hasCritical = diffData.summary.bySeverity.some((s) => s.severity === "critical") || healthData.listings.syncError > 0;
-    const fieldDetail = diffData.summary.byField.length > 0
-      ? diffData.summary.byField.map((f) => `${f.label}: ${f.count}`).join(", ")
-      : null;
-    const sample = diffData.entries[0];
-    const evidenceParts: string[] = [];
-    if (diffData.summary.withDiffs > 0) evidenceParts.push(`${diffData.summary.withDiffs} con diferencias`);
-    if (diffData.summary.withErrors > 0) evidenceParts.push(`${diffData.summary.withErrors} con errores`);
-    if (fieldDetail) evidenceParts.push(`Campos: ${fieldDetail}`);
-    if (sample) evidenceParts.push(`Ej: "${sample.productTitle}" en ${sample.channelLabel}`);
-
-    if (!recs.some((r) => r.id.includes("listings-"))) {
-      // withDiffs already counts every returned entry (including error-only ones),
-      // so summing it with withErrors double-counts error+diff overlap. Use the max.
-      const diffTotal = Math.max(diffData.summary.withDiffs, diffData.summary.withErrors);
-      const diffAction: ExecutableAction | undefined = diffTotal > 1
-        ? { type: "batch_resync", label: `Resincronizar ${diffTotal}`, entityId: "batch" }
-        : firstOutOfSyncListing
-          ? { type: "resync_listing", label: "Resincronizar", entityId: firstOutOfSyncListing.id }
-          : undefined;
-
-      recs.push({
-        id: "dec-listings-sync",
-        domain: "channels",
-        severity: hasCritical ? "high" : "normal",
-        impact: "risk",
-        title: `${diffTotal} publicación${diffTotal !== 1 ? "es" : ""} con diferencias detectadas`,
-        reason: "Las publicaciones desincronizadas muestran precios, stock o títulos desactualizados a los compradores. Resolver evita sobreventa y pérdida de ventas.",
-        evidence: evidenceParts.join(" — ") || `${healthData.listings.outOfSync} de ${healthData.listings.total} totales`,
-        href: "/admin/publications",
-        actionLabel: "Ver diferencias",
-        action: diffAction,
-      });
-    }
   }
 
   // ════════════════════════════════════════════
@@ -1025,12 +980,11 @@ export async function getDecisionRecommendations(): Promise<DecisionEngineResult
     operations: "Operación",
     finance: "Finanzas",
     sourcing: "Sourcing",
-    channels: "Canales",
     ads: "Ads",
     aptitude: "Aptitud",
   };
 
-  const domains: DomainHealth[] = (["operations", "finance", "channels", "sourcing", "ads", "aptitude"] as DecisionDomain[])
+  const domains: DomainHealth[] = (["operations", "finance", "sourcing", "ads", "aptitude"] as DecisionDomain[])
     .map((d) => ({
       domain: d,
       label: domainLabels[d],
@@ -1055,7 +1009,6 @@ function mapOpsCategoryToDomain(cat: string): DecisionDomain {
     case "catalog": return "finance";
     case "inventory": return "operations";
     case "sourcing": return "sourcing";
-    case "channels": return "channels";
     case "ai": return "ads";
     default: return "operations";
   }
@@ -1068,7 +1021,6 @@ function resolveOpsImpact(cat: string): DecisionImpact {
     case "catalog": return "quality";
     case "inventory": return "risk";
     case "sourcing": return "efficiency";
-    case "channels": return "risk";
     default: return "efficiency";
   }
 }
@@ -1085,8 +1037,6 @@ function buildOpsReason(item: { category: string; title: string; description: st
       return item.description;
     case "margin":
       return "Sin costo cargado no se puede calcular margen real. Esto afecta la salud financiera visible del negocio.";
-    case "channels":
-      return "Un canal roto detiene sincronización de productos, precios y stock. Resolver con urgencia.";
     case "sourcing":
       if (item.title.includes("fallida")) return "Importaciones fallidas indican problemas de conexión o datos con el proveedor.";
       if (item.title.includes("borrador")) return "Productos importados pero no publicados. Completar el flujo para que generen valor.";
@@ -1098,13 +1048,13 @@ function buildOpsReason(item: { category: string; title: string; description: st
 
 function buildHealthReason(signal: { severity: string; title: string; description: string }): string {
   if (signal.title.includes("token vencido") || signal.title.includes("token vence")) {
-    return "Sin token válido el canal pierde sincronización. No se actualizan precios, stock ni pedidos.";
+    return "Sin token valido la integracion pierde sincronizacion. No se actualizan metricas ni datos operativos.";
   }
   if (signal.title.includes("error")) {
-    return "Una conexión en error impide la operación normal del canal. Resolver antes de que se acumulen problemas.";
+    return "Una conexion en error impide la operacion normal de la integracion. Resolver antes de que se acumulen problemas.";
   }
   if (signal.title.includes("sin sincronización")) {
-    return "Canales sin sync reciente pueden estar mostrando datos desactualizados a los compradores.";
+    return "Integraciones sin sync reciente pueden dejar datos operativos desactualizados.";
   }
   return signal.description;
 }
@@ -1118,5 +1068,5 @@ function impactRank(i: DecisionImpact): number {
 }
 
 function domainRank(d: DecisionDomain): number {
-  switch (d) { case "operations": return 1; case "channels": return 2; case "finance": return 3; case "sourcing": return 4; case "ads": return 5; case "aptitude": return 6; }
+  switch (d) { case "operations": return 1; case "finance": return 2; case "sourcing": return 3; case "ads": return 4; case "aptitude": return 5; }
 }

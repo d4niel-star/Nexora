@@ -5,7 +5,7 @@ export type HealthSeverity = "critical" | "high" | "normal" | "info";
 
 export interface ConnectionHealthEntry {
   id: string;
-  type: "channel" | "ad_platform" | "provider";
+  type: "ad_platform" | "provider";
   name: string;
   platform: string;
   rawStatus: string;

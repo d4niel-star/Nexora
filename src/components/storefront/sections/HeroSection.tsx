@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { normalizeStorefrontHref, storePath } from "@/lib/store-engine/urls";
 
 export function HeroSection({ settings, storeSlug }: { settings: Record<string, any>, storeSlug: string }) {
+  const primaryActionLink = typeof settings.primaryActionLink === "string"
+    ? settings.primaryActionLink.replace("/aura-essentials", storePath(storeSlug))
+    : "products";
+  const primaryHref = normalizeStorefrontHref(primaryActionLink, storeSlug);
+
   return (
     <div className="relative isolate overflow-hidden bg-gray-900 pb-16 pt-14 sm:pb-20">
       <img
@@ -21,7 +27,7 @@ export function HeroSection({ settings, storeSlug }: { settings: Record<string, 
           </p>
           <div className="mt-10 flex items-center justify-center gap-x-6">
             <Link
-              href={settings.primaryActionLink.replace('/aura-essentials', `/${storeSlug}`)}
+              href={primaryHref}
               className="rounded-sm bg-white px-8 py-3.5 text-sm font-extrabold text-gray-900 uppercase tracking-widest shadow-sm hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white transition-colors"
             >
               {settings.primaryActionLabel}

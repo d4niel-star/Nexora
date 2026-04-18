@@ -10,6 +10,12 @@ model Store {
   id            String   @id @default(uuid())
   slug          String   @unique
   name          String
+  description   String?
+  logo          String?
+  customDomain  String?  @unique
+  ownerId       String?
+  owner         User?    @relation("StoreOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  active        Boolean  @default(true)
   status        String   // e.g. "active", "draft", "inactive"
   primaryDomain String?
   subdomain     String?
@@ -41,10 +47,7 @@ model Store {
   
   providerConnections ProviderConnection[]
   catalogMirrors CatalogMirrorProduct[]
-  channelConnections ChannelConnection[]
-  channelListings ChannelListing[]
   providerSyncJobs ProviderSyncJob[]
-  externalChannelOrders ExternalChannelOrder[]
   supplierOrders SupplierOrder[]
   onboarding     StoreOnboarding?
   
@@ -53,12 +56,15 @@ model Store {
   withdrawalReqs WithdrawalRequest[]
   legalSettings  StoreLegalSettings?
   billingTransactions BillingTransaction[]
+  paymentProviders StorePaymentProvider[]
   
   users          User[]
   adConnections      AdPlatformConnection[]
   adCampaignDrafts   AdCampaignDraft[]
   adRecommendations  AdRecommendation[]
   adInsights         AdInsightSnapshot[]
+
+  @@index([ownerId])
 }
 
 model User {
@@ -69,6 +75,7 @@ model User {
   emailVerified  Boolean  @default(false)
   storeId        String?
   store          Store?   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  ownedStores    Store[]  @relation("StoreOwner")
   sessions       Session[]
   verificationTokens EmailVerificationToken[]
   createdAt      DateTime @default(now())
@@ -217,7 +224,6 @@ model Product {
   orderItems     OrderItem[]
   stockMovements StockMovement[]
   catalogMirror  CatalogMirrorProduct?
-  channelListings ChannelListing[]
 
   @@unique([storeId, handle])
 }
@@ -360,6 +366,16 @@ model CheckoutDraft {
   @@unique([cartId])
 }
 
+enum OrderStatus {
+  PENDING
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
 model Order {
   id                String      @id @default(uuid())
   storeId           String
@@ -372,6 +388,9 @@ model Order {
   firstName         String
   lastName          String
   phone             String?
+  buyerName         String?
+  buyerEmail        String?
+  buyerPhone        String?
   document          String?
   
   addressLine1      String
@@ -379,6 +398,9 @@ model Order {
   city              String
   province          String
   postalCode        String
+  buyerAddress      String?
+  buyerCity         String?
+  buyerPostalCode   String?
   country           String
   
   currency          String      @default("ARS")
@@ -401,6 +423,7 @@ model Order {
   deliveredAt         DateTime?
   
   status            String      @default("new") // OrderStatus
+  publicStatus      OrderStatus @default(PENDING)
   paymentStatus     String      @default("pending") // PaymentStatus
   channel           String      @default("Storefront") // Channel
   
@@ -420,11 +443,11 @@ model Order {
   
   items             OrderItem[]
   payments          Payment[]
-  externalChannelOrder ExternalChannelOrder?
   supplierOrder        SupplierOrder?
   fiscalInvoice        FiscalInvoice?
   
   @@unique([storeId, orderNumber])
+  @@index([publicStatus])
 }
 
 model OrderItem {
@@ -435,6 +458,10 @@ model OrderItem {
   variantId            String?
   product              Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
   variant              ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  productName          String?
+  variantName          String?
+  unitPrice            Float?
+  subtotal             Float?
   
   titleSnapshot        String
   variantTitleSnapshot String
@@ -477,6 +504,30 @@ model Payment {
   @@index([orderId])
 }
 
+model StorePaymentProvider {
+  id                    String   @id @default(uuid())
+  storeId               String
+  store                 Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  provider              String   @default("mercadopago")
+  status                String   @default("disconnected") // "connected", "disconnected", "error", "needs_reconnection"
+  accessTokenEncrypted  String?
+  refreshTokenEncrypted String?  // OAuth refresh token, enables auto-refresh before expiry
+  tokenExpiresAt        DateTime? // When the access token expires (from expires_in field)
+  publicKey             String?
+  externalAccountId     String?
+  accountEmail          String?
+  lastError             String?  // Last refresh/connection error message for UI display
+  connectedAt           DateTime?
+  lastValidatedAt       DateTime?
+  lastRefreshedAt       DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@unique([storeId, provider])
+  @@index([storeId])
+  @@index([provider])
+}
+
 model ShippingMethod {
   id               String   @id @default(uuid())
   storeId          String
@@ -509,7 +560,7 @@ model StockMovement {
   variant        ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
   
   orderId        String?
-  type           String         // "sale", "manual_adjustment", "refund_restore", "cancellation_restore", "initial_seed", "sync_update"
+  type           String         // "sale", "manual_adjustment", "refund_restore", "cancellation_restore", "sourcing_import", "sync_update"
   quantityDelta  Int
   reason         String?
   metadataJson   String?
@@ -752,12 +803,11 @@ model CreditTransaction {
 
 model SourcingProvider {
   id               String   @id @default(uuid())
-  code             String   @unique // "mock_supplier", "aliexpress", "doba"
+  code             String   @unique // "manual_csv", "supplier_feed", "supplier_api"
   name             String
   logoUrl          String?
   description      String?
   integrationType  String   // "api", "csv", "feed", "external"
-  supportedChannels String  // "mercadolibre,shopify", "all"
   categories       String?  // "electronics,home,fashion"
   status           String   @default("active") // "active", "beta", "coming_soon"
   createdAt        DateTime @default(now())
@@ -774,7 +824,8 @@ model ProviderConnection {
   providerId       String
   provider         SourcingProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
   status           String   @default("active") // "active", "error", "paused"
-  configJson       String?  // Credentials, settings
+  configJson       String?  // Non-secret settings only: sourceType, sourceUrl, lastRealImportAt
+  apiKeyEncrypted  String?  // AES-256-CBC via token-crypto. Same vault as StorePaymentProvider/AdPlatformConnection.
   externalAccountId String?
   lastSyncedAt     DateTime?
   createdAt        DateTime @default(now())
@@ -826,8 +877,6 @@ model CatalogMirrorProduct {
   internalProduct   Product? @relation(fields: [internalProductId], references: [id], onDelete: SetNull)
 
   importStatus     String   @default("imported") // "pending", "imported", "failed"
-  publicationStatusML String @default("unlisted") // "unlisted", "published", "paused", "error"
-  publicationStatusShopify String @default("unlisted") // "unlisted", "published", "paused", "error"
   
   marginRule       String?  // e.g. "fixed_percent:30", "fixed_amount:500"
   finalPrice       Float?
@@ -840,69 +889,6 @@ model CatalogMirrorProduct {
 }
 
 // ─── Multi-Channel Publishing ───
-
-model ChannelConnection {
-  id                 String   @id @default(uuid())
-  storeId            String
-  store              Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  channel            String   // "mercadolibre", "shopify"
-  status             String   @default("disconnected") // "disconnected", "connecting", "connected", "expired", "invalid", "error", "reconnect_required"
-  
-  externalAccountId  String?
-  accountName        String?
-  
-  // Auth Storage (se guardan idealmente encriptados o proxy, para esta fase los mapeamos crudos/configJson logic)
-  accessToken        String?
-  refreshToken       String?
-  tokenExpiresAt     DateTime?
-  scopes             String?
-  
-  configJson         String?
-  
-  lastSyncedAt       DateTime?
-  lastValidatedAt    DateTime?
-  lastError          String?
-  
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  @@unique([storeId, channel])
-}
-
-model ChannelListing {
-  id                 String   @id @default(uuid())
-  storeId            String
-  store              Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  productId          String
-  product            Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  channel            String   // "mercadolibre", "shopify"
-  
-  status             String   @default("draft") // "draft", "publishing", "published", "paused", "failed", "disconnected"
-  syncStatus         String   @default("synced") // "synced", "syncing", "out_of_sync", "error"
-  externalListingId  String?
-  externalUrl        String?
-  
-  // Overrides por canal
-  syncedTitle        String?
-  syncedDescription  String?
-  syncedPrice        Float?
-  syncedStock        Int?
-  
-  lastPublishedAt    DateTime?
-  lastSyncedAt       DateTime?
-  
-  // Advanced Sync details
-  lastSyncAttemptAt  DateTime?
-  lastSyncSuccessAt  DateTime?
-  outOfSyncReason    String?
-  retryCount         Int      @default(0)
-  lastError          String?
-  
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  @@unique([storeId, productId, channel])
-}
 
 // ─── Workers & Jobs ───
 
@@ -929,65 +915,6 @@ model ProviderSyncJob {
 }
 
 // ─── External Channel Orders & Supplier Routing ───
-
-model ExternalChannelOrder {
-  id                 String   @id @default(uuid())
-  storeId            String
-  store              Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  channel            String   // "mercadolibre", "shopify"
-  
-  externalOrderId    String
-  externalOrderNumber String?
-  status             String   @default("imported") // "imported", "mapped", "failed", "routed"
-  rawJson            String?  // the raw order dict from the source
-  
-  customerName       String?
-  customerEmail      String?
-  customerPhone      String?
-  shippingAddressJson String?
-  
-  currency           String   @default("ARS")
-  subtotal           Float    @default(0)
-  shippingAmount     Float    @default(0)
-  total              Float    @default(0)
-  
-  mappedOrderId      String?  @unique
-  mappedOrder        Order?   @relation(fields: [mappedOrderId], references: [id], onDelete: SetNull)
-  
-  routingStatus      String   @default("pending") // "pending", "partially_routed", "routed", "no_dropship_needed"
-  
-  items              ExternalChannelOrderItem[]
-  
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  @@unique([storeId, channel, externalOrderId])
-}
-
-model ExternalChannelOrderItem {
-  id                 String   @id @default(uuid())
-  externalChannelOrderId String
-  externalChannelOrder   ExternalChannelOrder @relation(fields: [externalChannelOrderId], references: [id], onDelete: Cascade)
-  
-  externalLineId     String
-  externalListingId  String?
-  
-  title              String
-  sku                String?
-  quantity           Int      @default(1)
-  unitPrice          Float    @default(0)
-  totalPrice         Float    @default(0)
-  
-  mappedProductId    String?
-  mappedVariantId    String?
-  mappedChannelListingId String?
-  mappedCatalogMirrorProductId String?
-  
-  mappingStatus      String   @default("unmapped") // "unmapped", "mapped", "needs_review", "ignored"
-  
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-}
 
 model SupplierOrder {
   id                 String   @id @default(uuid())

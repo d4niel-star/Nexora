@@ -6,6 +6,7 @@
 
 import { prisma } from "@/lib/db/prisma";
 import { getCurrentStore } from "@/lib/auth/session";
+import { LEGACY_SEEDED_PROVIDER_CODES } from "./constants";
 import {
   calculateProviderScoreReport,
   type ProviderInput,
@@ -37,10 +38,12 @@ export async function getProviderScoreReport(): Promise<ProviderScoreReport> {
     mirrors,
     providerProducts,
     totalCatalogProducts,
-    channelListings,
   ] = await Promise.all([
     prisma.providerConnection.findMany({
-      where: { storeId: sid },
+      where: {
+        storeId: sid,
+        provider: { code: { notIn: LEGACY_SEEDED_PROVIDER_CODES } },
+      },
       include: {
         provider: {
           select: { id: true, name: true, code: true },
@@ -48,7 +51,12 @@ export async function getProviderScoreReport(): Promise<ProviderScoreReport> {
       },
     }),
     prisma.providerSyncJob.findMany({
-      where: { storeId: sid },
+      where: {
+        storeId: sid,
+        providerConnection: {
+          provider: { code: { notIn: LEGACY_SEEDED_PROVIDER_CODES } },
+        },
+      },
       select: {
         providerConnectionId: true,
         status: true,
@@ -57,7 +65,12 @@ export async function getProviderScoreReport(): Promise<ProviderScoreReport> {
       },
     }),
     prisma.catalogMirrorProduct.findMany({
-      where: { storeId: sid },
+      where: {
+        storeId: sid,
+        providerConnection: {
+          provider: { code: { notIn: LEGACY_SEEDED_PROVIDER_CODES } },
+        },
+      },
       select: {
         providerConnectionId: true,
         providerProductId: true,
@@ -72,6 +85,7 @@ export async function getProviderScoreReport(): Promise<ProviderScoreReport> {
     prisma.providerProduct.findMany({
       where: {
         provider: {
+          code: { notIn: LEGACY_SEEDED_PROVIDER_CODES },
           connections: { some: { storeId: sid } },
         },
       },
@@ -86,10 +100,6 @@ export async function getProviderScoreReport(): Promise<ProviderScoreReport> {
       },
     }),
     prisma.product.count({ where: { storeId: sid, isPublished: true } }),
-    prisma.channelListing.findMany({
-      where: { storeId: sid, status: "published" },
-      select: { productId: true },
-    }),
   ]);
 
   // ─── Build lookups ───
@@ -116,7 +126,6 @@ export async function getProviderScoreReport(): Promise<ProviderScoreReport> {
     ppByProvider.set(pp.providerId, arr);
   }
 
-  const publishedProductIds = new Set(channelListings.map((l: { productId: string }) => l.productId));
 
   // ─── Build provider inputs ───
   const providerInputs: ProviderInput[] = [];
@@ -180,8 +189,6 @@ export async function getProviderScoreReport(): Promise<ProviderScoreReport> {
   for (const pp of providerProducts) {
     const mirror = mirrorByPP.get(pp.id);
     const conn = connections.find((c: { providerId: string }) => c.providerId === pp.providerId);
-    const internalProductId = mirror?.internalProductId;
-
     const hasCost = pp.cost > 0;
     const hasSuggestedPrice = pp.suggestedPrice !== null && pp.suggestedPrice > 0;
     const estimatedMarginPercent = hasCost && hasSuggestedPrice
@@ -202,7 +209,6 @@ export async function getProviderScoreReport(): Promise<ProviderScoreReport> {
       providerConnectionStatus: conn?.status || "active",
       providerTier: providerTierMap.get(pp.providerId) || "no_data",
       estimatedMarginPercent,
-      hasChannelListing: internalProductId ? publishedProductIds.has(internalProductId) : false,
       hasAdDraft: false, // TODO: Schema v2 has AdCampaignProduct join table — can query per product in future
     });
   }

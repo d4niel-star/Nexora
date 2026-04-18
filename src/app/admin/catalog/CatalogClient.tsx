@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Filter, Package, Plus, Trash2, Edit, AlertTriangle, CheckCircle2, RefreshCw, Upload, Loader2 } from "lucide-react";
+import { Search, Filter, Package, Plus, Trash2, Edit, AlertTriangle, CheckCircle2, Upload, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Product, CatalogSignal } from "../../../types/product";
-import { publishDraftProduct, resyncListing } from "@/app/admin/ai/execution-actions";
+import { publishDraftProduct } from "@/app/admin/ai/execution-actions";
 import { buildVariantHref } from "@/lib/navigation/hrefs";
 
 import { ProductStatusBadge } from "../../../components/admin/catalog/ProductStatusBadge";
@@ -90,19 +90,6 @@ export default function CatalogClient({ products, hideHeader = false, initialTab
       }
     });
   };
-
-  const handleResync = (listingId: string, productId: string) => {
-    setActioningId(productId);
-    startTransition(async () => {
-      await resyncListing(listingId);
-      setActioningId(null);
-      setActionFeedback({ id: productId, label: "Resincronizado" });
-      setTimeout(() => setActionFeedback(null), 2000);
-      router.refresh();
-    });
-  };
-
-
 
   const tabs: { label: string, value: TabValue, count?: number, isSpecial?: boolean }[] = [
     { label: "Catálogo", value: "all", count: products.length },
@@ -262,7 +249,6 @@ export default function CatalogClient({ products, hideHeader = false, initialTab
                               <SignalChips
                                 signals={product.signals}
                                 providerName={product.providerName}
-                                channelCount={product.channelCount}
                                 variantCriticalId={product.variantCriticalId}
                                 variantHiddenId={product.variantHiddenId}
                                 variantStuckId={product.variantStuckId}
@@ -303,17 +289,6 @@ export default function CatalogClient({ products, hideHeader = false, initialTab
                                       >
                                         {actioningId === product.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
                                         <span className="hidden lg:inline">Publicar</span>
-                                      </button>
-                                    )}
-                                    {product.channelSyncIssues > 0 && product.firstListingId && (
-                                      <button
-                                        onClick={(e) => { e.stopPropagation(); handleResync(product.firstListingId!, product.id); }}
-                                        disabled={actioningId === product.id}
-                                        className="p-1.5 text-[11px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-all disabled:opacity-50 flex items-center gap-1"
-                                        title="Resincronizar canal"
-                                      >
-                                        {actioningId === product.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
-                                        <span className="hidden lg:inline">Resync</span>
                                       </button>
                                     )}
                                     <button
@@ -389,7 +364,6 @@ export default function CatalogClient({ products, hideHeader = false, initialTab
 function SignalChips({
   signals,
   providerName,
-  channelCount,
   variantCriticalId,
   variantHiddenId,
   variantStuckId,
@@ -398,7 +372,6 @@ function SignalChips({
 }: {
   signals: CatalogSignal[];
   providerName: string | null;
-  channelCount: number;
   variantCriticalId: string | null;
   variantHiddenId: string | null;
   variantStuckId: string | null;
@@ -451,11 +424,6 @@ function SignalChips({
       {providerName && (
         <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-200">
           {providerName}
-        </span>
-      )}
-      {channelCount > 0 && (
-        <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold bg-purple-50 text-purple-600 border border-purple-200">
-          {channelCount} canal{channelCount !== 1 ? "es" : ""}
         </span>
       )}
     </div>

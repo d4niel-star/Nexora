@@ -16,7 +16,7 @@
 // - Provider stock & lead time when mirror exists
 // - Economics cross for priority (margin health, contribution)
 //
-// No forecasting. No ML. No invented reorder points.
+// No forecasting. No machine learning. No invented reorder points.
 
 import type {
   ReplenishmentUrgency,

@@ -69,6 +69,10 @@ export async function sendEmailEvent(params: SendEmailEventParams): Promise<bool
         subject = `Recibimos tu pedido ${params.data.orderNumber} - ${params.data.storeName}`;
         htmlContent = templates.generateOrderCreatedTemplate(params.data);
         break;
+      case "ORDER_PAID_OWNER":
+        subject = `Nuevo pago confirmado: ${params.data.orderNumber}`;
+        htmlContent = templates.generateOwnerPaymentApprovedTemplate(params.data);
+        break;
       case "PAYMENT_APPROVED":
         subject = `Pago Aprobado: Pedido ${params.data.orderNumber}`;
         htmlContent = templates.generatePaymentApprovedTemplate(params.data);

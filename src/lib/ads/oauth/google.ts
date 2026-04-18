@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
-import { encryptToken } from "@/lib/channels/oauth/crypto";
+import { encryptToken } from "@/lib/security/token-crypto";
 
 const GOOGLE_ADS_CLIENT_ID = process.env.GOOGLE_ADS_CLIENT_ID || "";
 const GOOGLE_ADS_CLIENT_SECRET = process.env.GOOGLE_ADS_CLIENT_SECRET || "";

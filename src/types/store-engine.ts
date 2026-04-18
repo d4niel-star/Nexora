@@ -85,6 +85,10 @@ export interface StorefrontData {
     id: string;
     slug: string;
     name: string;
+    description: string | null;
+    logo: string | null;
+    customDomain: string | null;
+    active: boolean;
     status: string;
     locale: string;
     currency: string;
@@ -151,10 +155,28 @@ export interface AdminStoreInitialData {
     id: string;
     slug: string;
     name: string;
+    description: string | null;
+    logo: string | null;
     status: string;
+    active: boolean;
     subdomain: string | null;
     primaryDomain: string | null;
   };
+  publicUrl: string;
+  counts: {
+    products: number;
+    publishedProducts: number;
+    sellableProducts: number;
+  };
+  paymentProvider: {
+    provider: string;
+    status: string;
+    publicKey: string | null;
+    externalAccountId: string | null;
+    accountEmail: string | null;
+    connectedAt: string | null;
+    lastValidatedAt: string | null;
+  } | null;
   branding: {
     logoUrl: string | null;
     faviconUrl: string | null;
@@ -212,7 +234,10 @@ export interface AdminStoreSummary {
     id: string;
     slug: string;
     name: string;
+    description: string | null;
+    logo: string | null;
     status: string;
+    active: boolean;
     subdomain: string | null;
     primaryDomain: string | null;
   };

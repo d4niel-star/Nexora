@@ -1,55 +1,42 @@
 /**
- * Mercado Pago REST API Client
- * 
- * Uses the Checkout Pro (Preferences) flow via direct REST calls.
- * No SDK dependency — clean, auditable, minimal surface area.
- * 
- * Required env vars:
- *   MERCADOPAGO_ACCESS_TOKEN — Server-side only, never exposed to client
- *   NEXT_PUBLIC_APP_URL — The public base URL of the app (e.g. http://localhost:3000)
+ * Mercado Pago REST API client.
+ *
+ * Storefront checkout uses tenant-owned access tokens. Do not fall back to a
+ * global token here: each store must receive payments in its own MP account.
  */
 
-const MP_API_BASE = "https://api.mercadopago.com";
+import { storePath } from "@/lib/store-engine/urls";
 
-function getAccessToken(): string {
-  const token = process.env.MERCADOPAGO_ACCESS_TOKEN;
-  if (!token) {
-    throw new Error(
-      "MERCADOPAGO_ACCESS_TOKEN is not set. Add it to your .env file.\n" +
-      "Get a test token from: https://www.mercadopago.com.ar/developers/panel/app"
-    );
-  }
-  return token;
-}
+const MP_API_BASE = "https://api.mercadopago.com";
 
 function getAppUrl(): string {
   return process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 }
 
-/**
- * Generic MP API request helper.
- */
-async function mpFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = getAccessToken();
+async function mpFetch<T>(
+  accessToken: string,
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  if (!accessToken) {
+    throw new Error("Mercado Pago access token missing for store.");
+  }
+
   const res = await fetch(`${MP_API_BASE}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${accessToken}`,
       ...options.headers,
     },
   });
 
   if (!res.ok) {
-    const body = await res.text();
-    console.error(`[MercadoPago] API error ${res.status}: ${body}`);
-    throw new Error(`MercadoPago API error: ${res.status}`);
+    throw new Error(`Mercado Pago API error: ${res.status}`);
   }
 
   return res.json() as Promise<T>;
 }
-
-// ─── Types ───
 
 export interface MPPreferenceItem {
   title: string;
@@ -90,14 +77,14 @@ export interface MPPreferenceResponse {
 }
 
 export interface MPFeeDetail {
-  type: string;       // "mercadopago_fee", "coupon_fee", "financing_fee", etc.
+  type: string;
   amount: number;
-  fee_payer: string;  // "collector" or "payer"
+  fee_payer: string;
 }
 
 export interface MPPaymentResponse {
   id: number;
-  status: string; // "approved", "pending", "rejected", etc.
+  status: string;
   status_detail: string;
   external_reference: string;
   transaction_amount: number;
@@ -122,56 +109,46 @@ export interface MPPaymentResponse {
   [key: string]: unknown;
 }
 
-// ─── API Functions ───
-
-/**
- * Creates a Mercado Pago Checkout Pro preference.
- * Returns the preference ID and redirect URLs.
- */
-export async function createPreference(data: MPPreferenceRequest): Promise<MPPreferenceResponse> {
-  return mpFetch<MPPreferenceResponse>("/checkout/preferences", {
+export async function createPreference(
+  accessToken: string,
+  data: MPPreferenceRequest,
+): Promise<MPPreferenceResponse> {
+  return mpFetch<MPPreferenceResponse>(accessToken, "/checkout/preferences", {
     method: "POST",
     body: JSON.stringify(data),
   });
 }
 
-/**
- * Fetches a payment by its ID.
- * Used in webhook processing and return URL verification.
- */
-export async function getPayment(paymentId: string | number): Promise<MPPaymentResponse> {
-  return mpFetch<MPPaymentResponse>(`/v1/payments/${paymentId}`);
+export async function getPayment(
+  accessToken: string,
+  paymentId: string | number,
+): Promise<MPPaymentResponse> {
+  return mpFetch<MPPaymentResponse>(accessToken, `/v1/payments/${paymentId}`);
 }
 
-/**
- * Fetches a preference by its ID.
- * Useful for verifying preference data.  
- */
-export async function getPreference(preferenceId: string): Promise<MPPreferenceResponse> {
-  return mpFetch<MPPreferenceResponse>(`/checkout/preferences/${preferenceId}`);
+export async function getPreference(
+  accessToken: string,
+  preferenceId: string,
+): Promise<MPPreferenceResponse> {
+  return mpFetch<MPPreferenceResponse>(accessToken, `/checkout/preferences/${preferenceId}`);
 }
 
-/**
- * Creates a refund for a payment.
- * If amount is provided, creates a partial refund. If empty, full refund.
- * Passing idempotencyKey prevents double refunds.
- */
 export async function createRefund(
-  paymentId: string | number, 
+  accessToken: string,
+  paymentId: string | number,
   amount?: number,
-  idempotencyKey?: string
+  idempotencyKey?: string,
 ): Promise<{ id: number; status: string; amount: number; [key: string]: unknown }> {
-  return mpFetch(`/v1/payments/${paymentId}/refunds`, {
+  return mpFetch(accessToken, `/v1/payments/${paymentId}/refunds`, {
     method: "POST",
     headers: idempotencyKey ? { "X-Idempotency-Key": idempotencyKey } : {},
     body: amount !== undefined ? JSON.stringify({ amount }) : undefined,
   });
 }
 
-// ─── Helper: Build preference for an order ───
-
 interface OrderForPreference {
   id: string;
+  storeId: string;
   orderNumber: string;
   email: string;
   firstName: string;
@@ -189,18 +166,17 @@ interface OrderForPreference {
   }[];
 }
 
-/**
- * Builds and creates a Mercado Pago preference from an Order.
- * The `external_reference` is the Order ID for idempotent webhook processing.
- */
 export async function createPreferenceForOrder(
+  accessToken: string,
   order: OrderForPreference,
-  storeSlug: string
+  storeSlug: string,
 ): Promise<MPPreferenceResponse> {
   const appUrl = getAppUrl();
-  const baseCheckoutUrl = `${appUrl}/${storeSlug}/checkout`;
+  const baseCheckoutUrl = `${appUrl}${storePath(storeSlug, "checkout")}`;
+  const notificationUrl = new URL(`${appUrl}/api/store/webhook/mercadopago`);
+  notificationUrl.searchParams.set("storeId", order.storeId);
 
-  const preference = await createPreference({
+  return createPreference(accessToken, {
     items: order.items.map((item) => ({
       title: item.titleSnapshot,
       description: item.variantTitleSnapshot || undefined,
@@ -223,14 +199,13 @@ export async function createPreferenceForOrder(
     },
     auto_return: "approved",
     external_reference: order.id,
-    notification_url: `${appUrl}/api/payments/mercadopago/webhook`,
+    notification_url: notificationUrl.toString(),
     statement_descriptor: "NEXORA",
     metadata: {
       order_id: order.id,
       order_number: order.orderNumber,
+      store_id: order.storeId,
       store_slug: storeSlug,
     },
   });
-
-  return preference;
 }

@@ -1,9 +1,9 @@
 "use client";
 
-import { CartItemType } from "@/types/cart";
-import { updateCartItemQuantity, removeCartItem } from "@/lib/store-engine/cart/actions";
-import { X, Loader2 } from "lucide-react";
-import { useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { AlertCircle, Loader2, Trash2, X } from "lucide-react";
+import type { CartItemType, CartStockIssue } from "@/types/cart";
+import { clearCart, removeCartItem, updateCartItemQuantity } from "@/lib/store-engine/cart/actions";
 
 function formatPrice(price: number, currency: string, locale: string): string {
   return new Intl.NumberFormat(locale, {
@@ -13,33 +13,124 @@ function formatPrice(price: number, currency: string, locale: string): string {
   }).format(price);
 }
 
-export function CartList({ items, storeSlug, currency, locale }: { items: CartItemType[], storeSlug: string, currency: string, locale: string }) {
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "No pudimos actualizar el carrito.";
+}
+
+export function CartList({
+  items,
+  storeSlug,
+  currency,
+  locale,
+  stockIssues = [],
+}: {
+  items: CartItemType[];
+  storeSlug: string;
+  currency: string;
+  locale: string;
+  stockIssues?: CartStockIssue[];
+}) {
+  const [clearPending, startClearTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const issueByItemId = useMemo(
+    () => new Map(stockIssues.map((issue) => [issue.itemId, issue])),
+    [stockIssues],
+  );
+
+  const handleClear = () => {
+    if (!window.confirm("¿Vaciar todo el carrito?")) return;
+
+    startClearTransition(async () => {
+      setError(null);
+      try {
+        await clearCart(storeSlug);
+      } catch (caughtError) {
+        setError(getErrorMessage(caughtError));
+      }
+    });
+  };
+
   return (
     <>
-      {items.map((item) => (
-        <CartItem key={item.id} item={item} storeSlug={storeSlug} currency={currency} locale={locale} />
-      ))}
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm font-medium text-gray-500">
+          {items.length} {items.length === 1 ? "producto" : "productos"} en el carrito
+        </p>
+        <button
+          type="button"
+          onClick={handleClear}
+          disabled={clearPending}
+          className="inline-flex items-center justify-center gap-2 rounded-sm border border-gray-200 px-3 py-2 text-xs font-bold uppercase tracking-widest text-gray-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {clearPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+          Vaciar carrito
+        </button>
+      </div>
+
+      {error && (
+        <div className="mb-4 rounded-sm border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+          {error}
+        </div>
+      )}
+
+      <ul role="list" className="divide-y divide-gray-200 border-t border-b border-gray-200">
+        {items.map((item) => (
+          <CartItem
+            key={item.id}
+            item={item}
+            storeSlug={storeSlug}
+            currency={currency}
+            locale={locale}
+            stockIssue={issueByItemId.get(item.id)}
+            onError={setError}
+          />
+        ))}
+      </ul>
     </>
   );
 }
 
-function CartItem({ item, storeSlug, currency, locale }: { item: CartItemType, storeSlug: string, currency: string, locale: string }) {
+function CartItem({
+  item,
+  storeSlug,
+  currency,
+  locale,
+  stockIssue,
+  onError,
+}: {
+  item: CartItemType;
+  storeSlug: string;
+  currency: string;
+  locale: string;
+  stockIssue?: CartStockIssue;
+  onError: (message: string | null) => void;
+}) {
   const [isPending, startTransition] = useTransition();
 
   const handleUpdate = (newQuantity: number) => {
     startTransition(async () => {
-      await updateCartItemQuantity(item.id, newQuantity, storeSlug);
+      onError(null);
+      try {
+        await updateCartItemQuantity(item.id, newQuantity, storeSlug);
+      } catch (caughtError) {
+        onError(getErrorMessage(caughtError));
+      }
     });
   };
 
   const handleRemove = () => {
     startTransition(async () => {
-      await removeCartItem(item.id, storeSlug);
+      onError(null);
+      try {
+        await removeCartItem(item.id, storeSlug);
+      } catch (caughtError) {
+        onError(getErrorMessage(caughtError));
+      }
     });
   };
 
   return (
-    <li className="flex py-6">
+    <li className={`flex py-6 ${stockIssue ? "bg-red-50/40 px-3 sm:px-4" : ""}`}>
       <div className="flex-shrink-0">
         <div className="h-24 w-24 rounded-md border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden">
           {item.imageSnapshot ? (
@@ -65,6 +156,14 @@ function CartItem({ item, storeSlug, currency, locale }: { item: CartItemType, s
             )}
           </div>
           <p className="mt-1 text-sm text-gray-500">{item.variantTitleSnapshot}</p>
+          {stockIssue && (
+            <div className="mt-3 flex items-start gap-2 rounded-sm border border-red-200 bg-white px-3 py-2 text-sm text-red-700">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <p>
+                Pediste {stockIssue.requested}, pero quedan {stockIssue.available}. Ajusta la cantidad para continuar.
+              </p>
+            </div>
+          )}
         </div>
         <div className="flex flex-1 items-end justify-between text-sm">
           <div className="flex items-center gap-3">
@@ -90,7 +189,7 @@ function CartItem({ item, storeSlug, currency, locale }: { item: CartItemType, s
               type="button"
               onClick={handleRemove}
               disabled={isPending}
-              className="font-medium text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
+              className="font-medium text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900 rounded-sm"
             >
               <span className="sr-only">Eliminar</span>
               <X className="w-5 h-5" />

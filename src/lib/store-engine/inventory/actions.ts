@@ -38,7 +38,39 @@ export async function commitOrderStock(orderId: string): Promise<boolean> {
 
         if (!variant || !variant.trackInventory) continue;
 
-        // Create movement record
+        // ─── Race-safe conditional decrement ───
+        // updateMany returns { count }; by adding `stock: { gte: qty }` to the
+        // where clause we atomically ensure two concurrent buyers of the last
+        // unit cannot both succeed. PostgreSQL applies row-level locking on
+        // UPDATE so only one transaction wins, the other sees count=0 and we
+        // throw to roll back the whole stock commit for this order.
+        if (variant.allowBackorder) {
+          await tx.productVariant.update({
+            where: { id: item.variantId },
+            data: { stock: { decrement: item.quantity } },
+          });
+        } else {
+          const result = await tx.productVariant.updateMany({
+            where: {
+              id: item.variantId,
+              stock: { gte: item.quantity },
+            },
+            data: { stock: { decrement: item.quantity } },
+          });
+
+          if (result.count === 0) {
+            throw new InsufficientStockError(
+              `Stock insuficiente para "${item.titleSnapshot}" (variante ${item.variantId}). ` +
+                `Se intentó descontar ${item.quantity} u. pero el stock disponible es menor.`,
+              item.variantId,
+              item.quantity,
+              variant.stock,
+            );
+          }
+        }
+
+        // Movement record is written AFTER successful decrement so we never
+        // record a phantom sale that didn't actually commit.
         await tx.stockMovement.create({
           data: {
             storeId: order.storeId,
@@ -50,29 +82,44 @@ export async function commitOrderStock(orderId: string): Promise<boolean> {
             reason: `Order ${order.orderNumber} via ${order.channel}`
           }
         });
-
-        // Deduct actual stock
-        await tx.productVariant.update({
-          where: { id: item.variantId },
-          data: {
-            stock: { decrement: item.quantity }
-          }
-        });
       }
     });
     return true;
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "unknown";
+    const isStockError = err instanceof InsufficientStockError;
     await logSystemEvent({
       entityType: "order",
       entityId: orderId,
-      eventType: "stock_commit_failed",
+      eventType: isStockError ? "stock_commit_insufficient" : "stock_commit_failed",
       severity: "error",
       source: "inventory_action",
       message: `Fallo al descontar stock de orden ${orderId}`,
-      metadata: { error: err.message }
+      metadata: {
+        error: message,
+        ...(isStockError
+          ? { variantId: err.variantId, requested: err.requested, available: err.available }
+          : {}),
+      },
     });
-    console.error("[commitOrderStock] Failed to commit stock for order", orderId, err);
     return false;
+  }
+}
+
+/**
+ * Thrown when a race-safe stock decrement cannot proceed because another
+ * transaction already consumed the remaining units. Carries enough context
+ * to surface an actionable message to the owner in the audit log.
+ */
+export class InsufficientStockError extends Error {
+  constructor(
+    message: string,
+    public readonly variantId: string,
+    public readonly requested: number,
+    public readonly available: number,
+  ) {
+    super(message);
+    this.name = "InsufficientStockError";
   }
 }
 

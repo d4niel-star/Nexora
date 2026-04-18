@@ -1,9 +1,11 @@
 "use server";
 
 import { prisma } from "@/lib/db/prisma";
+import { getCurrentStore } from "@/lib/auth/session";
 import { revalidatePath } from "next/cache";
 import { sendEmailEvent } from "@/lib/email/events";
 import { logSystemEvent } from "../../observability/audit";
+import { storePath } from "@/lib/store-engine/urls";
 
 export type ShippingStatus = "unfulfilled" | "preparing" | "shipped" | "delivered" | "cancelled";
 
@@ -16,8 +18,11 @@ interface UpdateFulfillmentParams {
 }
 
 export async function updateOrderFulfillment(params: UpdateFulfillmentParams) {
-  const order = await prisma.order.findUnique({
-    where: { id: params.orderId },
+  const currentStore = await getCurrentStore();
+  if (!currentStore) throw new Error("No hay tienda activa.");
+
+  const order = await prisma.order.findFirst({
+    where: { id: params.orderId, storeId: currentStore.id },
     include: { store: true }
   });
 
@@ -26,6 +31,10 @@ export async function updateOrderFulfillment(params: UpdateFulfillmentParams) {
   // HARDENING: Prevent fulfillment on cancelled orders
   if (order.status === "cancelled") {
     throw new Error("No se puede modificar la logística de una orden cancelada.");
+  }
+
+  if (params.shippingStatus && params.shippingStatus !== "unfulfilled" && order.paymentStatus !== "paid") {
+    throw new Error("No se puede preparar, despachar o entregar una orden sin pago confirmado.");
   }
 
   // HARDENING: Prevent backwards fulfillment transitions
@@ -47,11 +56,24 @@ export async function updateOrderFulfillment(params: UpdateFulfillmentParams) {
     }
   }
 
-  const dataToUpdate: any = {};
+  const dataToUpdate: Record<string, unknown> = {};
   if (params.shippingStatus !== undefined) dataToUpdate.shippingStatus = params.shippingStatus;
   if (params.trackingCode !== undefined) dataToUpdate.trackingCode = params.trackingCode || null;
   if (params.trackingUrl !== undefined) dataToUpdate.trackingUrl = params.trackingUrl || null;
   if (params.carrier !== undefined) dataToUpdate.shippingCarrier = params.carrier || null;
+
+  if (params.shippingStatus === "preparing") {
+    dataToUpdate.status = "processing";
+    dataToUpdate.publicStatus = "PROCESSING";
+  }
+  if (params.shippingStatus === "shipped") {
+    dataToUpdate.status = "shipped";
+    dataToUpdate.publicStatus = "SHIPPED";
+  }
+  if (params.shippingStatus === "delivered") {
+    dataToUpdate.status = "delivered";
+    dataToUpdate.publicStatus = "DELIVERED";
+  }
   
   if (params.shippingStatus === "shipped" && order.shippingStatus !== "shipped") {
     dataToUpdate.shippedAt = new Date();
@@ -92,7 +114,7 @@ export async function updateOrderFulfillment(params: UpdateFulfillmentParams) {
     shippingMethodLabel: order.shippingMethodLabel || undefined,
     trackingCode: updatedOrder.trackingCode || undefined,
     trackingUrl: updatedOrder.trackingUrl || undefined,
-    statusUrl: `${appUrl}/${order.store.slug}/tracking?order=${order.orderNumber}&email=${order.email}`,
+    statusUrl: `${appUrl}${storePath(order.store.slug, `tracking?order=${order.orderNumber}&email=${order.email}`)}`,
   };
 
   // If status transitions to shipped for the FIRST time, trigger email
@@ -138,7 +160,7 @@ export async function updateOrderFulfillment(params: UpdateFulfillmentParams) {
   }
 
   revalidatePath("/admin/orders");
-  revalidatePath(`/${order.store.slug}/tracking`);
+  revalidatePath(storePath(order.store.slug, "tracking"));
   
   return updatedOrder;
 }

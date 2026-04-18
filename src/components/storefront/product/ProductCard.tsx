@@ -1,16 +1,23 @@
 import Link from "next/link";
 import { StorefrontProduct } from "@/types/storefront";
 import { formatCurrency } from "@/lib/utils";
+import { storePath } from "@/lib/store-engine/urls";
 
 export function ProductCard({ product, storeSlug }: { product: StorefrontProduct; storeSlug: string }) {
   return (
-    <Link href={`/${storeSlug}/products/${product.handle}`} className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black rounded-sm">
+    <Link href={storePath(storeSlug, `products/${product.handle}`)} className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black rounded-sm">
       <div className="aspect-[3/4] w-full overflow-hidden rounded-sm bg-gray-100 relative">
-        <img
-          src={product.featuredImage}
-          alt={product.title}
-          className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
-        />
+        {product.featuredImage ? (
+          <img
+            src={product.featuredImage}
+            alt={product.title}
+            className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center px-6 text-center">
+            <span className="text-xs font-bold uppercase tracking-widest text-gray-400">Sin imagen</span>
+          </div>
+        )}
         {product.badges.length > 0 && (
           <div className="absolute top-3 left-3 flex flex-col gap-2">
             {product.badges.map(b => (

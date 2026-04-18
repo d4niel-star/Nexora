@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { Order } from "../../../types/order";
 import { OrderStatusBadge, PaymentStatusBadge } from "./StatusBadge";
 import { X, Truck, CreditCard, PackageOpen, MoreHorizontal, Copy, RefreshCw, Printer, UserCircle } from "lucide-react";
 import { FulfillmentControls } from "./FulfillmentControls";
 import { CancelOrderControls } from "./CancelOrderControls";
 import { FiscalInvoiceControls } from "./FiscalInvoiceControls";
+import { buildVariantHref } from "@/lib/navigation/hrefs";
 
 interface OrderDrawerProps {
   order: Order | null;
@@ -88,6 +90,7 @@ export function OrderDrawer({ order, isOpen, onClose }: OrderDrawerProps) {
                   <p className="text-[15px] font-bold text-[#111111]">{order.customer.name}</p>
                   <p className="text-sm font-medium text-gray-500 mt-1 hover:text-[#111111] cursor-pointer transition-colors max-w-full truncate">{order.customer.email}</p>
                   {order.customer.phone && <p className="text-sm font-medium text-gray-500 mt-1">{order.customer.phone}</p>}
+                  {order.customer.document && <p className="text-xs font-mono text-gray-400 mt-2">Doc: {order.customer.document}</p>}
                 </div>
              </div>
              
@@ -137,6 +140,12 @@ export function OrderDrawer({ order, isOpen, onClose }: OrderDrawerProps) {
                       <p className="text-sm font-bold text-[#111111] leading-tight">{item.title}</p>
                       {item.sku && <p className="text-xs text-[#888888] font-mono mt-1.5">SKU: {item.sku}</p>}
                       {item.variantTitle && <p className="text-xs text-gray-500 mt-0.5">{item.variantTitle}</p>}
+                      <Link
+                        href={item.variantId ? buildVariantHref(item.variantId) : "/admin/inventory"}
+                        className="mt-2 inline-flex text-[11px] font-bold text-[#111111] underline decoration-dotted underline-offset-4 hover:text-blue-600"
+                      >
+                        Ver en inventory
+                      </Link>
                     </div>
                   </div>
                   <div className="text-right pt-1">
@@ -198,6 +207,9 @@ export function OrderDrawer({ order, isOpen, onClose }: OrderDrawerProps) {
                   <p className="text-sm font-bold text-[#111111] capitalize">{order.paymentProvider}</p>
                   {order.mpPaymentId && (
                     <p className="text-xs text-gray-500 font-mono mt-0.5">ID: {order.mpPaymentId}</p>
+                  )}
+                  {!order.mpPaymentId && order.mpPreferenceId && (
+                    <p className="text-xs text-gray-500 font-mono mt-0.5">Preference: {order.mpPreferenceId}</p>
                   )}
                 </div>
               </div>

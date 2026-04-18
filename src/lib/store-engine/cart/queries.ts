@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { getSessionId } from "../session/cart-token";
-import type { CartType } from "@/types/cart";
+import type { CartStockIssue, CartType } from "@/types/cart";
 
 export async function getCart(storeId: string): Promise<CartType | null> {
   const sessionId = await getSessionId();
@@ -37,4 +37,51 @@ export async function getCart(storeId: string): Promise<CartType | null> {
     subtotal,
     totalQuantity,
   };
+}
+
+export async function getCartStockIssues(cartId: string): Promise<CartStockIssue[]> {
+  const cart = await prisma.cart.findUnique({
+    where: { id: cartId },
+    include: {
+      items: {
+        include: {
+          variant: true,
+        },
+      },
+    },
+  });
+
+  if (!cart || cart.status !== "active") return [];
+
+  return cart.items.reduce<CartStockIssue[]>((issues, item) => {
+    const variant = item.variant;
+
+    if (!variant) {
+      issues.push({
+        itemId: item.id,
+        title: item.titleSnapshot,
+        variantTitle: item.variantTitleSnapshot,
+        requested: item.quantity,
+        available: 0,
+      });
+      return issues;
+    }
+
+    if (!variant.trackInventory || variant.allowBackorder) {
+      return issues;
+    }
+
+    const available = Math.max(variant.stock - variant.reservedStock, 0);
+    if (available < item.quantity) {
+      issues.push({
+        itemId: item.id,
+        title: item.titleSnapshot,
+        variantTitle: item.variantTitleSnapshot,
+        requested: item.quantity,
+        available,
+      });
+    }
+
+    return issues;
+  }, []);
 }

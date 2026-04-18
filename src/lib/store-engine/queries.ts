@@ -1,16 +1,19 @@
 import { prisma } from "@/lib/db/prisma";
 import type { StorefrontData, BlockType, AdminStoreSummary, AdminStoreInitialData } from "@/types/store-engine";
 import { getCurrentStore } from "@/lib/auth/session";
+import { storePath } from "@/lib/store-engine/urls";
 
 // ─── Get store by slug or hostname ───
 
 export async function getStoreBySlug(domainOrSlug: string) {
   // First attempt simple slug or subdomain
   let store = await prisma.store.findFirst({
-    where: { 
+    where: {
+      active: true,
       OR: [
         { slug: domainOrSlug },
-        { subdomain: domainOrSlug }
+        { subdomain: domainOrSlug },
+        { customDomain: domainOrSlug },
       ]
     },
     include: {
@@ -25,7 +28,7 @@ export async function getStoreBySlug(domainOrSlug: string) {
       where: { hostname: domainOrSlug },
       include: { store: { include: { branding: true, theme: true } } }
     });
-    if (customDomain) store = customDomain.store;
+    if (customDomain?.store.active) store = customDomain.store;
   }
 
   return store;
@@ -35,10 +38,12 @@ export async function getStoreBySlug(domainOrSlug: string) {
 
 export async function getStorefrontData(domainOrSlug: string): Promise<StorefrontData | null> {
   let store = await prisma.store.findFirst({
-    where: { 
+    where: {
+      active: true,
       OR: [
         { slug: domainOrSlug },
-        { subdomain: domainOrSlug }
+        { subdomain: domainOrSlug },
+        { customDomain: domainOrSlug },
       ]
     },
     include: {
@@ -64,8 +69,8 @@ export async function getStorefrontData(domainOrSlug: string): Promise<Storefron
        where: { hostname: domainOrSlug }
      });
      if (customDomain) {
-       store = await prisma.store.findUnique({
-         where: { id: customDomain.storeId },
+       store = await prisma.store.findFirst({
+         where: { id: customDomain.storeId, active: true },
          include: {
            branding: true,
            theme: true,
@@ -94,6 +99,10 @@ export async function getStorefrontData(domainOrSlug: string): Promise<Storefron
       id: store.id,
       slug: store.slug,
       name: store.name,
+      description: store.description,
+      logo: store.logo,
+      customDomain: store.customDomain,
+      active: store.active,
       status: store.status,
       locale: store.locale,
       currency: store.currency,
@@ -231,7 +240,10 @@ export async function getAdminStoreSummary(storeId: string): Promise<AdminStoreS
       id: store.id,
       slug: store.slug,
       name: store.name,
+      description: store.description,
+      logo: store.logo,
       status: store.status,
+      active: store.active,
       subdomain: store.subdomain,
       primaryDomain: store.primaryDomain,
     },
@@ -292,20 +304,45 @@ export async function getAdminStoreInitialData(): Promise<AdminStoreInitialData 
       pages: { orderBy: { createdAt: "desc" } },
       blocks: { where: { pageType: "home" }, orderBy: { sortOrder: "asc" } },
       snapshots: { orderBy: { publishedAt: "desc" }, take: 1 },
-      domains: { orderBy: { isPrimary: "desc" } }
+      domains: { orderBy: { isPrimary: "desc" } },
+      paymentProviders: {
+        where: { provider: "mercadopago" },
+        orderBy: { updatedAt: "desc" },
+        take: 1,
+      },
+      _count: {
+        select: { products: true },
+      },
     },
   });
 
   if (!store) return null;
 
   const lastSnapshot = store.snapshots[0] ?? null;
+  const [publishedProducts, sellableProducts] = await Promise.all([
+    prisma.product.count({
+      where: { storeId: store.id, isPublished: true, status: { not: "archived" } },
+    }),
+    prisma.product.count({
+      where: {
+        storeId: store.id,
+        isPublished: true,
+        status: { not: "archived" },
+        variants: { some: { stock: { gt: 0 } } },
+      },
+    }),
+  ]);
+  const paymentProvider = store.paymentProviders[0] ?? null;
 
   const summary: AdminStoreSummary = {
     store: {
       id: store.id,
       slug: store.slug,
       name: store.name,
+      description: store.description,
+      logo: store.logo,
       status: store.status,
+      active: store.active,
       subdomain: store.subdomain,
       primaryDomain: store.primaryDomain,
     },
@@ -340,10 +377,30 @@ export async function getAdminStoreInitialData(): Promise<AdminStoreInitialData 
       id: store.id,
       slug: store.slug,
       name: store.name,
+      description: store.description,
+      logo: store.logo,
       status: store.status,
+      active: store.active,
       subdomain: store.subdomain,
       primaryDomain: store.primaryDomain,
     },
+    publicUrl: storePath(store.slug),
+    counts: {
+      products: store._count.products,
+      publishedProducts,
+      sellableProducts,
+    },
+    paymentProvider: paymentProvider
+      ? {
+          provider: paymentProvider.provider,
+          status: paymentProvider.status,
+          publicKey: paymentProvider.publicKey,
+          externalAccountId: paymentProvider.externalAccountId,
+          accountEmail: paymentProvider.accountEmail,
+          connectedAt: paymentProvider.connectedAt?.toISOString() ?? null,
+          lastValidatedAt: paymentProvider.lastValidatedAt?.toISOString() ?? null,
+        }
+      : null,
     branding: store.branding
       ? {
           logoUrl: store.branding.logoUrl,

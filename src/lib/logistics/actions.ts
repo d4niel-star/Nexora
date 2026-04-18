@@ -1,12 +1,16 @@
 "use server";
 
 import { prisma } from "@/lib/db/prisma";
+import { getCurrentStore } from "@/lib/auth/session";
 import { getProvider, normalizeStatus } from "./registry";
 import { updateOrderFulfillment } from "@/lib/store-engine/fulfillment/actions";
 
 export async function createRealShipment(orderId: string, providerId: string) {
-  const order = await prisma.order.findUnique({
-    where: { id: orderId },
+  const currentStore = await getCurrentStore();
+  if (!currentStore) throw new Error("No hay tienda activa.");
+
+  const order = await prisma.order.findFirst({
+    where: { id: orderId, storeId: currentStore.id },
     include: { items: true }
   });
 

@@ -7,6 +7,7 @@
 
 import { prisma } from "@/lib/db/prisma";
 import { getCurrentStore } from "@/lib/auth/session";
+import { LEGACY_SEEDED_PROVIDER_CODES } from "./constants";
 import type {
   ImportableProduct,
   SourcingIntelData,
@@ -39,6 +40,7 @@ export async function getSourcingIntelData(): Promise<SourcingIntelData> {
     prisma.providerProduct.findMany({
       where: {
         provider: {
+          code: { notIn: LEGACY_SEEDED_PROVIDER_CODES },
           connections: { some: { storeId: sid, status: "active" } },
         },
       },
@@ -57,7 +59,12 @@ export async function getSourcingIntelData(): Promise<SourcingIntelData> {
     }),
     // All catalog mirrors for this store (to know what's already imported)
     prisma.catalogMirrorProduct.findMany({
-      where: { storeId: sid },
+      where: {
+        storeId: sid,
+        providerConnection: {
+          provider: { code: { notIn: LEGACY_SEEDED_PROVIDER_CODES } },
+        },
+      },
       select: {
         providerProductId: true,
         importStatus: true,
@@ -70,16 +77,31 @@ export async function getSourcingIntelData(): Promise<SourcingIntelData> {
     }),
     // Provider connections for context
     prisma.providerConnection.findMany({
-      where: { storeId: sid },
+      where: {
+        storeId: sid,
+        provider: { code: { notIn: LEGACY_SEEDED_PROVIDER_CODES } },
+      },
       select: { id: true, providerId: true, status: true },
     }),
     // Failed sync jobs
     prisma.providerSyncJob.count({
-      where: { storeId: sid, status: "failed" },
+      where: {
+        storeId: sid,
+        status: "failed",
+        providerConnection: {
+          provider: { code: { notIn: LEGACY_SEEDED_PROVIDER_CODES } },
+        },
+      },
     }),
     // Out of sync mirrors
     prisma.catalogMirrorProduct.count({
-      where: { storeId: sid, syncStatus: "out_of_sync" },
+      where: {
+        storeId: sid,
+        syncStatus: "out_of_sync",
+        providerConnection: {
+          provider: { code: { notIn: LEGACY_SEEDED_PROVIDER_CODES } },
+        },
+      },
     }),
   ]);
 

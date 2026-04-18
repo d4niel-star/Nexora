@@ -4,7 +4,6 @@ import Link from "next/link";
 import {
   ArrowRight,
   CheckCircle2,
-  Globe,
   Megaphone,
   Plug,
   Radio,
@@ -48,10 +47,10 @@ export function HealthCenter({ data }: { data: HealthCenterData }) {
         </section>
       )}
 
-      {/* ─── Listing Health (only if listings exist) ─── */}
+      {/* ─── Operational sync health (only if records exist) ─── */}
       {listings.total > 0 && (
         <section>
-          <SectionLabel text="Publicaciones en canales" />
+          <SectionLabel text="Sincronización operativa" />
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <ListingChip label="Publicadas" value={listings.published} total={listings.total} />
             <ListingChip label="Sincronizadas" value={listings.synced} total={listings.total} color="emerald" />
@@ -171,7 +170,6 @@ function ConnectionCard({ conn }: { conn: ConnectionHealthEntry }) {
 function ConnectionIcon({ type }: { type: ConnectionHealthEntry["type"] }) {
   const cls = "h-3.5 w-3.5 text-[#666666]";
   switch (type) {
-    case "channel": return <Globe className={cls} />;
     case "ad_platform": return <Megaphone className={cls} />;
     case "provider": return <Plug className={cls} />;
     default: return <Radio className={cls} />;
@@ -274,13 +272,13 @@ function NoConnectionsState() {
       <Unplug className="h-8 w-8 text-gray-300 mb-3" />
       <h3 className="text-base font-extrabold text-[#111111]">No hay conexiones configuradas</h3>
       <p className="mt-1 max-w-sm text-xs font-medium text-[#888888]">
-        El monitoreo de salud se activa cuando existen canales, plataformas o proveedores conectados.
+        El monitoreo de salud se activa cuando existen plataformas de ads o proveedores conectados.
       </p>
       <Link
-        href="/admin/channels"
+        href="/admin/sourcing"
         className="mt-6 inline-flex items-center gap-1.5 rounded-xl bg-[#111111] px-5 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-black"
       >
-        Conectar un canal <ArrowRight className="h-3 w-3" />
+        Conectar proveedor <ArrowRight className="h-3 w-3" />
       </Link>
     </div>
   );
@@ -291,8 +289,8 @@ function ScopeBanner() {
     <div className="rounded-2xl border border-[#EAEAEA] bg-[#FAFAFA] p-4 shadow-sm">
       <p className="text-sm font-bold text-[#111111]">Health Center v1</p>
       <p className="mt-1 text-xs leading-relaxed text-[#666666]">
-        Monitorea estado de conexiones OAuth, expiración de tokens, estado de publicaciones y sincronización
-        de proveedores. No incluye diff engine, retry automático ni refresh de tokens — esas capacidades
+        Monitorea estado de conexiones OAuth, expiracion de tokens y sincronizacion
+        de proveedores. No incluye retry automatico ni refresh de tokens; esas capacidades
         serán parte de v2.
       </p>
     </div>

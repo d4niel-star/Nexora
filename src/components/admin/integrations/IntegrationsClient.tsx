@@ -1,13 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search, Globe, CreditCard, Plug, Radio, ShieldCheck } from "lucide-react";
+import { Search, CreditCard, Plug, Radio, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UnifiedConnection } from "@/lib/integrations/queries";
 import type { HealthCenterData } from "@/types/health";
 import { HealthCenter } from "./HealthCenter";
 
-type TabValue = "all" | "channels" | "payments" | "providers" | "ads" | "health";
+type TabValue = "all" | "payments" | "providers" | "ads" | "health";
 
 export function IntegrationsClient({ initialData, healthData }: { initialData: UnifiedConnection[]; healthData: HealthCenterData }) {
   const [activeTab, setActiveTab] = useState<TabValue>("all");
@@ -15,7 +15,6 @@ export function IntegrationsClient({ initialData, healthData }: { initialData: U
 
   const tabCounts = useMemo(() => ({
     all: initialData.length,
-    channels: initialData.filter(c => c.type === "channel").length,
     payments: initialData.filter(c => c.type === "payment").length,
     providers: initialData.filter(c => c.type === "provider").length,
     ads: initialData.filter(c => c.type === "ad_platform").length,
@@ -27,7 +26,6 @@ export function IntegrationsClient({ initialData, healthData }: { initialData: U
       const matchesSearch = !q || c.name.toLowerCase().includes(q) || c.platform.toLowerCase().includes(q);
       const matchesTab = 
         activeTab === "all" ? true
-        : activeTab === "channels" ? c.type === "channel"
         : activeTab === "payments" ? c.type === "payment"
         : activeTab === "providers" ? c.type === "provider"
         : activeTab === "ads" ? c.type === "ad_platform"
@@ -38,7 +36,6 @@ export function IntegrationsClient({ initialData, healthData }: { initialData: U
 
   const tabs: Array<{ label: string; value: TabValue; count: number; icon: React.ReactNode }> = [
     { label: "Todas", value: "all", count: tabCounts.all, icon: <Radio className="h-3.5 w-3.5" /> },
-    { label: "Canales", value: "channels", count: tabCounts.channels, icon: <Globe className="h-3.5 w-3.5" /> },
     { label: "Publicidad", value: "ads", count: tabCounts.ads, icon: <Radio className="h-3.5 w-3.5" /> },
     { label: "Pagos", value: "payments", count: tabCounts.payments, icon: <CreditCard className="h-3.5 w-3.5" /> },
     { label: "Proveedores", value: "providers", count: tabCounts.providers, icon: <Plug className="h-3.5 w-3.5" /> },

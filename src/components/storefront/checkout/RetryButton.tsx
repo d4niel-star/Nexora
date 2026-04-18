@@ -10,7 +10,7 @@ export function RetryButton({ orderId, storeSlug }: { orderId: string, storeSlug
   const handleRetry = () => {
     startTransition(async () => {
       try {
-        const { redirectUrl } = await retryPayment(orderId);
+        const { redirectUrl } = await retryPayment(orderId, storeSlug);
         window.location.href = redirectUrl;
       } catch (error) {
         alert("No se pudo recuperar el pago. Por favor contactá a soporte.");

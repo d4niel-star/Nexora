@@ -40,7 +40,7 @@ const PLAN_META: Record<string, { tagline: string; features: string[] }> = {
     ],
   },
   scale: {
-    tagline: "Volumen, equipo y operación multicanal intensiva.",
+    tagline: "Volumen, equipo y operación comercial intensiva.",
     features: [
       "Todo en Growth",
       "Productos ilimitados",

@@ -1,5 +1,5 @@
 // ─── Sales Velocity + Demand Intelligence v1 Types ───
-// All classifications are evidence-based. No forecasting, no ML.
+// All classifications are evidence-based. No forecasting, no machine learning.
 // Observable signals only: orders, units, revenue, contribution, time windows.
 
 // ─── Rotation classification (volume-based) ───

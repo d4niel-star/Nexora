@@ -41,9 +41,6 @@ export interface Product {
   hasProvider: boolean;
   providerName: string | null;
   mirrorSyncStatus: string | null;
-  channelCount: number;
-  channelSyncIssues: number;
-  firstListingId: string | null;
   // Catalog Variant Intelligence v1
   variantRiskCount: number;
   hiddenVariantCount: number;

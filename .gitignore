@@ -39,6 +39,7 @@ yarn-error.log*
 .env
 .env.local
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -51,3 +52,7 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# User-uploaded store assets (tenant-scoped). Regenerated per-deploy.
+# In Render production these must be persisted via Cloudinary/S3 instead.
+/public/uploads

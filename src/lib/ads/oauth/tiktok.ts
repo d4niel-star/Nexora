@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
-import { encryptToken } from "@/lib/channels/oauth/crypto";
+import { encryptToken } from "@/lib/security/token-crypto";
 
 const TIKTOK_APP_ID = process.env.TIKTOK_APP_ID || "";
 const TIKTOK_APP_SECRET = process.env.TIKTOK_APP_SECRET || "";

@@ -84,11 +84,11 @@ export function CheckoutForm({ draft, storeSlug, shippingMethods }: { draft: Che
          <div className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email *</label>
-              <input required type="email" id="email" name="email" defaultValue={draft.email || ""} className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm py-2 px-3 border" />
+              <input required type="email" id="email" name="email" defaultValue={draft.email || ""} className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 text-base sm:text-sm min-h-[44px] py-3 px-3 border" />
             </div>
             <div>
               <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Teléfono</label>
-              <input type="tel" id="phone" name="phone" defaultValue={draft.phone || ""} className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm py-2 px-3 border" />
+              <input type="tel" id="phone" name="phone" defaultValue={draft.phone || ""} className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 text-base sm:text-sm min-h-[44px] py-3 px-3 border" />
             </div>
          </div>
       </section>
@@ -99,39 +99,39 @@ export function CheckoutForm({ draft, storeSlug, shippingMethods }: { draft: Che
          <div className="grid grid-cols-1 gap-y-4 sm:grid-cols-2 sm:gap-x-4">
             <div>
               <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">Nombre *</label>
-              <input required type="text" id="firstName" name="firstName" defaultValue={draft.firstName || ""} className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm py-2 px-3 border" />
+              <input required type="text" id="firstName" name="firstName" defaultValue={draft.firstName || ""} className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 text-base sm:text-sm min-h-[44px] py-3 px-3 border" />
             </div>
             <div>
               <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">Apellido *</label>
-              <input required type="text" id="lastName" name="lastName" defaultValue={draft.lastName || ""} className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm py-2 px-3 border" />
+              <input required type="text" id="lastName" name="lastName" defaultValue={draft.lastName || ""} className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 text-base sm:text-sm min-h-[44px] py-3 px-3 border" />
             </div>
             <div className="sm:col-span-2">
               <label htmlFor="document" className="block text-sm font-medium text-gray-700">DNI / CUIT</label>
-              <input type="text" id="document" name="document" defaultValue={draft.document || ""} className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm py-2 px-3 border" />
+              <input type="text" id="document" name="document" defaultValue={draft.document || ""} className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 text-base sm:text-sm min-h-[44px] py-3 px-3 border" />
             </div>
             <div className="sm:col-span-2">
               <label htmlFor="addressLine1" className="block text-sm font-medium text-gray-700">Dirección *</label>
-              <input required type="text" id="addressLine1" name="addressLine1" defaultValue={draft.addressLine1 || ""} placeholder="Calle y número" className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm py-2 px-3 border" />
+              <input required type="text" id="addressLine1" name="addressLine1" defaultValue={draft.addressLine1 || ""} placeholder="Calle y número" className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 text-base sm:text-sm min-h-[44px] py-3 px-3 border" />
             </div>
             <div className="sm:col-span-2">
               <label htmlFor="addressLine2" className="block text-sm font-medium text-gray-700">Departamento, piso, etc. (opcional)</label>
-              <input type="text" id="addressLine2" name="addressLine2" defaultValue={draft.addressLine2 || ""} className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm py-2 px-3 border" />
+              <input type="text" id="addressLine2" name="addressLine2" defaultValue={draft.addressLine2 || ""} className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 text-base sm:text-sm min-h-[44px] py-3 px-3 border" />
             </div>
             <div>
               <label htmlFor="city" className="block text-sm font-medium text-gray-700">Ciudad *</label>
-              <input required type="text" id="city" name="city" defaultValue={draft.city || ""} className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm py-2 px-3 border" />
+              <input required type="text" id="city" name="city" defaultValue={draft.city || ""} className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 text-base sm:text-sm min-h-[44px] py-3 px-3 border" />
             </div>
              <div>
               <label htmlFor="province" className="block text-sm font-medium text-gray-700">Provincia *</label>
-              <input required type="text" id="province" name="province" defaultValue={draft.province || ""} className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm py-2 px-3 border" />
+              <input required type="text" id="province" name="province" defaultValue={draft.province || ""} className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 text-base sm:text-sm min-h-[44px] py-3 px-3 border" />
             </div>
             <div>
               <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700">Código Postal *</label>
-              <input required type="text" id="postalCode" name="postalCode" defaultValue={draft.postalCode || ""} className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm py-2 px-3 border" />
+              <input required type="text" id="postalCode" name="postalCode" defaultValue={draft.postalCode || ""} className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 text-base sm:text-sm min-h-[44px] py-3 px-3 border" />
             </div>
              <div>
               <label htmlFor="country" className="block text-sm font-medium text-gray-700">País</label>
-              <select id="country" name="country" defaultValue={draft.country || "AR"} className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm bg-white focus:border-gray-900 focus:ring-gray-900 sm:text-sm py-2 px-3 border">
+              <select id="country" name="country" defaultValue={draft.country || "AR"} className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm bg-white focus:border-gray-900 focus:ring-gray-900 text-base sm:text-sm min-h-[44px] py-3 px-3 border">
                  <option value="AR">Argentina</option>
               </select>
             </div>

@@ -5,7 +5,7 @@ import { getCurrentStore } from "@/lib/auth/session";
 
 export interface UnifiedConnection {
   id: string;
-  type: "channel" | "provider" | "ad_platform" | "payment";
+  type: "provider" | "ad_platform" | "payment";
   name: string;
   platform: string;
   status: "connected" | "disconnected" | "error" | "pending" | "expired";
@@ -19,24 +19,6 @@ export async function getUnifiedConnections(): Promise<UnifiedConnection[]> {
   if (!store) return [];
 
   const connections: UnifiedConnection[] = [];
-
-  // Channel Connections (Mercado Libre, Shopify)
-  const channels = await prisma.channelConnection.findMany({
-    where: { storeId: store.id },
-  });
-
-  for (const ch of channels) {
-    connections.push({
-      id: ch.id,
-      type: "channel",
-      platform: ch.channel,
-      name: ch.channel === "mercadolibre" ? "Mercado Libre" : ch.channel === "shopify" ? "Shopify" : String(ch.channel),
-      status: (ch.status as "connected" | "disconnected" | "error" | "expired") || "disconnected",
-      health: (ch.status === "error" || ch.status === "expired") ? "critical" : "operational",
-      lastSync: ch.lastValidatedAt,
-      description: "Canal de venta externo",
-    });
-  }
 
   // Ad Platform Connections
   const ads = await prisma.adPlatformConnection.findMany({

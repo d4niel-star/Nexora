@@ -8,7 +8,6 @@ import {
   Brain,
   Check,
   CircleDollarSign,
-  Globe,
   Loader2,
   PackageCheck,
   Truck,
@@ -20,11 +19,8 @@ import {
   publishDraftProduct,
   markOrderPreparing,
   retryProviderSync,
-  resyncListing,
   batchPublishDrafts,
   batchMarkPreparing,
-  batchResyncListings,
-  type BatchResult,
 } from "@/app/admin/ai/execution-actions";
 import type {
   DecisionDomain,
@@ -180,9 +176,6 @@ function RecommendationCard({
         case "retry_sync":
           result = await retryProviderSync(action.entityId);
           break;
-        case "resync_listing":
-          result = await resyncListing(action.entityId);
-          break;
         case "batch_publish": {
           const br = await batchPublishDrafts();
           if (br.processed > 0) {
@@ -197,16 +190,6 @@ function RecommendationCard({
           const br = await batchMarkPreparing();
           if (br.processed > 0) {
             onResolved(rec.id, `${br.processed} en preparación${br.failed > 0 ? ` · ${br.failed} error(es)` : ""}`);
-          } else if (br.failed > 0) {
-            setError(`${br.failed} fallido(s)`);
-          }
-          router.refresh();
-          return;
-        }
-        case "batch_resync": {
-          const br = await batchResyncListings();
-          if (br.processed > 0) {
-            onResolved(rec.id, `${br.processed} resincronizado(s)${br.failed > 0 ? ` · ${br.failed} error(es)` : ""}`);
           } else if (br.failed > 0) {
             setError(`${br.failed} fallido(s)`);
           }
@@ -302,7 +285,6 @@ function DomainIcon({ domain }: { domain: DecisionDomain }) {
     case "operations": return <PackageCheck className={cls} />;
     case "finance": return <CircleDollarSign className={cls} />;
     case "sourcing": return <Truck className={cls} />;
-    case "channels": return <Globe className={cls} />;
     case "ads": return <Megaphone className={cls} />;
     case "aptitude": return <Target className={cls} />;
   }
@@ -322,7 +304,6 @@ function domainBg(d: DecisionDomain): string {
     case "operations": return "bg-purple-100";
     case "finance": return "bg-blue-100";
     case "sourcing": return "bg-emerald-100";
-    case "channels": return "bg-amber-100";
     case "ads": return "bg-pink-100";
     case "aptitude": return "bg-violet-100";
   }
@@ -333,7 +314,6 @@ function groupByDomain(recs: DecisionRecommendation[]): Array<{ domain: Decision
     operations: "Operación",
     finance: "Finanzas",
     sourcing: "Sourcing",
-    channels: "Canales",
     ads: "Ads",
     aptitude: "Aptitud",
   };
@@ -346,7 +326,7 @@ function groupByDomain(recs: DecisionRecommendation[]): Array<{ domain: Decision
   }
 
   // Order domains by max severity of their items
-  const domainOrder: DecisionDomain[] = ["operations", "finance", "channels", "sourcing", "ads", "aptitude"];
+  const domainOrder: DecisionDomain[] = ["operations", "finance", "sourcing", "ads", "aptitude"];
   return domainOrder
     .filter((d) => map.has(d))
     .map((d) => ({ domain: d, label: domainLabels[d], items: map.get(d)! }));
@@ -357,10 +337,8 @@ function actionSuccessLabel(type: string): string {
     case "publish_product": return "Publicado";
     case "mark_preparing": return "En preparación";
     case "retry_sync": return "Sync encolado";
-    case "resync_listing": return "Resincronizado";
     case "batch_publish": return "Batch publicado";
     case "batch_prepare": return "Batch preparado";
-    case "batch_resync": return "Batch resincronizado";
     default: return "Listo";
   }
 }

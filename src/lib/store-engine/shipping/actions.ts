@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/db/prisma";
 import { getShippingMethods, calculateShippingAmount, formatShippingEstimate } from "./queries";
 import { revalidatePath } from "next/cache";
+import { storePath } from "@/lib/store-engine/urls";
 
 export async function updateCheckoutShippingMethod(
   draftId: string, 
@@ -41,7 +42,7 @@ export async function updateCheckoutShippingMethod(
       }
     });
 
-    revalidatePath(`/${draft.store.slug}/checkout`);
+    revalidatePath(storePath(draft.store.slug, "checkout"));
     
     return { success: true };
   } catch (err: any) {

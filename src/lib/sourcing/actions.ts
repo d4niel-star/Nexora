@@ -3,13 +3,346 @@
 import { prisma } from "@/lib/db/prisma";
 import { getDefaultStore } from "@/lib/store-engine/queries";
 import { getAdminStoreId } from "@/lib/store-engine/actions";
+import { normalizeSlug } from "@/lib/store-engine/slug";
 import { revalidatePath } from "next/cache";
-import { seedProviders } from "./seed";
+import type { Prisma } from "@prisma/client";
+import {
+  fetchSupplierProducts,
+  parseSourcingCsv,
+  type SourcingImportSource,
+  type SupplierProductInput,
+} from "./import-parsers";
+import { LEGACY_SEEDED_PROVIDER_CODES } from "./constants";
+
+type ImportableSource = Extract<SourcingImportSource, "csv" | "feed" | "api">;
+
+function parseImagesJson(imagesJson: string | null): string[] {
+  try {
+    const parsed = JSON.parse(imagesJson || "[]") as unknown;
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function providerCodeForStore(storeId: string, sourceType: ImportableSource): string {
+  return `store_${storeId}_${sourceType}_real_import`.replace(/[^a-zA-Z0-9_]/g, "_");
+}
+
+function sourceLabelFromUrl(sourceType: ImportableSource, sourceUrl?: string): string {
+  if (!sourceUrl) return sourceType === "csv" ? "Import CSV manual" : "Fuente externa";
+  try {
+    const host = new URL(sourceUrl).host;
+    return sourceType === "api" ? `API ${host}` : `Feed ${host}`;
+  } catch {
+    return sourceType === "api" ? "API proveedor" : "Feed proveedor";
+  }
+}
+
+function categoriesFromProducts(products: SupplierProductInput[]): string | null {
+  const categories = Array.from(
+    new Set(products.map((product) => product.category).filter((category): category is string => Boolean(category))),
+  );
+  return categories.length > 0 ? categories.slice(0, 8).join(", ") : null;
+}
+
+async function getAvailableImportedProductHandle(
+  tx: Prisma.TransactionClient,
+  storeId: string,
+  title: string,
+  externalId: string,
+): Promise<string> {
+  const fallback = `proveedor-${externalId || Date.now().toString(36)}`;
+  const base = (normalizeSlug(title) || normalizeSlug(fallback) || `producto-${Date.now().toString(36)}`).slice(0, 80);
+  let handle = base;
+  let suffix = 2;
+
+  while (await tx.product.findUnique({ where: { storeId_handle: { storeId, handle } }, select: { id: true } })) {
+    handle = `${base}-${suffix}`;
+    suffix += 1;
+  }
+
+  return handle;
+}
+
+async function importParsedProductsForStore(input: {
+  storeId: string;
+  sourceType: ImportableSource;
+  sourceLabel: string;
+  sourceUrl?: string;
+  products: SupplierProductInput[];
+  selectedExternalIds: string[];
+}) {
+  const selectedSet = new Set(input.selectedExternalIds);
+  const selectedProducts = input.products.filter((product) => selectedSet.has(product.externalId));
+  const missingExternalIds = input.selectedExternalIds.filter(
+    (externalId) => !input.products.some((product) => product.externalId === externalId),
+  );
+
+  if (selectedProducts.length === 0) {
+    throw new Error("Selecciona al menos un producto valido para importar.");
+  }
+
+  if (missingExternalIds.length > 0) {
+    throw new Error(`Hay productos seleccionados que ya no existen en la fuente: ${missingExternalIds.join(", ")}`);
+  }
+
+  const now = new Date();
+  const result = await prisma.$transaction(async (tx) => {
+    const provider = await tx.sourcingProvider.upsert({
+      where: { code: providerCodeForStore(input.storeId, input.sourceType) },
+      create: {
+        code: providerCodeForStore(input.storeId, input.sourceType),
+        name: input.sourceLabel,
+        description: input.sourceUrl
+          ? `Productos importados desde una fuente real: ${input.sourceUrl}`
+          : "Productos importados desde un archivo CSV cargado por el dueno.",
+        integrationType: input.sourceType,
+        categories: categoriesFromProducts(input.products),
+        status: "active",
+      },
+      update: {
+        name: input.sourceLabel,
+        description: input.sourceUrl
+          ? `Productos importados desde una fuente real: ${input.sourceUrl}`
+          : "Productos importados desde un archivo CSV cargado por el dueno.",
+        integrationType: input.sourceType,
+        categories: categoriesFromProducts(input.products),
+        status: "active",
+      },
+    });
+
+    const connection = await tx.providerConnection.upsert({
+      where: {
+        storeId_providerId: {
+          storeId: input.storeId,
+          providerId: provider.id,
+        },
+      },
+      create: {
+        storeId: input.storeId,
+        providerId: provider.id,
+        status: "active",
+        configJson: JSON.stringify({
+          sourceType: input.sourceType,
+          sourceUrl: input.sourceUrl ?? null,
+          lastRealImportAt: now.toISOString(),
+        }),
+        lastSyncedAt: input.sourceUrl ? now : null,
+      },
+      update: {
+        status: "active",
+        configJson: JSON.stringify({
+          sourceType: input.sourceType,
+          sourceUrl: input.sourceUrl ?? null,
+          lastRealImportAt: now.toISOString(),
+        }),
+        lastSyncedAt: input.sourceUrl ? now : undefined,
+      },
+      include: { provider: true },
+    });
+
+    let importedCount = 0;
+    let skippedExistingCount = 0;
+
+    for (const product of selectedProducts) {
+      const providerProduct = await tx.providerProduct.upsert({
+        where: {
+          providerId_externalId: {
+            providerId: provider.id,
+            externalId: product.externalId,
+          },
+        },
+        create: {
+          providerId: provider.id,
+          externalId: product.externalId,
+          title: product.title,
+          description: product.description,
+          imagesJson: JSON.stringify(product.imageUrls),
+          category: product.category,
+          cost: product.cost,
+          suggestedPrice: product.suggestedPrice,
+          stock: product.stock,
+          leadTimeMinDays: product.leadTimeMinDays,
+          leadTimeMaxDays: product.leadTimeMaxDays,
+          variantsJson: JSON.stringify(product.variants),
+          rawJson: JSON.stringify(product.raw),
+        },
+        update: {
+          title: product.title,
+          description: product.description,
+          imagesJson: JSON.stringify(product.imageUrls),
+          category: product.category,
+          cost: product.cost,
+          suggestedPrice: product.suggestedPrice,
+          stock: product.stock,
+          leadTimeMinDays: product.leadTimeMinDays,
+          leadTimeMaxDays: product.leadTimeMaxDays,
+          variantsJson: JSON.stringify(product.variants),
+          rawJson: JSON.stringify(product.raw),
+        },
+      });
+
+      const existingMirror = await tx.catalogMirrorProduct.findUnique({
+        where: {
+          storeId_providerProductId: {
+            storeId: input.storeId,
+            providerProductId: providerProduct.id,
+          },
+        },
+      });
+
+      if (existingMirror) {
+        skippedExistingCount += 1;
+        continue;
+      }
+
+      const defaultVariant = product.variants[0];
+      const finalPrice = defaultVariant?.price ?? product.suggestedPrice ?? product.cost;
+      const handle = await getAvailableImportedProductHandle(tx, input.storeId, product.title, product.externalId);
+
+      const internalProduct = await tx.product.create({
+        data: {
+          storeId: input.storeId,
+          handle,
+          title: product.title,
+          description: product.description,
+          status: "draft",
+          category: product.category,
+          supplier: connection.provider.name,
+          cost: product.cost,
+          price: finalPrice,
+          featuredImage: product.imageUrls[0] ?? null,
+          isPublished: false,
+          isFeatured: false,
+        },
+      });
+
+      if (product.imageUrls.length > 0) {
+        await tx.productImage.createMany({
+          data: product.imageUrls.map((url, index) => ({
+            productId: internalProduct.id,
+            url,
+            alt: product.title,
+            sortOrder: index,
+          })),
+        });
+      }
+
+      const variantsToCreate = product.variants.length > 0
+        ? product.variants
+        : [{ title: "Default", sku: product.externalId, price: finalPrice, stock: product.stock }];
+
+      for (const [index, variant] of variantsToCreate.entries()) {
+        const createdVariant = await tx.productVariant.create({
+          data: {
+            productId: internalProduct.id,
+            title: variant.title,
+            price: variant.price,
+            stock: variant.stock,
+            sku: variant.sku,
+            isDefault: index === 0,
+          },
+        });
+
+        await tx.stockMovement.create({
+          data: {
+            storeId: input.storeId,
+            productId: internalProduct.id,
+            variantId: createdVariant.id,
+            type: "sourcing_import",
+            quantityDelta: variant.stock,
+            reason: `Importacion real desde ${connection.provider.name}`,
+            metadataJson: JSON.stringify({
+              sourceType: input.sourceType,
+              externalId: product.externalId,
+              variantSku: variant.sku,
+            }),
+          },
+        });
+      }
+
+      await tx.catalogMirrorProduct.create({
+        data: {
+          storeId: input.storeId,
+          providerConnectionId: connection.id,
+          providerProductId: providerProduct.id,
+          internalProductId: internalProduct.id,
+          importStatus: "imported",
+          marginRule: product.suggestedPrice ? "supplier_suggested" : "cost_as_price",
+          finalPrice,
+          syncStatus: "in_sync",
+        },
+      });
+
+      importedCount += 1;
+    }
+
+    const job = await tx.providerSyncJob.create({
+      data: {
+        storeId: input.storeId,
+        providerConnectionId: connection.id,
+        type: `${input.sourceType}_product_import`,
+        status: "completed",
+        startedAt: now,
+        completedAt: new Date(),
+        payloadJson: JSON.stringify({
+          sourceType: input.sourceType,
+          sourceUrl: input.sourceUrl ?? null,
+          selectedProducts: selectedProducts.length,
+          parsedProducts: input.products.length,
+        }),
+        resultJson: JSON.stringify({
+          imported: importedCount,
+          skippedExisting: skippedExistingCount,
+        }),
+      },
+    });
+
+    await tx.storeOnboarding.updateMany({
+      where: { storeId: input.storeId },
+      data: { hasImportedProduct: importedCount > 0 },
+    });
+
+    await tx.systemEvent.create({
+      data: {
+        storeId: input.storeId,
+        entityType: "sourcing_import",
+        entityId: job.id,
+        eventType: "sourcing_products_imported",
+        source: "sourcing_module",
+        message: `Importacion real finalizada desde ${input.sourceLabel}`,
+        metadataJson: JSON.stringify({
+          sourceType: input.sourceType,
+          imported: importedCount,
+          skippedExisting: skippedExistingCount,
+        }),
+        severity: "info",
+      },
+    });
+
+    return {
+      providerName: connection.provider.name,
+      importedCount,
+      skippedExistingCount,
+      jobId: job.id,
+    };
+  });
+
+  revalidatePath("/admin/sourcing");
+  revalidatePath("/admin/catalog");
+  revalidatePath("/admin/inventory");
+  revalidatePath("/admin/store");
+
+  return { success: true, ...result };
+}
 
 export async function getProvidersAction() {
-  await seedProviders();
   return prisma.sourcingProvider.findMany({
-    orderBy: { name: "asc" }
+    where: {
+      code: { notIn: LEGACY_SEEDED_PROVIDER_CODES },
+    },
+    orderBy: { name: "asc" },
   });
 }
 
@@ -18,9 +351,12 @@ export async function getConnectedProvidersAction() {
   if (!store) throw new Error("No active store");
 
   return prisma.providerConnection.findMany({
-    where: { storeId: store.id },
+    where: {
+      storeId: store.id,
+      provider: { code: { notIn: LEGACY_SEEDED_PROVIDER_CODES } },
+    },
     include: { provider: true },
-    orderBy: { createdAt: "desc" }
+    orderBy: { createdAt: "desc" },
   });
 }
 
@@ -28,20 +364,28 @@ export async function connectProviderAction(providerId: string) {
   const store = await getDefaultStore();
   if (!store) throw new Error("No active store");
 
+  const provider = await prisma.sourcingProvider.findUnique({
+    where: { id: providerId },
+    select: { code: true },
+  });
+  if (!provider || LEGACY_SEEDED_PROVIDER_CODES.includes(provider.code)) {
+    throw new Error("Este proveedor no pertenece a una fuente real disponible.");
+  }
+
   const existing = await prisma.providerConnection.findUnique({
     where: {
       storeId_providerId: {
         storeId: store.id,
-        providerId
-      }
-    }
+        providerId,
+      },
+    },
   });
 
   if (existing) {
     if (existing.status !== "active") {
       await prisma.providerConnection.update({
         where: { id: existing.id },
-        data: { status: "active", updatedAt: new Date() }
+        data: { status: "active", updatedAt: new Date() },
       });
     }
     revalidatePath("/admin/sourcing");
@@ -53,11 +397,10 @@ export async function connectProviderAction(providerId: string) {
       storeId: store.id,
       providerId,
       status: "active",
-      configJson: "{}"
-    }
+      configJson: "{}",
+    },
   });
 
-  // Log observabilidad
   await prisma.systemEvent.create({
     data: {
       storeId: store.id,
@@ -66,8 +409,8 @@ export async function connectProviderAction(providerId: string) {
       eventType: "provider_connected",
       source: "admin_panel",
       message: "Proveedor conectado exitosamente",
-      severity: "info"
-    }
+      severity: "info",
+    },
   });
 
   revalidatePath("/admin/sourcing");
@@ -78,7 +421,7 @@ export async function disconnectProviderAction(providerConnectionId: string) {
   if (!store) throw new Error("No active store");
 
   await prisma.providerConnection.delete({
-    where: { id: providerConnectionId, storeId: store.id }
+    where: { id: providerConnectionId, storeId: store.id },
   });
 
   revalidatePath("/admin/sourcing");
@@ -89,43 +432,48 @@ export async function getImportedProductsAction() {
   if (!store) throw new Error("No active store");
 
   return prisma.catalogMirrorProduct.findMany({
-    where: { storeId: store.id },
+    where: {
+      storeId: store.id,
+      providerConnection: {
+        provider: { code: { notIn: LEGACY_SEEDED_PROVIDER_CODES } },
+      },
+    },
     include: {
       providerProduct: true,
       internalProduct: true,
       providerConnection: {
         include: {
-          provider: true
-        }
-      }
+          provider: true,
+        },
+      },
     },
-    orderBy: { createdAt: "desc" }
+    orderBy: { createdAt: "desc" },
   });
 }
 
 export async function getProviderExternalProductsAction(providerId: string) {
-  // We fetch standard seeded/synced ProviderProducts from the DB
   const rawProducts = await prisma.providerProduct.findMany({
-    where: { providerId },
+    where: {
+      providerId,
+      provider: { code: { notIn: LEGACY_SEEDED_PROVIDER_CODES } },
+    },
     orderBy: { createdAt: "desc" },
-    take: 50 // Limit to first 50 for UI
+    take: 50,
   });
 
-  // Map to the format the UI expects, parsing imagesJson
-  return rawProducts.map(p => {
-    let images = [];
-    try { images = JSON.parse(p.imagesJson || "[]"); } catch (e) {}
-    
+  return rawProducts.map((product) => {
+    const images = parseImagesJson(product.imagesJson);
+
     return {
-      id: p.id,
-      externalId: p.externalId,
-      title: p.title,
-      description: p.description,
-      cost: p.cost,
-      suggestedPrice: p.suggestedPrice || null,
-      stock: p.stock,
-      category: p.category,
-      imageUrl: images[0] || null
+      id: product.id,
+      externalId: product.externalId,
+      title: product.title,
+      description: product.description,
+      cost: product.cost,
+      suggestedPrice: product.suggestedPrice || null,
+      stock: product.stock,
+      category: product.category,
+      imageUrl: images[0] || null,
     };
   });
 }
@@ -136,90 +484,87 @@ export async function importProductAction(connectionId: string, providerProductI
 
   const connection = await prisma.providerConnection.findUnique({
     where: { id: connectionId, storeId },
-    include: { provider: true }
+    include: { provider: true },
   });
   if (!connection) throw new Error("Provider connection not found or access denied");
+  if (LEGACY_SEEDED_PROVIDER_CODES.includes(connection.provider.code)) {
+    throw new Error("Este proveedor fue creado por datos legacy y no se puede importar como fuente real.");
+  }
 
-  return await prisma.$transaction(async (tx) => {
-    // 1. Validar existencia real del producto del proveedor en la DB local
-    const providerProd = await tx.providerProduct.findUnique({
-      where: { id: providerProductId }
+  return prisma.$transaction(async (tx) => {
+    const providerProduct = await tx.providerProduct.findUnique({
+      where: { id: providerProductId },
     });
 
-    if (!providerProd) {
-       throw new Error("El producto del proveedor no existe de forma local.");
+    if (!providerProduct) {
+      throw new Error("El producto del proveedor no existe de forma local.");
     }
-    if (providerProd.providerId !== connection.providerId) {
-       throw new Error("Violación de integridad: El producto no pertenece al proveedor de esta conexión.");
+    if (providerProduct.providerId !== connection.providerId) {
+      throw new Error("El producto no pertenece al proveedor de esta conexion.");
     }
 
-    // 2. Check if already imported (Idempotencia Fuerte)
     let mirror = await tx.catalogMirrorProduct.findUnique({
-      where: { storeId_providerProductId: { storeId, providerProductId: providerProd.id } }
+      where: { storeId_providerProductId: { storeId, providerProductId: providerProduct.id } },
     });
 
     if (mirror) {
-      return { success: false, existing: true, message: "Este producto ya se encuentra en tu catálogo espejo." };
+      return { success: false, existing: true, message: "Este producto ya se encuentra en tu catalogo espejo." };
     }
 
-    let images = [];
-    try { images = JSON.parse(providerProd.imagesJson || "[]") } catch(e) {}
+    const images = parseImagesJson(providerProduct.imagesJson);
     const firstImage = images[0] || null;
+    const handle = await getAvailableImportedProductHandle(tx, storeId, providerProduct.title, providerProduct.externalId);
+    const finalPrice = providerProduct.suggestedPrice ?? providerProduct.cost;
 
-    // 3. Create Internal Product
     const internalProduct = await tx.product.create({
       data: {
         storeId,
-        handle: `${providerProd.externalId}-${Date.now()}`,
-        title: providerProd.title,
-        description: providerProd.description,
-        status: "draft", // Start as draft so user can review before publishing
-        category: providerProd.category,
+        handle,
+        title: providerProduct.title,
+        description: providerProduct.description,
+        status: "draft",
+        category: providerProduct.category,
         supplier: connection.provider.name,
-        cost: providerProd.cost,
-        price: providerProd.suggestedPrice || (providerProd.cost * 1.5), // Default 50% margin
+        cost: providerProduct.cost,
+        price: finalPrice,
         featuredImage: firstImage,
-      }
+      },
     });
 
-    // 4. Create standard internal variant
-    const variantId = await tx.productVariant.create({
+    const variant = await tx.productVariant.create({
       data: {
         productId: internalProduct.id,
-        title: "Default Title",
+        title: "Default",
         price: internalProduct.price,
-        stock: providerProd.stock,
-        sku: `PROV-${providerProd.externalId}`,
-        isDefault: true
-      }
+        stock: providerProduct.stock,
+        sku: `PROV-${providerProduct.externalId}`,
+        isDefault: true,
+      },
     });
 
-    // 5. Create Mirror linked to Internal Product
     mirror = await tx.catalogMirrorProduct.create({
       data: {
         storeId,
         providerConnectionId: connection.id,
-        providerProductId: providerProd.id,
+        providerProductId: providerProduct.id,
         internalProductId: internalProduct.id,
         importStatus: "imported",
-        marginRule: "suggested",
+        marginRule: providerProduct.suggestedPrice ? "supplier_suggested" : "cost_as_price",
         finalPrice: internalProduct.price,
-      }
-    });
-    
-    // 6. Record StockMovement
-    await tx.stockMovement.create({
-      data: {
-         storeId,
-         productId: internalProduct.id,
-         variantId: variantId.id,
-         type: "initial_seed",
-         quantityDelta: providerProd.stock,
-         reason: "Importación inicial desde proveedor de sourcing"
-      }
+      },
     });
 
-    // 7. Log Observability
+    await tx.stockMovement.create({
+      data: {
+        storeId,
+        productId: internalProduct.id,
+        variantId: variant.id,
+        type: "sourcing_import",
+        quantityDelta: providerProduct.stock,
+        reason: "Importacion real desde proveedor de sourcing",
+      },
+    });
+
     await tx.systemEvent.create({
       data: {
         storeId,
@@ -228,15 +573,95 @@ export async function importProductAction(connectionId: string, providerProductI
         eventType: "product_imported",
         source: "sourcing_module",
         message: `Producto importado de ${connection.provider.name}`,
-        metadataJson: JSON.stringify({ externalId: providerProd.externalId, catalogMirrorId: mirror.id }),
-        severity: "info"
-      }
+        metadataJson: JSON.stringify({ externalId: providerProduct.externalId, catalogMirrorId: mirror.id }),
+        severity: "info",
+      },
     });
 
     revalidatePath("/admin/sourcing");
     revalidatePath("/admin/catalog");
     revalidatePath("/admin/inventory");
-    
+
     return { success: true, mirror };
+  });
+}
+
+export async function previewCsvImportAction(csvText: string) {
+  if (csvText.length > 1_000_000) {
+    throw new Error("El CSV supera el tamano maximo permitido para preview.");
+  }
+  return parseSourcingCsv(csvText);
+}
+
+export async function importCsvProductsAction(csvText: string, selectedExternalIds: string[]) {
+  const storeId = await getAdminStoreId();
+  if (!storeId) throw new Error("No active store session");
+  if (csvText.length > 1_000_000) {
+    throw new Error("El CSV supera el tamano maximo permitido para importar.");
+  }
+
+  const preview = parseSourcingCsv(csvText);
+  return importParsedProductsForStore({
+    storeId,
+    sourceType: "csv",
+    sourceLabel: "Import CSV manual",
+    products: preview.products,
+    selectedExternalIds,
+  });
+}
+
+export async function previewFeedImportAction(feedUrl: string) {
+  return fetchSupplierProducts({
+    sourceType: "feed",
+    url: feedUrl.trim(),
+  });
+}
+
+export async function importFeedProductsAction(feedUrl: string, selectedExternalIds: string[]) {
+  const storeId = await getAdminStoreId();
+  if (!storeId) throw new Error("No active store session");
+
+  const sourceUrl = feedUrl.trim();
+  const preview = await fetchSupplierProducts({
+    sourceType: "feed",
+    url: sourceUrl,
+  });
+
+  return importParsedProductsForStore({
+    storeId,
+    sourceType: "feed",
+    sourceLabel: sourceLabelFromUrl("feed", sourceUrl),
+    sourceUrl,
+    products: preview.products,
+    selectedExternalIds,
+  });
+}
+
+export async function previewApiImportAction(apiUrl: string, apiKey?: string) {
+  return fetchSupplierProducts({
+    sourceType: "api",
+    url: apiUrl.trim(),
+    apiKey: apiKey?.trim() || undefined,
+  });
+}
+
+export async function importApiProductsAction(apiUrl: string, selectedExternalIds: string[], apiKey?: string) {
+  const storeId = await getAdminStoreId();
+  if (!storeId) throw new Error("No active store session");
+
+  const sourceUrl = apiUrl.trim();
+  const preview = await fetchSupplierProducts({
+    sourceType: "api",
+    url: sourceUrl,
+    apiKey: apiKey?.trim() || undefined,
+  });
+
+  return importParsedProductsForStore({
+    storeId,
+    sourceType: "api",
+    sourceLabel: sourceLabelFromUrl("api", sourceUrl),
+    sourceUrl,
+    products: preview.products,
+    selectedExternalIds,
   });
 }

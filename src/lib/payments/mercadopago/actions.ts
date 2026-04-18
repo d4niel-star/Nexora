@@ -5,6 +5,8 @@ import { createPreferenceForOrder, getPreference } from "@/lib/payments/mercadop
 import { revalidatePath } from "next/cache";
 import { revalidateCheckoutStock } from "@/lib/store-engine/inventory/actions";
 import { sendEmailEvent } from "@/lib/email/events";
+import { storePath } from "@/lib/store-engine/urls";
+import { getMercadoPagoCredentialsForStore } from "@/lib/payments/mercadopago/tenant";
 
 /**
  * Creates an Order from a CheckoutDraft, then initiates a Mercado Pago preference.
@@ -44,6 +46,24 @@ export async function initiatePayment(draftId: string, storeSlug: string): Promi
     throw new Error(stockCheck.error);
   }
 
+  const store = await prisma.store.findFirst({
+    where: {
+      id: draft.storeId,
+      slug: storeSlug,
+      active: true,
+    },
+  });
+
+  if (!store) {
+    throw new Error("La tienda no esta disponible para iniciar el pago.");
+  }
+
+  const mpCredentials = await getMercadoPagoCredentialsForStore(store.id);
+
+  const subtotal = cart.items.reduce((acc, item) => acc + item.priceSnapshot * item.quantity, 0);
+  const shippingAmount = draft.shippingAmount || 0;
+  const total = subtotal + shippingAmount;
+
   // 2. Generate order number
   const orderNumber = `#${Math.floor(10000 + Math.random() * 90000)}`;
 
@@ -68,9 +88,9 @@ export async function initiatePayment(draftId: string, storeSlug: string): Promi
       country: draft.country || "AR",
 
       currency: cart.currency,
-      subtotal: draft.subtotal,
-      shippingAmount: draft.shippingAmount,
-      total: draft.total,
+      subtotal,
+      shippingAmount,
+      total,
       
       shippingMethodId: draft.shippingMethodId,
       shippingMethodLabel: draft.shippingMethodLabel,
@@ -103,15 +123,17 @@ export async function initiatePayment(draftId: string, storeSlug: string): Promi
 
   try {
     const preference = await createPreferenceForOrder(
+      mpCredentials.accessToken,
       {
         id: order.id,
+        storeId: order.storeId,
         orderNumber: order.orderNumber,
         email: order.email,
         firstName: order.firstName,
         lastName: order.lastName,
         phone: order.phone,
         document: order.document,
-        total: order.total,
+        total,
         currency: order.currency,
         items: order.items,
       },
@@ -132,17 +154,14 @@ export async function initiatePayment(draftId: string, storeSlug: string): Promi
         status: "pending",
         preferenceId: preference.id,
         externalReference: order.id,
-        amount: order.total,
+        amount: total,
         currency: order.currency,
       }
     });
 
-    // Use sandbox URL for dev, init_point for production
-    const isSandbox = (process.env.MERCADOPAGO_ACCESS_TOKEN || "").startsWith("TEST-");
-    redirectUrl = isSandbox ? preference.sandbox_init_point : preference.init_point;
+    redirectUrl = mpCredentials.isSandbox ? preference.sandbox_init_point : preference.init_point;
 
     // Attempt to trigger the ORDER_CREATED email silently in the background
-    const store = await prisma.store.findUnique({ where: { id: order.storeId } });
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     if (store && order.email) {
       sendEmailEvent({
@@ -157,12 +176,12 @@ export async function initiatePayment(draftId: string, storeSlug: string): Promi
           customerName: order.firstName,
           orderNumber: order.orderNumber,
           orderId: order.id,
-          subtotal: order.subtotal,
-          shippingAmount: order.shippingAmount,
-          total: order.total,
+          subtotal,
+          shippingAmount,
+          total,
           currency: order.currency,
           shippingMethodLabel: order.shippingMethodLabel || undefined,
-          statusUrl: `${appUrl}/${storeSlug}/checkout/pending?orderId=${order.id}`,
+          statusUrl: `${appUrl}${storePath(storeSlug, `checkout/pending?orderId=${order.id}`)}`,
         }
       }).catch(err => console.error("[initiatePayment] Background Email Failed", err));
     }
@@ -197,13 +216,18 @@ export async function initiatePayment(draftId: string, storeSlug: string): Promi
  * Retries an existing payment by fetching the previously created preference
  * or returning the init_point. Ensures we don't recreate the order.
  */
-export async function retryPayment(orderId: string): Promise<{ redirectUrl: string }> {
+export async function retryPayment(orderId: string, storeSlug: string): Promise<{ redirectUrl: string }> {
   const order = await prisma.order.findUnique({
-    where: { id: orderId }
+    where: { id: orderId },
+    include: { store: true },
   });
 
   if (!order) {
     throw new Error("Order no encontrada");
+  }
+
+  if (order.store.slug !== storeSlug) {
+    throw new Error("La orden no pertenece a esta tienda.");
   }
 
   if (order.paymentStatus === 'paid') {
@@ -215,7 +239,8 @@ export async function retryPayment(orderId: string): Promise<{ redirectUrl: stri
   }
 
   try {
-    const preference = await getPreference(order.mpPreferenceId);
+    const mpCredentials = await getMercadoPagoCredentialsForStore(order.storeId);
+    const preference = await getPreference(mpCredentials.accessToken, order.mpPreferenceId);
     
     // Update order back to pending if it was marked failed
     await prisma.order.update({
@@ -223,8 +248,7 @@ export async function retryPayment(orderId: string): Promise<{ redirectUrl: stri
       data: { paymentStatus: "pending" }
     });
 
-    const isSandbox = (process.env.MERCADOPAGO_ACCESS_TOKEN || "").startsWith("TEST-");
-    const redirectUrl = isSandbox ? preference.sandbox_init_point : preference.init_point;
+    const redirectUrl = mpCredentials.isSandbox ? preference.sandbox_init_point : preference.init_point;
 
     return { redirectUrl };
   } catch (err) {

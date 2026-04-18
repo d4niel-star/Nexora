@@ -89,7 +89,136 @@ export async function updateHomeBlocks(
 
 // ─── Publish store (create snapshot) ───
 
+async function ensureMinimumStorefrontShell(storeId: string) {
+  const store = await prisma.store.findUnique({
+    where: { id: storeId },
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+      products: {
+        where: { isPublished: true, status: { not: "archived" } },
+        select: { handle: true },
+        orderBy: { createdAt: "desc" },
+        take: 8,
+      },
+    },
+  });
+
+  if (!store) throw new Error("Store not found");
+
+  const productHandles = store.products.map((product) => product.handle);
+  const [navigationCount, pageCount, blockCount] = await Promise.all([
+    prisma.storeNavigation.count({ where: { storeId } }),
+    prisma.storePage.count({ where: { storeId } }),
+    prisma.storeBlock.count({ where: { storeId, pageType: "home" } }),
+  ]);
+
+  if (navigationCount === 0) {
+    await prisma.storeNavigation.createMany({
+      data: [
+        { storeId, group: "header", label: "Inicio", href: `/store/${store.slug}`, sortOrder: 0, isVisible: true },
+        { storeId, group: "header", label: "Productos", href: `/store/${store.slug}/products`, sortOrder: 1, isVisible: true },
+        { storeId, group: "header", label: "Seguimiento", href: `/store/${store.slug}/tracking`, sortOrder: 2, isVisible: true },
+        { storeId, group: "footer_shop", label: "Catalogo", href: `/store/${store.slug}/products`, sortOrder: 0, isVisible: true },
+        { storeId, group: "footer_support", label: "Arrepentimiento", href: `/store/${store.slug}/arrepentimiento`, sortOrder: 0, isVisible: true },
+        { storeId, group: "footer_support", label: "Legal", href: `/store/${store.slug}/legal`, sortOrder: 1, isVisible: true },
+      ],
+    });
+  }
+
+  if (pageCount === 0) {
+    await prisma.storePage.createMany({
+      data: [
+        { storeId, type: "system", title: "Inicio", slug: "/", status: "published" },
+        { storeId, type: "system", title: "Productos", slug: "/products", status: "published" },
+        { storeId, type: "system", title: "Seguimiento", slug: "/tracking", status: "published" },
+        { storeId, type: "policy", title: "Legal", slug: "/legal", status: "published" },
+        { storeId, type: "policy", title: "Arrepentimiento", slug: "/arrepentimiento", status: "published" },
+      ],
+    });
+  }
+
+  if (blockCount === 0) {
+    const heroSettings = getDefaultBlockSettings("hero", {
+      brandName: store.name,
+      storeSlug: store.slug,
+    });
+    const featuredSettings = {
+      ...getDefaultBlockSettings("featured_products", {
+        brandName: store.name,
+        storeSlug: store.slug,
+      }),
+      productHandles,
+    };
+    const benefitsSettings = getDefaultBlockSettings("benefits", {
+      brandName: store.name,
+      storeSlug: store.slug,
+    });
+
+    await prisma.storeBlock.createMany({
+      data: [
+        {
+          storeId,
+          pageType: "home",
+          blockType: "hero",
+          sortOrder: 0,
+          isVisible: true,
+          settingsJson: JSON.stringify(heroSettings),
+          source: "manual",
+          state: "published",
+        },
+        {
+          storeId,
+          pageType: "home",
+          blockType: "featured_products",
+          sortOrder: 1,
+          isVisible: true,
+          settingsJson: JSON.stringify(featuredSettings),
+          source: "manual",
+          state: "published",
+        },
+        {
+          storeId,
+          pageType: "home",
+          blockType: "benefits",
+          sortOrder: 2,
+          isVisible: true,
+          settingsJson: JSON.stringify(benefitsSettings),
+          source: "manual",
+          state: "published",
+        },
+      ],
+    });
+  } else if (productHandles.length > 0) {
+    const featuredBlock = await prisma.storeBlock.findFirst({
+      where: { storeId, pageType: "home", blockType: "featured_products" },
+    });
+
+    if (featuredBlock) {
+      let settings: Record<string, unknown> = {};
+      try {
+        settings = JSON.parse(featuredBlock.settingsJson);
+      } catch {
+        settings = {};
+      }
+
+      const handles = Array.isArray(settings.productHandles) ? settings.productHandles : [];
+      if (handles.length === 0) {
+        await prisma.storeBlock.update({
+          where: { id: featuredBlock.id },
+          data: {
+            settingsJson: JSON.stringify({ ...settings, productHandles }),
+            state: "published",
+          },
+        });
+      }
+    }
+  }
+}
+
 export async function publishStore(storeId: string) {
+  await ensureMinimumStorefrontShell(storeId);
   // Fetch full current state
   const store = await prisma.store.findUnique({
     where: { id: storeId },

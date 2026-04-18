@@ -1,199 +1,160 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import Link from "next/link";
 import {
-  DownloadCloud,
-  CheckCircle2,
+  AlertTriangle,
+  ArrowRight,
   Box,
-  ExternalLink,
+  CheckCircle2,
+  CircleDollarSign,
   PackageSearch,
   ShoppingCart,
-  Network
+  Sparkles,
 } from "lucide-react";
+
 import { cn } from "@/lib/utils";
-import { checkChannelOrdersAction, getOperationsDataAction } from "@/lib/channels/orders/actions";
+import type { OperationalItem, OperationsCenterData, OpCategory, OpSeverity } from "@/types/operations";
 
-export function OperationsPage() {
-  const [data, setData] = useState({ externalOrders: [], supplierOrders: [] } as any);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isPending, startTransition] = useTransition();
-  const [activeTab, setActiveTab] = useState("incoming");
+interface OperationsPageProps {
+  data: OperationsCenterData;
+}
 
-  const loadData = async () => {
-    setIsLoading(true);
-    try {
-       const res = await getOperationsDataAction();
-       setData(res);
-    } catch(e) { console.error(e); }
-    finally { setIsLoading(false); }
-  };
-
-  useEffect(() => { loadData(); }, []);
-
-  const handleSimulateSale = () => {
-     startTransition(async () => {
-         try {
-             await checkChannelOrdersAction();
-             await loadData();
-         } catch(e: any) {
-             alert(e.message);
-         }
-     });
-  };
-
+export function OperationsPage({ data }: OperationsPageProps) {
   return (
-     <div className="animate-in fade-in duration-500 space-y-8">
-      {/* ─── Header ─── */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+    <div className="animate-in fade-in duration-500 space-y-8">
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-[28px] font-extrabold tracking-tight text-[#111111] leading-none">Operaciones B2B</h1>
-          <p className="mt-2 text-[13px] text-[#999999]">
-            Ingesta de pedidos multicanal, dropshipping y ruteo a proveedores.
+          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#888888]">Centro operativo</p>
+          <h1 className="mt-2 text-[28px] font-extrabold tracking-tight text-[#111111] leading-none">Operaciones</h1>
+          <p className="mt-2 text-[13px] text-[#777777]">
+            Prioridad diaria basada en pedidos, inventario, margen, sourcing y acciones de IA.
           </p>
         </div>
-        <div className="flex gap-2">
-           <button
-             onClick={handleSimulateSale}
-             disabled={isPending}
-             className="flex items-center gap-1.5 rounded-md bg-[#111111] px-4 py-2 text-[12px] font-bold text-white transition-colors hover:bg-black disabled:opacity-50"
-           >
-             <DownloadCloud className={cn("h-4 w-4", isPending && "animate-pulse")} />
-             Simular Compra Externa
-           </button>
+        <div className="text-[11px] font-bold uppercase tracking-wider text-[#AAAAAA]">
+          Actualizado {new Date(data.generatedAt).toLocaleString("es-AR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
         </div>
       </div>
 
-       <div className="flex items-center gap-6 border-b border-[#E5E5E5] px-1">
-        <button
-          className={cn("pb-3 text-[13px] font-bold uppercase tracking-wider flex border-b-2 items-center gap-1.5", activeTab === "incoming" ? "border-[#111111] text-[#111111]" : "border-transparent text-[#999999] hover:text-[#555555]")}
-          onClick={() => setActiveTab("incoming")}
-        >
-          <ShoppingCart className="h-4 w-4" /> Ventas de Canales
-        </button>
-        <button
-           className={cn("pb-3 text-[13px] font-bold uppercase tracking-wider flex border-b-2 items-center gap-1.5", activeTab === "routing" ? "border-[#111111] text-[#111111]" : "border-transparent text-[#999999] hover:text-[#555555]")}
-           onClick={() => setActiveTab("routing")}
-        >
-          <Network className="h-4 w-4" /> Supplier Routing (Dropship)
-        </button>
-       </div>
+      <section className="grid gap-3 md:grid-cols-3">
+        <KpiCard label="Pedidos a operar" value={data.kpis.ordersToProcess} />
+        <KpiCard label="Alertas de stock" value={data.kpis.inventoryAlerts} />
+        <KpiCard label="Productos sin costo" value={data.kpis.productsWithoutCost} />
+      </section>
 
-       {activeTab === "incoming" && (
-           <ExternalOrdersTable orders={data.externalOrders} />
-       )}
+      <section className="rounded-xl border border-[#EAEAEA] bg-white shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between border-b border-[#EAEAEA] px-5 py-4">
+          <div>
+            <h2 className="text-sm font-extrabold text-[#111111]">Cola de accion</h2>
+            <p className="mt-1 text-xs font-medium text-[#888888]">Ordenada por severidad y lista para ejecutar desde cada modulo.</p>
+          </div>
+          <span className="rounded-full bg-[#F5F5F5] px-2.5 py-1 text-[11px] font-bold text-[#666666]">
+            {data.items.length} alerta{data.items.length !== 1 ? "s" : ""}
+          </span>
+        </div>
 
-       {activeTab === "routing" && (
-           <SupplierOrdersTable orders={data.supplierOrders} />
-       )}
-
-     </div>
+        {data.items.length === 0 ? (
+          <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 text-emerald-600">
+              <CheckCircle2 className="h-5 w-5" />
+            </div>
+            <h3 className="text-sm font-extrabold text-[#111111]">Sin bloqueos operativos</h3>
+            <p className="mt-2 max-w-sm text-[13px] font-medium text-[#888888]">
+              No hay pedidos retenidos, alertas de inventario ni tareas criticas de sourcing en este momento.
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-[#EAEAEA]">
+            {data.items.map((item) => (
+              <OperationRow key={item.id} item={item} />
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
   );
 }
 
-function ExternalOrdersTable({ orders }: { orders: any[] }) {
-   if (!orders || orders.length === 0) return <div className="p-10 border border-dashed rounded-xl text-center text-[#999999] text-[13px]">No hay pedidos importados.</div>;
-
-   const getMapStatus = (s: string) => {
-      if (s === "mapped") return "bg-emerald-100 text-emerald-700 border-emerald-200";
-      if (s === "failed") return "bg-red-100 text-red-700 border-red-200";
-      return "bg-[#F5F5F5] text-[#888888] border-[#E5E5E5]";
-   };
-
-   return (
-      <div className="rounded-xl border border-[#E5E5E5] bg-white overflow-hidden shadow-sm">
-         <table className="w-full text-left text-[13px]">
-            <thead className="bg-[#FAFAFA] border-b border-[#E5E5E5] text-[11px] font-bold uppercase tracking-wider text-[#888888]">
-               <tr>
-                  <th className="px-6 py-3">Referencia EXT</th>
-                  <th className="px-6 py-3">Canal</th>
-                  <th className="px-6 py-3">Cliente</th>
-                  <th className="px-6 py-3 text-right">Total</th>
-                  <th className="px-6 py-3 text-center">Status Mapeo</th>
-                  <th className="px-6 py-3 text-center">Ruteo Dropship</th>
-                  <th className="px-6 py-3 text-right">Interna</th>
-               </tr>
-            </thead>
-            <tbody className="divide-y divide-[#E5E5E5]">
-               {orders.map(o => (
-                  <tr key={o.id} className="hover:bg-[#FAFAFA] transition-colors">
-                     <td className="px-6 py-3 font-semibold text-[#111111]">{o.externalOrderNumber || o.externalOrderId}</td>
-                     <td className="px-6 py-3 uppercase tracking-wider text-[10px] font-bold text-[#888888]">{o.channel}</td>
-                     <td className="px-6 py-3 text-[#555555]">
-                        <div className="font-medium text-[#111111]">{o.customerName}</div>
-                     </td>
-                     <td className="px-6 py-3 text-right font-medium">${o.total.toLocaleString("es-AR")} {o.currency}</td>
-                     <td className="px-6 py-3 text-center">
-                         <span className={cn("inline-block rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide", getMapStatus(o.status))}>
-                            {o.status}
-                         </span>
-                     </td>
-                     <td className="px-6 py-3 text-center">
-                         {o.routingStatus === "routed" ? (
-                             <span className="text-emerald-600 text-[11px] font-bold inline-flex items-center gap-1"><CheckCircle2 className="h-3 w-3"/> Enviado al Proveedor</span>
-                         ) : o.routingStatus === "no_dropship_needed" ? (
-                             <span className="text-[#888888] text-[11px]">Stock Propio</span>
-                         ) : (
-                             <span className="text-amber-600 text-[11px] font-bold">Pendiente...</span>
-                         )}
-                     </td>
-                     <td className="px-6 py-3 text-right">
-                         {o.mappedOrder ? (
-                            <span className="bg-slate-100 px-2 py-0.5 rounded text-[11px] font-bold text-[#111111] border border-slate-200">
-                               {o.mappedOrder.orderNumber}
-                            </span>
-                         ) : "-"}
-                     </td>
-                  </tr>
-               ))}
-            </tbody>
-         </table>
-      </div>
-   );
+function KpiCard({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-xl border border-[#EAEAEA] bg-white p-4 shadow-sm">
+      <p className="text-[11px] font-bold uppercase tracking-wider text-[#999999]">{label}</p>
+      <p className="mt-2 text-2xl font-black tabular-nums text-[#111111]">{value.toLocaleString("es-AR")}</p>
+    </div>
+  );
 }
 
-function SupplierOrdersTable({ orders }: { orders: any[] }) {
-   if (!orders || orders.length === 0) return <div className="p-10 border border-dashed rounded-xl text-center text-[#999999] text-[13px]">No hay órdenes de proveedor activas.</div>;
+function OperationRow({ item }: { item: OperationalItem }) {
+  const Icon = categoryIcon(item.category);
 
-   return (
-      <div className="rounded-xl border border-[#E5E5E5] bg-white overflow-hidden shadow-sm">
-         <table className="w-full text-left text-[13px]">
-            <thead className="bg-[#FAFAFA] border-b border-[#E5E5E5] text-[11px] font-bold uppercase tracking-wider text-[#888888]">
-               <tr>
-                  <th className="px-6 py-3">ID Ruteo</th>
-                  <th className="px-6 py-3">Proveedor Destino</th>
-                  <th className="px-6 py-3">Venta Origen</th>
-                  <th className="px-6 py-3 text-right">Costo a Pagar</th>
-                  <th className="px-6 py-3 text-center">Estado Fulfillment</th>
-               </tr>
-            </thead>
-            <tbody className="divide-y divide-[#E5E5E5]">
-               {orders.map(o => (
-                  <tr key={o.id} className="hover:bg-[#FAFAFA] transition-colors">
-                     <td className="px-6 py-3 font-mono text-[11px] text-[#555555]">
-                        {o.id.split("-")[0].toUpperCase()}
-                     </td>
-                     <td className="px-6 py-3 font-bold text-[#111111]">
-                        {o.providerConnection?.provider?.name || "Desconocido"}
-                     </td>
-                     <td className="px-6 py-3 text-[#555555]">
-                         {o.internalOrder ? (
-                            <span className="bg-slate-100 px-2 py-0.5 rounded text-[11px] font-bold text-[#111111] border border-slate-200">
-                               {o.internalOrder.orderNumber}
-                            </span>
-                         ) : "-"}
-                     </td>
-                     <td className="px-6 py-3 text-right font-medium text-red-600">
-                        -${o.totalCost.toLocaleString("es-AR")} {o.currency}
-                     </td>
-                     <td className="px-6 py-3 text-center">
-                         <span className="bg-blue-100 text-blue-700 border-blue-200 inline-block rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide">
-                            {o.status.replace(/_/g, " ")}
-                         </span>
-                     </td>
-                  </tr>
-               ))}
-            </tbody>
-         </table>
+  return (
+    <Link
+      href={item.href}
+      className="group flex flex-col gap-4 px-5 py-4 transition-colors hover:bg-[#FAFAFA] md:flex-row md:items-center md:justify-between"
+    >
+      <div className="flex min-w-0 items-start gap-3">
+        <span className={cn("mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg", severityTone(item.severity))}>
+          <Icon className="h-4 w-4" />
+        </span>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-sm font-extrabold text-[#111111]">{item.title}</h3>
+            <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider", severityBadge(item.severity))}>
+              {severityLabel(item.severity)}
+            </span>
+          </div>
+          <p className="mt-1 text-[13px] font-medium leading-5 text-[#777777]">{item.description}</p>
+        </div>
       </div>
-   );
+      <div className="flex shrink-0 items-center justify-between gap-3 md:justify-end">
+        {item.metric ? (
+          <span className="rounded-md bg-[#F5F5F5] px-2.5 py-1 text-[11px] font-black tabular-nums text-[#555555]">
+            {item.metric}
+          </span>
+        ) : null}
+        <span className="inline-flex items-center gap-1 text-[12px] font-bold text-[#111111]">
+          {item.actionLabel}
+          <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+function categoryIcon(category: OpCategory) {
+  switch (category) {
+    case "orders": return ShoppingCart;
+    case "margin": return CircleDollarSign;
+    case "catalog": return PackageSearch;
+    case "inventory": return Box;
+    case "sourcing": return PackageSearch;
+    case "ai": return Sparkles;
+    default: return AlertTriangle;
+  }
+}
+
+function severityTone(severity: OpSeverity): string {
+  switch (severity) {
+    case "critical": return "bg-red-50 text-red-600";
+    case "high": return "bg-amber-50 text-amber-700";
+    case "normal": return "bg-blue-50 text-blue-700";
+    case "info": return "bg-[#F5F5F5] text-[#777777]";
+  }
+}
+
+function severityBadge(severity: OpSeverity): string {
+  switch (severity) {
+    case "critical": return "bg-red-50 text-red-700";
+    case "high": return "bg-amber-50 text-amber-700";
+    case "normal": return "bg-blue-50 text-blue-700";
+    case "info": return "bg-[#F5F5F5] text-[#777777]";
+  }
+}
+
+function severityLabel(severity: OpSeverity): string {
+  switch (severity) {
+    case "critical": return "Critico";
+    case "high": return "Alto";
+    case "normal": return "Normal";
+    case "info": return "Info";
+  }
 }

@@ -43,7 +43,7 @@ export async function enqueueProviderSyncJob(providerConnectionId: string) {
       }
   });
 
-  // FIRE AND FORGET - Simulate Async Background Worker
+  // FIRE AND FORGET - run the real source refresh outside the action boundary.
   // In a robust architecture this could be sent to SQS, Redis BullMQ, or Inngest.
   // We trigger it asynchronously without awaiting in the Next.js boundary.
   runInventorySyncJob({

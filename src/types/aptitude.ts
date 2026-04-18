@@ -5,7 +5,7 @@
 // Schema signals used:
 // - Product: status, isPublished, price, cost, category, supplier
 // - ProductVariant: stock, reservedStock, trackInventory
-// - ChannelListing: status, syncStatus (per product × channel)
+// - Optional listing status if a future storefront publication layer exposes it
 // - CatalogMirrorProduct: importStatus, syncStatus
 // - Profitability v2: contributionPerUnit, netContributionPercent, health, costConfidence
 // - AdCampaignDraft: sourceProductIds (existing ad context)
