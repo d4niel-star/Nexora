@@ -2,63 +2,42 @@
 
 import Link from "next/link";
 import { Mail } from "lucide-react";
-
-// ─── Check Email ───
-// Post-registration waiting state. Unified shell: monochrome hairline card,
-// token-based icon frame, rect CTA. No emerald halo.
-
-function Wordmark() {
-  return (
-    <Link href="/home" className="flex items-center gap-2">
-      <span className="relative inline-flex items-center justify-center">
-        <span className="block h-3 w-3 rounded-[2px] bg-ink-0 translate-x-[2px] translate-y-[2px]" />
-        <span className="absolute h-3 w-3 rounded-[2px] bg-[var(--accent-500)] -translate-x-[2px] -translate-y-[2px]" />
-      </span>
-      <span className="font-semibold text-[15px] leading-none tracking-[-0.03em] text-ink-0">
-        nexora
-      </span>
-    </Link>
-  );
-}
+import { Surface } from "@/components/ui/primitives";
 
 export default function CheckEmailPage() {
   return (
-    <div className="min-h-screen bg-[var(--surface-1)] flex flex-col">
-      <header className="border-b border-[color:var(--hairline)]">
-        <div className="mx-auto flex h-14 max-w-6xl items-center px-5 sm:px-8">
-          <Wordmark />
-        </div>
-      </header>
+    <section className="mx-auto flex min-h-[calc(100vh-145px)] max-w-7xl items-center justify-center px-4 py-14 sm:px-8 sm:py-20">
+      <div className="w-full max-w-md text-center">
+        <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">
+          Verificacion
+        </p>
+        <h1 className="mt-4 text-[34px] font-semibold leading-[1.04] tracking-[-0.035em] text-ink-0">
+          Revisa tu correo.
+        </h1>
+        <p className="mx-auto mt-3 max-w-sm text-[14px] leading-[1.6] text-ink-5">
+          Te enviamos un email de verificacion con un enlace para activar tu cuenta.
+        </p>
 
-      <main className="flex-1 flex items-center justify-center px-4 py-12 sm:py-20">
-        <div className="w-full max-w-sm text-center">
-          <div className="mx-auto mb-7 inline-flex h-12 w-12 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] text-ink-4">
+        <Surface level={0} hairline radius="lg" className="mt-8 p-6 sm:p-7">
+          <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] text-ink-4">
             <Mail className="h-5 w-5" strokeWidth={1.75} />
           </div>
 
-          <h1 className="font-semibold text-[28px] leading-[1.1] tracking-[-0.035em] text-ink-0">
-            Revisá tu correo.
-          </h1>
-          <p className="mt-3 text-[14px] leading-[1.55] text-ink-5">
-            Te enviamos un email de verificación con un enlace para activar tu
-            cuenta.
-          </p>
-          <p className="mt-4 text-[12px] leading-[1.55] text-ink-6">
-            Si no lo encontrás, revisá la carpeta de spam. El enlace expira en
-            24 horas.
+          <p className="mt-5 text-[13px] leading-[1.6] text-ink-5">
+            Si no lo encuentras, revisa la carpeta de spam. El enlace expira en 24 horas.
           </p>
 
-          <div className="mt-10 border-t border-[color:var(--hairline)] pt-6 text-[13px] text-ink-5">
-            ¿Ya verificaste?{" "}
+          <div className="mt-6 border-t border-[color:var(--hairline)] pt-6 text-[13px] text-ink-5">
+            Ya verificaste?{" "}
             <Link
               href="/home/login"
-              className="text-ink-0 font-medium underline decoration-[color:var(--hairline-strong)] underline-offset-4 hover:decoration-ink-0"
+              className="font-medium text-ink-0 underline decoration-[color:var(--hairline-strong)] underline-offset-4 hover:decoration-ink-0"
             >
-              Iniciar sesión
+              Iniciar sesion
             </Link>
           </div>
-        </div>
-      </main>
-    </div>
+        </Surface>
+      </div>
+    </section>
   );
 }
