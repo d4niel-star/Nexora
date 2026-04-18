@@ -1,29 +1,33 @@
 import React from "react";
 
-/**
- * Premium Minimalist Nexora Logo
- * Represents a flow / box / direction / commerce with a monogram N
- */
-export function NexoraLogo({ className = "w-6 h-6", dark = false }: { className?: string; dark?: boolean }) {
-  // We use currentColor for the inner N lines, and the container handles the overall color scheme
+// ─── Nexora Logo ───
+// Token-based glyph matching the landing wordmark. Two overlapping squares:
+//  · base square in ink-0 (or ink-12 when `dark=true`)
+//  · accent square in the unified accent token
+// No stray emerald or hex outside the design system.
+
+export function NexoraLogo({
+  className = "w-6 h-6",
+  dark = false,
+}: {
+  className?: string;
+  dark?: boolean;
+}) {
+  const base = dark ? "var(--ink-12)" : "var(--ink-0)";
+  const accent = "var(--accent-500)";
+
   return (
-    <svg 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      xmlns="http://www.w3.org/2000/svg" 
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
       className={className}
+      aria-hidden
     >
-      <rect width="24" height="24" rx="6" fill={dark ? "#111111" : "#111111"} />
-      <path 
-         d="M8 16V8L16 16V8" 
-         stroke="currentColor" 
-         strokeWidth="2.5" 
-         strokeLinecap="round" 
-         strokeLinejoin="round"
-         className={dark ? "text-white" : "text-white"}
-      />
-      {/* Small accent dot representing the 'pulse' or 'operation' */}
-      <circle cx="18" cy="6" r="2" fill="#10B981" />
+      {/* base square */}
+      <rect x="6" y="6" width="14" height="14" rx="3.5" fill={base} />
+      {/* accent square */}
+      <rect x="4" y="4" width="8" height="8" rx="2" fill={accent} />
     </svg>
   );
 }
