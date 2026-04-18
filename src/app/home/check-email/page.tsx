@@ -1,47 +1,64 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Mail } from "lucide-react"
+import Link from "next/link";
+import { Mail } from "lucide-react";
+
+// ─── Check Email ───
+// Post-registration waiting state. Unified shell: monochrome hairline card,
+// token-based icon frame, rect CTA. No emerald halo.
+
+function Wordmark() {
+  return (
+    <Link href="/" className="flex items-center gap-2">
+      <span className="relative inline-flex items-center justify-center">
+        <span className="block h-3 w-3 rounded-[2px] bg-ink-0 translate-x-[2px] translate-y-[2px]" />
+        <span className="absolute h-3 w-3 rounded-[2px] bg-[var(--accent-500)] -translate-x-[2px] -translate-y-[2px]" />
+      </span>
+      <span className="font-semibold text-[15px] leading-none tracking-[-0.03em] text-ink-0">
+        nexora
+      </span>
+    </Link>
+  );
+}
 
 export default function CheckEmailPage() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#FAFAFA] p-4 font-sans">
-      <div className="mb-10">
-        <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-          <div className="relative w-10 h-10 flex items-center justify-center overflow-hidden">
-            <div className="absolute inset-0 bg-[#111111] rounded-[10px] rotate-12 shadow-sm" />
-            <div className="absolute w-3 h-3 bg-emerald-500 rounded-sm -ml-2.5 -mt-2.5 shadow-sm" />
-            <div className="absolute w-3 h-3 bg-white rounded-sm ml-2.5 mt-2.5 shadow-sm" />
-          </div>
-          <span className="font-extrabold tracking-tighter text-3xl text-[#111111]">nexora.</span>
-        </Link>
-      </div>
+    <div className="min-h-screen bg-[var(--surface-1)] flex flex-col">
+      <header className="border-b border-[color:var(--hairline)]">
+        <div className="mx-auto flex h-14 max-w-6xl items-center px-5 sm:px-8">
+          <Wordmark />
+        </div>
+      </header>
 
-      <Card className="w-full max-w-md shadow-2xl shadow-gray-200/50 border-[#EAEAEA] rounded-2xl overflow-hidden">
-        <CardHeader className="text-center pt-8 pb-2">
-          <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-50 flex items-center justify-center">
-              <Mail className="w-8 h-8 text-emerald-600" />
-            </div>
+      <main className="flex-1 flex items-center justify-center px-4 py-12 sm:py-20">
+        <div className="w-full max-w-sm text-center">
+          <div className="mx-auto mb-7 inline-flex h-12 w-12 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] text-ink-4">
+            <Mail className="h-5 w-5" strokeWidth={1.75} />
           </div>
-          <CardTitle className="text-xl font-bold tracking-tight text-[#111111]">Revisá tu correo electrónico</CardTitle>
-        </CardHeader>
-        <CardContent className="px-8 pb-8 text-center">
-          <p className="text-gray-500 text-sm mb-2 leading-relaxed">
-            Te enviamos un email de verificación con un enlace para activar tu cuenta.
+
+          <h1 className="font-semibold text-[28px] leading-[1.1] tracking-[-0.035em] text-ink-0">
+            Revisá tu correo.
+          </h1>
+          <p className="mt-3 text-[14px] leading-[1.55] text-ink-5">
+            Te enviamos un email de verificación con un enlace para activar tu
+            cuenta.
           </p>
-          <p className="text-gray-400 text-xs mb-8 leading-relaxed">
-            Si no lo encontrás, revisá la carpeta de spam. El enlace expira en 24 horas.
+          <p className="mt-4 text-[12px] leading-[1.55] text-ink-6">
+            Si no lo encontrás, revisá la carpeta de spam. El enlace expira en
+            24 horas.
           </p>
 
-          <div className="border-t border-gray-100 pt-6">
-            <p className="text-gray-500 text-sm">
-              ¿Ya verificaste? <Link href="/home/login" className="text-emerald-600 underline font-semibold hover:text-emerald-700">Iniciar sesión</Link>
-            </p>
+          <div className="mt-10 border-t border-[color:var(--hairline)] pt-6 text-[13px] text-ink-5">
+            ¿Ya verificaste?{" "}
+            <Link
+              href="/home/login"
+              className="text-ink-0 font-medium underline decoration-[color:var(--hairline-strong)] underline-offset-4 hover:decoration-ink-0"
+            >
+              Iniciar sesión
+            </Link>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </main>
     </div>
-  )
+  );
 }

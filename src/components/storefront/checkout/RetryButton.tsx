@@ -22,9 +22,16 @@ export function RetryButton({ orderId, storeSlug }: { orderId: string, storeSlug
     <button
       onClick={handleRetry}
       disabled={isPending}
-      className="px-6 py-3 bg-gray-900 text-white text-sm font-bold rounded-xl hover:bg-black transition-all active:scale-95 disabled:opacity-75 disabled:cursor-not-allowed flex items-center gap-2"
+      className="inline-flex h-12 items-center justify-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-7 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-75 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
     >
-      {isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Conectando...</> : "Reintentar pago"}
+      {isPending ? (
+        <>
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Conectando…
+        </>
+      ) : (
+        "Reintentar pago"
+      )}
     </button>
   );
 }

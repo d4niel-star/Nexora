@@ -6,6 +6,9 @@ import { XCircle } from "lucide-react";
 import { prisma } from "@/lib/db/prisma";
 import { RetryButton } from "@/components/storefront/checkout/RetryButton";
 
+// ─── Checkout Failure ───
+// Monochrome shell + signal-danger icon tint. RetryButton preserved as-is.
+
 export default async function CheckoutFailurePage({
   params,
   searchParams,
@@ -34,40 +37,50 @@ export default async function CheckoutFailurePage({
     : null;
 
   return (
-    <div className="bg-white min-h-[70vh] flex flex-col items-center justify-center py-24 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full text-center space-y-8">
-        <div className="flex justify-center">
-          <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center">
-            <XCircle className="w-12 h-12 text-red-500" />
+    <div className="bg-[var(--surface-1)] min-h-[80vh] flex flex-col items-center justify-center px-4 py-20 sm:px-6">
+      <div className="w-full max-w-md text-center">
+        <div className="mx-auto mb-7 inline-flex h-12 w-12 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)]">
+          <XCircle
+            className="h-5 w-5 text-[color:var(--signal-danger)]"
+            strokeWidth={1.75}
+          />
+        </div>
+
+        <h1 className="font-semibold text-[32px] leading-[1.08] tracking-[-0.035em] text-ink-0">
+          Pago no procesado.
+        </h1>
+        <p className="mx-auto mt-4 max-w-sm text-[14px] leading-[1.55] text-ink-5">
+          Mercado Pago no completó el cobro o la operación fue rechazada. La
+          orden no se marca como pagada sin webhook aprobado.
+        </p>
+
+        {order?.paymentStatus === "paid" && (
+          <div className="mx-auto mt-5 max-w-sm rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-4 py-3 text-[12px] leading-[1.55] text-[color:var(--signal-success)]">
+            La orden ya figura pagada en Nexora. No vuelvas a pagarla.
           </div>
-        </div>
-
-        <div>
-          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Pago no procesado</h1>
-          <p className="mt-4 text-base text-gray-500">
-            Mercado Pago no completo el cobro o la operacion fue rechazada. La orden no se marca como pagada sin webhook aprobado.
+        )}
+        {order && (
+          <p className="mt-4 font-mono text-[12px] text-ink-5">
+            Orden · {order.orderNumber}
           </p>
-          {order?.paymentStatus === "paid" && (
-            <p className="mt-3 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
-              La orden ya figura pagada en Nexora. No vuelvas a pagarla.
-            </p>
-          )}
-          {order && <p className="mt-2 text-sm text-gray-400">Orden: {order.orderNumber}</p>}
-        </div>
+        )}
 
-        <div className="flex flex-col items-center gap-4">
+        <div className="mt-10 flex flex-col items-center gap-3">
           {order && order.paymentStatus !== "paid" ? (
             <RetryButton orderId={order.id} storeSlug={resolvedParams.storeSlug} />
           ) : (
             <Link
               href={storePath(resolvedParams.storeSlug, "checkout")}
-              className="px-6 py-3 bg-gray-900 text-white text-sm font-bold rounded-xl hover:bg-black transition-all active:scale-95"
+              className="inline-flex h-12 items-center justify-center rounded-[var(--r-sm)] bg-ink-0 px-7 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
             >
               Nuevo pago
             </Link>
           )}
-          <Link href={storePath(resolvedParams.storeSlug)} className="text-sm font-bold text-gray-900 hover:text-gray-700">
-            &larr; Volver al inicio
+          <Link
+            href={storePath(resolvedParams.storeSlug)}
+            className="text-[13px] text-ink-5 transition-colors hover:text-ink-0"
+          >
+            ← Volver al inicio
           </Link>
         </div>
       </div>

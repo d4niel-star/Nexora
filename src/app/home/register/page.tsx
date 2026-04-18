@@ -1,21 +1,51 @@
-"use client"
+"use client";
 
-import { useActionState, useState, useMemo } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import Link from "next/link"
-import { registerAction } from "@/app/home/auth-actions"
-import { validatePasswordPolicy } from "@/lib/auth/password-policy"
-import { Check, X } from "lucide-react"
+import { useActionState, useState, useMemo } from "react";
+import Link from "next/link";
+import { Check, X, AlertCircle } from "lucide-react";
+import { registerAction } from "@/app/home/auth-actions";
+import { validatePasswordPolicy } from "@/lib/auth/password-policy";
 
-function PasswordStrengthIndicator({ password, email, companyName }: { password: string; email: string; companyName: string }) {
+// ─── Register ───
+// Same handlers, server action and validation preserved. Rewritten shell to
+// match the login page so new users enter a consistent monochrome flow.
+
+function Wordmark() {
+  return (
+    <Link href="/" className="flex items-center gap-2">
+      <span className="relative inline-flex items-center justify-center">
+        <span className="block h-3 w-3 rounded-[2px] bg-ink-0 translate-x-[2px] translate-y-[2px]" />
+        <span className="absolute h-3 w-3 rounded-[2px] bg-[var(--accent-500)] -translate-x-[2px] -translate-y-[2px]" />
+      </span>
+      <span className="font-semibold text-[15px] leading-none tracking-[-0.03em] text-ink-0">
+        nexora
+      </span>
+    </Link>
+  );
+}
+
+const inputClass =
+  "flex h-11 w-full rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3.5 text-[15px] text-ink-0 placeholder:text-ink-6 " +
+  "transition-[box-shadow,border-color] duration-[var(--dur-base)] ease-[var(--ease-out)] " +
+  "focus:border-[var(--accent-500)] focus:outline-none focus:shadow-[var(--shadow-focus)]";
+
+const labelClass = "block text-[12px] font-medium text-ink-5 mb-1.5";
+
+function PasswordChecklist({
+  password,
+  email,
+  companyName,
+}: {
+  password: string;
+  email: string;
+  companyName: string;
+}) {
   const result = useMemo(
     () => validatePasswordPolicy(password, { email, companyName }),
-    [password, email, companyName]
-  )
+    [password, email, companyName],
+  );
 
-  if (!password) return null
+  if (!password) return null;
 
   const rules = [
     { label: "12+ caracteres", met: password.length >= 12 },
@@ -23,138 +53,183 @@ function PasswordStrengthIndicator({ password, email, companyName }: { password:
     { label: "Una minúscula", met: /[a-z]/.test(password) },
     { label: "Un número", met: /[0-9]/.test(password) },
     { label: "Un símbolo", met: /[^A-Za-z0-9]/.test(password) },
-  ]
+  ];
 
   const contextErrors = result.errors.filter(
-    (e) => !e.includes("caracteres") && !e.includes("mayúscula") && !e.includes("minúscula") && !e.includes("número") && !e.includes("símbolo")
-  )
+    (e) =>
+      !e.includes("caracteres") &&
+      !e.includes("mayúscula") &&
+      !e.includes("minúscula") &&
+      !e.includes("número") &&
+      !e.includes("símbolo"),
+  );
 
   return (
-    <div className="mt-2 space-y-1.5">
+    <div className="mt-2.5 space-y-1.5">
       <div className="grid grid-cols-2 gap-x-4 gap-y-1">
         {rules.map((r) => (
           <div key={r.label} className="flex items-center gap-1.5">
             {r.met ? (
-              <Check className="w-3 h-3 text-emerald-500 shrink-0" />
+              <Check
+                className="h-3 w-3 shrink-0 text-[color:var(--signal-success)]"
+                strokeWidth={2.5}
+              />
             ) : (
-              <X className="w-3 h-3 text-gray-300 shrink-0" />
+              <X className="h-3 w-3 shrink-0 text-ink-7" strokeWidth={2} />
             )}
-            <span className={`text-[11px] font-medium ${r.met ? "text-emerald-600" : "text-gray-400"}`}>
+            <span
+              className={`text-[11px] ${r.met ? "text-ink-0" : "text-ink-5"}`}
+            >
               {r.label}
             </span>
           </div>
         ))}
       </div>
       {contextErrors.map((err, i) => (
-        <p key={i} className="text-[11px] text-red-500 font-medium">{err}</p>
+        <p key={i} className="text-[11px] text-[color:var(--signal-danger)]">
+          {err}
+        </p>
       ))}
     </div>
-  )
+  );
 }
 
 export default function RegisterPage() {
-  const [state, formAction, isPending] = useActionState(registerAction, undefined)
-  const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [email, setEmail] = useState("")
-  const [companyName, setCompanyName] = useState("")
+  const [state, formAction, isPending] = useActionState(registerAction, undefined);
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [email, setEmail] = useState("");
+  const [companyName, setCompanyName] = useState("");
 
-  const passwordMismatch = confirmPassword.length > 0 && password !== confirmPassword
+  const passwordMismatch = confirmPassword.length > 0 && password !== confirmPassword;
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#FAFAFA] p-4 font-sans">
-      
-      {/* Nexora Logo */}
-      <div className="mb-10">
-        <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-          <div className="relative w-10 h-10 flex items-center justify-center overflow-hidden">
-            <div className="absolute inset-0 bg-[#111111] rounded-[10px] rotate-12 shadow-sm" />
-            <div className="absolute w-3 h-3 bg-emerald-500 rounded-sm -ml-2.5 -mt-2.5 shadow-sm" />
-            <div className="absolute w-3 h-3 bg-white rounded-sm ml-2.5 mt-2.5 shadow-sm" />
-          </div>
-          <span className="font-extrabold tracking-tighter text-3xl text-[#111111]">nexora.</span>
-        </Link>
-      </div>
+    <div className="min-h-screen bg-[var(--surface-1)] flex flex-col">
+      <header className="border-b border-[color:var(--hairline)]">
+        <div className="mx-auto flex h-14 max-w-6xl items-center px-5 sm:px-8">
+          <Wordmark />
+        </div>
+      </header>
 
-      <Card className="w-full max-w-md shadow-2xl shadow-gray-200/50 border-[#EAEAEA] rounded-2xl overflow-hidden">
-        <CardHeader className="text-center pt-8 pb-4">
-          <CardTitle className="text-2xl font-bold tracking-tight text-[#111111]">Crear Nueva Cuenta</CardTitle>
-          <CardDescription className="text-gray-500 text-sm mt-2">
-            Comenzá a potenciar tu operación en minutos.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="px-8 pb-8">
-          <form className="space-y-5" action={formAction}>
+      <main className="flex-1 flex items-center justify-center px-4 py-12 sm:py-16">
+        <div className="w-full max-w-sm">
+          <div className="mb-8">
+            <h1 className="font-semibold text-[28px] leading-[1.1] tracking-[-0.035em] text-ink-0">
+              Crear cuenta.
+            </h1>
+            <p className="mt-2 text-[14px] leading-[1.55] text-ink-5">
+              Empezá a operar tu ecommerce en minutos.
+            </p>
+          </div>
+
+          <form className="space-y-4" action={formAction}>
             {state?.error && (
-              <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm font-medium">
-                {state.error}
+              <div
+                role="alert"
+                className="flex items-start gap-2 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-3.5 py-3 text-[13px] text-[color:var(--signal-danger)]"
+              >
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} />
+                <p>{state.error}</p>
               </div>
             )}
-            <div className="space-y-2">
-              <label htmlFor="name" className="text-xs font-bold uppercase tracking-wider text-gray-500">
-                Nombre de la Empresa
+
+            <div>
+              <label htmlFor="name" className={labelClass}>
+                Nombre de la empresa
               </label>
-              <Input
-                id="name" name="name" type="text" placeholder="Ej: TechStore Argentina" required
-                className="border-gray-200 focus-visible:ring-emerald-500 rounded-xl"
-                value={companyName} onChange={(e) => setCompanyName(e.target.value)}
+              <input
+                id="name"
+                name="name"
+                type="text"
+                required
+                placeholder="Ej: TechStore Argentina"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                className={inputClass}
               />
             </div>
 
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-gray-500">
-                Correo Electrónico
+            <div>
+              <label htmlFor="email" className={labelClass}>
+                Email
               </label>
-              <Input
-                id="email" name="email" type="email" placeholder="tu@empresa.com" required
-                className="border-gray-200 focus-visible:ring-emerald-500 rounded-xl"
-                value={email} onChange={(e) => setEmail(e.target.value)}
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                placeholder="tu@empresa.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={inputClass}
               />
             </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="password" className="text-xs font-bold uppercase tracking-wider text-gray-500">
+
+            <div>
+              <label htmlFor="password" className={labelClass}>
                 Contraseña
               </label>
-              <Input
-                id="password" name="password" type="password" required
-                className="border-gray-200 focus-visible:ring-emerald-500 rounded-xl"
-                value={password} onChange={(e) => setPassword(e.target.value)}
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={inputClass}
               />
-              <PasswordStrengthIndicator password={password} email={email} companyName={companyName} />
+              <PasswordChecklist
+                password={password}
+                email={email}
+                companyName={companyName}
+              />
             </div>
 
-            <div className="space-y-2">
-              <label htmlFor="confirmPassword" className="text-xs font-bold uppercase tracking-wider text-gray-500">
-                Confirmar Contraseña
+            <div>
+              <label htmlFor="confirmPassword" className={labelClass}>
+                Confirmar contraseña
               </label>
-              <Input
-                id="confirmPassword" name="confirmPassword" type="password" required
-                className={`border-gray-200 focus-visible:ring-emerald-500 rounded-xl ${passwordMismatch ? "border-red-300 ring-1 ring-red-200" : ""}`}
-                value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className={
+                  inputClass +
+                  (passwordMismatch
+                    ? " border-[color:var(--signal-danger)] focus:border-[color:var(--signal-danger)]"
+                    : "")
+                }
               />
               {passwordMismatch && (
-                <p className="text-[11px] text-red-500 font-medium">Las contraseñas no coinciden.</p>
+                <p className="mt-1.5 text-[11px] text-[color:var(--signal-danger)]">
+                  Las contraseñas no coinciden.
+                </p>
               )}
             </div>
 
-            <Button 
-                type="submit" 
-                disabled={isPending}
-                className="w-full mt-6 bg-[#111111] hover:bg-black text-white rounded-xl py-6 font-semibold text-lg shadow-lg transition-all hover:-translate-y-0.5" 
+            <button
+              type="submit"
+              disabled={isPending}
+              className="inline-flex h-12 w-full items-center justify-center rounded-[var(--r-sm)] bg-ink-0 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2 active:translate-y-px disabled:bg-ink-8 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
             >
-              {isPending ? "Configurando cuenta..." : "Registrar mi empresa"}
-            </Button>
+              {isPending ? "Configurando cuenta…" : "Registrar empresa"}
+            </button>
           </form>
 
-          <div className="mt-8 text-center text-sm border-t border-gray-100 pt-6">
-            <p className="text-gray-500">
-              ¿Ya tenés una cuenta? <Link href="/login" className="text-emerald-600 underline font-semibold hover:text-emerald-700">Ingresar ahora</Link>
-            </p>
+          <div className="mt-8 border-t border-[color:var(--hairline)] pt-6 text-center text-[13px] text-ink-5">
+            ¿Ya tenés una cuenta?{" "}
+            <Link
+              href="/home/login"
+              className="text-ink-0 font-medium underline decoration-[color:var(--hairline-strong)] underline-offset-4 hover:decoration-ink-0"
+            >
+              Ingresar
+            </Link>
           </div>
-        </CardContent>
-      </Card>
-      
+        </div>
+      </main>
     </div>
-  )
+  );
 }

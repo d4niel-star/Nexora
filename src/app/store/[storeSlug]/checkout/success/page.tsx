@@ -2,8 +2,13 @@ import { getStorefrontData } from "@/lib/store-engine/queries";
 import { storePath } from "@/lib/store-engine/urls";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { CheckCircle2, Clock, ShieldCheck, XCircle } from "lucide-react";
+import { CheckCircle2, Clock, ShieldCheck, XCircle, ArrowRight } from "lucide-react";
 import { prisma } from "@/lib/db/prisma";
+
+// ─── Checkout Success ───
+// Three branches (paid / failed / pending) rendered with the unified
+// monochrome shell. Order number stays in a subtle sunken surface; payment
+// confirmation chip uses the unified signal-success token, no green washes.
 
 export default async function CheckoutSuccessPage({
   params,
@@ -16,9 +21,7 @@ export default async function CheckoutSuccessPage({
   const resolvedSearchParams = await searchParams;
   const storefrontData = await getStorefrontData(resolvedParams.storeSlug);
 
-  if (!storefrontData) {
-    notFound();
-  }
+  if (!storefrontData) notFound();
 
   const order = resolvedSearchParams.orderId
     ? await prisma.order.findFirst({
@@ -39,7 +42,8 @@ export default async function CheckoutSuccessPage({
       })
     : null;
 
-  const isPaid = order?.paymentStatus === "paid" || order?.publicStatus === "PAID";
+  const isPaid =
+    order?.paymentStatus === "paid" || order?.publicStatus === "PAID";
   const isFailed =
     order?.paymentStatus === "failed" ||
     order?.paymentStatus === "refunded" ||
@@ -47,12 +51,33 @@ export default async function CheckoutSuccessPage({
     order?.publicStatus === "REFUNDED";
   const isPending = !isPaid && !isFailed;
 
-  const title = isPaid ? "Pago confirmado" : isFailed ? "Pago no confirmado" : "Estamos validando tu pago";
-  const description = isPaid
-    ? "El webhook de Mercado Pago confirmo el cobro. Estamos preparando tu pedido."
+  const title = isPaid
+    ? "Pago confirmado."
     : isFailed
-      ? "Mercado Pago no confirmo el cobro de esta orden. Podes reintentar el pago o contactar a la tienda."
-      : "Volviste desde Mercado Pago, pero todavia no recibimos la confirmacion segura del webhook. Te vamos a avisar por email cuando se acredite.";
+      ? "Pago no confirmado."
+      : "Validando tu pago…";
+  const description = isPaid
+    ? "El webhook de Mercado Pago confirmó el cobro. Estamos preparando tu pedido."
+    : isFailed
+      ? "Mercado Pago no confirmó el cobro de esta orden. Podés reintentar el pago o contactar a la tienda."
+      : "Volviste desde Mercado Pago, pero todavía no recibimos la confirmación segura del webhook. Te avisamos por email cuando se acredite.";
+
+  const iconNode = isPaid ? (
+    <CheckCircle2
+      className="h-5 w-5 text-[color:var(--signal-success)]"
+      strokeWidth={1.75}
+    />
+  ) : isFailed ? (
+    <XCircle
+      className="h-5 w-5 text-[color:var(--signal-danger)]"
+      strokeWidth={1.75}
+    />
+  ) : (
+    <Clock
+      className="h-5 w-5 text-[color:var(--signal-warning)]"
+      strokeWidth={1.75}
+    />
+  );
 
   const formattedTotal = order
     ? new Intl.NumberFormat(storefrontData.store.locale, {
@@ -63,57 +88,70 @@ export default async function CheckoutSuccessPage({
     : null;
 
   return (
-    <div className="bg-white min-h-[70vh] flex flex-col items-center justify-center py-24 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full text-center space-y-8">
-        <div className="flex justify-center">
-          <div className={`w-20 h-20 rounded-full flex items-center justify-center ${isPaid ? "bg-green-50" : isFailed ? "bg-red-50" : "bg-yellow-50"}`}>
-            {isPaid ? (
-              <CheckCircle2 className="w-12 h-12 text-green-500" />
-            ) : isFailed ? (
-              <XCircle className="w-12 h-12 text-red-500" />
-            ) : (
-              <Clock className="w-12 h-12 text-yellow-500" />
+    <div className="bg-[var(--surface-1)] min-h-[80vh] flex flex-col items-center justify-center px-4 py-20 sm:px-6">
+      <div className="w-full max-w-md text-center">
+        <div className="mx-auto mb-7 inline-flex h-12 w-12 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)]">
+          {iconNode}
+        </div>
+
+        <h1 className="font-semibold text-[32px] leading-[1.08] tracking-[-0.035em] text-ink-0">
+          {title}
+        </h1>
+        <p className="mx-auto mt-4 max-w-sm text-[14px] leading-[1.55] text-ink-5">
+          {description}
+        </p>
+
+        {resolvedSearchParams.status === "approved" && !isPaid && (
+          <div
+            role="alert"
+            className="mx-auto mt-5 max-w-sm rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-4 py-3 text-[12px] leading-[1.55] text-[color:var(--signal-warning)]"
+          >
+            Mercado Pago devolvió estado aprobado, pero Nexora espera el
+            webhook firmado antes de marcar la orden como pagada.
+          </div>
+        )}
+
+        {isPaid && order?.mpPaymentId && (
+          <div className="mt-5 inline-flex items-center gap-1.5 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-[color:var(--signal-success)]">
+            <ShieldCheck className="h-3 w-3" strokeWidth={2} />
+            Confirmado por webhook
+          </div>
+        )}
+
+        {order && (
+          <div className="mx-auto mt-7 inline-block rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-6 py-4 text-left">
+            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">
+              Número de orden
+            </p>
+            <p className="mt-1 font-mono text-[18px] text-ink-0 tracking-wider">
+              {order.orderNumber}
+            </p>
+            {formattedTotal && (
+              <p className="mt-2 tabular text-[13px] font-medium text-ink-3">
+                {formattedTotal}
+              </p>
             )}
           </div>
-        </div>
+        )}
 
-        <div>
-          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">{title}</h1>
-          <p className="mt-4 text-base text-gray-500">{description}</p>
-
-          {resolvedSearchParams.status === "approved" && !isPaid && (
-            <p className="mt-3 rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2 text-sm text-yellow-800">
-              Mercado Pago devolvio estado aprobado, pero Nexora espera el webhook firmado antes de marcar la orden como pagada.
-            </p>
-          )}
-
-          {isPaid && order?.mpPaymentId && (
-            <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 border border-green-200 rounded-full">
-              <ShieldCheck className="w-3.5 h-3.5 text-green-600" />
-              <span className="text-xs font-bold text-green-700">Pago confirmado por webhook</span>
-            </div>
-          )}
-
-          {order && (
-            <div className="mt-6 bg-gray-50 rounded-md py-4 px-6 inline-block">
-              <p className="text-sm font-bold text-gray-700">Numero de orden</p>
-              <p className="text-xl font-mono text-gray-900 tracking-wider mt-1">{order.orderNumber}</p>
-              {formattedTotal && <p className="mt-2 text-sm font-semibold text-gray-700">{formattedTotal}</p>}
-            </div>
-          )}
-        </div>
-
-        <div className="mt-8 pt-8 flex flex-col items-center gap-4">
+        <div className="mt-10 flex flex-col items-center gap-3">
           {order && (
             <Link
-              href={storePath(resolvedParams.storeSlug, `tracking?order=${encodeURIComponent(order.orderNumber)}`)}
-              className="px-6 py-3 bg-gray-900 text-white text-sm font-bold rounded-xl hover:bg-black transition-all active:scale-95 inline-flex items-center gap-2"
+              href={storePath(
+                resolvedParams.storeSlug,
+                `tracking?order=${encodeURIComponent(order.orderNumber)}`,
+              )}
+              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[var(--r-sm)] bg-ink-0 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2 sm:w-auto sm:px-7"
             >
-              Segui tu pedido
+              Seguir tu pedido
+              <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
             </Link>
           )}
-          <Link href={storePath(resolvedParams.storeSlug)} className="text-sm font-bold text-gray-900 hover:text-gray-700">
-            &larr; Volver al inicio
+          <Link
+            href={storePath(resolvedParams.storeSlug)}
+            className="text-[13px] text-ink-5 transition-colors hover:text-ink-0"
+          >
+            ← Volver al inicio
           </Link>
         </div>
       </div>
