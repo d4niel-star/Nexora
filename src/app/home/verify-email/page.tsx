@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { AlertTriangle, CheckCircle2, Clock, XCircle } from "lucide-react";
 import { Surface } from "@/components/ui/primitives";
+import { PageReveal } from "@/components/public/PublicMotion";
 
 type StatusKey = "success" | "expired" | "used" | "invalid";
 
@@ -67,7 +68,7 @@ function VerifyEmailContent() {
 
   return (
     <section className="mx-auto flex min-h-[calc(100vh-145px)] max-w-7xl items-center justify-center px-4 py-14 sm:px-8 sm:py-20">
-      <div className="w-full max-w-md text-center">
+      <PageReveal className="w-full max-w-md text-center">
         <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">
           Verificacion
         </p>
@@ -90,7 +91,7 @@ function VerifyEmailContent() {
             Ir al inicio de sesion
           </Link>
         </Surface>
-      </div>
+      </PageReveal>
     </section>
   );
 }

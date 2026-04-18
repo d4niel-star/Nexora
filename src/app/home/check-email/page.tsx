@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { Mail } from "lucide-react";
 import { Surface } from "@/components/ui/primitives";
+import { PageReveal } from "@/components/public/PublicMotion";
 
 export default function CheckEmailPage() {
   return (
     <section className="mx-auto flex min-h-[calc(100vh-145px)] max-w-7xl items-center justify-center px-4 py-14 sm:px-8 sm:py-20">
-      <div className="w-full max-w-md text-center">
+      <PageReveal className="w-full max-w-md text-center">
         <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">
           Verificacion
         </p>
@@ -37,7 +38,7 @@ export default function CheckEmailPage() {
             </Link>
           </div>
         </Surface>
-      </div>
+      </PageReveal>
     </section>
   );
 }

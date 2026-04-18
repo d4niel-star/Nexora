@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState } from "react";
 import { AlertCircle, Mail } from "lucide-react";
 import { Surface } from "@/components/ui/primitives";
+import { PageReveal } from "@/components/public/PublicMotion";
 import { loginAction, resendVerificationAction } from "@/app/home/auth-actions";
 
 const inputClass =
@@ -24,7 +25,7 @@ export default function LoginPage() {
 
   return (
     <section className="mx-auto flex min-h-[calc(100vh-145px)] max-w-7xl items-center justify-center px-4 py-14 sm:px-8 sm:py-20">
-      <div className="w-full max-w-md">
+      <PageReveal className="w-full max-w-md">
         <div className="mb-8 text-center">
           <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">
             Acceso
@@ -140,7 +141,7 @@ export default function LoginPage() {
             Registrate
           </Link>
         </div>
-      </div>
+      </PageReveal>
     </section>
   );
 }
