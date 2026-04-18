@@ -5,71 +5,95 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { storePath } from "@/lib/store-engine/urls";
+import { Hairline } from "@/components/ui/primitives";
 
-export default async function CollectionPage({ params }: { params: Promise<{ storeSlug: string; handle: string }> }) {
+// ─── Collection detail ───
+// Matches the PDP header styling for coherence: breadcrumb with chevron,
+// hairline separator, display heading, tabular product count.
+
+export default async function CollectionPage({
+  params,
+}: {
+  params: Promise<{ storeSlug: string; handle: string }>;
+}) {
   const resolvedParams = await params;
   const storefrontData = await getStorefrontData(resolvedParams.storeSlug);
+  if (!storefrontData) notFound();
 
-  if (!storefrontData) {
-    notFound();
-  }
-
-  const result = await getStoreCollectionByHandle(storefrontData.store.id, resolvedParams.handle);
-
-  if (!result) {
-    notFound();
-  }
+  const result = await getStoreCollectionByHandle(
+    storefrontData.store.id,
+    resolvedParams.handle,
+  );
+  if (!result) notFound();
 
   const { collection, products } = result;
 
   return (
-    <div className="bg-white">
-      <div className="border-b border-gray-200">
-        <nav aria-label="Breadcrumb" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <ol role="list" className="flex items-center space-x-4 py-4">
-            <li>
-              <div className="flex items-center">
-                <Link href={storePath(resolvedParams.storeSlug)} className="mr-4 text-sm font-medium text-gray-900 hover:text-gray-600">
-                  Inicio
-                </Link>
-                <ChevronRight className="h-4 w-4 text-gray-400" aria-hidden="true" />
-              </div>
-            </li>
-            <li>
-              <div className="flex items-center">
-                <Link href={storePath(resolvedParams.storeSlug, "collections")} className="mr-4 text-sm font-medium text-gray-900 hover:text-gray-600">
-                  Colecciones
-                </Link>
-                <ChevronRight className="h-4 w-4 text-gray-400" aria-hidden="true" />
-              </div>
-            </li>
-            <li className="text-sm">
-              <span className="font-medium text-gray-500" aria-current="page">
-                {collection.title}
-              </span>
-            </li>
-          </ol>
-        </nav>
-      </div>
+    <div className="bg-[var(--surface-1)]">
+      <nav aria-label="Breadcrumb" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <ol role="list" className="flex items-center gap-2 py-5 text-[12px] text-ink-5">
+          <li>
+            <Link
+              href={storePath(resolvedParams.storeSlug)}
+              className="transition-colors hover:text-ink-0"
+            >
+              Inicio
+            </Link>
+          </li>
+          <li aria-hidden>
+            <ChevronRight className="h-3.5 w-3.5 text-ink-6" strokeWidth={1.75} />
+          </li>
+          <li>
+            <Link
+              href={storePath(resolvedParams.storeSlug, "collections")}
+              className="transition-colors hover:text-ink-0"
+            >
+              Colecciones
+            </Link>
+          </li>
+          <li aria-hidden>
+            <ChevronRight className="h-3.5 w-3.5 text-ink-6" strokeWidth={1.75} />
+          </li>
+          <li className="truncate text-ink-0" aria-current="page">
+            {collection.title}
+          </li>
+        </ol>
+      </nav>
 
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
-        <div className="flex flex-col md:flex-row md:items-baseline md:justify-between mb-10">
-          <div>
-            <h1 className="text-4xl font-extrabold tracking-tight text-gray-900">{collection.title}</h1>
-            {collection.description && <p className="mt-4 max-w-xl text-base text-gray-500">{collection.description}</p>}
+      <Hairline />
+
+      <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+        <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="max-w-2xl">
+            <h1 className="font-semibold text-[36px] leading-[1.05] tracking-[-0.035em] text-ink-0 sm:text-[48px]">
+              {collection.title}
+            </h1>
+            {collection.description && (
+              <p className="mt-4 text-[14px] leading-[1.55] text-ink-5">
+                {collection.description}
+              </p>
+            )}
           </div>
-          <p className="mt-4 md:mt-0 text-sm text-gray-500">{products.length} productos</p>
+          <p className="tabular text-[13px] text-ink-5">
+            {products.length} productos
+          </p>
         </div>
 
         {products.length === 0 ? (
-          <div className="w-full py-24 bg-gray-50 border border-gray-100 rounded-xl text-center">
-             <h2 className="text-lg font-medium text-gray-900">Esta colección no tiene productos</h2>
-             <p className="mt-2 text-sm text-gray-500">Volvé más tarde.</p>
+          <div className="rounded-[var(--r-md)] border border-dashed border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-6 py-16 text-center">
+            <h2 className="text-[15px] font-medium text-ink-0">
+              Esta colección no tiene productos.
+            </h2>
+            <p className="mt-2 text-[13px] text-ink-5">Volvé más tarde.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-y-10 gap-x-6 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
+          <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
             {products.map((product) => (
-              <ProductCard key={product.id} product={product} storeSlug={resolvedParams.storeSlug} />
+              <ProductCard
+                key={product.id}
+                product={product}
+                storeSlug={resolvedParams.storeSlug}
+              />
             ))}
           </div>
         )}

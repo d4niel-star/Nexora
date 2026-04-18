@@ -1,101 +1,180 @@
-"use client"
+"use client";
 
-import { useState, use } from "react"
-import { submitWithdrawalRequestAction } from "@/lib/fiscal/arca/actions"
-import { AlertCircle, CheckCircle2, RotateCcw } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useState, use } from "react";
+import { AlertCircle, CheckCircle2, RotateCcw } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-export default function WithdrawalPage({ params }: { params: Promise<{ storeSlug: string }> }) {
+// ─── Arrepentimiento (Res. 424/2020) ───
+// Form preserves every field, handler and API call. Visual pass only:
+// token inputs, rect CTA, hairline warning block, monochrome shell.
+
+const inputClass =
+  "flex h-11 w-full rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3.5 text-[15px] text-ink-0 placeholder:text-ink-6 " +
+  "transition-[box-shadow,border-color] duration-[var(--dur-base)] ease-[var(--ease-out)] " +
+  "focus:border-[var(--accent-500)] focus:outline-none focus:shadow-[var(--shadow-focus)]";
+
+const labelClass = "block text-[12px] font-medium text-ink-5 mb-1.5";
+
+export default function WithdrawalPage({
+  params,
+}: {
+  params: Promise<{ storeSlug: string }>;
+}) {
   const { storeSlug } = use(params);
-  const [orderId, setOrderId] = useState("")
-  const [email, setEmail] = useState("")
-  const [name, setName] = useState("")
-  const [reason, setReason] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [success, setSuccess] = useState(false)
-  const router = useRouter()
+  const router = useRouter();
+  const [orderId, setOrderId] = useState("");
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [reason, setReason] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
+    e.preventDefault();
+    setIsSubmitting(true);
     try {
-      // In a real flow, we need the storeId instead of slug, but our action could take slug and lookup mapping.
-      // Wait, submitWithdrawalRequestAction takes storeId. I should build a wrapper or fetch storeId via global store query.
-      // For this implementation, I will just submit the action if available, or I'd do an API call.
       const res = await fetch(`/api/storefront/withdrawal`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ storeSlug, orderId, email, name, reason })
-      })
-
-      if (res.ok) setSuccess(true)
-      else throw new Error("Error")
-
+        body: JSON.stringify({ storeSlug, orderId, email, name, reason }),
+      });
+      if (res.ok) setSuccess(true);
+      else throw new Error("Error");
     } catch (e) {
-      alert("No se pudo procesar la solicitud. Por favor contactá a soporte.")
+      alert("No se pudo procesar la solicitud. Por favor contactá a soporte.");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   if (success) {
     return (
-      <div className="max-w-xl mx-auto py-24 px-6 text-center animate-in fade-in zoom-in duration-500">
-        <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
-          <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+      <div className="mx-auto max-w-md px-5 py-24 text-center">
+        <div className="mx-auto mb-7 inline-flex h-12 w-12 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)]">
+          <CheckCircle2
+            className="h-5 w-5 text-[color:var(--signal-success)]"
+            strokeWidth={1.75}
+          />
         </div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-[#111111] mb-2">Solicitud Recibida</h1>
-        <p className="text-[#666666] leading-relaxed mb-8">
-          Hemos registrado tu solicitud de arrepentimiento/revocación. En breve te contactaremos para procesar la devolución de fondos y el retorno logístico según corresponda. El código de tu ticket es {Math.floor(Math.random() * 100000)}.
+        <h1 className="font-semibold text-[28px] leading-[1.1] tracking-[-0.035em] text-ink-0">
+          Solicitud recibida.
+        </h1>
+        <p className="mx-auto mt-4 text-[14px] leading-[1.55] text-ink-5">
+          Hemos registrado tu solicitud de arrepentimiento. En breve te
+          contactaremos para procesar la devolución de fondos y el retorno
+          logístico según corresponda.
         </p>
-        <button onClick={() => router.push(`/${storeSlug}`)} className="px-6 py-3 bg-[#111111] text-white font-bold text-sm rounded-lg hover:bg-black transition-colors">
+        <button
+          onClick={() => router.push(`/${storeSlug}`)}
+          className="mt-10 inline-flex h-12 items-center justify-center rounded-[var(--r-sm)] bg-ink-0 px-7 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
+        >
           Volver a la tienda
         </button>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="max-w-2xl mx-auto py-16 px-6 relative min-h-[70vh]">
+    <div className="mx-auto max-w-2xl px-5 py-16 sm:px-8 sm:py-20">
       <div className="mb-10 text-center">
-        < RotateCcw className="w-10 h-10 text-[#111111] mx-auto mb-4" />
-        <h1 className="text-3xl font-extrabold tracking-tight text-[#111111] mb-2">Botón de Arrepentimiento</h1>
-        <p className="text-[#666666] text-sm">
-          De acuerdo a la Resolución 424/2020 tenés derecho a revocar la aceptación del producto dentro de los 10 días computados a partir de la celebración del contrato o de la entrega del bien.
+        <div className="mx-auto mb-5 inline-flex h-12 w-12 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] text-ink-4">
+          <RotateCcw className="h-5 w-5" strokeWidth={1.5} />
+        </div>
+        <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">
+          Resolución 424/2020
+        </p>
+        <h1 className="mt-3 font-semibold text-[32px] leading-[1.08] tracking-[-0.035em] text-ink-0 sm:text-[40px]">
+          Botón de arrepentimiento.
+        </h1>
+        <p className="mx-auto mt-4 max-w-md text-[14px] leading-[1.55] text-ink-5">
+          Tenés derecho a revocar la aceptación del producto dentro de los 10
+          días computados a partir de la celebración del contrato o de la
+          entrega del bien.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white p-8 rounded-2xl border border-[#EAEAEA] shadow-sm space-y-6">
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-[#888888]">Nombre completo <span className="text-red-500">*</span></label>
-            <input required value={name} onChange={e => setName(e.target.value)} type="text" className="w-full px-4 py-3 bg-[#FAFAFA] border border-[#EAEAEA] rounded-xl text-sm focus:border-black focus:ring-1 focus:ring-black outline-none transition-all" placeholder="Juan Pérez" />
+      <form
+        onSubmit={handleSubmit}
+        className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6 sm:p-8 space-y-5"
+      >
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <div>
+            <label className={labelClass}>
+              Nombre completo <span className="text-ink-6">*</span>
+            </label>
+            <input
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              type="text"
+              placeholder="Juan Pérez"
+              className={inputClass}
+            />
           </div>
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-[#888888]">Email de compra <span className="text-red-500">*</span></label>
-            <input required value={email} onChange={e => setEmail(e.target.value)} type="email" className="w-full px-4 py-3 bg-[#FAFAFA] border border-[#EAEAEA] rounded-xl text-sm focus:border-black focus:ring-1 focus:ring-black outline-none transition-all" placeholder="juan@email.com" />
+          <div>
+            <label className={labelClass}>
+              Email de compra <span className="text-ink-6">*</span>
+            </label>
+            <input
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              type="email"
+              placeholder="juan@email.com"
+              className={inputClass}
+            />
           </div>
         </div>
 
-        <div className="space-y-2">
-           <label className="text-xs font-bold uppercase tracking-wider text-[#888888]">Número de Orden / Pedido <span className="text-red-500">*</span></label>
-           <input required value={orderId} onChange={e => setOrderId(e.target.value)} type="text" className="w-full px-4 py-3 bg-[#FAFAFA] border border-[#EAEAEA] rounded-xl text-sm focus:border-black focus:ring-1 focus:ring-black outline-none transition-all" placeholder="Ej: ORD-10204" />
+        <div>
+          <label className={labelClass}>
+            Número de orden / pedido <span className="text-ink-6">*</span>
+          </label>
+          <input
+            required
+            value={orderId}
+            onChange={(e) => setOrderId(e.target.value)}
+            type="text"
+            placeholder="Ej: ORD-10204"
+            className={inputClass}
+          />
         </div>
 
-        <div className="space-y-2">
-           <label className="text-xs font-bold uppercase tracking-wider text-[#888888]">Motivo (Opcional)</label>
-           <textarea value={reason} onChange={e => setReason(e.target.value)} rows={3} className="w-full px-4 py-3 bg-[#FAFAFA] border border-[#EAEAEA] rounded-xl text-sm focus:border-black focus:ring-1 focus:ring-black outline-none transition-all resize-none" placeholder="Contanos por qué decidiste solicitar la revocación..." />
-        </div>
-        
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-          <p className="text-xs text-amber-800 leading-relaxed font-medium">Al enviar este formulario se procesará una solicitud de cancelación. Los costos logísticos de devolución del bien aplican según términos legales vigentes y políticas de la tienda.</p>
+        <div>
+          <label className={labelClass}>Motivo (opcional)</label>
+          <textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            rows={3}
+            placeholder="Contanos por qué decidiste solicitar la revocación…"
+            className={
+              "block w-full resize-none rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3.5 py-2.5 text-[14px] leading-[1.55] text-ink-0 placeholder:text-ink-6 transition-[box-shadow,border-color] duration-[var(--dur-base)] ease-[var(--ease-out)] focus:border-[var(--accent-500)] focus:outline-none focus:shadow-[var(--shadow-focus)]"
+            }
+          />
         </div>
 
-        <button disabled={isSubmitting} type="submit" className="w-full py-4 rounded-xl bg-black text-white font-bold text-sm tracking-wide hover:bg-[#333333] transition-colors disabled:opacity-50">
-          {isSubmitting ? "Procesando solicitud..." : "Solicitar Revocación / Arrepentimiento"}
+        <div className="flex items-start gap-2.5 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-2)] px-3.5 py-3">
+          <AlertCircle
+            className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--signal-warning)]"
+            strokeWidth={1.75}
+          />
+          <p className="text-[12px] leading-[1.55] text-ink-4">
+            Al enviar este formulario se procesará una solicitud de cancelación.
+            Los costos logísticos de devolución del bien aplican según términos
+            legales vigentes y políticas de la tienda.
+          </p>
+        </div>
+
+        <button
+          disabled={isSubmitting}
+          type="submit"
+          className="inline-flex h-12 w-full items-center justify-center rounded-[var(--r-sm)] bg-ink-0 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2 active:translate-y-px disabled:bg-ink-8 disabled:cursor-not-allowed"
+        >
+          {isSubmitting
+            ? "Procesando solicitud…"
+            : "Solicitar revocación"}
         </button>
       </form>
     </div>
-  )
+  );
 }

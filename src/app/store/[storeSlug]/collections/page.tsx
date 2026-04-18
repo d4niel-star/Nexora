@@ -4,56 +4,91 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { storePath } from "@/lib/store-engine/urls";
 
-export default async function CollectionsPage({ params }: { params: Promise<{ storeSlug: string }> }) {
+// ─── Collections index ───
+// 3-column hairline tile grid matching FeaturedCategoriesSection styling so
+// storefront navigation feels coherent. Empty state uses the canonical
+// sunken surface.
+
+export default async function CollectionsPage({
+  params,
+}: {
+  params: Promise<{ storeSlug: string }>;
+}) {
   const resolvedParams = await params;
   const storefrontData = await getStorefrontData(resolvedParams.storeSlug);
 
-  if (!storefrontData) {
-    notFound();
-  }
+  if (!storefrontData) notFound();
 
   const collections = await getStoreCollections(storefrontData.store.id);
 
   return (
-    <div className="bg-white">
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
-        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">Colecciones</h1>
-        <p className="mt-4 max-w-xl text-sm text-gray-500">
-          Explorá todas nuestras colecciones de productos.
-        </p>
+    <div className="bg-[var(--surface-1)]">
+      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+        <header className="mb-10 max-w-2xl">
+          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">
+            Catálogo
+          </p>
+          <h1 className="mt-3 font-semibold text-[36px] leading-[1.05] tracking-[-0.035em] text-ink-0 sm:text-[48px]">
+            Colecciones.
+          </h1>
+          <p className="mt-4 text-[14px] leading-[1.55] text-ink-5">
+            Explorá todas nuestras colecciones de productos.
+          </p>
+        </header>
 
         {collections.length === 0 ? (
-          <div className="mt-12 w-full p-12 bg-gray-50 border border-gray-100 rounded-xl text-center">
-             <h2 className="text-lg font-medium text-gray-900">No hay colecciones publicadas</h2>
-             <p className="mt-2 text-sm text-gray-500">Volvé más tarde.</p>
+          <div className="rounded-[var(--r-md)] border border-dashed border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-6 py-16 text-center">
+            <h2 className="text-[15px] font-medium text-ink-0">
+              No hay colecciones publicadas.
+            </h2>
+            <p className="mt-2 text-[13px] text-ink-5">Volvé más tarde.</p>
           </div>
         ) : (
-          <div className="mt-10 grid grid-cols-1 gap-y-10 sm:grid-cols-2 gap-x-6 lg:grid-cols-3 xl:gap-x-8">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
             {collections.map((col) => (
               <Link
                 key={col.id}
                 href={storePath(resolvedParams.storeSlug, `collections/${col.handle}`)}
-                className="group relative"
+                className="group relative block aspect-[3/2] overflow-hidden rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-3)]"
               >
-                <div className="aspect-h-3 aspect-w-4 overflow-hidden rounded-lg bg-gray-100">
-                  {col.imageUrl ? (
+                {col.imageUrl ? (
+                  <>
                     <img
                       src={col.imageUrl}
                       alt={col.title}
-                      className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-[600ms] ease-[var(--ease-out)] group-hover:scale-[1.04]"
                     />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center px-6 text-center">
-                      <span className="text-xs font-bold uppercase tracking-widest text-gray-400">Sin imagen</span>
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 to-transparent opacity-60" aria-hidden="true" />
-                  <div className="absolute flex items-end p-6 inset-0">
-                    <div>
-                      <h3 className="text-xl font-bold text-white">{col.title}</h3>
-                      <p className="mt-1 text-sm text-gray-300">{col.productCount} productos</p>
-                    </div>
-                  </div>
+                    <div
+                      aria-hidden
+                      className="absolute inset-0"
+                      style={{
+                        background:
+                          "linear-gradient(180deg, rgba(10,11,14,0) 40%, rgba(10,11,14,0.72) 100%)",
+                      }}
+                    />
+                  </>
+                ) : (
+                  <div
+                    aria-hidden
+                    className="absolute inset-0"
+                    style={{ background: "var(--surface-3)" }}
+                  />
+                )}
+                <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6">
+                  <h3
+                    className={`font-semibold text-[22px] leading-[1.05] tracking-[-0.03em] sm:text-[26px] ${
+                      col.imageUrl ? "text-ink-12" : "text-ink-0"
+                    }`}
+                  >
+                    {col.title}
+                  </h3>
+                  <p
+                    className={`mt-1.5 tabular text-[12px] ${
+                      col.imageUrl ? "text-ink-12/70" : "text-ink-5"
+                    }`}
+                  >
+                    {col.productCount} productos
+                  </p>
                 </div>
               </Link>
             ))}
