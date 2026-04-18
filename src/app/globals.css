@@ -1,58 +1,238 @@
 @import "tailwindcss";
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   Nexora — Design tokens
+   Single source of truth for color, type, radius, shadow, motion.
+   Every component should reference these tokens; never hardcode a hex.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ─── Ink scale (warm near-black → white) ─── */
+  --ink-0: #0A0B0E;   /* primary foreground, deepest */
+  --ink-1: #141519;
+  --ink-2: #1F2128;
+  --ink-3: #2E313C;
+  --ink-4: #4A4D59;
+  --ink-5: #6A6D7A;   /* muted copy */
+  --ink-6: #9295A0;   /* tertiary copy / icons */
+  --ink-7: #B8BAC2;   /* disabled */
+  --ink-8: #D6D7DC;   /* hairline strong */
+  --ink-9: #E8E9EC;   /* border default */
+  --ink-10: #F2F3F5;  /* subtle hover / sunken */
+  --ink-11: #F8F8FA;  /* canvas raised */
+  --ink-12: #FFFFFF;
+
+  /* ─── Surfaces ─── */
+  --surface-0: var(--ink-12);       /* pure white, use sparingly */
+  --surface-1: #FCFCFD;             /* canvas (app background) */
+  --surface-2: var(--ink-11);       /* raised panels */
+  --surface-3: var(--ink-10);       /* sunken areas / hover */
+
+  /* ─── Hairlines (use on any surface — alpha-based for mix safety) ─── */
+  --hairline: rgba(10, 11, 14, 0.08);
+  --hairline-strong: rgba(10, 11, 14, 0.14);
+
+  /* ─── Accent (single, electric-neutral) ─── */
+  --accent-50: #EEF0FF;
+  --accent-100: #DADDFF;
+  --accent-200: #B9BFFF;
+  --accent-400: #8793FF;
+  --accent-500: #5B6CFF;   /* base */
+  --accent-600: #4455F5;
+  --accent-700: #3542D6;
+  --accent-ink: #F4F5FF;   /* foreground atop accent bg */
+
+  /* ─── Signal colors (sparingly, sobriety first) ─── */
+  --signal-success: #1FAE7A;
+  --signal-warning: #CC8A00;
+  --signal-danger:  #D84343;
+
+  /* ─── Radii ─── */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+  --r-full: 9999px;
+
+  /* ─── Shadows (tight, precise — no dramatic elevations) ─── */
+  --shadow-soft: 0 1px 2px rgba(10, 11, 14, 0.04), 0 0 0 1px rgba(10, 11, 14, 0.04);
+  --shadow-elevated: 0 12px 32px -8px rgba(10, 11, 14, 0.10), 0 2px 6px rgba(10, 11, 14, 0.05);
+  --shadow-focus: 0 0 0 3px rgba(91, 108, 255, 0.18);
+
+  /* ─── Typography ─── */
+  --font-sans: var(--font-inter), "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: var(--font-instrument), "Instrument Serif", "Iowan Old Style", "Apple Garamond", "Baskerville", Georgia, serif;
+  --font-mono: "SFMono-Regular", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* ─── Motion (subtle, useful, never decorative) ─── */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+  --dur-slow: 320ms;
+
+  /* ─── Back-compat tokens (legacy components still reference these) ─── */
+  --color-background: var(--surface-1);
+  --color-foreground: var(--ink-0);
+  --color-primary: var(--ink-0);
+  --color-primary-foreground: var(--ink-12);
+  --color-accent: var(--accent-500);
+  --color-accent-foreground: var(--accent-ink);
+  --color-surface: var(--surface-0);
+  --color-surface-muted: var(--surface-2);
+  --color-border: var(--ink-9);
+
+  --background: var(--surface-1);
+  --foreground: var(--ink-0);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Theme bridge for Tailwind v4 (@theme inline exposes tokens as utilities)
+   ═══════════════════════════════════════════════════════════════════════════ */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-primary: #000000;
-  --color-primary-foreground: #ffffff;
-  --color-accent: #2563EB;
-  --color-accent-foreground: #ffffff;
-  --color-surface: #ffffff;
-  --color-surface-muted: #F9FAFB;
-  --color-border: #E5E7EB;
-  
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-mono: "SFMono-Regular", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --color-primary: var(--ink-0);
+  --color-primary-foreground: var(--ink-12);
+  --color-accent: var(--accent-500);
+  --color-accent-foreground: var(--accent-ink);
+  --color-surface: var(--surface-0);
+  --color-surface-muted: var(--surface-2);
+  --color-border: var(--ink-9);
+
+  /* Ink scale utilities (bg-ink-0, text-ink-5, border-ink-9, etc.) */
+  --color-ink-0: var(--ink-0);
+  --color-ink-1: var(--ink-1);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-ink-4: var(--ink-4);
+  --color-ink-5: var(--ink-5);
+  --color-ink-6: var(--ink-6);
+  --color-ink-7: var(--ink-7);
+  --color-ink-8: var(--ink-8);
+  --color-ink-9: var(--ink-9);
+  --color-ink-10: var(--ink-10);
+  --color-ink-11: var(--ink-11);
+  --color-ink-12: var(--ink-12);
+
+  --color-accent-50: var(--accent-50);
+  --color-accent-100: var(--accent-100);
+  --color-accent-200: var(--accent-200);
+  --color-accent-400: var(--accent-400);
+  --color-accent-500: var(--accent-500);
+  --color-accent-600: var(--accent-600);
+  --color-accent-700: var(--accent-700);
+
+  --color-signal-success: var(--signal-success);
+  --color-signal-warning: var(--signal-warning);
+  --color-signal-danger: var(--signal-danger);
+
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
+  --font-mono: var(--font-mono);
 }
 
-:root {
-  --background: #F9FAFB; /* Very light gray for background */
-  --foreground: #111827; /* Dark gray for text */
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ═══════════════════════════════════════════════════════════════════════════
+   Base
+   ═══════════════════════════════════════════════════════════════════════════ */
+html {
+  color-scheme: light;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv11", "ss01", "ss03";
 }
 
-/* Minimalist utils */
+/* Tabular numerics on any numeric-bearing element (prices, KPIs, orders) */
+.tabular,
+[data-numeric] {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum", "cv11";
+}
+
+::selection {
+  background: var(--ink-0);
+  color: var(--ink-12);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Primitive utilities (escape hatch for non-component contexts)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.surface-1 { background: var(--surface-1); }
+.surface-2 { background: var(--surface-2); }
+.surface-3 { background: var(--surface-3); }
+
+.hairline    { border: 1px solid var(--hairline); }
+.hairline-b  { border-bottom: 1px solid var(--hairline); }
+.hairline-t  { border-top: 1px solid var(--hairline); }
+.hairline-r  { border-right: 1px solid var(--hairline); }
+.hairline-l  { border-left: 1px solid var(--hairline); }
+
+.text-display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 0.98;
+}
+
+.text-eyebrow {
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--ink-5);
+}
+
+.text-caption {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-5);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Legacy utilities kept for compatibility (still used in AIStoreStudio).
+   Rewritten to use the unified accent instead of stray violet.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 .glass {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: color-mix(in srgb, var(--surface-0) 72%, transparent);
+  backdrop-filter: blur(10px) saturate(140%);
+  border: 1px solid var(--hairline);
 }
 
-/* AI Studio */
 .studio-input {
   width: 100%;
-  border-radius: 0.75rem;
-  border: 1px solid #EAEAEA;
-  background-color: white;
+  border-radius: var(--r-md);
+  border: 1px solid var(--ink-9);
+  background-color: var(--surface-0);
   padding: 0.625rem 1rem;
-  font-size: 0.875rem;
+  font-size: 14px;
   font-weight: 500;
-  color: #111111;
+  color: var(--ink-0);
   outline: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color var(--dur-base) var(--ease-out),
+              box-shadow var(--dur-base) var(--ease-out);
 }
+.studio-input::placeholder { color: var(--ink-6); }
 .studio-input:focus {
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.15);
+  border-color: var(--accent-500);
+  box-shadow: var(--shadow-focus);
+}
+
+/* Reduced motion — respect user preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
