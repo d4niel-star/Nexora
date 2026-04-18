@@ -1,162 +1,240 @@
 import Link from "next/link";
 import {
-  CheckCircle2,
-  ArrowRight,
   AlertCircle,
+  ArrowRight,
+  CheckCircle2,
   Clock,
+  ShieldCheck,
   XCircle,
-  Shield,
+  type LucideIcon,
 } from "lucide-react";
+
+type PaymentStatus = "unknown" | "failure" | "pending" | "success";
+
+interface ConfirmView {
+  eyebrow: string;
+  title: string;
+  description: string;
+  href: string;
+  action: string;
+  tone: "success" | "warning" | "danger";
+  Icon: LucideIcon;
+}
+
+function getConfirmView(paymentStatus: string): ConfirmView {
+  if (paymentStatus === "failure") {
+    return {
+      eyebrow: "Pago no procesado",
+      title: "No pudimos completar el cobro",
+      description:
+        "El pago fue rechazado por Mercado Pago. No se realizo ningun cobro y podes intentar con otro metodo.",
+      href: "/welcome/plan",
+      action: "Reintentar con otro plan",
+      tone: "danger",
+      Icon: XCircle,
+    };
+  }
+
+  if (paymentStatus === "pending") {
+    return {
+      eyebrow: "Verificando pago",
+      title: "Estamos procesando tu pago",
+      description:
+        "Mercado Pago esta verificando el metodo de pago. Tu suscripcion se activara automaticamente cuando se confirme.",
+      href: "/admin/dashboard",
+      action: "Ir al dashboard",
+      tone: "warning",
+      Icon: Clock,
+    };
+  }
+
+  if (paymentStatus === "unknown") {
+    return {
+      eyebrow: "Cuenta activa",
+      title: "Todo listo para operar",
+      description:
+        "Tu plan y creditos iniciales fueron asignados. Ya podes entrar al panel y preparar tu tienda.",
+      href: "/admin/dashboard",
+      action: "Ir al dashboard",
+      tone: "success",
+      Icon: CheckCircle2,
+    };
+  }
+
+  return {
+    eyebrow: "Suscripcion activa",
+    title: "Pago confirmado",
+    description:
+      "Tu suscripcion fue activada exitosamente. Los limites del plan y creditos IA ya estan habilitados.",
+    href: "/admin/dashboard",
+    action: "Entrar al dashboard",
+    tone: "success",
+    Icon: CheckCircle2,
+  };
+}
+
+function toneClasses(tone: ConfirmView["tone"]) {
+  if (tone === "danger") {
+    return {
+      chip: "border-red-500/20 bg-red-500/10 text-red-200",
+      icon: "border-red-400/25 bg-red-400/10 text-red-200",
+      signal: "bg-red-400",
+      button: "bg-ink-12 text-ink-0 hover:bg-ink-10",
+    };
+  }
+
+  if (tone === "warning") {
+    return {
+      chip: "border-amber-400/25 bg-amber-400/10 text-amber-100",
+      icon: "border-amber-400/25 bg-amber-400/10 text-amber-100",
+      signal: "bg-amber-300",
+      button: "bg-ink-12 text-ink-0 hover:bg-ink-10",
+    };
+  }
+
+  return {
+    chip: "border-emerald-400/25 bg-emerald-400/10 text-emerald-100",
+    icon: "border-emerald-400/25 bg-emerald-400/10 text-emerald-100",
+    signal: "bg-emerald-300",
+    button: "bg-ink-12 text-ink-0 hover:bg-ink-10",
+  };
+}
 
 export default async function ConfirmPage({
   searchParams,
 }: {
-  searchParams: Promise<{ payment?: string; tx?: string }>;
+  searchParams: Promise<{ payment?: PaymentStatus; tx?: string }>;
 }) {
   const params = await searchParams;
   const paymentStatus = params.payment || "unknown";
+  const view = getConfirmView(paymentStatus);
+  const tone = toneClasses(view.tone);
+  const Icon = view.Icon;
 
-  // ─── Plan confirmation (no payment param) ───
-  if (paymentStatus === "unknown") {
-    return (
-      <div className="max-w-lg mx-auto text-center space-y-8 animate-in fade-in zoom-in-95 duration-700 pt-12 sm:pt-20">
-        <div className="relative mx-auto w-20 h-20">
-          <div className="absolute inset-0 bg-emerald-500/20 rounded-full animate-ping" />
-          <div className="relative w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center border border-emerald-500/30">
-            <CheckCircle2 className="w-10 h-10 text-emerald-500" />
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <p className="text-emerald-600 text-[13px] font-semibold uppercase tracking-[0.15em]">
-            Cuenta activa
-          </p>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#111111]">
-            Todo listo para empezar
-          </h1>
-          <p className="text-[#888888] text-[15px] leading-relaxed max-w-sm mx-auto">
-            Tu plan y créditos iniciales fueron asignados.
-            Ya podés acceder al panel y comenzar a operar.
-          </p>
-        </div>
-
-        <div className="pt-4">
-          <Link
-            href="/admin/dashboard"
-            className="inline-flex items-center justify-center gap-2.5 w-full sm:w-auto px-8 py-4 rounded-xl text-[15px] font-semibold bg-[#111111] text-white hover:bg-[#222222] transition-all duration-200 shadow-lg shadow-black/10"
-          >
-            Ir al Dashboard
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  // ─── Payment failure ───
-  if (paymentStatus === "failure") {
-    return (
-      <div className="max-w-lg mx-auto text-center space-y-8 animate-in fade-in zoom-in-95 duration-700 pt-12 sm:pt-20">
-        <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto border border-red-500/20">
-          <XCircle className="w-10 h-10 text-red-500" />
-        </div>
-
-        <div className="space-y-3">
-          <p className="text-red-500 text-[13px] font-semibold uppercase tracking-[0.15em]">
-            Pago no procesado
-          </p>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#111111]">
-            No pudimos completar el cobro
-          </h1>
-          <p className="text-[#888888] text-[15px] leading-relaxed max-w-sm mx-auto">
-            El pago fue rechazado por Mercado Pago. No se realizó ningún cobro.
-            Podés intentar con otro método de pago.
-          </p>
-        </div>
-
-        <div className="pt-4">
-          <Link
-            href="/welcome/plan"
-            className="inline-flex items-center justify-center gap-2.5 w-full sm:w-auto px-8 py-4 rounded-xl text-[15px] font-semibold bg-white text-[#09090B] hover:bg-[#F4F4F5] transition-all duration-200 shadow-lg shadow-white/5"
-          >
-            Reintentar con otro plan
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  // ─── Payment pending ───
-  if (paymentStatus === "pending") {
-    return (
-      <div className="max-w-lg mx-auto text-center space-y-8 animate-in fade-in zoom-in-95 duration-700 pt-12 sm:pt-20">
-        <div className="w-20 h-20 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto border border-amber-500/20">
-          <Clock className="w-10 h-10 text-amber-500" />
-        </div>
-
-        <div className="space-y-3">
-          <p className="text-amber-500 text-[13px] font-semibold uppercase tracking-[0.15em]">
-            Verificando pago
-          </p>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#111111]">
-            Estamos procesando tu pago
-          </h1>
-          <p className="text-[#888888] text-[15px] leading-relaxed max-w-sm mx-auto">
-            Mercado Pago está verificando el método de pago. Tu suscripción se activará automáticamente
-            una vez confirmada.
-          </p>
-        </div>
-
-        <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
-          <Link
-            href="/admin/dashboard"
-            className="inline-flex items-center justify-center gap-2.5 w-full sm:w-auto px-8 py-4 rounded-xl text-[15px] font-semibold bg-[#F5F5F5] text-[#111111] border border-[#EAEAEA] hover:bg-[#EAEAEA] hover:border-[#CCCCCC] transition-all duration-200"
-          >
-            Ir al Dashboard
-            <ArrowRight className="w-4 h-4 opacity-50" />
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  // ─── Payment success ───
   return (
-    <div className="max-w-lg mx-auto text-center space-y-8 animate-in fade-in zoom-in-95 duration-700 pt-12 sm:pt-20">
-      <div className="relative mx-auto w-20 h-20">
-        <div className="absolute inset-0 bg-emerald-500/20 rounded-full animate-ping" />
-        <div className="relative w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center border border-emerald-500/30">
-          <CheckCircle2 className="w-10 h-10 text-emerald-500" />
+    <section className="mx-auto w-full max-w-5xl pt-4 sm:pt-10">
+      <div className="relative overflow-hidden rounded-[var(--r-sm)] bg-ink-0 text-ink-12 shadow-[var(--shadow-elevated)]">
+        <div
+          aria-hidden
+          className="absolute inset-0 opacity-45"
+          style={{
+            background:
+              "radial-gradient(circle at 20% 10%, rgba(91,108,255,0.22), transparent 34%), linear-gradient(135deg, rgba(255,255,255,0.08), transparent 38%)",
+          }}
+        />
+        <div
+          aria-hidden
+          className="absolute inset-0 opacity-[0.08]"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,0.9) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.9) 1px, transparent 1px)",
+            backgroundSize: "44px 44px",
+          }}
+        />
+
+        <div className="relative grid gap-8 p-5 sm:p-8 lg:grid-cols-[1.1fr_0.9fr] lg:p-10">
+          <div className="flex min-h-[440px] flex-col justify-between">
+            <div>
+              <span className={`inline-flex items-center gap-2 rounded-[var(--r-full)] border px-3 py-1.5 text-[12px] font-medium ${tone.chip}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${tone.signal}`} />
+                {view.eyebrow}
+              </span>
+
+              <div className="mt-10 max-w-2xl">
+                <div className={`mb-7 flex h-14 w-14 items-center justify-center rounded-[var(--r-sm)] border ${tone.icon}`}>
+                  <Icon className="h-7 w-7" strokeWidth={1.75} />
+                </div>
+                <h1 className="font-semibold text-[42px] leading-[0.98] tracking-[-0.035em] text-ink-12 sm:text-[64px]">
+                  {view.title}
+                </h1>
+                <p className="mt-6 max-w-xl text-[16px] leading-[1.6] text-ink-7">
+                  {view.description}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
+              <Link
+                href={view.href}
+                className={`inline-flex h-12 items-center justify-center gap-2 rounded-[var(--r-sm)] px-6 text-[14px] font-medium transition-colors ${tone.button}`}
+              >
+                {view.action}
+                <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
+              </Link>
+              <div className="flex items-center gap-2 text-[12px] text-ink-7">
+                <ShieldCheck className="h-4 w-4 text-ink-6" strokeWidth={1.75} />
+                {paymentStatus === "unknown"
+                  ? "Acceso protegido por sesion segura."
+                  : "Mercado Pago mantiene protegida la transaccion."}
+              </div>
+            </div>
+          </div>
+
+          <aside className="rounded-[var(--r-sm)] border border-ink-12/10 bg-ink-12/[0.04] p-5 backdrop-blur-sm">
+            <p className="text-eyebrow text-ink-6">Estado de activacion</p>
+            <div className="mt-8 space-y-4">
+              <StatusRow active label="Cuenta creada" description="Tu acceso a Nexora ya esta listo." />
+              <StatusRow
+                active={paymentStatus !== "failure"}
+                label="Plan asignado"
+                description={paymentStatus === "failure" ? "Pendiente hasta confirmar un pago valido." : "Limites y creditos configurados."}
+              />
+              <StatusRow
+                active={paymentStatus === "success" || paymentStatus === "unknown"}
+                pending={paymentStatus === "pending"}
+                failed={paymentStatus === "failure"}
+                label="Operacion habilitada"
+                description={
+                  paymentStatus === "pending"
+                    ? "Se habilita automaticamente al confirmarse el pago."
+                    : paymentStatus === "failure"
+                      ? "Requiere un intento de pago aprobado."
+                      : "Ya podes entrar al dashboard."
+                }
+              />
+            </div>
+
+            {params.tx && (
+              <div className="mt-8 rounded-[var(--r-sm)] border border-ink-12/10 bg-ink-0/40 p-4">
+                <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-6">
+                  Referencia
+                </p>
+                <p className="mt-2 break-all font-mono text-[12px] text-ink-8">
+                  {params.tx}
+                </p>
+              </div>
+            )}
+          </aside>
         </div>
       </div>
+    </section>
+  );
+}
 
-      <div className="space-y-3">
-        <p className="text-emerald-600 text-[13px] font-semibold uppercase tracking-[0.15em]">
-          Suscripción activa
-        </p>
-        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#111111]">
-          ¡Pago confirmado!
-        </h1>
-        <p className="text-[#888888] text-[15px] leading-relaxed max-w-sm mx-auto">
-          Tu suscripción fue activada exitosamente. Todos los límites de tu plan y créditos IA
-          ya están habilitados en tu cuenta.
-        </p>
+function StatusRow({
+  active,
+  pending,
+  failed,
+  label,
+  description,
+}: {
+  active: boolean;
+  pending?: boolean;
+  failed?: boolean;
+  label: string;
+  description: string;
+}) {
+  const Icon = failed ? AlertCircle : pending ? Clock : CheckCircle2;
+  const color = failed ? "text-red-200" : pending ? "text-amber-100" : active ? "text-emerald-100" : "text-ink-6";
+
+  return (
+    <div className="flex gap-3">
+      <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--r-sm)] border border-ink-12/10 bg-ink-12/[0.03] ${color}`}>
+        <Icon className="h-4 w-4" strokeWidth={1.75} />
       </div>
-
-      <div className="pt-4">
-        <Link
-          href="/admin/dashboard"
-          className="inline-flex items-center justify-center gap-2.5 w-full sm:w-auto px-8 py-4 rounded-xl text-[15px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all duration-200"
-        >
-          Entrar al Dashboard
-          <ArrowRight className="w-4 h-4" />
-        </Link>
-      </div>
-
-      <div className="flex items-center justify-center gap-1.5 text-[11px] text-[#999999] font-medium">
-        <Shield className="w-3.5 h-3.5 text-emerald-500" />
-        Transacción protegida por Mercado Pago
+      <div>
+        <p className="text-[13px] font-semibold text-ink-12">{label}</p>
+        <p className="mt-1 text-[12px] leading-[1.5] text-ink-7">{description}</p>
       </div>
     </div>
   );

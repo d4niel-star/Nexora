@@ -1,34 +1,81 @@
-import { Rabbit, Leaf, Truck } from "lucide-react";
+import type { ReactNode } from "react";
+import {
+  CheckCircle2,
+  Leaf,
+  PackageCheck,
+  Rabbit,
+  ShieldCheck,
+  Truck,
+  Zap,
+} from "lucide-react";
 
-export function BenefitsSection({ settings }: { settings: Record<string, any> }) {
-  const iconMap: Record<string, React.ReactNode> = {
-    Rabbit: <Rabbit className="h-6 w-6" />,
-    Leaf: <Leaf className="h-6 w-6" />,
-    Truck: <Truck className="h-6 w-6" />,
-  };
+interface BenefitItem {
+  title?: string;
+  description?: string;
+  icon?: string;
+}
+
+interface BenefitsSectionProps {
+  settings: Record<string, unknown>;
+}
+
+const iconMap: Record<string, ReactNode> = {
+  CheckCircle2: <CheckCircle2 className="h-4 w-4" strokeWidth={1.75} />,
+  Leaf: <Leaf className="h-4 w-4" strokeWidth={1.75} />,
+  PackageCheck: <PackageCheck className="h-4 w-4" strokeWidth={1.75} />,
+  Rabbit: <Rabbit className="h-4 w-4" strokeWidth={1.75} />,
+  ShieldCheck: <ShieldCheck className="h-4 w-4" strokeWidth={1.75} />,
+  Truck: <Truck className="h-4 w-4" strokeWidth={1.75} />,
+  Zap: <Zap className="h-4 w-4" strokeWidth={1.75} />,
+};
+
+export function BenefitsSection({ settings }: BenefitsSectionProps) {
+  const title = typeof settings.title === "string" ? settings.title : "Beneficios";
+  const subtitle = typeof settings.subtitle === "string" ? settings.subtitle : null;
+  const benefits = Array.isArray(settings.benefits) ? (settings.benefits as BenefitItem[]) : [];
+
+  if (benefits.length === 0) return null;
 
   return (
-    <div className="bg-gray-50 py-16 sm:py-24 border-y border-gray-100">
+    <section className="bg-ink-0 py-20 text-ink-12 sm:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <h2 className="text-center text-xs font-bold uppercase tracking-[0.2em] text-gray-500 mb-12">
-          {settings.title}
-        </h2>
-        <div className="grid grid-cols-1 gap-y-12 sm:grid-cols-3 sm:gap-x-8 text-center">
-          {settings.benefits.map((benefit: any, idx: number) => (
-            <div key={idx} className="flex flex-col items-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm border border-gray-100 text-gray-900 mb-6">
-                {iconMap[benefit.icon] || <Leaf className="h-6 w-6" />}
-              </div>
-              <h3 className="text-sm font-extrabold uppercase tracking-widest text-gray-900">
-                {benefit.title}
-              </h3>
-              <p className="mt-2 text-sm font-medium text-gray-500">
-                {benefit.description}
+        <div className="grid gap-10 lg:grid-cols-[0.9fr_1.4fr] lg:gap-16">
+          <div className="max-w-xl">
+            <p className="text-eyebrow text-ink-6">Sistema de confianza</p>
+            <h2 className="mt-4 font-semibold text-[32px] leading-[1.02] tracking-[-0.03em] text-ink-12 sm:text-[48px]">
+              {title}
+            </h2>
+            {subtitle && (
+              <p className="mt-4 text-[15px] leading-[1.6] text-ink-7">
+                {subtitle}
               </p>
-            </div>
-          ))}
+            )}
+          </div>
+
+          <div className="grid gap-px overflow-hidden rounded-[var(--r-sm)] border border-ink-12/10 bg-ink-12/10 sm:grid-cols-3">
+            {benefits.map((benefit, index) => (
+              <article
+                key={`${benefit.title ?? "benefit"}-${index}`}
+                className="min-h-[190px] bg-ink-0 p-5 transition-colors hover:bg-ink-1 sm:p-6"
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-[var(--r-sm)] border border-ink-12/10 bg-ink-12/[0.03] text-ink-12">
+                  {benefit.icon && iconMap[benefit.icon] ? iconMap[benefit.icon] : <CheckCircle2 className="h-4 w-4" strokeWidth={1.75} />}
+                </div>
+                {benefit.title && (
+                  <h3 className="mt-8 text-[15px] font-semibold leading-snug tracking-[-0.01em] text-ink-12">
+                    {benefit.title}
+                  </h3>
+                )}
+                {benefit.description && (
+                  <p className="mt-2 text-[13px] leading-[1.55] text-ink-7">
+                    {benefit.description}
+                  </p>
+                )}
+              </article>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
