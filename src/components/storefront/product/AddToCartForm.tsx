@@ -86,7 +86,7 @@ export function AddToCartForm({
                     type="button"
                     onClick={() => setSelectedVariantId(variant.id)}
                     className={
-                      "inline-flex h-11 min-w-[56px] items-center justify-center rounded-full border px-4 text-[14px] font-medium transition-colors " +
+                      "inline-flex h-11 min-w-[56px] items-center justify-center rounded-[var(--r-sm)] border px-4 text-[14px] font-medium transition-colors " +
                       (isActive
                         ? "border-ink-0 bg-ink-0 text-ink-12"
                         : "border-[color:var(--hairline-strong)] bg-transparent text-ink-0 hover:bg-ink-11")
@@ -128,7 +128,7 @@ export function AddToCartForm({
           type="button"
           onClick={handleAddToCart}
           disabled={!selectedVariant?.inStock || isPending}
-          className="inline-flex h-[54px] w-full items-center justify-center gap-2 rounded-full bg-ink-0 text-[15px] font-medium text-ink-12 transition-colors hover:bg-ink-2 active:translate-y-px disabled:bg-ink-8 disabled:text-ink-12 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+          className="inline-flex h-[54px] w-full items-center justify-center gap-2 rounded-[var(--r-sm)] bg-ink-0 text-[15px] font-medium text-ink-12 transition-colors hover:bg-ink-2 active:translate-y-px disabled:bg-ink-8 disabled:text-ink-12 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
         >
           {isPending ? (
             <>

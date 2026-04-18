@@ -41,7 +41,7 @@ export function StoreHeader({ config }: { config: StoreConfig }) {
             <img src={config.logoUrl} alt={config.name} className="h-7 w-auto" />
           ) : (
             <span
-              className="font-display text-[22px] leading-none tracking-[-0.015em] text-ink-0"
+              className="font-semibold text-[22px] leading-none tracking-[-0.03em] text-ink-0"
               style={{ color: config.primaryColor }}
             >
               {config.name}
@@ -104,7 +104,7 @@ export function StoreHeader({ config }: { config: StoreConfig }) {
           />
           <div className="fixed inset-y-0 left-0 flex w-full max-w-xs flex-col border-r border-[color:var(--hairline)] bg-[var(--surface-0)]">
             <div className="flex h-16 items-center justify-between border-b border-[color:var(--hairline)] px-5">
-              <span className="font-display text-[20px] tracking-[-0.015em] text-ink-0">
+              <span className="font-semibold text-[20px] tracking-[-0.03em] text-ink-0">
                 {config.name}
               </span>
               <button

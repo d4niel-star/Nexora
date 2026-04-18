@@ -42,7 +42,7 @@ export default async function CartPage({
           <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">
             Carrito
           </p>
-          <h1 className="mt-2 font-display text-[36px] leading-[1.02] tracking-[-0.02em] text-ink-0 sm:text-[52px]">
+          <h1 className="mt-2 font-semibold text-[36px] leading-[1.02] tracking-[-0.035em] text-ink-0 sm:text-[52px]">
             Tu selección
           </h1>
         </header>
@@ -50,11 +50,11 @@ export default async function CartPage({
         {!cart || cart.items.length === 0 ? (
           <Surface level={0} hairline radius="lg" className="p-10 sm:p-16">
             <div className="mx-auto flex max-w-md flex-col items-start gap-6">
-              <div className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[color:var(--hairline)] bg-[var(--surface-1)] text-ink-4">
+              <div className="inline-flex h-11 w-11 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] text-ink-4">
                 <ShoppingBag className="h-5 w-5" strokeWidth={1.5} />
               </div>
               <div>
-                <h2 className="font-display text-[24px] leading-[1.05] tracking-[-0.015em] text-ink-0 sm:text-[28px]">
+                <h2 className="font-semibold text-[24px] leading-[1.05] tracking-[-0.03em] text-ink-0 sm:text-[28px]">
                   Tu carrito está vacío.
                 </h2>
                 <p className="mt-3 text-[14px] leading-[1.55] text-ink-5">
@@ -63,7 +63,7 @@ export default async function CartPage({
               </div>
               <Link
                 href={storePath(resolvedParams.storeSlug)}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-ink-0 px-5 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-5 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
               >
                 Volver al catálogo
                 <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
@@ -143,13 +143,13 @@ export default async function CartPage({
 
                 <div className="mt-6">
                   {hasStockIssues ? (
-                    <span className="inline-flex h-12 w-full cursor-not-allowed items-center justify-center rounded-full bg-ink-8 text-[14px] font-medium text-ink-12">
+                    <span className="inline-flex h-12 w-full cursor-not-allowed items-center justify-center rounded-[var(--r-sm)] bg-ink-8 text-[14px] font-medium text-ink-12">
                       Ajustá el stock para continuar
                     </span>
                   ) : (
                     <Link
                       href={storePath(resolvedParams.storeSlug, "checkout")}
-                      className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-ink-0 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
+                      className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[var(--r-sm)] bg-ink-0 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
                     >
                       Iniciar checkout
                       <ArrowRight className="h-4 w-4" strokeWidth={1.75} />

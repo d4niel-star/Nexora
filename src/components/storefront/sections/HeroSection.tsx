@@ -44,14 +44,14 @@ export function HeroSection({
           className="absolute inset-0 -z-10"
           style={{
             background:
-              "radial-gradient(80% 60% at 20% 10%, rgba(91,108,255,0.20), transparent 60%), radial-gradient(70% 60% at 90% 100%, rgba(91,108,255,0.10), transparent 60%), #0A0B0E",
+              "linear-gradient(180deg, #141519 0%, #0A0B0E 100%)",
           }}
         />
       )}
 
       <div className="mx-auto max-w-6xl px-5 pb-24 pt-20 sm:px-8 sm:pb-32 sm:pt-32 lg:pt-40">
         <div className="max-w-3xl">
-          <h1 className="font-display text-[44px] leading-[0.98] tracking-[-0.02em] text-ink-12 sm:text-[72px]">
+          <h1 className="font-semibold text-[44px] leading-[0.98] tracking-[-0.035em] text-ink-12 sm:text-[72px]">
             {settings.headline}
           </h1>
           {settings.subheadline && (
@@ -62,7 +62,7 @@ export function HeroSection({
           <div className="mt-10 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
             <Link
               href={primaryHref}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-ink-12 px-7 text-[14px] font-medium text-ink-0 transition-colors hover:bg-ink-11"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-[var(--r-sm)] bg-ink-12 px-7 text-[14px] font-medium text-ink-0 transition-colors hover:bg-ink-11"
             >
               {settings.primaryActionLabel}
               <ArrowRight className="h-4 w-4" strokeWidth={2} />
@@ -70,7 +70,7 @@ export function HeroSection({
             {settings.secondaryActionLabel && (
               <a
                 href="#"
-                className="inline-flex h-12 items-center justify-center gap-1.5 rounded-full border border-ink-12/20 bg-transparent px-7 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-12/10"
+                className="inline-flex h-12 items-center justify-center gap-1.5 rounded-[var(--r-sm)] border border-ink-12/20 bg-transparent px-7 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-12/10"
               >
                 {settings.secondaryActionLabel}
                 <ArrowRight className="h-4 w-4" strokeWidth={1.75} />

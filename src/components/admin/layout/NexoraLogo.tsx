@@ -25,9 +25,9 @@ export function NexoraLogo({
       aria-hidden
     >
       {/* base square */}
-      <rect x="6" y="6" width="14" height="14" rx="3.5" fill={base} />
+      <rect x="6" y="6" width="14" height="14" rx="2" fill={base} />
       {/* accent square */}
-      <rect x="4" y="4" width="8" height="8" rx="2" fill={accent} />
+      <rect x="4" y="4" width="8" height="8" rx="1.5" fill={accent} />
     </svg>
   );
 }

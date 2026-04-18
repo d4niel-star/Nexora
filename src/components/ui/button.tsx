@@ -33,7 +33,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={cn(
-          "inline-flex items-center justify-center gap-2 rounded-[var(--r-md)] font-medium tracking-[-0.005em]",
+          "inline-flex items-center justify-center gap-2 rounded-[var(--r-sm)] font-medium tracking-[-0.01em]",
           "transition-[background-color,color,box-shadow,transform] duration-[var(--dur-base)] ease-[var(--ease-out)]",
           "focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
           "active:translate-y-px",

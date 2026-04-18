@@ -23,7 +23,7 @@ export function FeaturedProductsSection({
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-10 flex items-end justify-between gap-6">
           <div>
-            <h2 className="font-display text-[32px] leading-[1.02] tracking-[-0.015em] text-ink-0 sm:text-[44px]">
+            <h2 className="font-semibold text-[32px] leading-[1.02] tracking-[-0.03em] text-ink-0 sm:text-[44px]">
               {settings.title}
             </h2>
             {settings.subtitle && (
@@ -50,7 +50,7 @@ export function FeaturedProductsSection({
         <div className="mt-12 flex justify-center sm:hidden">
           <Link
             href={storePath(storeSlug, "collections")}
-            className="inline-flex h-12 w-full items-center justify-center gap-1.5 rounded-full border border-[color:var(--hairline-strong)] bg-transparent px-6 text-[14px] font-medium text-ink-0 transition-colors hover:bg-ink-11"
+            className="inline-flex h-12 w-full items-center justify-center gap-1.5 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-transparent px-6 text-[14px] font-medium text-ink-0 transition-colors hover:bg-ink-11"
           >
             Ver toda la colección
             <ArrowRight className="h-4 w-4" strokeWidth={1.75} />

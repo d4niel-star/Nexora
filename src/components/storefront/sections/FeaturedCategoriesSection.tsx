@@ -67,7 +67,7 @@ export function FeaturedCategoriesSection({
 
               <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6">
                 <h3
-                  className={`font-display text-[22px] leading-[1.05] tracking-[-0.015em] sm:text-[26px] ${
+                  className={`font-semibold text-[22px] leading-[1.05] tracking-[-0.03em] sm:text-[26px] ${
                     col.imageUrl ? "text-ink-12" : "text-ink-0"
                   }`}
                 >

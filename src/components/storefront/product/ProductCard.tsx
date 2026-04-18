@@ -46,13 +46,13 @@ export function ProductCard({
         </div>
 
         {primaryBadge && (
-          <span className="absolute left-3 top-3 inline-flex items-center rounded-full border border-[color:var(--hairline)] bg-[var(--surface-0)]/95 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-0 backdrop-blur-[6px]">
+          <span className="absolute left-3 top-3 inline-flex items-center rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-0)]/95 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-0 backdrop-blur-[6px]">
             {primaryBadge}
           </span>
         )}
 
         {!product.inStock && (
-          <span className="absolute right-3 top-3 inline-flex items-center rounded-full bg-ink-0/80 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-12 backdrop-blur-[6px]">
+          <span className="absolute right-3 top-3 inline-flex items-center rounded-[var(--r-xs)] bg-ink-0/80 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-12 backdrop-blur-[6px]">
             Sin stock
           </span>
         )}

@@ -75,7 +75,7 @@ function Wordmark({ size = "sm" }: { size?: "sm" | "md" }) {
         <span className={`block rounded-[3px] bg-ink-0 ${dim} translate-x-[2px] translate-y-[2px]`} />
         <span className={`absolute rounded-[3px] bg-[var(--accent-500)] ${dim} -translate-x-[2px] -translate-y-[2px]`} />
       </span>
-      <span className={`font-display leading-none tracking-[-0.02em] text-ink-0 ${label}`}>
+      <span className={`font-semibold leading-none tracking-[-0.03em] text-ink-0 ${label}`}>
         nexora
       </span>
     </div>
@@ -117,7 +117,7 @@ export default function MarketingLandingPage() {
             </Link>
             <Link
               href="/home/register"
-              className="inline-flex h-9 items-center gap-1.5 rounded-full bg-ink-0 px-4 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
+              className="inline-flex h-9 items-center gap-1.5 rounded-[var(--r-sm)] bg-ink-0 px-4 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
             >
               Empezar
               <ArrowRight className="h-3.5 w-3.5" />
@@ -155,14 +155,14 @@ export default function MarketingLandingPage() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <Link
                 href="/home/register"
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-ink-0 px-6 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-6 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
               >
                 Empezar
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 href="/home/pricing"
-                className="inline-flex h-12 items-center justify-center rounded-full border border-[color:var(--hairline-strong)] bg-transparent px-6 text-[14px] font-medium text-ink-0 transition-colors hover:bg-ink-11"
+                className="inline-flex h-12 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-transparent px-6 text-[14px] font-medium text-ink-0 transition-colors hover:bg-ink-11"
               >
                 Ver planes
               </Link>
@@ -199,7 +199,7 @@ export default function MarketingLandingPage() {
                   Catálogo
                 </div>
                 <div className="absolute bottom-5 left-5 right-5">
-                  <div className="font-display text-[26px] leading-[1.05] tracking-[-0.015em] text-ink-0">
+                  <div className="font-semibold text-[26px] leading-[1.05] tracking-[-0.03em] text-ink-0">
                     Edición otoño
                   </div>
                   <div className="mt-1 text-[12px] text-ink-5 tabular">
@@ -220,7 +220,7 @@ export default function MarketingLandingPage() {
                 <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-5">
                   Rendimiento
                 </div>
-                <div className="mt-5 font-display text-[56px] leading-none tracking-[-0.02em] text-ink-0 tabular">
+                <div className="mt-5 font-semibold text-[56px] leading-none tracking-[-0.035em] text-ink-0 tabular">
                   2.4×
                 </div>
                 <p className="mt-3 text-[13px] leading-[1.55] text-ink-4">
@@ -306,14 +306,14 @@ export default function MarketingLandingPage() {
           <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
               href="/home/register"
-              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-ink-0 px-7 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2 sm:w-auto"
+              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-7 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2 sm:w-auto"
             >
               Crear cuenta
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               href="/home/pricing"
-              className="inline-flex h-12 w-full items-center justify-center rounded-full border border-[color:var(--hairline-strong)] bg-transparent px-7 text-[14px] font-medium text-ink-0 transition-colors hover:bg-ink-11 sm:w-auto"
+              className="inline-flex h-12 w-full items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-transparent px-7 text-[14px] font-medium text-ink-0 transition-colors hover:bg-ink-11 sm:w-auto"
             >
               Ver planes
             </Link>

@@ -41,9 +41,9 @@ export function TopbarUserMenu({ storeName, storeInitials }: TopbarUserMenuProps
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Abrir menú de usuario"
-        className="inline-flex h-9 items-center gap-2 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-0)] pl-1 pr-3 text-[13px] font-medium text-ink-0 transition-colors hover:bg-ink-11 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+        className="inline-flex h-9 items-center gap-2 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] pl-1 pr-3 text-[13px] font-medium text-ink-0 transition-colors hover:bg-ink-11 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
       >
-        <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-ink-0 text-[11px] font-semibold text-ink-12">
+        <span className="inline-flex h-7 w-7 items-center justify-center rounded-[var(--r-xs)] bg-ink-0 text-[11px] font-semibold text-ink-12">
           {storeInitials}
         </span>
         <span className="hidden sm:inline">{storeName}</span>

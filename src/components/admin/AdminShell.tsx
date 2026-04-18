@@ -66,7 +66,7 @@ export function AdminShell({ children, storeName, storeInitials }: AdminShellPro
       <div className="flex h-14 items-center justify-between border-b border-[color:var(--hairline)] px-5">
         <div className="flex items-center gap-2.5">
           <NexoraLogo className="h-[22px] w-[22px]" />
-          <span className="font-display text-[18px] leading-none tracking-[-0.015em] text-ink-0">
+          <span className="font-semibold text-[18px] leading-none tracking-[-0.03em] text-ink-0">
             nexora
           </span>
         </div>

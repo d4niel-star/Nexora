@@ -384,7 +384,7 @@ export function CheckoutForm({
                 Tarjeta de crédito, débito, efectivo y más.
               </p>
             </div>
-            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-[color:var(--signal-success)]">
+            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-[color:var(--signal-success)]">
               <ShieldCheck className="h-3 w-3" strokeWidth={2} />
               Seguro
             </span>
@@ -400,7 +400,7 @@ export function CheckoutForm({
         <button
           type="submit"
           disabled={isPending}
-          className="inline-flex h-[54px] w-full items-center justify-center gap-2 rounded-full bg-ink-0 text-[15px] font-medium text-ink-12 transition-colors hover:bg-ink-2 active:translate-y-px disabled:bg-ink-8 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+          className="inline-flex h-[54px] w-full items-center justify-center gap-2 rounded-[var(--r-sm)] bg-ink-0 text-[15px] font-medium text-ink-12 transition-colors hover:bg-ink-2 active:translate-y-px disabled:bg-ink-8 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
         >
           {isPending ? (
             <>

@@ -2,18 +2,17 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 // ─── DisplayText ───
-// Editorial display type for heroes, section titles and empty-state headlines.
-// Uses Instrument Serif (`var(--font-display)`) with very tight tracking.
-// Never use for body copy, buttons or labels — those stay on Inter.
-//
-// Size maps to tasteful responsive steps (mobile-first).
+// Display type for heroes, section titles and empty-state headlines.
+// Uses Inter at weight 600 with very tight tracking — no serif anywhere.
+// Ultra-serious: sizes bumped slightly down and tracking pushed to
+// −0.035em so the product reads "architectural", not "editorial".
 type DisplaySize = "sm" | "md" | "lg" | "xl";
 
 const SIZE_CLASS: Record<DisplaySize, string> = {
-  sm: "text-[28px] sm:text-[36px] leading-[1.02]",
-  md: "text-[40px] sm:text-[52px] leading-[1.0]",
-  lg: "text-[52px] sm:text-[72px] leading-[0.98]",
-  xl: "text-[64px] sm:text-[92px] leading-[0.96]",
+  sm: "text-[22px] sm:text-[28px] leading-[1.15]",
+  md: "text-[28px] sm:text-[38px] leading-[1.1]",
+  lg: "text-[40px] sm:text-[56px] leading-[1.05]",
+  xl: "text-[48px] sm:text-[72px] leading-[1.02]",
 };
 
 export interface DisplayTextProps extends React.HTMLAttributes<HTMLHeadingElement> {
@@ -26,7 +25,7 @@ export const DisplayText = React.forwardRef<HTMLHeadingElement, DisplayTextProps
     <Tag
       ref={ref as never}
       className={cn(
-        "font-display font-normal tracking-[-0.02em] text-ink-0",
+        "font-sans font-semibold tracking-[-0.035em] text-ink-0",
         SIZE_CLASS[size],
         className,
       )}

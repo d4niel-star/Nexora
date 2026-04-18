@@ -34,7 +34,7 @@ export function StoreFooter({ config }: { config: StoreConfig }) {
               />
             ) : (
               <span
-                className="font-display text-[26px] leading-none tracking-[-0.015em] text-ink-0"
+                className="font-semibold text-[26px] leading-none tracking-[-0.03em] text-ink-0"
                 style={{ color: config.primaryColor }}
               >
                 {config.name}
@@ -125,7 +125,7 @@ export function StoreFooter({ config }: { config: StoreConfig }) {
 
             <Link
               href={storePath(config.slug, "arrepentimiento")}
-              className="group inline-flex h-10 items-center gap-2.5 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-4 text-[12px] font-medium text-ink-0 transition-colors hover:bg-ink-11"
+              className="group inline-flex h-10 items-center gap-2.5 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-4 text-[12px] font-medium text-ink-0 transition-colors hover:bg-ink-11"
             >
               <span className="h-1.5 w-1.5 rounded-full bg-[var(--signal-danger)]" />
               Botón de arrepentimiento

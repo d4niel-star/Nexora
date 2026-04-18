@@ -153,7 +153,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 {product.brand}
               </p>
             )}
-            <h1 className="mt-2 font-display text-[34px] leading-[1.02] tracking-[-0.02em] text-ink-0 sm:text-[44px]">
+            <h1 className="mt-2 font-semibold text-[34px] leading-[1.02] tracking-[-0.035em] text-ink-0 sm:text-[44px]">
               {product.title}
             </h1>
 
@@ -168,7 +168,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 </p>
               )}
               {discountPct !== null && discountPct > 0 && (
-                <span className="inline-flex items-center rounded-full bg-[color:var(--accent-50)] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.12em] text-[color:var(--accent-700)]">
+                <span className="inline-flex items-center rounded-[var(--r-xs)] bg-[color:var(--accent-50)] px-2 py-0.5 text-[11px] font-medium uppercase tracking-[0.12em] text-[color:var(--accent-700)]">
                   −{discountPct}%
                 </span>
               )}
@@ -218,7 +218,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
         {/* Related products */}
         {relatedProducts.length > 0 && (
           <div className="mt-24 border-t border-[color:var(--hairline)] pt-16">
-            <h2 className="mb-10 font-display text-[28px] leading-[1.02] tracking-[-0.015em] text-ink-0 sm:text-[36px]">
+            <h2 className="mb-10 font-semibold text-[28px] leading-[1.02] tracking-[-0.03em] text-ink-0 sm:text-[36px]">
               También te puede interesar
             </h2>
             <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
@@ -253,7 +253,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 );
                 btn?.scrollIntoView({ behavior: "smooth", block: "center" });
               }}
-              className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-ink-0 px-5 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
+              className="inline-flex h-11 shrink-0 items-center justify-center rounded-[var(--r-sm)] bg-ink-0 px-5 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
             >
               Comprar
             </a>

@@ -53,7 +53,7 @@ export function CommandCenter({ data }: { data: CommandCenterData }) {
         <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">
           Comando comercial
         </p>
-        <h1 className="mt-2 font-display text-[34px] leading-[1.02] tracking-[-0.02em] text-ink-0 sm:text-[42px]">
+        <h1 className="mt-2 font-semibold text-[34px] leading-[1.02] tracking-[-0.035em] text-ink-0 sm:text-[42px]">
           Decisiones priorizadas para hoy.
         </h1>
         <p className="mt-3 max-w-xl text-[14px] leading-[1.55] text-ink-5">
@@ -237,7 +237,7 @@ function DirectiveGroup({
         </h2>
         <span
           className={cn(
-            "inline-flex h-5 items-center rounded-full px-2 text-[10px] font-medium tabular",
+            "inline-flex h-5 items-center rounded-[var(--r-xs)] px-2 text-[10px] font-medium tabular",
             meta.chipBg,
             meta.chipText,
           )}
@@ -275,7 +275,7 @@ function DirectiveCard({ directive }: { directive: CommandDirective }) {
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-[14px] font-medium text-ink-0">{d.title}</p>
           {d.productCount && d.productCount > 0 && (
-            <span className="inline-flex h-5 shrink-0 items-center rounded-full bg-[var(--surface-2)] px-2 text-[10px] font-medium text-ink-5">
+            <span className="inline-flex h-5 shrink-0 items-center rounded-[var(--r-xs)] bg-[var(--surface-2)] px-2 text-[10px] font-medium text-ink-5">
               {d.productCount} SKU{d.productCount !== 1 ? "s" : ""}
             </span>
           )}
@@ -315,13 +315,13 @@ function DomainIcon({ domain, tint }: { domain: CommandDomain; tint: string }) {
 function EmptyCommandState() {
   return (
     <div className="flex min-h-[360px] flex-col items-center justify-center rounded-[var(--r-lg)] border border-dashed border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-6 py-16 text-center">
-      <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-full border border-[color:var(--hairline)] bg-[var(--surface-1)]">
+      <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)]">
         <CheckCircle2
           className="h-5 w-5 text-[color:var(--signal-success)]"
           strokeWidth={1.5}
         />
       </div>
-      <h3 className="font-display text-[26px] leading-[1.05] tracking-[-0.015em] text-ink-0">
+      <h3 className="font-semibold text-[26px] leading-[1.05] tracking-[-0.03em] text-ink-0">
         Sin decisiones pendientes.
       </h3>
       <p className="mt-3 max-w-md text-[14px] leading-[1.55] text-ink-5">
@@ -349,7 +349,7 @@ function EmptyCTA({
   return (
     <Link
       href={href}
-      className="inline-flex h-10 items-center gap-1.5 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-0)] px-4 text-[13px] font-medium text-ink-0 transition-colors hover:bg-ink-11"
+      className="inline-flex h-10 items-center gap-1.5 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-4 text-[13px] font-medium text-ink-0 transition-colors hover:bg-ink-11"
     >
       {icon}
       {label}
