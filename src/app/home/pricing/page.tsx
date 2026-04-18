@@ -70,7 +70,7 @@ const PLAN_FEATURES: Record<string, { tagline: string; features: string[] }> = {
 
 function Wordmark() {
   return (
-    <Link href="/" className="flex items-center gap-2">
+    <Link href="/home" className="flex items-center gap-2">
       <span className="relative inline-flex items-center justify-center">
         <span className="block h-3 w-3 rounded-[2px] bg-ink-0 translate-x-[2px] translate-y-[2px]" />
         <span className="absolute h-3 w-3 rounded-[2px] bg-[var(--accent-500)] -translate-x-[2px] -translate-y-[2px]" />

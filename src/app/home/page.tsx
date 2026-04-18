@@ -1,107 +1,115 @@
-"use client";
-
 import Link from "next/link";
-import { motion } from "framer-motion";
-import {
-  ArrowRight,
-  Database,
-  Globe,
-  Megaphone,
-  Package,
-  Sparkles,
-  Store,
-  Truck,
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { DisplayText, Hairline, Surface } from "@/components/ui/primitives";
 
-// ─── Landing ───
-// Editorial rewrite of the marketing home. All copy preserved verbatim; the
-// only changes are typography, spacing, surfaces, and the replacement of the
-// "Linear-esque" dashboard mock with a deliberate editorial composable of
-// three tokens (product tile · metric · order row) that reads like product
-// output, not a screenshot template.
-
-const VALUE_DRIVERS = [
+const OPERATING_PILLARS = [
   {
-    icon: Database,
     title: "Catálogo centralizado",
     description:
-      "Administrá productos, variantes, precios y atributos desde un solo lugar.",
+      "Productos, variantes, precios y atributos ordenados sobre una sola base.",
   },
   {
-    icon: Globe,
-    title: "Operación centralizada",
+    title: "Storefront propio",
     description:
-      "Publica tu tienda propia con stock validado y operaciones centralizadas.",
+      "Marca, dominio y experiencia de compra conectados con tu operación real.",
   },
   {
-    icon: Store,
-    title: "Storefront optimizado",
+    title: "Checkout validado",
     description:
-      "Checkout integrado, dominio propio y listados sincronizados con tu operación.",
+      "Mercado Pago, stock en tiempo real y pedidos sincronizados desde el origen.",
   },
   {
-    icon: Sparkles,
-    title: "Nexora AI",
+    title: "Operación unificada",
     description:
-      "Arquitecto de IA integrado que entiende el modelo completo de tu negocio cruzando datos reales.",
+      "Inventario, órdenes, abastecimiento e IA dentro del mismo sistema.",
+  },
+];
+
+const DECISION_COLUMNS = [
+  {
+    title: "Vender",
+    description:
+      "Mostrá tu tienda con una presencia seria, clara y lista para convertir en mobile.",
   },
   {
-    icon: Package,
-    title: "Abastecimiento B2B",
+    title: "Operar",
     description:
-      "Recepción de compras y routing automático hacia proveedores dropshipping.",
+      "Controlá catálogo, stock, checkout y pedidos sin saltar entre herramientas.",
   },
   {
-    icon: Truck,
-    title: "Logística integrada",
+    title: "Escalar",
     description:
-      "Fulfillment, tracking y carriers avanzados con soporte multi-proveedor.",
+      "Sumá IA, abastecimiento y automatización sobre una base que ya está ordenada.",
+  },
+];
+
+const CONNECTED_MODULES = [
+  {
+    label: "Catálogo",
+    detail: "Variantes, precios, costos y estructura listos para publicar.",
   },
   {
-    icon: Megaphone,
-    title: "AI: Performance & Ads",
-    description:
-      "Media buyer automático. Campañas sugeridas y borradores basados en margen y stock real.",
+    label: "Inventario",
+    detail: "Stock disponible y movimientos conectados con la venta real.",
+  },
+  {
+    label: "Storefront",
+    detail: "Dominio propio, colecciones y producto final dentro de tu marca.",
+  },
+  {
+    label: "Checkout",
+    detail: "Pago validado, total calculado en servidor y seguimiento posterior.",
+  },
+  {
+    label: "Pedidos",
+    detail: "Operación comercial y fulfillment sin perder el contexto del cliente.",
+  },
+  {
+    label: "Nexora AI",
+    detail: "Recomendaciones y ejecución sobre datos operativos, no sobre humo.",
   },
 ];
 
 function Wordmark({ size = "sm" }: { size?: "sm" | "md" }) {
   const dim = size === "md" ? "h-3 w-3" : "h-2.5 w-2.5";
   const label = size === "md" ? "text-[15px]" : "text-[13px]";
+
   return (
     <div className="flex items-center gap-2">
-      <span className="relative inline-flex items-center justify-center">
-        <span className={`block rounded-[3px] bg-ink-0 ${dim} translate-x-[2px] translate-y-[2px]`} />
-        <span className={`absolute rounded-[3px] bg-[var(--accent-500)] ${dim} -translate-x-[2px] -translate-y-[2px]`} />
+      <span className="relative inline-flex items-center justify-center" aria-hidden>
+        <span
+          className={`block translate-x-[2px] translate-y-[2px] rounded-[2px] bg-ink-0 ${dim}`}
+        />
+        <span
+          className={`absolute -translate-x-[2px] -translate-y-[2px] rounded-[2px] bg-[var(--accent-500)] ${dim}`}
+        />
       </span>
-      <span className={`font-semibold leading-none tracking-[-0.03em] text-ink-0 ${label}`}>
+      <span
+        className={`font-semibold leading-none tracking-[-0.03em] text-ink-0 ${label}`}
+      >
         nexora
       </span>
     </div>
   );
 }
 
+function SectionEyebrow({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">
+      {children}
+    </p>
+  );
+}
+
 export default function MarketingLandingPage() {
   return (
-    <div className="relative min-h-screen bg-[var(--surface-1)] text-ink-0 selection:bg-ink-0 selection:text-ink-12 overflow-x-hidden">
-      {/* Silent grid — 2% opacity, acts as texture without noise */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 z-0 opacity-[0.025]"
-        style={{
-          backgroundImage:
-            "linear-gradient(var(--ink-0) 1px, transparent 1px), linear-gradient(90deg, var(--ink-0) 1px, transparent 1px)",
-          backgroundSize: "64px 64px",
-        }}
-      />
-
-      {/* ─── Header ─── */}
-      <header className="relative z-50">
+    <div className="min-h-screen overflow-x-hidden bg-[var(--surface-1)] text-ink-0 selection:bg-ink-0 selection:text-ink-12">
+      <header className="border-b border-[color:var(--hairline)] bg-[var(--surface-0)]">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-8">
-          <Link href="/" aria-label="Nexora">
+          <Link href="/home" aria-label="Nexora">
             <Wordmark size="md" />
           </Link>
+
           <nav className="flex items-center gap-6 text-[13px]">
             <Link
               href="/home/pricing"
@@ -117,48 +125,38 @@ export default function MarketingLandingPage() {
             </Link>
             <Link
               href="/home/register"
-              className="inline-flex h-9 items-center gap-1.5 rounded-[var(--r-sm)] bg-ink-0 px-4 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
+              className="inline-flex h-10 items-center gap-1.5 rounded-[var(--r-sm)] bg-ink-0 px-4 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
             >
               Empezar
-              <ArrowRight className="h-3.5 w-3.5" />
+              <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
             </Link>
           </nav>
         </div>
-        <Hairline />
       </header>
 
-      {/* ─── Hero ─── */}
-      <main className="relative z-10">
-        <section className="mx-auto max-w-6xl px-5 pb-24 pt-20 sm:px-8 sm:pb-32 sm:pt-28">
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="max-w-3xl"
-          >
-            <div className="mb-7 inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">
-              <span className="h-[5px] w-[5px] rounded-full bg-[var(--accent-500)]" />
-              Plataforma de ecommerce operativo
-            </div>
+      <main>
+        <section className="mx-auto max-w-6xl px-5 pb-18 pt-16 sm:px-8 sm:pb-24 sm:pt-24">
+          <div className="max-w-4xl">
+            <SectionEyebrow>Infraestructura para ecommerce operativo</SectionEyebrow>
 
-            <DisplayText as="h1" size="xl" className="mb-6">
-              Gestioná todo.
+            <DisplayText as="h1" size="xl" className="mt-6 max-w-4xl">
+              Tu marca adelante.
               <br />
-              <span className="text-ink-5">Vendé en todos lados.</span>
+              <span className="text-ink-5">Tu operación en orden.</span>
             </DisplayText>
 
-            <p className="mb-10 max-w-xl text-[17px] leading-[1.55] text-ink-4">
-              Catálogo centralizado, storefront propio, IA integrada, checkout con
-              Mercado Pago y operación centralizada. Todo desde un solo lugar.
+            <p className="mt-6 max-w-2xl text-[16px] leading-[1.6] text-ink-4 sm:text-[17px]">
+              Nexora conecta catálogo, storefront, checkout, pedidos e IA sobre
+              una sola base operativa. Menos fricción, más control.
             </p>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
               <Link
                 href="/home/register"
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-6 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
               >
-                Empezar
-                <ArrowRight className="h-4 w-4" />
+                Crear cuenta
+                <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
               </Link>
               <Link
                 href="/home/pricing"
@@ -167,124 +165,163 @@ export default function MarketingLandingPage() {
                 Ver planes
               </Link>
             </div>
-          </motion.div>
+          </div>
 
-          {/* ─── Editorial composable ─── */}
-          {/* Replaces the prior dashboard screenshot cliché. Three honest
-              primitives (product frame · metric line · order row) rendered
-              with the same surface/hairline tokens the product actually ships. */}
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-            className="mt-20 grid grid-cols-1 gap-4 sm:mt-24 sm:grid-cols-12 sm:gap-5"
+          <Surface
+            level={0}
+            hairline
+            radius="lg"
+            className="mt-14 overflow-hidden sm:mt-18"
           >
-            {/* Product frame */}
-            <Surface
-              level={0}
-              hairline
-              radius="lg"
-              className="sm:col-span-5 overflow-hidden"
-            >
-              <div className="relative aspect-[4/5] w-full bg-[var(--ink-11)]">
-                <div
-                  aria-hidden
-                  className="absolute inset-0"
-                  style={{
-                    background:
-                      "radial-gradient(120% 80% at 20% 10%, rgba(91,108,255,0.12), transparent 60%), radial-gradient(80% 80% at 90% 90%, rgba(10,11,14,0.06), transparent 60%)",
-                  }}
-                />
-                <div className="absolute left-5 top-5 text-[10px] font-medium uppercase tracking-[0.18em] text-ink-5">
-                  Catálogo
-                </div>
-                <div className="absolute bottom-5 left-5 right-5">
-                  <div className="font-semibold text-[26px] leading-[1.05] tracking-[-0.03em] text-ink-0">
-                    Edición otoño
-                  </div>
-                  <div className="mt-1 text-[12px] text-ink-5 tabular">
-                    42 referencias · stock sincronizado
-                  </div>
-                </div>
-              </div>
-            </Surface>
+            <div className="flex min-h-12 items-center justify-between px-5 text-[11px] font-medium uppercase tracking-[0.16em] text-ink-5 sm:px-6">
+              <span>Base operativa</span>
+              <span>Catálogo · storefront · checkout</span>
+            </div>
 
-            {/* Metric */}
-            <Surface
-              level={0}
-              hairline
-              radius="lg"
-              className="flex flex-col justify-between p-6 sm:col-span-4"
-            >
-              <div>
-                <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-5">
-                  Rendimiento
-                </div>
-                <div className="mt-5 font-semibold text-[56px] leading-none tracking-[-0.035em] text-ink-0 tabular">
-                  2.4×
-                </div>
-                <p className="mt-3 text-[13px] leading-[1.55] text-ink-4">
-                  Ritmo operativo sostenido con stock validado en tiempo real.
+            <Hairline />
+
+            <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr]">
+              <div className="p-5 sm:p-8">
+                <SectionEyebrow>Storefront</SectionEyebrow>
+                <h2 className="mt-4 text-[30px] font-semibold leading-[1.04] tracking-[-0.03em] text-ink-0 sm:text-[40px]">
+                  Una presencia más seria para vender mejor.
+                </h2>
+                <p className="mt-4 max-w-xl text-[14px] leading-[1.6] text-ink-5">
+                  La tienda, el checkout y la operación comparten el mismo criterio:
+                  claridad, velocidad y una sensación premium sin ruido visual.
                 </p>
-              </div>
-              <Hairline className="my-5" />
-              <div className="flex items-center justify-between text-[12px] text-ink-5">
-                <span>Enero → Marzo</span>
-                <span className="tabular text-ink-0">+18%</span>
-              </div>
-            </Surface>
 
-            {/* Order row */}
-            <Surface
-              level={0}
-              hairline
-              radius="lg"
-              className="flex flex-col justify-between p-6 sm:col-span-3"
-            >
-              <div>
-                <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-5">
-                  Último pedido
-                </div>
-                <div className="mt-5 font-mono text-[13px] text-ink-0">
-                  #4821
-                </div>
-                <div className="mt-1 text-[13px] text-ink-4">
-                  Confirmado · envío a CABA
+                <div className="mt-8 grid gap-0 border border-[color:var(--hairline)] bg-[var(--surface-1)] sm:grid-cols-[1.15fr_0.85fr]">
+                  <div className="border-b border-[color:var(--hairline)] p-4 sm:border-b-0 sm:border-r sm:p-5">
+                    <div className="mb-4 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.16em] text-ink-5">
+                      <span>Tienda</span>
+                      <span>Dominio propio</span>
+                    </div>
+
+                    <div className="aspect-[4/3] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-4">
+                      <div className="flex items-center justify-between text-[11px] font-medium text-ink-5">
+                        <span>Inicio</span>
+                        <span>Colecciones</span>
+                      </div>
+                      <div className="mt-5 max-w-[75%]">
+                        <div className="h-2.5 w-16 bg-ink-9" />
+                        <div className="mt-4 h-6 w-full max-w-[12rem] bg-ink-10" />
+                        <div className="mt-2 h-6 w-4/5 bg-ink-10" />
+                        <div className="mt-5 h-2 w-full max-w-[14rem] bg-ink-9" />
+                        <div className="mt-2 h-2 w-5/6 bg-ink-9" />
+                      </div>
+                      <div className="mt-7 grid grid-cols-3 gap-2">
+                        <div className="aspect-[3/4] border border-[color:var(--hairline)] bg-[var(--surface-2)]" />
+                        <div className="aspect-[3/4] border border-[color:var(--hairline)] bg-[var(--surface-2)]" />
+                        <div className="aspect-[3/4] border border-[color:var(--hairline)] bg-[var(--surface-2)]" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 sm:p-5">
+                    <div className="text-[10px] font-medium uppercase tracking-[0.16em] text-ink-5">
+                      Checkout
+                    </div>
+                    <div className="mt-4 space-y-4">
+                      {[
+                        "Mercado Pago integrado",
+                        "Stock validado antes de pagar",
+                        "Pedidos sincronizados al confirmar",
+                      ].map((item) => (
+                        <div key={item}>
+                          <div className="text-[13px] font-medium text-ink-0">
+                            {item}
+                          </div>
+                          <div className="mt-2 h-px w-full bg-[color:var(--hairline)]" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="mt-6 flex items-center gap-2 text-[12px] text-ink-5">
-                <span className="h-1.5 w-1.5 rounded-full bg-[var(--signal-success)]" />
-                En preparación
+
+              <div className="border-t border-[color:var(--hairline)] bg-[var(--surface-1)] p-5 sm:p-8 lg:border-l lg:border-t-0">
+                <SectionEyebrow>Sincronización</SectionEyebrow>
+                <div className="mt-5 space-y-5">
+                  {OPERATING_PILLARS.map((pillar, index) => (
+                    <div key={pillar.title}>
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-[14px] font-medium text-ink-0">
+                            {pillar.title}
+                          </p>
+                          <p className="mt-2 text-[13px] leading-[1.55] text-ink-5">
+                            {pillar.description}
+                          </p>
+                        </div>
+                        <span className="tabular text-[11px] font-medium text-ink-6">
+                          0{index + 1}
+                        </span>
+                      </div>
+                      {index < OPERATING_PILLARS.length - 1 && (
+                        <Hairline className="mt-5" />
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
-            </Surface>
-          </motion.div>
+            </div>
+          </Surface>
         </section>
 
         <Hairline />
 
-        {/* ─── Value drivers ─── */}
-        <section className="mx-auto max-w-6xl px-5 py-24 sm:px-8 sm:py-32">
-          <div className="mb-16 max-w-2xl">
-            <div className="mb-4 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">
-              Infraestructura completa
+        <section className="mx-auto max-w-6xl px-5 py-18 sm:px-8 sm:py-24">
+          <div className="grid grid-cols-1 gap-y-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-x-16">
+            <div>
+              <SectionEyebrow>Dirección</SectionEyebrow>
+              <DisplayText as="h2" size="md" className="mt-5">
+                Una plataforma sobria.
+                <br />
+                <span className="text-ink-5">Preparada para crecer.</span>
+              </DisplayText>
             </div>
-            <DisplayText as="h2" size="md">
-              Todo lo que necesitás para operar.
-            </DisplayText>
+
+            <div className="grid grid-cols-1 gap-8 sm:grid-cols-3 sm:gap-6">
+              {DECISION_COLUMNS.map((column, index) => (
+                <div key={column.title} className="pt-4 sm:pt-0">
+                  <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-ink-6">
+                    0{index + 1}
+                  </div>
+                  <h3 className="mt-4 text-[16px] font-semibold tracking-[-0.01em] text-ink-0">
+                    {column.title}
+                  </h3>
+                  <p className="mt-3 text-[14px] leading-[1.6] text-ink-5">
+                    {column.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <Hairline />
+
+        <section className="mx-auto max-w-6xl px-5 py-18 sm:px-8 sm:py-24">
+          <div className="max-w-2xl">
+            <SectionEyebrow>Todo queda conectado</SectionEyebrow>
+            <h2 className="mt-5 text-[32px] font-semibold leading-[1.06] tracking-[-0.03em] text-ink-0 sm:text-[42px]">
+              Cada parte del negocio habla el mismo idioma.
+            </h2>
           </div>
 
-          <div className="grid grid-cols-1 gap-x-10 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
-            {VALUE_DRIVERS.map(({ icon: Icon, title, description }) => (
-              <div key={title} className="group">
-                <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] text-ink-0 transition-colors group-hover:border-[color:var(--hairline-strong)]">
-                  <Icon className="h-[18px] w-[18px]" strokeWidth={1.5} />
+          <div className="mt-12 border-y border-[color:var(--hairline)]">
+            {CONNECTED_MODULES.map((module, index) => (
+              <div key={module.label}>
+                <div className="grid grid-cols-1 gap-3 py-5 sm:grid-cols-[0.28fr_0.72fr] sm:items-start sm:gap-6">
+                  <div className="text-[14px] font-medium text-ink-0">
+                    {module.label}
+                  </div>
+                  <div className="text-[14px] leading-[1.6] text-ink-5">
+                    {module.detail}
+                  </div>
                 </div>
-                <h3 className="mb-2 text-[15px] font-semibold tracking-[-0.01em] text-ink-0">
-                  {title}
-                </h3>
-                <p className="text-[14px] leading-[1.55] text-ink-5">
-                  {description}
-                </p>
+                {index < CONNECTED_MODULES.length - 1 && <Hairline />}
               </div>
             ))}
           </div>
@@ -292,24 +329,25 @@ export default function MarketingLandingPage() {
 
         <Hairline />
 
-        {/* ─── Closing CTA ─── */}
-        <section className="mx-auto max-w-3xl px-5 py-24 text-center sm:px-8 sm:py-32">
-          <DisplayText as="h2" size="md" className="mb-5">
-            Operación centralizada.
+        <section className="mx-auto max-w-3xl px-5 py-18 text-center sm:px-8 sm:py-24">
+          <DisplayText as="h2" size="md">
+            Menos ruido.
             <br />
-            <span className="text-ink-5">Control real.</span>
+            <span className="text-ink-5">Más criterio operativo.</span>
           </DisplayText>
-          <p className="mx-auto mb-10 max-w-md text-[15px] leading-[1.55] text-ink-4">
-            Creá tu cuenta y accedé a la infraestructura operativa que tu
-            negocio necesita.
+
+          <p className="mx-auto mt-5 max-w-xl text-[15px] leading-[1.6] text-ink-4">
+            Creá tu cuenta y empezá con una base más clara para vender, cobrar y
+            ordenar tu operación.
           </p>
-          <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+
+          <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
               href="/home/register"
               className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-7 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2 sm:w-auto"
             >
-              Crear cuenta
-              <ArrowRight className="h-4 w-4" />
+              Empezar con Nexora
+              <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
             </Link>
             <Link
               href="/home/pricing"
@@ -321,13 +359,12 @@ export default function MarketingLandingPage() {
         </section>
       </main>
 
-      {/* ─── Footer ─── */}
-      <footer className="relative z-10 border-t border-[color:var(--hairline)] bg-[var(--surface-1)]">
+      <footer className="border-t border-[color:var(--hairline)] bg-[var(--surface-0)]">
         <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-4 px-5 py-10 sm:flex-row sm:items-center sm:px-8">
           <Wordmark size="sm" />
           <p className="text-[12px] text-ink-5">
-            © {new Date().getFullYear()} Nexora Inc. Infraestructura para
-            ecommerce inteligente.
+            © {new Date().getFullYear()} Nexora. Infraestructura para ecommerce
+            inteligente.
           </p>
         </div>
       </footer>
