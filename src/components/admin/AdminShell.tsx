@@ -33,7 +33,6 @@ const navigation = [
   { href: "/admin/inventory", label: "Inventario", icon: Boxes },
   { href: "/admin/sourcing", label: "Abastecimiento", icon: Truck },
   { href: "/admin/operations", label: "Operaciones", icon: PackageSearch },
-  { href: "/admin/ai", label: "Nexora AI", icon: Sparkles },
 ];
 
 interface AdminShellProps {
@@ -122,6 +121,9 @@ export function AdminShell({ children, storeName, storeInitials }: AdminShellPro
           })}
         </ul>
       </nav>
+
+      {/* ─── Nexora IA — módulo dedicado, bottom sidebar ─── */}
+      <NexoraIAEntry pathname={pathname} onNavigate={closeSidebar} />
     </>
   );
 
@@ -182,6 +184,55 @@ export function AdminShell({ children, storeName, storeInitials }: AdminShellPro
           </div>
         </div>
       </main>
+    </div>
+  );
+}
+
+// ─── Nexora IA — Sidebar bottom entry ───
+// Separated from the regular nav to create visual hierarchy.
+// Positioned at the bottom of the sidebar via the flex layout (nav has flex-1).
+
+function NexoraIAEntry({ pathname, onNavigate }: { pathname: string; onNavigate: () => void }) {
+  const isActive = pathname.startsWith("/admin/ai");
+
+  return (
+    <div className="border-t border-[color:var(--hairline)] px-3 py-3">
+      <Link
+        href="/admin/ai"
+        onClick={onNavigate}
+        className={cn(
+          "group relative flex items-center gap-2.5 rounded-[var(--r-sm)] px-3 py-2.5 text-[13px] transition-colors outline-none focus-visible:shadow-[var(--shadow-focus)]",
+          isActive
+            ? "bg-ink-11 font-medium text-ink-0"
+            : "text-ink-4 hover:bg-ink-11 hover:text-ink-0",
+        )}
+      >
+        {isActive && (
+          <span
+            aria-hidden
+            className="absolute left-0 top-1/2 h-5 -translate-y-1/2 rounded-r-full bg-[var(--accent-500)]"
+            style={{ width: 2 }}
+          />
+        )}
+        <Sparkles
+          className={cn(
+            "h-4 w-4 shrink-0",
+            isActive ? "text-ink-0" : "text-ink-5 group-hover:text-ink-0",
+          )}
+          strokeWidth={1.75}
+        />
+        <span className="flex-1">Nexora IA</span>
+        <span
+          className={cn(
+            "inline-flex h-[18px] items-center rounded-[var(--r-xs)] px-1.5 text-[9px] font-semibold uppercase tracking-[0.08em]",
+            isActive
+              ? "bg-[var(--accent-500)] text-white"
+              : "bg-ink-11 text-ink-5 group-hover:bg-[var(--accent-50)] group-hover:text-[var(--accent-700)]",
+          )}
+        >
+          AI
+        </span>
+      </Link>
     </div>
   );
 }
