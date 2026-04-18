@@ -9,34 +9,33 @@ export default async function WelcomeLayout({ children }: { children: ReactNode 
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col font-sans antialiased">
-      {/* Ultra-minimal header — editorial style */}
-      <header className="px-6 sm:px-10 py-5 flex items-center justify-between border-b border-[#EAEAEA]">
-        <div className="flex items-center gap-2.5">
-          <div className="relative w-7 h-7 flex items-center justify-center overflow-hidden">
-             <div className="absolute inset-0 bg-[#111111] rounded-lg rotate-12" />
-             <div className="absolute w-2 h-2 bg-emerald-500 rounded-[3px] -ml-1.5 -mt-1.5" />
-             <div className="absolute w-2 h-2 bg-white rounded-[3px] ml-1.5 mt-1.5" />
+    <div className="flex min-h-screen flex-col bg-[var(--surface-1)] font-sans text-ink-0 antialiased">
+      <header className="border-b border-[color:var(--hairline)] bg-[var(--surface-0)]">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-5 sm:px-8">
+          <div className="flex items-center gap-2">
+            <span className="relative inline-flex items-center justify-center" aria-hidden>
+              <span className="block h-3 w-3 translate-x-[2px] translate-y-[2px] rounded-[2px] bg-ink-0" />
+              <span className="absolute h-3 w-3 -translate-x-[2px] -translate-y-[2px] rounded-[2px] bg-[var(--accent-500)]" />
+            </span>
+            <span className="font-semibold text-[15px] leading-none tracking-[-0.03em] text-ink-0">
+              nexora
+            </span>
           </div>
-          <span className="font-extrabold tracking-tighter text-[22px] text-[#111111]">nexora.</span>
-        </div>
-        <div className="hidden sm:flex items-center gap-6">
-          <span className="text-[13px] font-medium text-[#888888]">Configuración de cuenta</span>
-          <div className="w-px h-4 bg-[#EAEAEA]" />
-          <span className="text-[13px] font-medium text-[#888888]">¿Necesitás ayuda?</span>
+
+          <div className="hidden items-center gap-4 text-[12px] font-medium text-ink-5 sm:flex">
+            <span>Configuración de cuenta</span>
+            <span className="h-3 w-px bg-[color:var(--hairline)]" aria-hidden />
+            <span>Ayuda</span>
+          </div>
         </div>
       </header>
 
-      {/* Main Content Area — centered, constrained */}
-      <main className="flex-1 flex flex-col items-center p-5 sm:p-8 md:p-12">
-        <div className="w-full max-w-6xl">
-          {children}
-        </div>
+      <main className="flex flex-1 flex-col items-center px-4 py-10 sm:px-6 sm:py-14 md:px-8">
+        <div className="w-full max-w-6xl">{children}</div>
       </main>
 
-      {/* Minimal footer */}
-      <footer className="py-6 text-center text-[11px] font-medium text-[#999999] tracking-wide">
-        &copy; {new Date().getFullYear()} Nexora Inc. — Infraestructura para ecommerce inteligente.
+      <footer className="border-t border-[color:var(--hairline)] bg-[var(--surface-0)] py-5 text-center text-[11px] font-medium text-ink-6">
+        © {new Date().getFullYear()} Nexora. Infraestructura para ecommerce inteligente.
       </footer>
     </div>
   );

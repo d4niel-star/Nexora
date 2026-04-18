@@ -36,32 +36,24 @@ export function FeaturedCategoriesSection({
             <Link
               key={col.id}
               href={storePath(storeSlug, `collections/${col.handle}`)}
-              className="group relative block aspect-[3/2] overflow-hidden rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-3)]"
+              className="group relative block aspect-[3/2] overflow-hidden rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] transition-colors hover:border-[color:var(--hairline-strong)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
             >
               {col.imageUrl ? (
                 <>
                   <img
                     src={col.imageUrl}
                     alt={col.title}
-                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-[600ms] ease-[var(--ease-out)] group-hover:scale-[1.04]"
+                    className="absolute inset-0 h-full w-full object-cover transition-opacity duration-[var(--dur-base)] ease-[var(--ease-out)] group-hover:opacity-95"
                   />
                   <div
                     aria-hidden
-                    className="absolute inset-0"
-                    style={{
-                      background:
-                        "linear-gradient(180deg, rgba(10,11,14,0) 40%, rgba(10,11,14,0.72) 100%)",
-                    }}
+                    className="absolute inset-0 bg-ink-0/28"
                   />
                 </>
               ) : (
                 <div
                   aria-hidden
-                  className="absolute inset-0"
-                  style={{
-                    background:
-                      "radial-gradient(80% 60% at 20% 20%, rgba(91,108,255,0.10), transparent 60%), var(--surface-3)",
-                  }}
+                  className="absolute inset-0 bg-[var(--surface-2)]"
                 />
               )}
 

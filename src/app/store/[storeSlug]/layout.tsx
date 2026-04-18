@@ -48,7 +48,7 @@ export default async function StorefrontLayout({
   config.cartItemCount = cart?.totalQuantity ?? 0;
 
   return (
-    <div className="min-h-screen bg-white font-sans text-gray-900 selection:bg-black selection:text-white flex flex-col">
+    <div className="flex min-h-screen flex-col bg-[var(--surface-1)] font-sans text-ink-0 selection:bg-ink-0 selection:text-ink-12">
       <StoreHeader config={config} />
       <main className="flex-1">{children}</main>
       <StoreFooter config={config} />

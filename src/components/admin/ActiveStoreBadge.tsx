@@ -14,9 +14,9 @@ export async function ActiveStoreBadge() {
 
   return (
     <>
-      <h2 className="text-sm font-medium text-gray-400">
+      <h2 className="text-[13px] font-medium text-ink-5">
         Tienda activa:{" "}
-        <span className="font-bold text-[#111111]">{store.name}</span>
+        <span className="font-semibold text-ink-0">{store.name}</span>
       </h2>
       {/* Hidden data attribute for the avatar — read by the client layout */}
       <span data-store-initials={initials} data-store-name={store.name} className="hidden" />

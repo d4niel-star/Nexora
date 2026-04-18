@@ -23,15 +23,15 @@ export function ProductCard({
   return (
     <Link
       href={storePath(storeSlug, `products/${product.handle}`)}
-      className="group block rounded-[var(--r-md)] outline-none focus-visible:shadow-[var(--shadow-focus)]"
+      className="group block rounded-[var(--r-sm)] outline-none focus-visible:shadow-[var(--shadow-focus)]"
     >
-      <div className="relative overflow-hidden rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-2)]">
+      <div className="relative overflow-hidden rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] transition-colors duration-[var(--dur-base)] group-hover:border-[color:var(--hairline-strong)]">
         <div className="aspect-[4/5] w-full">
           {product.featuredImage ? (
             <img
               src={product.featuredImage}
               alt={product.title}
-              className="h-full w-full object-cover transition-transform duration-[600ms] ease-[var(--ease-out)] group-hover:scale-[1.035]"
+              className="h-full w-full object-cover transition-opacity duration-[var(--dur-base)] ease-[var(--ease-out)] group-hover:opacity-95"
             />
           ) : (
             <div
@@ -46,19 +46,19 @@ export function ProductCard({
         </div>
 
         {primaryBadge && (
-          <span className="absolute left-3 top-3 inline-flex items-center rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-0)]/95 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-0 backdrop-blur-[6px]">
+          <span className="absolute left-3 top-3 inline-flex items-center rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-0">
             {primaryBadge}
           </span>
         )}
 
         {!product.inStock && (
-          <span className="absolute right-3 top-3 inline-flex items-center rounded-[var(--r-xs)] bg-ink-0/80 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-12 backdrop-blur-[6px]">
+          <span className="absolute right-3 top-3 inline-flex items-center rounded-[var(--r-xs)] bg-ink-0 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-12">
             Sin stock
           </span>
         )}
       </div>
 
-      <div className="mt-4 flex items-start justify-between gap-3">
+      <div className="mt-3 flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <h3 className="truncate text-[14px] font-medium text-ink-0 decoration-[color:var(--hairline-strong)] underline-offset-4 group-hover:underline">
             {product.title}

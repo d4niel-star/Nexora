@@ -1,24 +1,37 @@
 "use client";
 
 import { useState } from "react";
-import { checkoutPaidPlanAction } from "@/lib/onboarding-commercial/actions";
+import { useRouter } from "next/navigation";
 import {
   AlertCircle,
-  CreditCard,
-  ChevronLeft,
-  Shield,
   ArrowRight,
-  Loader2,
-  Zap,
-  Package,
-  ShoppingCart,
-  Globe,
-  Users,
   Check,
+  ChevronLeft,
+  CreditCard,
+  Globe,
+  Loader2,
+  Package,
+  Shield,
+  ShoppingCart,
+  Users,
+  Zap,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { checkoutPaidPlanAction } from "@/lib/onboarding-commercial/actions";
 
-export function PaymentSummaryClient({ planInfo }: { planInfo: any }) {
+type PlanInfo = {
+  code: string;
+  name: string;
+  monthlyPrice: number;
+  config: {
+    aiCredits: number;
+    maxProducts: number;
+    maxOrdersPerMonth: number;
+    customDomain: boolean;
+    maxStaff: number;
+  };
+};
+
+export function PaymentSummaryClient({ planInfo }: { planInfo: PlanInfo }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
@@ -34,18 +47,18 @@ export function PaymentSummaryClient({ planInfo }: { planInfo: any }) {
         setError("No se pudo generar el enlace de pago.");
         setLoading(false);
       }
-    } catch (err: any) {
-      setError(err.message || "Ocurrió un error al procesar el pago");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Ocurrió un error al procesar el pago");
       setLoading(false);
     }
   };
 
-  const formatPrice = (v: number) =>
+  const formatPrice = (value: number) =>
     new Intl.NumberFormat("es-AR", {
       style: "currency",
       currency: "ARS",
       maximumFractionDigits: 0,
-    }).format(v);
+    }).format(value);
 
   const summaryLines = [
     {
@@ -55,12 +68,18 @@ export function PaymentSummaryClient({ planInfo }: { planInfo: any }) {
     },
     {
       label: "Productos",
-      value: planInfo.config.maxProducts === 0 ? "Ilimitados" : planInfo.config.maxProducts.toString(),
+      value:
+        planInfo.config.maxProducts === 0
+          ? "Ilimitados"
+          : planInfo.config.maxProducts.toString(),
       icon: Package,
     },
     {
       label: "Ventas / mes",
-      value: planInfo.config.maxOrdersPerMonth === 0 ? "Ilimitadas" : planInfo.config.maxOrdersPerMonth.toString(),
+      value:
+        planInfo.config.maxOrdersPerMonth === 0
+          ? "Ilimitadas"
+          : planInfo.config.maxOrdersPerMonth.toString(),
       icon: ShoppingCart,
     },
     {
@@ -76,115 +95,139 @@ export function PaymentSummaryClient({ planInfo }: { planInfo: any }) {
   ];
 
   return (
-    <div className="max-w-xl mx-auto space-y-8 animate-in fade-in duration-700 pt-4 sm:pt-8">
-      {/* Back */}
+    <div className="mx-auto max-w-3xl space-y-7 pt-2 sm:pt-6">
       <button
+        type="button"
         onClick={() => router.push("/welcome/plan")}
-        className="flex items-center gap-2 text-[13px] font-medium text-[#888888] hover:text-[#111111] transition-colors"
+        className="inline-flex h-10 items-center gap-2 rounded-[var(--r-sm)] px-1 text-[13px] font-medium text-ink-5 transition-colors hover:text-ink-0 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
       >
-        <ChevronLeft className="w-4 h-4" /> Volver a los planes
+        <ChevronLeft className="h-4 w-4" strokeWidth={1.75} />
+        Volver a los planes
       </button>
 
-      {/* Header */}
-      <div>
-        <p className="text-emerald-600 text-[13px] font-semibold uppercase tracking-[0.15em] mb-3">
-          Activar suscripción
-        </p>
-        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#111111]">
-          Resumen de tu plan
-        </h1>
-        <p className="text-[#888888] text-[15px] mt-2">
-          Revisá los detalles y procedé al pago seguro.
-        </p>
-      </div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <section className="lg:col-span-7">
+          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">
+            Activar suscripción
+          </p>
+          <h1 className="mt-4 font-semibold text-[34px] leading-[1.04] tracking-[-0.035em] text-ink-0 sm:text-[46px]">
+            Revisá tu plan antes de pagar.
+          </h1>
+          <p className="mt-4 max-w-md text-[14px] leading-[1.55] text-ink-5">
+            El pago se completa fuera de Nexora en Mercado Pago. No guardamos
+            datos de tarjeta.
+          </p>
 
-      {error && (
-        <div className="flex items-center gap-2.5 bg-red-50 text-red-600 p-4 rounded-xl border border-red-100 font-medium">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          <span className="text-sm">{error}</span>
-        </div>
-      )}
-
-      {/* Summary card */}
-      <div className="bg-white border border-[#EAEAEA] rounded-2xl overflow-hidden shadow-sm">
-        {/* Plan header */}
-        <div className="p-6 sm:p-7 flex justify-between items-start border-b border-[#EAEAEA]">
-          <div>
-            <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-emerald-600">Plan seleccionado</span>
-            <h3 className="text-xl font-bold text-[#111111] mt-1">{planInfo.name}</h3>
-            <p className="text-[13px] text-[#999999] mt-0.5">Renovación mensual automática</p>
-          </div>
-          <div className="text-right">
-            <div className="text-3xl font-extrabold text-[#111111] tracking-tight">{formatPrice(planInfo.monthlyPrice)}</div>
-            <p className="text-[13px] text-[#999999]">por mes</p>
-          </div>
-        </div>
-
-        {/* Breakdown */}
-        <div className="p-6 sm:p-7 space-y-4 border-b border-[#EAEAEA]">
-          {summaryLines.map((line, i) => (
-            <div key={i} className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <line.icon className="w-4 h-4 text-[#CCCCCC]" />
-                <span className="text-[13px] text-[#666666]">{line.label}</span>
+          <div className="mt-7 rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 sm:p-6">
+            <div className="flex items-start justify-between gap-4 border-b border-[color:var(--hairline)] pb-5">
+              <div>
+                <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">
+                  Plan seleccionado
+                </p>
+                <h2 className="mt-1 text-[18px] font-semibold tracking-[-0.02em] text-ink-0">
+                  {planInfo.name}
+                </h2>
+                <p className="mt-1 text-[12px] text-ink-5">
+                  Renovación mensual automática
+                </p>
               </div>
-              <span className="text-[13px] font-semibold text-[#111111]">{line.value}</span>
+              <div className="text-right">
+                <p className="tabular text-[26px] font-semibold tracking-[-0.03em] text-ink-0">
+                  {formatPrice(planInfo.monthlyPrice)}
+                </p>
+                <p className="text-[12px] text-ink-5">por mes</p>
+              </div>
             </div>
-          ))}
-        </div>
 
-        {/* Total */}
-        <div className="p-6 sm:p-7 flex justify-between items-center border-b border-[#EAEAEA] bg-[#FAFAFA]">
-          <span className="text-base font-bold text-[#111111]">Total a pagar hoy</span>
-          <span className="text-xl font-extrabold text-[#111111]">{formatPrice(planInfo.monthlyPrice)}</span>
-        </div>
+            <dl className="space-y-3 border-b border-[color:var(--hairline)] py-5">
+              {summaryLines.map((line) => (
+                <div key={line.label} className="flex items-center justify-between gap-4">
+                  <dt className="flex items-center gap-3 text-[13px] text-ink-5">
+                    <line.icon className="h-4 w-4 text-ink-6" strokeWidth={1.75} />
+                    {line.label}
+                  </dt>
+                  <dd className="text-right text-[13px] font-medium text-ink-0">
+                    {line.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
 
-        {/* Payment method */}
-        <div className="p-6 sm:p-7">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-[#F5F5F5] flex items-center justify-center">
-              <CreditCard className="w-5 h-5 text-[#888888]" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-[#111111]">Mercado Pago</p>
-              <p className="text-[12px] text-[#999999]">Tarjeta, débito o dinero en cuenta</p>
+            <div className="flex items-center justify-between gap-4 pt-5">
+              <span className="text-[14px] font-medium text-ink-0">
+                Total a pagar hoy
+              </span>
+              <span className="tabular text-[22px] font-semibold tracking-[-0.02em] text-ink-0">
+                {formatPrice(planInfo.monthlyPrice)}
+              </span>
             </div>
           </div>
+        </section>
 
-          <button
-            onClick={handleCheckout}
-            disabled={loading}
-            className="w-full py-4 rounded-xl font-semibold text-[15px] bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all duration-200 flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Redirigiendo a Mercado Pago…
-              </>
-            ) : (
-              <>
-                Confirmar y pagar
-                <ArrowRight className="w-4 h-4" />
-              </>
+        <aside className="lg:col-span-5">
+          <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 sm:p-6 lg:sticky lg:top-8">
+            {error && (
+              <div
+                role="alert"
+                className="mb-5 flex items-start gap-2 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-1)] px-3.5 py-3 text-[13px] text-[color:var(--signal-danger)]"
+              >
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} />
+                <span>{error}</span>
+              </div>
             )}
-          </button>
-        </div>
+
+            <div className="flex items-center gap-3">
+              <div
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--r-sm)] text-ink-12"
+                style={{ backgroundColor: "#009EE3" }}
+                aria-hidden
+              >
+                <CreditCard className="h-4 w-4" strokeWidth={1.75} />
+              </div>
+              <div>
+                <p className="text-[14px] font-semibold text-ink-0">Mercado Pago</p>
+                <p className="mt-0.5 text-[12px] text-ink-5">
+                  Tarjeta, débito o dinero en cuenta
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleCheckout}
+              disabled={loading}
+              className="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-4 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Redirigiendo a Mercado Pago...
+                </>
+              ) : (
+                <>
+                  Confirmar y pagar
+                  <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
+                </>
+              )}
+            </button>
+
+            <div className="mt-5 space-y-2 border-t border-[color:var(--hairline)] pt-5 text-[12px] text-ink-5">
+              <p className="flex items-center gap-2">
+                <Shield className="h-3.5 w-3.5 text-ink-5" strokeWidth={1.75} />
+                Pago seguro fuera de Nexora
+              </p>
+              <p className="flex items-center gap-2">
+                <Check className="h-3.5 w-3.5 text-ink-5" strokeWidth={1.75} />
+                Cancelá cuando quieras
+              </p>
+            </div>
+          </div>
+        </aside>
       </div>
 
-      {/* Trust bar */}
-      <div className="flex items-center justify-center gap-6 text-[11px] text-[#999999] font-medium">
-        <span className="flex items-center gap-1.5">
-          <Shield className="w-3.5 h-3.5 text-emerald-500" />
-          Pago seguro SSL
-        </span>
-        <span className="flex items-center gap-1.5">
-          <Check className="w-3.5 h-3.5 text-emerald-500" />
-          Cancelá cuando quieras
-        </span>
-      </div>
-
-      <p className="text-[11px] text-center text-[#AAAAAA] max-w-md mx-auto leading-relaxed">
-        Al confirmar, aceptás los Términos de Servicio. Los impuestos locales se calcularán en Mercado Pago.
+      <p className="mx-auto max-w-md text-center text-[11px] leading-[1.55] text-ink-6">
+        Al confirmar, aceptás los Términos de Servicio. Los impuestos locales se
+        calcularán en Mercado Pago.
       </p>
     </div>
   );

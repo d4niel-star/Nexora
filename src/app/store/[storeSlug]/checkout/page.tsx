@@ -47,39 +47,67 @@ export default async function CheckoutPage({ params }: { params: Promise<{ store
   }).format(price);
 
   return (
-    <div className="bg-gray-50 flex flex-col lg:flex-row min-h-screen">
-      <div className="flex-1 px-4 py-8 sm:px-6 lg:px-8 xl:px-24">
-        <div className="max-w-xl mx-auto lg:ml-auto lg:mr-0 pt-8">
-          <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight mb-8">Checkout</h1>
+    <div className="min-h-screen bg-[var(--surface-1)]">
+      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-10 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-12 lg:gap-12 lg:px-8">
+        <section className="lg:col-span-7 xl:col-span-8" aria-labelledby="checkout-title">
+          <div className="mb-8">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">
+              Checkout
+            </p>
+            <h1
+              id="checkout-title"
+              className="mt-2 font-semibold text-[34px] leading-[1.04] tracking-[-0.035em] text-ink-0 sm:text-[48px]"
+            >
+              Finalizá tu compra
+            </h1>
+            <p className="mt-3 max-w-xl text-[14px] leading-[1.55] text-ink-5">
+              Completá tus datos y te redirigimos a Mercado Pago para pagar de
+              forma segura.
+            </p>
+          </div>
+
+          <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 sm:p-7">
           {hasStockIssues ? (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-5">
-              <h2 className="text-base font-bold text-red-800">El stock cambio antes del checkout</h2>
-              <p className="mt-2 text-sm text-red-700">
-                No podemos avanzar al pago hasta que ajustes el carrito. Esto evita vender unidades que ya no estan disponibles.
+            <div role="alert">
+              <h2 className="text-[16px] font-semibold tracking-[-0.01em] text-ink-0">
+                El stock cambió antes del checkout
+              </h2>
+              <p className="mt-2 text-[13px] leading-[1.55] text-ink-5">
+                No podemos avanzar al pago hasta que ajustes el carrito. Esto
+                evita vender unidades que ya no están disponibles.
               </p>
               <ul className="mt-4 space-y-2">
                 {stockIssues.map((issue) => (
-                  <li key={issue.itemId} className="rounded-sm bg-white px-3 py-2 text-sm text-red-700">
-                    <span className="font-semibold">{issue.title}</span> ({issue.variantTitle}): pediste {issue.requested}, quedan {issue.available}.
+                  <li
+                    key={issue.itemId}
+                    className="rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 py-2 text-[13px] text-[color:var(--signal-danger)]"
+                  >
+                    <span className="font-medium text-ink-0">{issue.title}</span>{" "}
+                    ({issue.variantTitle}): pediste {issue.requested}, quedan{" "}
+                    {issue.available}.
                   </li>
                 ))}
               </ul>
               <Link
                 href={storePath(resolvedParams.storeSlug, "cart")}
-                className="mt-5 inline-flex rounded-sm bg-red-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-700 focus-visible:ring-offset-2"
+                className="mt-5 inline-flex h-11 items-center justify-center rounded-[var(--r-sm)] bg-ink-0 px-4 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
               >
                 Ajustar carrito
               </Link>
             </div>
           ) : !canCheckoutWithMercadoPago ? (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-5">
-              <h2 className="text-base font-bold text-amber-900">Checkout no disponible</h2>
-              <p className="mt-2 text-sm text-amber-800">
-                Esta tienda todavia no tiene Mercado Pago conectado. Podes revisar el carrito, pero el pago se habilita cuando el vendedor conecta su cuenta.
+            <div role="status">
+              <h2 className="text-[16px] font-semibold tracking-[-0.01em] text-ink-0">
+                Checkout no disponible
+              </h2>
+              <p className="mt-2 text-[13px] leading-[1.55] text-ink-5">
+                Esta tienda todavía no tiene Mercado Pago conectado. Podés
+                revisar el carrito, pero el pago se habilita cuando el vendedor
+                conecta su cuenta.
               </p>
               <Link
                 href={storePath(resolvedParams.storeSlug, "cart")}
-                className="mt-5 inline-flex rounded-sm bg-amber-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-amber-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-900 focus-visible:ring-offset-2"
+                className="mt-5 inline-flex h-11 items-center justify-center rounded-[var(--r-sm)] bg-ink-0 px-4 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
               >
                 Volver al carrito
               </Link>
@@ -87,54 +115,60 @@ export default async function CheckoutPage({ params }: { params: Promise<{ store
           ) : (
             <CheckoutForm draft={draft!} storeSlug={resolvedParams.storeSlug} shippingMethods={shippingMethods} />
           )}
-        </div>
-      </div>
+          </div>
+        </section>
 
-      <div className="flex-1 bg-white border-l border-gray-200 px-4 py-8 sm:px-6 lg:px-8 xl:px-24">
-        <div className="max-w-lg mx-auto lg:mr-auto lg:ml-0 sticky top-12 pt-8">
-          <h2 className="text-lg font-bold text-gray-900 mb-6">Resumen del pedido</h2>
+        <aside className="lg:col-span-5 xl:col-span-4" aria-labelledby="order-summary-title">
+          <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 sm:p-6 lg:sticky lg:top-24">
+          <h2
+            id="order-summary-title"
+            className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5"
+          >
+            Resumen del pedido
+          </h2>
 
-          <ul role="list" className="divide-y divide-gray-200">
+          <ul role="list" className="mt-5 divide-y divide-[color:var(--hairline)] border-y border-[color:var(--hairline)]">
             {cart.items.map((item) => (
-              <li key={item.id} className="flex py-6">
-                <div className="h-16 w-16 flex-shrink-0 rounded-md border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden">
+              <li key={item.id} className="flex py-4">
+                <div className="flex h-16 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-2)]">
                   {item.imageSnapshot ? (
                     <img src={item.imageSnapshot} alt={item.titleSnapshot} className="h-full w-full object-cover" />
                   ) : (
-                    <span className="text-[10px] text-gray-400">N/A</span>
+                    <span className="text-[10px] text-ink-6">N/A</span>
                   )}
                 </div>
-                <div className="ml-4 flex flex-1 flex-col">
+                <div className="ml-3 flex min-w-0 flex-1 flex-col">
                   <div>
-                    <div className="flex justify-between text-sm font-medium text-gray-900">
-                      <h3 className="line-clamp-2 pr-4">{item.titleSnapshot}</h3>
-                      <p className="ml-4 tabular-nums block">{priceFormatted(item.priceSnapshot * item.quantity)}</p>
+                    <div className="flex justify-between gap-3 text-[13px] font-medium text-ink-0">
+                      <h3 className="line-clamp-2 min-w-0">{item.titleSnapshot}</h3>
+                      <p className="tabular shrink-0">{priceFormatted(item.priceSnapshot * item.quantity)}</p>
                     </div>
-                    <p className="mt-1 text-xs text-gray-500">{item.variantTitleSnapshot}</p>
+                    <p className="mt-1 truncate text-[12px] text-ink-5">{item.variantTitleSnapshot}</p>
                   </div>
-                  <div className="flex flex-1 items-end justify-between text-xs">
-                    <p className="text-gray-500">Cant. {item.quantity}</p>
+                  <div className="flex flex-1 items-end justify-between text-[12px]">
+                    <p className="text-ink-5">Cant. {item.quantity}</p>
                   </div>
                 </div>
               </li>
             ))}
           </ul>
 
-          <dl className="mt-6 space-y-4 text-sm font-medium text-gray-500 border-t border-gray-200 pt-6">
+          <dl className="mt-6 space-y-3 text-[14px]">
             <div className="flex justify-between">
-              <dt>Subtotal</dt>
-              <dd className="text-gray-900 tabular-nums">{priceFormatted(subtotal)}</dd>
+              <dt className="text-ink-5">Subtotal</dt>
+              <dd className="tabular font-medium text-ink-0">{priceFormatted(subtotal)}</dd>
             </div>
             <div className="flex justify-between">
-              <dt>Envio</dt>
-              <dd className="text-gray-900 tabular-nums">{shippingAmount > 0 ? priceFormatted(shippingAmount) : "Gratis"}</dd>
+              <dt className="text-ink-5">Envío</dt>
+              <dd className="tabular font-medium text-ink-0">{shippingAmount > 0 ? priceFormatted(shippingAmount) : "Gratis"}</dd>
             </div>
-            <div className="flex justify-between border-t border-gray-200 pt-4 text-base font-bold text-gray-900">
+            <div className="flex justify-between border-t border-[color:var(--hairline)] pt-4 text-[16px] font-semibold text-ink-0">
               <dt>Total</dt>
-              <dd className="tabular-nums">{priceFormatted(total)}</dd>
+              <dd className="tabular">{priceFormatted(total)}</dd>
             </div>
           </dl>
-        </div>
+          </div>
+        </aside>
       </div>
     </div>
   );

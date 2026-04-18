@@ -32,15 +32,15 @@
   --hairline: rgba(10, 11, 14, 0.08);
   --hairline-strong: rgba(10, 11, 14, 0.14);
 
-  /* ─── Accent (single, electric-neutral) ─── */
-  --accent-50: #EEF0FF;
-  --accent-100: #DADDFF;
-  --accent-200: #B9BFFF;
-  --accent-400: #8793FF;
-  --accent-500: #5B6CFF;   /* base */
-  --accent-600: #4455F5;
-  --accent-700: #3542D6;
-  --accent-ink: #F4F5FF;   /* foreground atop accent bg */
+  /* ─── Accent (quiet commerce-neutral) ─── */
+  --accent-50: #F4F4F5;
+  --accent-100: #EAEBEE;
+  --accent-200: #DADCE1;
+  --accent-400: #6F7280;
+  --accent-500: #4A4D59;   /* base */
+  --accent-600: #2E313C;
+  --accent-700: #141519;
+  --accent-ink: #FFFFFF;   /* foreground atop accent bg */
 
   /* ─── Signal colors (sparingly, sobriety first) ─── */
   --signal-success: #1FAE7A;
@@ -50,15 +50,15 @@
   /* ─── Radii ─── */
   --r-xs: 4px;
   --r-sm: 6px;
-  --r-md: 10px;
-  --r-lg: 14px;
-  --r-xl: 20px;
+  --r-md: 8px;
+  --r-lg: 8px;
+  --r-xl: 8px;
   --r-full: 9999px;
 
   /* ─── Shadows (tight, precise — no dramatic elevations) ─── */
   --shadow-soft: 0 1px 2px rgba(10, 11, 14, 0.04), 0 0 0 1px rgba(10, 11, 14, 0.04);
   --shadow-elevated: 0 12px 32px -8px rgba(10, 11, 14, 0.10), 0 2px 6px rgba(10, 11, 14, 0.05);
-  --shadow-focus: 0 0 0 3px rgba(91, 108, 255, 0.18);
+  --shadow-focus: 0 0 0 3px rgba(10, 11, 14, 0.14);
 
   /* ─── Typography ─── */
   --font-sans: var(--font-inter), "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -130,6 +130,62 @@
   --color-signal-success: var(--signal-success);
   --color-signal-warning: var(--signal-warning);
   --color-signal-danger: var(--signal-danger);
+
+  /* Tailwind compatibility palette: keeps older modules visually aligned. */
+  --color-gray-50: var(--ink-11);
+  --color-gray-100: var(--ink-10);
+  --color-gray-200: var(--ink-9);
+  --color-gray-300: var(--ink-8);
+  --color-gray-400: var(--ink-6);
+  --color-gray-500: var(--ink-5);
+  --color-gray-600: var(--ink-4);
+  --color-gray-700: var(--ink-3);
+  --color-gray-800: var(--ink-2);
+  --color-gray-900: var(--ink-0);
+  --color-slate-50: var(--ink-11);
+  --color-slate-100: var(--ink-10);
+  --color-slate-200: var(--ink-9);
+  --color-slate-300: var(--ink-8);
+  --color-slate-400: var(--ink-6);
+  --color-slate-500: var(--ink-5);
+  --color-slate-600: var(--ink-4);
+  --color-slate-700: var(--ink-3);
+  --color-slate-800: var(--ink-2);
+  --color-slate-900: var(--ink-0);
+  --color-blue-50: var(--accent-50);
+  --color-blue-100: var(--accent-100);
+  --color-blue-200: var(--accent-200);
+  --color-blue-400: var(--accent-400);
+  --color-blue-500: var(--accent-500);
+  --color-blue-600: var(--accent-600);
+  --color-blue-700: var(--accent-700);
+  --color-indigo-50: var(--accent-50);
+  --color-indigo-100: var(--accent-100);
+  --color-indigo-200: var(--accent-200);
+  --color-indigo-400: var(--accent-400);
+  --color-indigo-500: var(--accent-500);
+  --color-indigo-600: var(--accent-600);
+  --color-indigo-700: var(--accent-700);
+  --color-violet-50: var(--accent-50);
+  --color-violet-100: var(--accent-100);
+  --color-violet-200: var(--accent-200);
+  --color-violet-400: var(--accent-400);
+  --color-violet-500: var(--accent-500);
+  --color-violet-600: var(--accent-600);
+  --color-violet-700: var(--accent-700);
+  --color-purple-50: var(--accent-50);
+  --color-purple-100: var(--accent-100);
+  --color-purple-200: var(--accent-200);
+  --color-purple-400: var(--accent-400);
+  --color-purple-500: var(--accent-500);
+  --color-purple-600: var(--accent-600);
+  --color-purple-700: var(--accent-700);
+
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+  --radius-2xl: var(--r-xl);
+  --shadow-lg: var(--shadow-soft);
+  --shadow-xl: var(--shadow-elevated);
 
   --font-sans: var(--font-sans);
   --font-display: var(--font-display);

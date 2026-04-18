@@ -26,21 +26,28 @@ export function TestimonialsSection({ settings }: TestimonialsSectionProps) {
   if (testimonials.length === 0) return null;
 
   return (
-    <section className="bg-[var(--surface-1)] py-20 sm:py-28">
+    <section className="bg-[var(--surface-1)] py-16 sm:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-10 max-w-2xl sm:mb-14">
-          <p className="text-eyebrow">Prueba social</p>
-          <h2 className="mt-4 font-semibold text-[32px] leading-[1.02] tracking-[-0.03em] text-ink-0 sm:text-[48px]">
-            {title}
-          </h2>
-          {subtitle && (
-            <p className="mt-4 text-[15px] leading-[1.6] text-ink-5">
-              {subtitle}
+        <div className="mb-9 flex flex-col gap-4 border-b border-[color:var(--hairline)] pb-6 sm:mb-12 sm:flex-row sm:items-end sm:justify-between">
+          <div className="max-w-2xl">
+            <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-ink-6">
+              Experiencia de compra
             </p>
-          )}
+            <h2 className="mt-3 text-[28px] font-semibold leading-[1.06] tracking-[-0.025em] text-ink-0 sm:text-[40px]">
+              {title}
+            </h2>
+            {subtitle && (
+              <p className="mt-3 text-[14px] leading-[1.6] text-ink-5">
+                {subtitle}
+              </p>
+            )}
+          </div>
+          <p className="text-[12px] font-medium text-ink-6">
+            Opiniones cargadas por la tienda
+          </p>
         </div>
 
-        <div className="grid gap-px overflow-hidden rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[color:var(--hairline)] md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-3">
           {testimonials.map((testimonial, index) => {
             const rating = clampRating(testimonial.rating);
             const initial = testimonial.name?.trim().charAt(0).toUpperCase() || "N";
@@ -48,44 +55,43 @@ export function TestimonialsSection({ settings }: TestimonialsSectionProps) {
             return (
               <article
                 key={`${testimonial.name ?? "testimonial"}-${index}`}
-                className="flex min-h-[260px] flex-col bg-[var(--surface-0)] p-5 transition-colors hover:bg-[var(--surface-2)] sm:p-6"
+                className="flex min-h-[230px] flex-col rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 transition-colors hover:border-[color:var(--hairline-strong)] sm:p-6"
               >
-                {rating > 0 && (
-                  <div className="flex gap-1" aria-label={`${rating} de 5`}>
-                    {Array.from({ length: 5 }).map((_, starIndex) => (
-                      <Star
-                        key={starIndex}
-                        className={starIndex < rating ? "h-3.5 w-3.5 fill-ink-0 text-ink-0" : "h-3.5 w-3.5 text-ink-8"}
-                        strokeWidth={1.75}
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    {testimonial.avatar ? (
+                      <img
+                        src={testimonial.avatar}
+                        alt=""
+                        className="h-8 w-8 rounded-[var(--r-sm)] object-cover"
                       />
-                    ))}
+                    ) : (
+                      <div className="flex h-8 w-8 items-center justify-center rounded-[var(--r-sm)] bg-[var(--surface-2)] text-[12px] font-semibold text-ink-4">
+                        {initial}
+                      </div>
+                    )}
+                    <p className="truncate text-[13px] font-semibold text-ink-0">
+                      {testimonial.name || "Cliente"}
+                    </p>
                   </div>
-                )}
+                  {rating > 0 && (
+                    <div className="flex gap-0.5" aria-label={`${rating} de 5`}>
+                      {Array.from({ length: 5 }).map((_, starIndex) => (
+                        <Star
+                          key={starIndex}
+                          className={starIndex < rating ? "h-3 w-3 fill-ink-0 text-ink-0" : "h-3 w-3 text-ink-8"}
+                          strokeWidth={1.75}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 {testimonial.text && (
                   <p className="mt-8 text-[15px] leading-[1.65] tracking-[-0.01em] text-ink-2">
                     &ldquo;{testimonial.text}&rdquo;
                   </p>
                 )}
-
-                <div className="mt-auto flex items-center gap-3 pt-8">
-                  {testimonial.avatar ? (
-                    <img
-                      src={testimonial.avatar}
-                      alt=""
-                      className="h-9 w-9 rounded-[var(--r-sm)] object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-9 w-9 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-2)] text-[12px] font-semibold text-ink-4">
-                      {initial}
-                    </div>
-                  )}
-                  <div className="min-w-0">
-                    <p className="truncate text-[13px] font-semibold text-ink-0">
-                      {testimonial.name || "Cliente"}
-                    </p>
-                  </div>
-                </div>
               </article>
             );
           })}
