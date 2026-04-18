@@ -3,43 +3,79 @@ import { StorefrontProduct } from "@/types/storefront";
 import { formatCurrency } from "@/lib/utils";
 import { storePath } from "@/lib/store-engine/urls";
 
-export function ProductCard({ product, storeSlug }: { product: StorefrontProduct; storeSlug: string }) {
+// ─── Product Card ───
+// Editorial 4/5 frame, a single surfaced badge (uses the first one if the
+// product ships multiple), and a quiet hover that underlines the title rather
+// than overlaying a "Vista rápida" blur. No data is invented — everything
+// rendered here comes straight from StorefrontProduct.
+
+export function ProductCard({
+  product,
+  storeSlug,
+}: {
+  product: StorefrontProduct;
+  storeSlug: string;
+}) {
+  const primaryBadge = product.badges[0];
+  const hasCompare =
+    typeof product.compareAtPrice === "number" && product.compareAtPrice > product.price;
+
   return (
-    <Link href={storePath(storeSlug, `products/${product.handle}`)} className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black rounded-sm">
-      <div className="aspect-[3/4] w-full overflow-hidden rounded-sm bg-gray-100 relative">
-        {product.featuredImage ? (
-          <img
-            src={product.featuredImage}
-            alt={product.title}
-            className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center px-6 text-center">
-            <span className="text-xs font-bold uppercase tracking-widest text-gray-400">Sin imagen</span>
-          </div>
-        )}
-        {product.badges.length > 0 && (
-          <div className="absolute top-3 left-3 flex flex-col gap-2">
-            {product.badges.map(b => (
-              <span key={b} className="inline-flex items-center rounded-sm bg-white px-2 py-1 text-[10px] uppercase font-black tracking-widest text-gray-900 shadow-sm">
-                {b}
+    <Link
+      href={storePath(storeSlug, `products/${product.handle}`)}
+      className="group block rounded-[var(--r-md)] outline-none focus-visible:shadow-[var(--shadow-focus)]"
+    >
+      <div className="relative overflow-hidden rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-2)]">
+        <div className="aspect-[4/5] w-full">
+          {product.featuredImage ? (
+            <img
+              src={product.featuredImage}
+              alt={product.title}
+              className="h-full w-full object-cover transition-transform duration-[600ms] ease-[var(--ease-out)] group-hover:scale-[1.035]"
+            />
+          ) : (
+            <div
+              aria-hidden
+              className="flex h-full w-full items-center justify-center bg-[var(--surface-3)]"
+            >
+              <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-6">
+                Sin imagen
               </span>
-            ))}
-          </div>
+            </div>
+          )}
+        </div>
+
+        {primaryBadge && (
+          <span className="absolute left-3 top-3 inline-flex items-center rounded-full border border-[color:var(--hairline)] bg-[var(--surface-0)]/95 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-0 backdrop-blur-[6px]">
+            {primaryBadge}
+          </span>
         )}
-        <div className="absolute inset-x-0 bottom-0 p-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex justify-center pb-6">
-           <span className="bg-white/90 backdrop-blur px-6 py-3 rounded-sm text-xs font-bold uppercase tracking-widest text-gray-900 shadow-sm">Vista rapida</span>
-        </div>
+
+        {!product.inStock && (
+          <span className="absolute right-3 top-3 inline-flex items-center rounded-full bg-ink-0/80 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-12 backdrop-blur-[6px]">
+            Sin stock
+          </span>
+        )}
       </div>
-      <div className="mt-4 flex flex-col justify-between">
-        <div>
-          <h3 className="text-sm font-bold text-gray-900">{product.title}</h3>
-          <p className="mt-1 text-xs text-gray-500">{product.brand}</p>
+
+      <div className="mt-4 flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate text-[14px] font-medium text-ink-0 decoration-[color:var(--hairline-strong)] underline-offset-4 group-hover:underline">
+            {product.title}
+          </h3>
+          {product.brand && (
+            <p className="mt-0.5 truncate text-[12px] text-ink-5">{product.brand}</p>
+          )}
         </div>
-        <div className="mt-2 flex items-center gap-2">
-          <p className="text-sm font-bold text-gray-900">{formatCurrency(product.price)}</p>
-          {product.compareAtPrice && (
-            <p className="text-sm font-medium text-gray-400 line-through">{formatCurrency(product.compareAtPrice)}</p>
+
+        <div className="text-right">
+          <p className="tabular text-[14px] font-medium text-ink-0">
+            {formatCurrency(product.price)}
+          </p>
+          {hasCompare && (
+            <p className="tabular text-[12px] text-ink-6 line-through">
+              {formatCurrency(product.compareAtPrice as number)}
+            </p>
           )}
         </div>
       </div>

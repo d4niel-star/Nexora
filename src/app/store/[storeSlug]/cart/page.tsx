@@ -2,10 +2,21 @@ import { getCart, getCartStockIssues } from "@/lib/store-engine/cart/queries";
 import { getStorefrontData } from "@/lib/store-engine/queries";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ArrowRight, ShoppingBag } from "lucide-react";
 import { CartList } from "@/components/storefront/cart/CartList";
 import { storePath } from "@/lib/store-engine/urls";
+import { Surface } from "@/components/ui/primitives";
 
-export default async function CartPage({ params }: { params: Promise<{ storeSlug: string }> }) {
+// ─── Cart Page ───
+// 12-col editorial grid: items dominate (7 cols) and summary docks on the
+// right (5 cols on lg, sticky). Mobile stacks with the summary flowing below.
+// Empty state uses a restrained surface rather than centered copy.
+
+export default async function CartPage({
+  params,
+}: {
+  params: Promise<{ storeSlug: string }>;
+}) {
   const resolvedParams = await params;
   const storefrontData = await getStorefrontData(resolvedParams.storeSlug);
 
@@ -17,44 +28,69 @@ export default async function CartPage({ params }: { params: Promise<{ storeSlug
   const stockIssues = cart ? await getCartStockIssues(cart.id) : [];
   const hasStockIssues = stockIssues.length > 0;
 
-  const formatCurrency = (price: number) => new Intl.NumberFormat(storefrontData.store.locale, {
-    style: "currency",
-    currency: storefrontData.store.currency,
-    maximumFractionDigits: 0,
-  }).format(price);
+  const formatCurrency = (price: number) =>
+    new Intl.NumberFormat(storefrontData.store.locale, {
+      style: "currency",
+      currency: storefrontData.store.currency,
+      maximumFractionDigits: 0,
+    }).format(price);
 
   return (
-    <div className="bg-white">
-      <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 sm:py-24 lg:px-0">
-        <h1 className="text-center text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">
-          Carrito de Compras
-        </h1>
+    <div className="bg-[var(--surface-1)]">
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+        <header className="mb-10">
+          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">
+            Carrito
+          </p>
+          <h1 className="mt-2 font-display text-[36px] leading-[1.02] tracking-[-0.02em] text-ink-0 sm:text-[52px]">
+            Tu selección
+          </h1>
+        </header>
 
         {!cart || cart.items.length === 0 ? (
-          <div className="mt-12 text-center">
-            <h2 className="text-xl font-medium text-gray-900">Tu carrito está vacío</h2>
-            <p className="mt-4 text-gray-500">Parece que aún no has agregado nada.</p>
-            <div className="mt-8">
+          <Surface level={0} hairline radius="lg" className="p-10 sm:p-16">
+            <div className="mx-auto flex max-w-md flex-col items-start gap-6">
+              <div className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[color:var(--hairline)] bg-[var(--surface-1)] text-ink-4">
+                <ShoppingBag className="h-5 w-5" strokeWidth={1.5} />
+              </div>
+              <div>
+                <h2 className="font-display text-[24px] leading-[1.05] tracking-[-0.015em] text-ink-0 sm:text-[28px]">
+                  Tu carrito está vacío.
+                </h2>
+                <p className="mt-3 text-[14px] leading-[1.55] text-ink-5">
+                  Agregá productos desde el catálogo para empezar tu compra.
+                </p>
+              </div>
               <Link
                 href={storePath(resolvedParams.storeSlug)}
-                className="inline-flex items-center justify-center rounded-sm border border-transparent bg-gray-900 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-ink-0 px-5 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
               >
-                Volver a la tienda
+                Volver al catálogo
+                <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
               </Link>
             </div>
-          </div>
+          </Surface>
         ) : (
-          <form className="mt-12">
-            <section aria-labelledby="cart-heading">
+          <form className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-12">
+            {/* Items */}
+            <section
+              aria-labelledby="cart-heading"
+              className="lg:col-span-7 xl:col-span-8"
+            >
               <h2 id="cart-heading" className="sr-only">
-                Items in your shopping cart
+                Productos en tu carrito
               </h2>
 
               {hasStockIssues && (
-                <div className="mb-6 rounded-sm border border-red-200 bg-red-50 px-4 py-4">
-                  <p className="text-sm font-bold text-red-800">El stock cambio desde que agregaste productos.</p>
-                  <p className="mt-1 text-sm text-red-700">
-                    Ajusta las cantidades marcadas para poder avanzar al checkout.
+                <div
+                  role="alert"
+                  className="mb-5 rounded-[var(--r-md)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] p-4"
+                >
+                  <p className="text-[13px] font-medium text-[color:var(--signal-danger)]">
+                    El stock cambió desde que agregaste productos.
+                  </p>
+                  <p className="mt-1 text-[13px] text-ink-5">
+                    Ajustá las cantidades marcadas para poder avanzar al checkout.
                   </p>
                 </div>
               )}
@@ -68,46 +104,70 @@ export default async function CartPage({ params }: { params: Promise<{ storeSlug
               />
             </section>
 
-            {/* Order summary */}
-            <section aria-labelledby="summary-heading" className="mt-10">
-              <h2 id="summary-heading" className="sr-only">
-                Order summary
-              </h2>
+            {/* Summary */}
+            <aside className="lg:col-span-5 xl:col-span-4">
+              <Surface
+                level={0}
+                hairline
+                radius="lg"
+                className="p-6 lg:sticky lg:top-24"
+              >
+                <h2
+                  id="summary-heading"
+                  className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5"
+                >
+                  Resumen
+                </h2>
 
-              <div>
-                <dl className="space-y-4">
+                <dl className="mt-5 space-y-3 text-[14px]">
                   <div className="flex items-center justify-between">
-                    <dt className="text-base font-medium text-gray-900">Subtotal</dt>
-                    <dd className="ml-4 text-base font-medium text-gray-900">{formatCurrency(cart.subtotal)}</dd>
+                    <dt className="text-ink-5">Subtotal</dt>
+                    <dd className="tabular font-medium text-ink-0">
+                      {formatCurrency(cart.subtotal)}
+                    </dd>
+                  </div>
+                  <div className="flex items-center justify-between text-ink-5">
+                    <dt>Envío</dt>
+                    <dd>Se calcula en el checkout</dd>
                   </div>
                 </dl>
-                <p className="mt-1 text-sm text-gray-500">Los costos de envío y los impuestos se calculan en el checkout.</p>
-              </div>
 
-              <div className="mt-10">
-                {hasStockIssues ? (
-                  <span className="w-full flex cursor-not-allowed items-center justify-center rounded-sm border border-transparent bg-gray-300 px-4 py-4 text-base font-medium text-white">
-                    Ajusta el stock para continuar
+                <div className="my-5 h-px bg-[color:var(--hairline)]" />
+
+                <div className="flex items-baseline justify-between">
+                  <span className="text-[13px] text-ink-5">Total estimado</span>
+                  <span className="tabular text-[22px] font-medium text-ink-0">
+                    {formatCurrency(cart.subtotal)}
                   </span>
-                ) : (
-                  <Link
-                    href={storePath(resolvedParams.storeSlug, "checkout")}
-                    className="w-full flex items-center justify-center rounded-sm border border-transparent bg-gray-900 px-4 py-4 text-base font-medium text-white shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 focus:ring-offset-gray-50 transition-colors"
-                  >
-                    Iniciar Checkout
-                  </Link>
-                )}
-              </div>
+                </div>
 
-              <div className="mt-6 text-center text-sm">
-                <p>
-                  o{' '}
-                  <Link href={storePath(resolvedParams.storeSlug)} className="font-medium text-gray-900 hover:text-gray-600">
-                    Continuar comprando<span aria-hidden="true"> &rarr;</span>
+                <div className="mt-6">
+                  {hasStockIssues ? (
+                    <span className="inline-flex h-12 w-full cursor-not-allowed items-center justify-center rounded-full bg-ink-8 text-[14px] font-medium text-ink-12">
+                      Ajustá el stock para continuar
+                    </span>
+                  ) : (
+                    <Link
+                      href={storePath(resolvedParams.storeSlug, "checkout")}
+                      className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-ink-0 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
+                    >
+                      Iniciar checkout
+                      <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
+                    </Link>
+                  )}
+                </div>
+
+                <p className="mt-4 text-center text-[12px] text-ink-5">
+                  o{" "}
+                  <Link
+                    href={storePath(resolvedParams.storeSlug)}
+                    className="text-ink-0 underline decoration-[color:var(--hairline-strong)] underline-offset-4 hover:decoration-ink-0"
+                  >
+                    continuar comprando
                   </Link>
                 </p>
-              </div>
-            </section>
+              </Surface>
+            </aside>
           </form>
         )}
       </div>
