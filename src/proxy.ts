@@ -14,23 +14,69 @@ export const config = {
   ],
 }
 
-export function proxy(req: NextRequest) {
+// ─── Canonical host detection ───
+// A host is canonical when it is the Nexora app itself (apex, www, app.*),
+// localhost / *.localhost, or a platform preview (onrender/vercel). Anything
+// else is treated as a potential tenant custom domain and resolved via the
+// internal lookup endpoint.
+function isCanonicalHost(host: string, rootDomain: string): boolean {
+  if (!host) return true
+  const bare = host.replace(/:\d+$/, '').toLowerCase()
+  const canonical = (process.env.CANONICAL_APP_HOST || rootDomain).toLowerCase()
+
+  if (bare === canonical) return true
+  if (bare === `www.${canonical}`) return true
+  if (bare === `app.${canonical}`) return true
+  if (bare === 'localhost' || bare.endsWith('.localhost')) return true
+  if (bare.endsWith('.onrender.com')) return true
+  if (bare.endsWith('.vercel.app')) return true
+  if (!bare.includes('.')) return true
+  return false
+}
+
+export async function proxy(req: NextRequest) {
   const url = req.nextUrl
-  
+
   // Derive root domain dynamically for any port
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || (req.headers.get('host')?.startsWith('localhost') ? req.headers.get('host')! : 'localhost:3000')
 
   // Get hostname of request (e.g. demo.vercel.pub, demo.localhost:3000)
   let hostname = req.headers.get('host')!
-  
+
   if (process.env.NEXT_PUBLIC_ROOT_DOMAIN) {
     hostname = hostname.replace(/\.localhost:\d+/, `.${process.env.NEXT_PUBLIC_ROOT_DOMAIN}`)
   }
-  
+
   const searchParams = req.nextUrl.searchParams.toString()
   const path = `${url.pathname}${searchParams.length > 0 ? `?${searchParams}` : ''}`
   const isLocalHost =
     hostname.startsWith('localhost:') || hostname.startsWith('127.0.0.1:')
+
+  // ─── Custom-domain resolution (tenant storefronts) ───
+  // Runs ONLY for non-canonical hosts and non-/store/ paths. If the hostname
+  // is registered in StoreDomain with status "active", rewrite to the
+  // canonical storefront route. On any failure we fall through so the rest
+  // of the proxy logic can still handle the request.
+  if (!isCanonicalHost(hostname, rootDomain) && !url.pathname.startsWith('/store/')) {
+    try {
+      const bare = hostname.replace(/:\d+$/, '').toLowerCase()
+      const lookupUrl = new URL(`/api/internal/domain-lookup?host=${encodeURIComponent(bare)}`, req.url)
+      const res = await fetch(lookupUrl, {
+        headers: { 'x-internal-lookup': '1' },
+        next: { revalidate: 60, tags: [`domain:${bare}`] },
+      })
+      if (res.ok) {
+        const data = (await res.json()) as { slug?: string | null; status?: string }
+        if (data.slug && data.status === 'active') {
+          const rewritten = url.clone()
+          rewritten.pathname = `/store/${data.slug}${url.pathname === '/' ? '' : url.pathname}`
+          return NextResponse.rewrite(rewritten)
+        }
+      }
+    } catch {
+      // Never break the request on lookup failure — fall through.
+    }
+  }
 
   // ─── Direct filesystem route passthrough ───
   // /home/*, /welcome/*, /admin/* are actual app routes in the filesystem.
