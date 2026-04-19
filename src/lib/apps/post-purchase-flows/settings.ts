@@ -7,6 +7,8 @@ import { prisma } from "@/lib/db/prisma";
 export interface PostPurchaseSettingsView {
   reviewRequestEnabled: boolean;
   reviewRequestDelayDays: number;
+  reorderFollowupEnabled: boolean;
+  reorderFollowupDelayDays: number;
 }
 
 export async function getPostPurchaseSettings(
@@ -16,11 +18,18 @@ export async function getPostPurchaseSettings(
     where: { storeId },
   });
   if (!row) {
-    return { reviewRequestEnabled: false, reviewRequestDelayDays: 7 };
+    return {
+      reviewRequestEnabled: false,
+      reviewRequestDelayDays: 7,
+      reorderFollowupEnabled: false,
+      reorderFollowupDelayDays: 30,
+    };
   }
   return {
     reviewRequestEnabled: row.reviewRequestEnabled,
     reviewRequestDelayDays: row.reviewRequestDelayDays,
+    reorderFollowupEnabled: row.reorderFollowupEnabled,
+    reorderFollowupDelayDays: row.reorderFollowupDelayDays,
   };
 }
 

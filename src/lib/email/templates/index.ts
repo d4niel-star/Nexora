@@ -268,6 +268,33 @@ export function generatePostPurchaseReviewRequestTemplate(data: OrderEmailData) 
   );
 }
 
+// ─── Post-purchase reorder follow-up (app post-purchase-flows, V3.4) ───
+// Sent N days after deliveredAt when the tenant enabled the flow. Invites
+// the customer back to the store. The CTA is INTENTIONALLY the storefront
+// home — we do not have recommendation data, so we do not fake one.
+export function generatePostPurchaseReorderFollowupTemplate(data: OrderEmailData) {
+  const content = `
+    <h2 style="margin: 0 0 20px 0; font-size: 20px; font-weight: 700; color: #111111;">¿Lo necesitás de nuevo?</h2>
+    <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.5; color: #374151;">
+      Hola ${data.customerName},<br>
+      Pasó un tiempo desde tu pedido <strong>${data.orderNumber}</strong>. Si te quedó cómodo o se está acabando, podés volver a la tienda cuando quieras.
+    </p>
+    <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.5; color: #374151;">
+      Sin descuentos inventados ni urgencias falsas — solo un recordatorio por si te sirve.
+    </p>
+    <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #6B7280;">
+      Esta es la única comunicación de seguimiento que vas a recibir sobre este pedido.
+    </p>
+  `;
+  return BaseTemplate(
+    "¿Lo necesitás de nuevo?",
+    data.storeName,
+    content,
+    data.statusUrl,
+    "Volver a la tienda",
+  );
+}
+
 export function generateStockCriticalTemplate(data: StockCriticalEmailData) {
   const variantLabel = data.variantTitle ? ` · <strong>${data.variantTitle}</strong>` : "";
   const skuLabel = data.sku ? `<span style="font-family: monospace; font-size: 13px; color: #6B7280;"> (SKU: ${data.sku})</span>` : "";

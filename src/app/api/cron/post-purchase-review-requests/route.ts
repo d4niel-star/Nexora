@@ -32,9 +32,15 @@ export async function POST(request: NextRequest) {
     "",
   );
 
-  // All tenants that installed+activated the app and enabled the flow.
+  // All tenants that installed+activated the app and enabled AT LEAST ONE
+  // flow. Each flow is evaluated independently per order below.
   const settings = await prisma.postPurchaseFlowsSettings.findMany({
-    where: { reviewRequestEnabled: true },
+    where: {
+      OR: [
+        { reviewRequestEnabled: true },
+        { reorderFollowupEnabled: true },
+      ],
+    },
     include: {
       store: {
         select: {
@@ -55,88 +61,130 @@ export async function POST(request: NextRequest) {
   );
 
   let scanned = 0;
-  let sent = 0;
+  let reviewSent = 0;
+  let reorderSent = 0;
   let skipped = 0;
 
+  // Per-flow config bundle: eventType + delay + CTA URL + flag on the row.
+  // The loop walks each enabled flow for the tenant. eventType uniqueness
+  // on EmailLog(eventType, entityType, entityId) keeps both flows fully
+  // independent — the same order can receive review-request at day 7 and
+  // reorder-followup at day 30 without any collision.
+  type FlowDef = {
+    key: "review" | "reorder";
+    eventType: "POST_PURCHASE_REVIEW_REQUEST" | "POST_PURCHASE_REORDER_FOLLOWUP";
+    delayDays: number;
+    enabled: boolean;
+    buildStatusUrl: (slug: string, orderNumber: string, email: string) => string;
+  };
+
   for (const cfg of tenants) {
-    const cutoff = new Date(
-      Date.now() - cfg.reviewRequestDelayDays * 24 * 60 * 60 * 1000,
-    );
-
-    const orders = await prisma.order.findMany({
-      where: {
-        storeId: cfg.storeId,
-        deliveredAt: { lte: cutoff, not: null },
-        email: { not: "" },
+    const flows: FlowDef[] = [
+      {
+        key: "review",
+        eventType: "POST_PURCHASE_REVIEW_REQUEST",
+        delayDays: cfg.reviewRequestDelayDays,
+        enabled: cfg.reviewRequestEnabled,
+        buildStatusUrl: (slug, num, email) =>
+          `${appUrl}${storePath(slug, "/tracking")}?order=${num}&email=${encodeURIComponent(email)}`,
       },
-      orderBy: { deliveredAt: "asc" },
-      take: HARD_CAP_PER_RUN,
-      select: {
-        id: true,
-        storeId: true,
-        orderNumber: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        subtotal: true,
-        shippingAmount: true,
-        total: true,
-        currency: true,
-        shippingMethodLabel: true,
-        trackingUrl: true,
-        trackingCode: true,
+      {
+        key: "reorder",
+        eventType: "POST_PURCHASE_REORDER_FOLLOWUP",
+        delayDays: cfg.reorderFollowupDelayDays,
+        enabled: cfg.reorderFollowupEnabled,
+        // Honest CTA: storefront home. No fake recommendations.
+        buildStatusUrl: (slug) => `${appUrl}${storePath(slug)}`,
       },
-    });
+    ];
 
-    for (const order of orders) {
-      scanned++;
+    for (const flow of flows) {
+      if (!flow.enabled) continue;
 
-      // Idempotency ships via EmailLog inside sendEmailEvent, but also
-      // short-circuit here so we don't do template work if already sent.
-      const existing = await prisma.emailLog.findUnique({
+      const cutoff = new Date(Date.now() - flow.delayDays * 24 * 60 * 60 * 1000);
+
+      const orders = await prisma.order.findMany({
         where: {
-          eventType_entityType_entityId: {
-            eventType: "POST_PURCHASE_REVIEW_REQUEST",
-            entityType: "order",
-            entityId: order.id,
-          },
+          storeId: cfg.storeId,
+          deliveredAt: { lte: cutoff, not: null },
+          email: { not: "" },
+        },
+        orderBy: { deliveredAt: "asc" },
+        take: HARD_CAP_PER_RUN,
+        select: {
+          id: true,
+          storeId: true,
+          orderNumber: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          subtotal: true,
+          shippingAmount: true,
+          total: true,
+          currency: true,
+          shippingMethodLabel: true,
+          trackingUrl: true,
+          trackingCode: true,
         },
       });
-      if (existing && existing.status === "sent") {
-        skipped++;
-        continue;
+
+      for (const order of orders) {
+        scanned++;
+
+        // Idempotency ships via EmailLog inside sendEmailEvent, but also
+        // short-circuit here so we don't do template work if already sent.
+        // Scoped by eventType so each flow tracks its own "already sent".
+        const existing = await prisma.emailLog.findUnique({
+          where: {
+            eventType_entityType_entityId: {
+              eventType: flow.eventType,
+              entityType: "order",
+              entityId: order.id,
+            },
+          },
+        });
+        if (existing && existing.status === "sent") {
+          skipped++;
+          continue;
+        }
+
+        const customerName = order.firstName?.trim() || "cliente";
+        const statusUrl = flow.buildStatusUrl(
+          cfg.store.slug,
+          order.orderNumber,
+          order.email,
+        );
+
+        const ok = await sendEmailEvent({
+          storeId: cfg.storeId,
+          eventType: flow.eventType,
+          entityType: "order",
+          entityId: order.id,
+          recipient: order.email,
+          data: {
+            storeSlug: cfg.store.slug,
+            storeName: cfg.store.name,
+            customerName,
+            orderNumber: order.orderNumber,
+            orderId: order.id,
+            subtotal: order.subtotal,
+            shippingAmount: order.shippingAmount,
+            total: order.total,
+            currency: order.currency,
+            shippingMethodLabel: order.shippingMethodLabel ?? undefined,
+            trackingUrl: order.trackingUrl ?? undefined,
+            trackingCode: order.trackingCode ?? undefined,
+            statusUrl,
+          },
+        }).catch(() => false);
+
+        if (ok) {
+          if (flow.key === "review") reviewSent++;
+          else reorderSent++;
+        } else {
+          skipped++;
+        }
       }
-
-      const customerName = order.firstName?.trim() || "cliente";
-      const statusUrl = `${appUrl}${storePath(cfg.store.slug, "/tracking")}?order=${order.orderNumber}&email=${encodeURIComponent(
-        order.email,
-      )}`;
-
-      const ok = await sendEmailEvent({
-        storeId: cfg.storeId,
-        eventType: "POST_PURCHASE_REVIEW_REQUEST",
-        entityType: "order",
-        entityId: order.id,
-        recipient: order.email,
-        data: {
-          storeSlug: cfg.store.slug,
-          storeName: cfg.store.name,
-          customerName,
-          orderNumber: order.orderNumber,
-          orderId: order.id,
-          subtotal: order.subtotal,
-          shippingAmount: order.shippingAmount,
-          total: order.total,
-          currency: order.currency,
-          shippingMethodLabel: order.shippingMethodLabel ?? undefined,
-          trackingUrl: order.trackingUrl ?? undefined,
-          trackingCode: order.trackingCode ?? undefined,
-          statusUrl,
-        },
-      }).catch(() => false);
-
-      if (ok) sent++;
-      else skipped++;
     }
   }
 
@@ -144,7 +192,9 @@ export async function POST(request: NextRequest) {
     ok: true,
     tenantsEvaluated: tenants.length,
     scanned,
-    sent,
+    sent: reviewSent + reorderSent,
+    reviewSent,
+    reorderSent,
     skipped,
   });
 }

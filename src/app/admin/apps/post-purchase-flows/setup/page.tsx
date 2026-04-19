@@ -16,29 +16,33 @@ export default async function PostPurchaseFlowsSetupPage() {
   const store = await getActiveStoreInfo();
   if (!store.id) redirect("/home/login");
 
-  const [sub, settings, install, metrics] = await Promise.all([
-    prisma.storeSubscription.findUnique({
-      where: { storeId: store.id },
-      include: { plan: true },
-    }),
-    getPostPurchaseSettings(store.id),
-    prisma.installedApp.findUnique({
-      where: {
-        storeId_appSlug: {
-          storeId: store.id,
-          appSlug: "post-purchase-flows",
+  const [sub, settings, install, reviewMetrics, reorderMetrics] =
+    await Promise.all([
+      prisma.storeSubscription.findUnique({
+        where: { storeId: store.id },
+        include: { plan: true },
+      }),
+      getPostPurchaseSettings(store.id),
+      prisma.installedApp.findUnique({
+        where: {
+          storeId_appSlug: {
+            storeId: store.id,
+            appSlug: "post-purchase-flows",
+          },
         },
-      },
-      select: { status: true },
-    }),
-    // Events for this app are logged into EmailLog via sendEmailEvent in
-    // the review-request cron. See src/app/api/cron/post-purchase-review-
-    // requests/route.ts.
-    // V3.3: CTA wrapped with buildTrackedUrl, so we opt in to click stats.
-    getAppEmailMetrics(store.id, "POST_PURCHASE_REVIEW_REQUEST", {
-      trackClicks: true,
-    }),
-  ]);
+        select: { status: true },
+      }),
+      // V3.3: CTA wrapped with buildTrackedUrl, so we opt in to click
+      // stats for the review-request flow.
+      getAppEmailMetrics(store.id, "POST_PURCHASE_REVIEW_REQUEST", {
+        trackClicks: true,
+      }),
+      // V3.4: same wrapping pattern for the reorder-followup flow. Each
+      // eventType has its own set of EmailLog rows so metrics stay clean.
+      getAppEmailMetrics(store.id, "POST_PURCHASE_REORDER_FOLLOWUP", {
+        trackClicks: true,
+      }),
+    ]);
 
   const planConfig = sub?.plan
     ? PLAN_DEFINITIONS.find((p) => p.code === sub.plan.code)?.config
@@ -60,9 +64,14 @@ export default async function PostPurchaseFlowsSetupPage() {
         installStatus={installStatus}
       />
       <AppMetricsCard
-        title="Actividad del flow post-entrega"
+        title="Actividad · Pedido de reseña"
         sentCaveat="“Envíos” cuenta mails aceptados por el proveedor de email configurado (ver /admin/integrations)."
-        metrics={metrics}
+        metrics={reviewMetrics}
+      />
+      <AppMetricsCard
+        title="Actividad · Recordatorio de recompra"
+        sentCaveat="“Envíos” cuenta mails aceptados por el proveedor de email configurado (ver /admin/integrations)."
+        metrics={reorderMetrics}
       />
     </div>
   );

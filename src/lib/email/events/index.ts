@@ -118,6 +118,17 @@ export async function sendEmailEvent(params: SendEmailEventParams): Promise<bool
             : params.data.statusUrl,
         });
         break;
+      case "POST_PURCHASE_REORDER_FOLLOWUP":
+        subject = `¿Te interesa volver a ${params.data.storeName}?`;
+        // V3.4: same wrap pattern as the review-request flow so both
+        // post-purchase CTAs contribute to real click counts.
+        htmlContent = templates.generatePostPurchaseReorderFollowupTemplate({
+          ...params.data,
+          statusUrl: params.data.statusUrl
+            ? buildTrackedUrl(log.id, params.data.statusUrl)
+            : params.data.statusUrl,
+        });
+        break;
       default:
         throw new Error(`Unhandled event type: ${params.eventType}`);
     }

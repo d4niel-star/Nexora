@@ -11,7 +11,8 @@ export type EventType =
   | "ORDER_IN_TRANSIT"
   | "STOCK_CRITICAL"
   | "ABANDONED_CART"
-  | "POST_PURCHASE_REVIEW_REQUEST";
+  | "POST_PURCHASE_REVIEW_REQUEST"
+  | "POST_PURCHASE_REORDER_FOLLOWUP";
 
 export interface AbandonedCartEmailData {
   storeSlug: string;

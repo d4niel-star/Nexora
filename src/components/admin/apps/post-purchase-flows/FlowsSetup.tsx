@@ -10,6 +10,7 @@ import {
   Clock,
   Loader2,
   Mail,
+  RotateCcw,
   ShoppingBag,
 } from "lucide-react";
 
@@ -40,6 +41,12 @@ export function FlowsSetup({ settings, planAllows, installed, installStatus }: P
   const router = useRouter();
   const [enabled, setEnabled] = useState(settings.reviewRequestEnabled);
   const [delay, setDelay] = useState(settings.reviewRequestDelayDays);
+  const [reorderEnabled, setReorderEnabled] = useState(
+    settings.reorderFollowupEnabled,
+  );
+  const [reorderDelay, setReorderDelay] = useState(
+    settings.reorderFollowupDelayDays,
+  );
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -52,6 +59,8 @@ export function FlowsSetup({ settings, planAllows, installed, installStatus }: P
       const res = await savePostPurchaseSettingsAction({
         reviewRequestEnabled: enabled,
         reviewRequestDelayDays: delay,
+        reorderFollowupEnabled: reorderEnabled,
+        reorderFollowupDelayDays: reorderDelay,
       });
       if (!res.ok) {
         setErrorMsg(mapError(res.error));
@@ -118,12 +127,14 @@ export function FlowsSetup({ settings, planAllows, installed, installStatus }: P
               Flujos de post-compra
             </h1>
             <p className="mt-2 max-w-2xl text-[13px] leading-[1.55] text-ink-5">
-              V2.5 ship un solo flow real:{" "}
+              Dos flows reales post-entrega:{" "}
+              <strong className="text-ink-0">pedido de reseña</strong> y{" "}
               <strong className="text-ink-0">
-                pedido de reseña X días después de la entrega
+                recordatorio de recompra
               </strong>
-              . Los emails transaccionales (confirmación, envío, entrega) ya
-              salen solos en Nexora y no se tocan.
+              . Cada uno se habilita y programa por separado. Los emails
+              transaccionales (confirmación, envío, entrega) ya salen solos
+              en Nexora y no se tocan.
             </p>
           </div>
         </div>
@@ -139,63 +150,129 @@ export function FlowsSetup({ settings, planAllows, installed, installStatus }: P
         </div>
       )}
 
-      {/* Review request flow */}
-      <form
-        onSubmit={onSubmit}
-        className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6 space-y-5"
-      >
-        <div className="flex items-start gap-3">
-          <div className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)]">
-            <Mail className="h-4 w-4 text-ink-3" strokeWidth={1.75} />
+      {/* Both flows live in a single form so Guardar commits atomically. */}
+      <form onSubmit={onSubmit} className="space-y-6">
+        {/* Flow 1: review request */}
+        <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6 space-y-5">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)]">
+              <Mail className="h-4 w-4 text-ink-3" strokeWidth={1.75} />
+            </div>
+            <div>
+              <h2 className="text-[14px] font-semibold text-ink-0">
+                Pedido de reseña post-entrega
+              </h2>
+              <p className="mt-1 text-[12px] text-ink-5">
+                Evento: <code className="font-mono">deliveredAt + delayDays</code>
+                . Canal: email. Idempotencia: <code className="font-mono">EmailLog (POST_PURCHASE_REVIEW_REQUEST, order, id)</code>.
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-[14px] font-semibold text-ink-0">
-              Pedido de reseña post-entrega
-            </h2>
-            <p className="mt-1 text-[12px] text-ink-5">
-              Evento: <code className="font-mono">deliveredAt + delayDays</code>
-              . Canal: email. Idempotencia: <code className="font-mono">EmailLog (POST_PURCHASE_REVIEW_REQUEST, order, id)</code>.
+
+          <label className="flex items-start gap-3 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={enabled}
+              onChange={(e) => setEnabled(e.target.checked)}
+              disabled={!planAllows}
+              className="mt-0.5 h-4 w-4 rounded-[var(--r-xs)] border-[color:var(--hairline)] accent-ink-0"
+            />
+            <span className="text-[13px] text-ink-0">
+              Activar el flow
+              <span className="block text-[11px] text-ink-5 mt-0.5">
+                Solo se envía si la app está instalada. Mientras esté desactivado,
+                el cron salta silenciosamente.
+              </span>
+            </span>
+          </label>
+
+          <div className="space-y-2">
+            <label className={labelCls} htmlFor="delay-days">
+              Delay (días después de la entrega)
+            </label>
+            <div className="flex items-center gap-2 max-w-[280px]">
+              <Clock className="h-3.5 w-3.5 text-ink-5" strokeWidth={1.75} />
+              <input
+                id="delay-days"
+                type="number"
+                min={1}
+                max={60}
+                value={delay}
+                onChange={(e) => setDelay(Math.max(1, Math.min(60, Number(e.target.value) || 1)))}
+                disabled={!planAllows}
+                className={inputCls}
+              />
+            </div>
+            <p className="text-[11px] text-ink-5">
+              Rango: 1 a 60 días. Default 7.
             </p>
           </div>
         </div>
 
-        <label className="flex items-start gap-3 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={enabled}
-            onChange={(e) => setEnabled(e.target.checked)}
-            disabled={!planAllows}
-            className="mt-0.5 h-4 w-4 rounded-[var(--r-xs)] border-[color:var(--hairline)] accent-ink-0"
-          />
-          <span className="text-[13px] text-ink-0">
-            Activar el flow
-            <span className="block text-[11px] text-ink-5 mt-0.5">
-              Solo se envía si la app está instalada. Mientras esté desactivado,
-              el cron salta silenciosamente.
-            </span>
-          </span>
-        </label>
-
-        <div className="space-y-2">
-          <label className={labelCls} htmlFor="delay-days">
-            Delay (días después de la entrega)
-          </label>
-          <div className="flex items-center gap-2 max-w-[280px]">
-            <Clock className="h-3.5 w-3.5 text-ink-5" strokeWidth={1.75} />
-            <input
-              id="delay-days"
-              type="number"
-              min={1}
-              max={60}
-              value={delay}
-              onChange={(e) => setDelay(Math.max(1, Math.min(60, Number(e.target.value) || 1)))}
-              disabled={!planAllows}
-              className={inputCls}
-            />
+        {/* Flow 2: reorder follow-up (V3.4) */}
+        <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6 space-y-5">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)]">
+              <RotateCcw className="h-4 w-4 text-ink-3" strokeWidth={1.75} />
+            </div>
+            <div>
+              <h2 className="text-[14px] font-semibold text-ink-0">
+                Recordatorio de recompra
+              </h2>
+              <p className="mt-1 text-[12px] text-ink-5">
+                Evento: <code className="font-mono">deliveredAt + reorderDelayDays</code>
+                . Canal: email. CTA: home del storefront. Idempotencia:{" "}
+                <code className="font-mono">
+                  EmailLog (POST_PURCHASE_REORDER_FOLLOWUP, order, id)
+                </code>
+                .
+              </p>
+            </div>
           </div>
-          <p className="text-[11px] text-ink-5">
-            Rango: 1 a 60 días. Default 7.
-          </p>
+
+          <label className="flex items-start gap-3 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={reorderEnabled}
+              onChange={(e) => setReorderEnabled(e.target.checked)}
+              disabled={!planAllows}
+              className="mt-0.5 h-4 w-4 rounded-[var(--r-xs)] border-[color:var(--hairline)] accent-ink-0"
+            />
+            <span className="text-[13px] text-ink-0">
+              Activar el flow
+              <span className="block text-[11px] text-ink-5 mt-0.5">
+                Un solo email por orden entregada. Sin descuentos inventados:
+                invita a volver a la tienda y nada más. Independiente del
+                flow de reseña.
+              </span>
+            </span>
+          </label>
+
+          <div className="space-y-2">
+            <label className={labelCls} htmlFor="reorder-delay-days">
+              Delay (días después de la entrega)
+            </label>
+            <div className="flex items-center gap-2 max-w-[280px]">
+              <Clock className="h-3.5 w-3.5 text-ink-5" strokeWidth={1.75} />
+              <input
+                id="reorder-delay-days"
+                type="number"
+                min={7}
+                max={180}
+                value={reorderDelay}
+                onChange={(e) =>
+                  setReorderDelay(
+                    Math.max(7, Math.min(180, Number(e.target.value) || 7)),
+                  )
+                }
+                disabled={!planAllows}
+                className={inputCls}
+              />
+            </div>
+            <p className="text-[11px] text-ink-5">
+              Rango: 7 a 180 días. Default 30.
+            </p>
+          </div>
         </div>
 
         {errorMsg && (
@@ -249,7 +326,9 @@ function mapError(code: string | undefined): string {
     case "no_active_store":
       return "No hay una tienda activa.";
     case "invalid_delay":
-      return "El delay tiene que estar entre 1 y 60 días.";
+      return "El delay de reseña tiene que estar entre 1 y 60 días.";
+    case "invalid_reorder_delay":
+      return "El delay de recompra tiene que estar entre 7 y 180 días.";
     default:
       return "No se pudo guardar la configuración.";
   }

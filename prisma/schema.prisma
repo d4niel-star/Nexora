@@ -1311,13 +1311,17 @@ model BundleOfferItem {
 
 // --- Post-Purchase Flows (app post-purchase-flows) ---
 // V2.5: review-request flow only. Toggled per tenant; delay in days.
+// V3.4: added a second flow — reorder follow-up. Independent toggle and
+// delay so merchants can enable one, the other, or both.
 model PostPurchaseFlowsSettings {
-  id                      String   @id @default(cuid())
-  storeId                 String   @unique
-  store                   Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  reviewRequestEnabled    Boolean  @default(false)
-  reviewRequestDelayDays  Int      @default(7)
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
+  id                         String   @id @default(cuid())
+  storeId                    String   @unique
+  store                      Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  reviewRequestEnabled       Boolean  @default(false)
+  reviewRequestDelayDays     Int      @default(7)
+  reorderFollowupEnabled     Boolean  @default(false)
+  reorderFollowupDelayDays   Int      @default(30)
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
 }
 
