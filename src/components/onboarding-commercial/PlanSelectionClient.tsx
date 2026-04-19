@@ -92,7 +92,8 @@ export function PlanSelectionClient() {
   return (
     <div className="space-y-9">
       <div className="mx-auto max-w-2xl pt-2 text-center sm:pt-6">
-        <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">
+        <div className="mx-auto mb-5 h-px w-10 bg-[var(--accent-500)]" aria-hidden />
+        <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-ink-5">
           Elegí tu plan
         </p>
         <h1 className="mt-4 font-semibold text-[34px] leading-[1.04] tracking-[-0.035em] text-ink-0 sm:text-[48px]">
@@ -125,10 +126,10 @@ export function PlanSelectionClient() {
             <article
               key={plan.code}
               className={cn(
-                "flex min-h-full flex-col rounded-[var(--r-lg)] border bg-[var(--surface-0)] p-5 transition-colors",
+                "flex min-h-full flex-col rounded-[var(--r-lg)] border bg-[var(--surface-0)] p-6 shadow-[var(--shadow-soft)] transition-[border-color,box-shadow]",
                 isHighlight
-                  ? "border-ink-0"
-                  : "border-[color:var(--hairline)] hover:border-[color:var(--hairline-strong)]",
+                  ? "border-[color:var(--accent-400)]/40 bg-[var(--accent-50)] ring-1 ring-[color:var(--accent-500)]/20"
+                  : "border-[color:var(--hairline)] hover:border-[color:var(--hairline-strong)] hover:shadow-[var(--shadow-elevated)]",
               )}
             >
               <div className="flex items-start justify-between gap-3">
@@ -141,7 +142,7 @@ export function PlanSelectionClient() {
                   </p>
                 </div>
                 {isHighlight && (
-                  <span className="inline-flex h-5 shrink-0 items-center rounded-[var(--r-xs)] bg-[var(--accent-50)] px-2 text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--accent-700)]">
+                  <span className="inline-flex h-6 shrink-0 items-center rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-4">
                     Recomendado
                   </span>
                 )}
@@ -167,10 +168,10 @@ export function PlanSelectionClient() {
                 disabled={loading !== null}
                 onClick={() => handleSelectPlan(plan.code)}
                 className={cn(
-                  "mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-[var(--r-sm)] px-4 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)] disabled:cursor-not-allowed disabled:opacity-50",
+                  "mt-5 inline-flex h-12 min-h-12 w-full items-center justify-center gap-2 rounded-[var(--r-md)] px-4 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)] disabled:cursor-not-allowed disabled:opacity-50",
                   isHighlight
                     ? "bg-ink-0 text-ink-12 hover:bg-ink-2"
-                    : "border border-[color:var(--hairline)] bg-[var(--surface-1)] text-ink-0 hover:bg-[var(--surface-3)]",
+                    : "border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-ink-0 hover:bg-[var(--surface-2)]",
                 )}
               >
                 {isLoading ? (

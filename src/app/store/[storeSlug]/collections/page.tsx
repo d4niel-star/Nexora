@@ -23,22 +23,25 @@ export default async function CollectionsPage({
 
   return (
     <div className="bg-[var(--surface-1)]">
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
-        <header className="mb-10 max-w-2xl">
-          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">
-            Catálogo
-          </p>
-          <h1 className="mt-3 font-semibold text-[36px] leading-[1.05] tracking-[-0.035em] text-ink-0 sm:text-[48px]">
+      <div className="border-b border-[color:var(--hairline-strong)] bg-[var(--surface-0)]">
+        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+          <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-ink-5">Catálogo</p>
+        </div>
+      </div>
+      <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
+        <header className="mb-12 max-w-2xl">
+          <div className="mb-5 h-px w-10 bg-[var(--accent-500)]" aria-hidden />
+          <h1 className="font-semibold text-[34px] leading-[1.05] tracking-[-0.035em] text-ink-0 sm:text-[44px]">
             Colecciones.
           </h1>
-          <p className="mt-4 text-[14px] leading-[1.55] text-ink-5">
+          <p className="mt-4 text-[14px] leading-[1.6] text-ink-5 sm:text-[15px]">
             Explorá todas nuestras colecciones de productos.
           </p>
         </header>
 
         {collections.length === 0 ? (
-          <div className="rounded-[var(--r-md)] border border-dashed border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-6 py-16 text-center">
-            <h2 className="text-[15px] font-medium text-ink-0">
+          <div className="rounded-[var(--r-xl)] border border-dashed border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-6 py-16 text-center shadow-[var(--shadow-soft)]">
+            <h2 className="text-[15px] font-semibold text-ink-0">
               No hay colecciones publicadas.
             </h2>
             <p className="mt-2 text-[13px] text-ink-5">Volvé más tarde.</p>
@@ -49,7 +52,7 @@ export default async function CollectionsPage({
               <Link
                 key={col.id}
                 href={storePath(resolvedParams.storeSlug, `collections/${col.handle}`)}
-                className="group relative block aspect-[3/2] overflow-hidden rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-3)]"
+                className="group relative block aspect-[3/2] overflow-hidden rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-3)] shadow-[var(--shadow-soft)] transition-[border-color,box-shadow] hover:border-[color:var(--hairline-strong)] hover:shadow-[var(--shadow-elevated)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
               >
                 {col.imageUrl ? (
                   <>

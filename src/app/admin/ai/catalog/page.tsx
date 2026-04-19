@@ -58,7 +58,7 @@ export default async function AICatalogPage({ searchParams }: Props) {
     <div className="h-[calc(100vh-8rem)]">
       <NexoraAIShell
         contextName="Catálogo & Calidad"
-        contextIcon={<Package className="w-5 h-5 text-[#111111]" />}
+        contextIcon={<Package className="w-5 h-5 text-ink-0" />}
       >
         <CatalogClient products={products} hideHeader initialTab={tab} />
       </NexoraAIShell>

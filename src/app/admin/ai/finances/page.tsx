@@ -20,7 +20,7 @@ export default async function AIFinancesPage({ searchParams }: Props) {
     <div className="h-[calc(100vh-8rem)]">
       <NexoraAIShell
         contextName="Finanzas y salud de margen"
-        contextIcon={<TrendingUp className="w-5 h-5 text-[#111111]" />}
+        contextIcon={<TrendingUp className="w-5 h-5 text-ink-0" />}
       >
         <FinancesPage initialData={data} hideHeader initialTab={tab} />
       </NexoraAIShell>

@@ -7,7 +7,6 @@ import { getStoreProducts } from "@/lib/store-engine/catalog/queries";
 import { getStorefrontData } from "@/lib/store-engine/queries";
 import { toMetaDescription } from "@/lib/store-engine/seo";
 import { storePath } from "@/lib/store-engine/urls";
-import { Hairline } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
 
 // ─── Products (PLP) ───
@@ -83,12 +82,15 @@ export default async function ProductsPage({
 
   return (
     <div className="bg-[var(--surface-1)]">
-      <nav aria-label="Breadcrumb" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <ol role="list" className="flex items-center gap-2 py-5 text-[12px] text-ink-5">
+      <nav aria-label="Breadcrumb" className="border-b border-[color:var(--hairline-strong)] bg-[var(--surface-0)]">
+        <ol
+          role="list"
+          className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-4 text-[12px] text-ink-5 sm:px-6 lg:px-8"
+        >
           <li>
             <Link
               href={storePath(resolvedParams.storeSlug)}
-              className="transition-colors hover:text-ink-0"
+              className="rounded-[var(--r-xs)] transition-colors hover:text-ink-0 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
             >
               Inicio
             </Link>
@@ -102,15 +104,13 @@ export default async function ProductsPage({
         </ol>
       </nav>
 
-      <Hairline />
-
       <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-        <header className="mb-8 flex flex-col gap-4 border-b border-[color:var(--hairline)] pb-8 sm:flex-row sm:items-end sm:justify-between">
+        <header className="mb-10 flex flex-col gap-4 border-b border-[color:var(--hairline)] pb-10 sm:flex-row sm:items-end sm:justify-between">
           <div className="max-w-2xl">
-            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">
+            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-ink-5">
               {storefrontData.store.name}
             </p>
-            <h1 className="mt-3 font-semibold text-[36px] leading-[1.05] tracking-[-0.035em] text-ink-0 sm:text-[48px]">
+            <h1 className="mt-3 font-semibold text-[34px] leading-[1.05] tracking-[-0.035em] text-ink-0 sm:text-[44px]">
               Productos.
             </h1>
             <p className="mt-4 text-[14px] leading-[1.55] text-ink-5">
@@ -125,16 +125,16 @@ export default async function ProductsPage({
 
         {categories.length > 0 && (
           <div
-            className="mb-10 flex gap-2 overflow-x-auto pb-2"
+            className="mb-10 flex gap-2 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             aria-label="Filtros por categoría"
           >
             <Link
               href={storePath(resolvedParams.storeSlug, "products")}
               className={cn(
-                "shrink-0 rounded-[var(--r-sm)] border px-3.5 h-9 inline-flex items-center text-[13px] font-medium transition-colors",
+                "inline-flex h-11 min-h-11 shrink-0 items-center rounded-[var(--r-md)] border px-4 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
                 !selectedCategory
                   ? "border-ink-0 bg-ink-0 text-ink-12"
-                  : "border-[color:var(--hairline-strong)] bg-transparent text-ink-3 hover:bg-ink-11 hover:text-ink-0",
+                  : "border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-ink-4 hover:bg-[var(--surface-2)] hover:text-ink-0",
               )}
             >
               Todos
@@ -146,10 +146,10 @@ export default async function ProductsPage({
                   key={category}
                   href={`${storePath(resolvedParams.storeSlug, "products")}?category=${encodeURIComponent(category)}`}
                   className={cn(
-                    "shrink-0 rounded-[var(--r-sm)] border px-3.5 h-9 inline-flex items-center text-[13px] font-medium transition-colors",
+                    "inline-flex h-11 min-h-11 shrink-0 items-center rounded-[var(--r-md)] border px-4 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
                     isActive
                       ? "border-ink-0 bg-ink-0 text-ink-12"
-                      : "border-[color:var(--hairline-strong)] bg-transparent text-ink-3 hover:bg-ink-11 hover:text-ink-0",
+                      : "border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-ink-4 hover:bg-[var(--surface-2)] hover:text-ink-0",
                   )}
                 >
                   {category}
@@ -160,25 +160,25 @@ export default async function ProductsPage({
         )}
 
         {products.length === 0 ? (
-          <div className="rounded-[var(--r-md)] border border-dashed border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-6 py-16 text-center">
-            <h2 className="text-[15px] font-medium text-ink-0">
+          <div className="rounded-[var(--r-xl)] border border-dashed border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-6 py-16 text-center shadow-[var(--shadow-soft)]">
+            <h2 className="text-[15px] font-semibold text-ink-0">
               No hay productos disponibles.
             </h2>
-            <p className="mt-2 text-[13px] text-ink-5">
+            <p className="mt-2 text-[13px] leading-relaxed text-ink-5">
               Esta tienda todavía no tiene productos activos con stock.
             </p>
           </div>
         ) : filteredProducts.length === 0 ? (
-          <div className="rounded-[var(--r-md)] border border-dashed border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-6 py-16 text-center">
-            <h2 className="text-[15px] font-medium text-ink-0">
+          <div className="rounded-[var(--r-xl)] border border-dashed border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-6 py-16 text-center shadow-[var(--shadow-soft)]">
+            <h2 className="text-[15px] font-semibold text-ink-0">
               Sin productos en esta categoría.
             </h2>
-            <p className="mt-2 text-[13px] text-ink-5">
+            <p className="mt-2 text-[13px] leading-relaxed text-ink-5">
               Probá con otro filtro o volvé al catálogo completo.
             </p>
             <Link
               href={storePath(resolvedParams.storeSlug, "products")}
-              className="mt-6 inline-flex h-11 items-center justify-center rounded-[var(--r-sm)] bg-ink-0 px-5 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
+              className="mt-6 inline-flex h-12 min-h-12 items-center justify-center rounded-[var(--r-md)] bg-ink-0 px-6 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
             >
               Ver todos
             </Link>

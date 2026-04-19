@@ -119,14 +119,14 @@ export default function CatalogClient({ products, hideHeader = false, initialTab
       {!hideHeader && (
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
-            <h1 className="text-3xl font-black tracking-tight text-[#111111]">Catálogo de Productos</h1>
-            <p className="text-[#666666] text-[15px] mt-1 font-medium">Administra tu inventario y descubre productos ganadores listos para importar.</p>
+            <h1 className="text-3xl font-black tracking-tight text-ink-0">Catálogo de Productos</h1>
+            <p className="text-ink-5 text-[15px] mt-1 font-medium">Administra tu inventario y descubre productos ganadores listos para importar.</p>
           </div>
           <div className="flex items-center gap-3">
-            <button className="px-5 py-2.5 text-[13px] font-bold text-[#111111] bg-white border border-[#EAEAEA] rounded-xl hover:bg-gray-50 transition-all active:scale-95 shadow-sm">
+            <button className="px-5 py-2.5 text-[13px] font-bold text-ink-0 bg-[var(--surface-0)] border border-[color:var(--hairline)] rounded-[var(--r-lg)] hover:bg-[var(--surface-2)] transition-all active:scale-95 shadow-[var(--shadow-soft)]">
               Exportar CSV
             </button>
-            <button className="px-5 py-2.5 text-[13px] font-bold text-white bg-[#111111] rounded-xl hover:bg-black transition-all active:scale-95 shadow-md shadow-black/10 flex items-center gap-2">
+            <button className="px-5 py-2.5 text-[13px] font-bold text-white bg-ink-0 rounded-[var(--r-lg)] hover:bg-ink-2 transition-all active:scale-95 shadow-[var(--shadow-soft)] flex items-center gap-2">
               <Plus className="w-4 h-4" /> Agregar Manual
             </button>
           </div>
@@ -134,83 +134,83 @@ export default function CatalogClient({ products, hideHeader = false, initialTab
       )}
 
       {/* 2. Main Container Layer */}
-      <div className="bg-white border rounded-xl border-[#EAEAEA] shadow-none overflow-hidden relative">
+      <div className="bg-[var(--surface-0)] border rounded-[var(--r-lg)] border-[color:var(--hairline)] shadow-none overflow-hidden relative">
         
         {/* Tabs Bar */}
-        <div className="flex items-center gap-8 px-6 border-b border-[#EAEAEA] overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-8 px-6 border-b border-[color:var(--hairline)] overflow-x-auto no-scrollbar">
           {tabs.map((tab) => (
             <button
               key={tab.value}
               onClick={() => setActiveTab(tab.value)}
               className={`relative py-4 text-[13px] font-bold whitespace-nowrap transition-colors flex items-center gap-2 group
-                ${activeTab === tab.value ? (tab.isSpecial ? "text-amber-600" : "text-[#111111]") : "text-[#888888] hover:text-[#111111]"}
+                ${activeTab === tab.value ? (tab.isSpecial ? "text-amber-600" : "text-ink-0") : "text-ink-6 hover:text-ink-0"}
               `}
             >
-              {tab.isSpecial && <AlertTriangle className={`w-3.5 h-3.5 ${activeTab === tab.value ? 'text-amber-500' : 'text-[#888888]'}`} />}
+              {tab.isSpecial && <AlertTriangle className={`w-3.5 h-3.5 ${activeTab === tab.value ? 'text-amber-500' : 'text-ink-6'}`} />}
               {tab.label}
               {tab.count !== undefined && tab.count > 0 && (
-                <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider font-extrabold transition-colors ${activeTab === tab.value ? 'bg-gray-100 text-[#111111]' : 'bg-transparent text-gray-500 group-hover:bg-gray-50'}`}>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider font-extrabold transition-colors ${activeTab === tab.value ? 'bg-[var(--surface-2)] text-ink-0' : 'bg-transparent text-ink-6 group-hover:bg-[var(--surface-2)]'}`}>
                   {tab.count}
                 </span>
               )}
               {activeTab === tab.value && (
-                <div className={`absolute bottom-0 left-0 right-0 h-[2px] ${tab.isSpecial ? 'bg-amber-500' : 'bg-[#111111]'}`} />
+                <div className={`absolute bottom-0 left-0 right-0 h-[2px] ${tab.isSpecial ? 'bg-amber-500' : 'bg-ink-0'}`} />
               )}
             </button>
           ))}
         </div>
 
         {/* Filters Toolbar */}
-        <div className="p-3 flex flex-col md:flex-row gap-4 justify-between items-center bg-white border-b border-[#EAEAEA]">
+        <div className="p-3 flex flex-col md:flex-row gap-4 justify-between items-center bg-[var(--surface-0)] border-b border-[color:var(--hairline)]">
           <div className="relative w-full md:max-w-md group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-black transition-colors" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-6 group-focus-within:text-ink-0 transition-colors" />
             <input 
               type="text" 
               placeholder="Buscar SKU o nombre de producto..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-1.5 text-[13px] font-medium bg-transparent border border-transparent focus:outline-none text-[#111111] transition-all placeholder:text-gray-400"
+              className="w-full pl-9 pr-4 py-1.5 text-[13px] font-medium bg-transparent border border-transparent focus:outline-none text-ink-0 transition-all placeholder:text-ink-6"
             />
           </div>
           <div className="flex items-center gap-2 w-full md:w-auto">
-            <button className="w-full md:w-auto px-3 py-1.5 text-[12px] font-bold text-gray-600 bg-white border border-[#EAEAEA] rounded-md hover:bg-gray-50 flex items-center justify-center gap-2 transition-colors">
+            <button className="w-full md:w-auto px-3 py-1.5 text-[12px] font-bold text-ink-5 bg-[var(--surface-0)] border border-[color:var(--hairline)] rounded-md hover:bg-[var(--surface-2)] flex items-center justify-center gap-2 transition-colors">
               <Filter className="w-3.5 h-3.5" /> Filtros
             </button>
           </div>
         </div>
 
         {/* 3. Dynamic Rendering based on Tab */}
-        <div className="min-h-[400px] bg-[#FAFAFA]/30">
+        <div className="min-h-[400px] bg-[var(--surface-1)]/50">
 
               <div className="overflow-x-auto">
                 <table className="w-full text-left whitespace-nowrap">
                   <thead>
-                    <tr className="border-b border-[#EAEAEA] bg-[#FAFAFA]">
-                      <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#888888] w-12">
+                    <tr className="border-b border-[color:var(--hairline)] bg-[var(--surface-1)]">
+                      <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-ink-6 w-12">
                         <input 
                           type="checkbox" 
                           onChange={handleSelectAll}
                           checked={selectedRows.length === filteredCatalog.length && filteredCatalog.length > 0}
-                          className="w-4 h-4 rounded border-gray-300 text-[#111111] focus:ring-[#111111] cursor-pointer" 
+                          className="w-4 h-4 rounded border-[color:var(--hairline)] text-ink-0 focus:ring-ink-0 cursor-pointer" 
                         />
                       </th>
-                      <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#888888]">Producto</th>
-                      <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#888888]">Salud</th>
-                      <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#888888]">Precio</th>
-                      <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#888888]">Estado</th>
-                      <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#888888] text-right">Stock</th>
-                      <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#888888] text-right">Acciones</th>
+                      <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-ink-6">Producto</th>
+                      <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-ink-6">Salud</th>
+                      <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-ink-6">Precio</th>
+                      <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-ink-6">Estado</th>
+                      <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-ink-6 text-right">Stock</th>
+                      <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-ink-6 text-right">Acciones</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#EAEAEA]/80">
+                  <tbody className="divide-y divide-[color:var(--hairline)]">
                     {filteredCatalog.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="px-6 py-24 text-center">
-                          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-50 mb-6 border border-gray-100 shadow-sm">
-                            <Package className="w-8 h-8 text-gray-300" />
+                          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-[var(--surface-1)] mb-6 border border-[color:var(--hairline)] shadow-[var(--shadow-soft)]">
+                            <Package className="w-8 h-8 text-ink-7" />
                           </div>
-                          <h3 className="text-xl font-extrabold text-[#111111]">Catálogo Vacío</h3>
-                          <p className="text-[15px] font-medium text-[#888888] mt-2 max-w-sm mx-auto">No tienes productos en esta vista. Prueba importando desde dropshipping.</p>
+                          <h3 className="text-xl font-extrabold text-ink-0">Catálogo Vacío</h3>
+                          <p className="text-[15px] font-medium text-ink-6 mt-2 max-w-sm mx-auto">No tienes productos en esta vista. Prueba importando desde dropshipping.</p>
                         </td>
                       </tr>
                     ) : (
@@ -220,28 +220,28 @@ export default function CatalogClient({ products, hideHeader = false, initialTab
                           <tr 
                             key={product.id}
                             onClick={() => setSelectedProduct(product)}
-                            className={`group transition-all cursor-pointer ${isSelected ? 'bg-emerald-50/30' : 'hover:bg-gray-50/50 bg-white'}`}
+                            className={`group transition-all cursor-pointer ${isSelected ? 'bg-emerald-50/30' : 'hover:bg-[var(--surface-2)]/50 bg-[var(--surface-0)]'}`}
                           >
                             <td className="px-6 py-5" onClick={(e) => e.stopPropagation()}>
                               <input 
                                 type="checkbox" 
                                 checked={isSelected}
                                 onChange={(e) => handleSelectRow(e, product.id)}
-                                className="w-4 h-4 rounded border-gray-300 text-[#111111] focus:ring-[#111111] cursor-pointer" 
+                                className="w-4 h-4 rounded border-[color:var(--hairline)] text-ink-0 focus:ring-ink-0 cursor-pointer" 
                               />
                             </td>
                             <td className="px-6 py-5">
                               <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-lg bg-gray-100 border border-gray-200 overflow-hidden shadow-sm shrink-0">
+                                <div className="w-12 h-12 rounded-lg bg-[var(--surface-2)] border border-[color:var(--hairline)] overflow-hidden shadow-[var(--shadow-soft)] shrink-0">
                                   {product.image ? (
                                     <img src={product.image} alt={product.title} className="w-full h-full object-cover" />
                                   ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-gray-300"><Package className="w-5 h-5" /></div>
+                                    <div className="w-full h-full flex items-center justify-center text-ink-7"><Package className="w-5 h-5" /></div>
                                   )}
                                 </div>
                                 <div>
-                                  <p className="text-[13px] font-bold text-[#111111]">{product.title}</p>
-                                  <p className="text-xs font-semibold text-gray-400 mt-0.5">{product.variants.length} variante{product.variants.length !== 1 ? 's' : ''}</p>
+                                  <p className="text-[13px] font-bold text-ink-0">{product.title}</p>
+                                  <p className="text-xs font-semibold text-ink-6 mt-0.5">{product.variants.length} variante{product.variants.length !== 1 ? 's' : ''}</p>
                                 </div>
                               </div>
                             </td>
@@ -257,7 +257,7 @@ export default function CatalogClient({ products, hideHeader = false, initialTab
                               />
                             </td>
                             <td className="px-6 py-5">
-                              <p className="text-[15px] font-black text-[#111111] tabular-nums tracking-tight">${product.price.toLocaleString('es-AR')}</p>
+                              <p className="text-[15px] font-black text-ink-0 tabular-nums tracking-tight">${product.price.toLocaleString('es-AR')}</p>
                               {product.costReal ? (
                                 <p className={cn("text-[11px] font-bold mt-0.5 tabular-nums", product.margin >= 0.2 ? "text-emerald-600" : product.margin >= 0.05 ? "text-amber-600" : "text-red-500")}>
                                   Margen {Math.round(product.margin * 100)}% &middot; Costo ${product.cost.toLocaleString('es-AR')}
@@ -267,9 +267,9 @@ export default function CatalogClient({ products, hideHeader = false, initialTab
                               )}
                             </td>
                             <td className="px-6 py-5"><ProductStatusBadge status={product.status} /></td>
-                            <td className="px-6 py-5 text-right font-black text-[#111111] text-sm tabular-nums">
+                            <td className="px-6 py-5 text-right font-black text-ink-0 text-sm tabular-nums">
                               {product.totalStock > 0 ? (
-                                <span className="text-[#111111]">{product.totalStock} u.</span>
+                                <span className="text-ink-0">{product.totalStock} u.</span>
                               ) : (
                                 <span className="text-red-500">Agotado</span>
                               )}
@@ -293,7 +293,7 @@ export default function CatalogClient({ products, hideHeader = false, initialTab
                                     )}
                                     <button
                                       onClick={(e) => { e.stopPropagation(); setSelectedProduct(product); }}
-                                      className="p-1.5 hover:bg-gray-100 border border-transparent hover:border-[#EAEAEA] rounded-lg text-gray-400 hover:text-[#111111] transition-all"
+                                      className="p-1.5 hover:bg-[var(--surface-2)] border border-transparent hover:border-[color:var(--hairline)] rounded-lg text-ink-6 hover:text-ink-0 transition-all"
                                       title="Ver detalle"
                                     >
                                       <Edit className="w-3.5 h-3.5" />
@@ -311,13 +311,13 @@ export default function CatalogClient({ products, hideHeader = false, initialTab
                 
                 {/* Pagination Footer */}
                 {filteredCatalog.length > 0 && (
-                  <div className="px-6 py-4 border-t border-[#EAEAEA] bg-[#FAFAFA] flex items-center justify-between">
-                    <span className="text-xs text-[#888888] font-bold uppercase tracking-wider block">
-                      Mostrando <b className="text-[#111111] px-1">{filteredCatalog.length}</b> de {products.length}
+                  <div className="px-6 py-4 border-t border-[color:var(--hairline)] bg-[var(--surface-1)] flex items-center justify-between">
+                    <span className="text-xs text-ink-6 font-bold uppercase tracking-wider block">
+                      Mostrando <b className="text-ink-0 px-1">{filteredCatalog.length}</b> de {products.length}
                     </span>
                     <div className="flex gap-2">
-                      <button disabled className="px-4 py-2 border border-[#EAEAEA] rounded-xl text-[13px] font-bold text-gray-400 bg-white opacity-50 cursor-not-allowed">Anterior</button>
-                      <button className="px-4 py-2 border border-[#EAEAEA] rounded-xl text-[13px] font-bold text-[#111111] bg-white hover:bg-gray-50 transition-colors shadow-sm">Siguiente</button>
+                      <button disabled className="px-4 py-2 border border-[color:var(--hairline)] rounded-[var(--r-lg)] text-[13px] font-bold text-ink-7 bg-[var(--surface-0)] opacity-50 cursor-not-allowed">Anterior</button>
+                      <button className="px-4 py-2 border border-[color:var(--hairline)] rounded-[var(--r-lg)] text-[13px] font-bold text-ink-0 bg-[var(--surface-0)] hover:bg-[var(--surface-2)] transition-colors shadow-[var(--shadow-soft)]">Siguiente</button>
                     </div>
                   </div>
                 )}
@@ -327,18 +327,18 @@ export default function CatalogClient({ products, hideHeader = false, initialTab
 
       {/* Floating Bulk Actions Toolbar */}
       {selectedRows.length > 0 && (
-        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-[#111111] text-white px-2 py-2 rounded-2xl shadow-2xl flex items-center gap-2 animate-in slide-in-from-bottom-5 fade-in duration-300 z-30">
-           <div className="px-4 border-r border-gray-700">
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-ink-0 text-white px-2 py-2 rounded-2xl shadow-2xl flex items-center gap-2 animate-in slide-in-from-bottom-5 fade-in duration-300 z-30">
+           <div className="px-4 border-r border-white/10">
              <span className="text-[13px] font-bold">{selectedRows.length} seleccionados</span>
            </div>
            <div className="flex items-center gap-1 px-2">
-             <button className="px-4 py-2 text-[13px] font-bold hover:bg-gray-800 rounded-xl transition-colors flex items-center gap-2">
+             <button className="px-4 py-2 text-[13px] font-bold hover:bg-white/10 rounded-[var(--r-lg)] transition-colors flex items-center gap-2">
                Activar
              </button>
-             <button className="px-4 py-2 text-[13px] font-bold hover:bg-gray-800 rounded-xl transition-colors flex items-center gap-2">
+             <button className="px-4 py-2 text-[13px] font-bold hover:bg-white/10 rounded-[var(--r-lg)] transition-colors flex items-center gap-2">
                Archivar
              </button>
-             <button className="px-4 py-2 text-[13px] font-bold hover:bg-red-950/50 hover:text-red-400 text-gray-300 rounded-xl transition-colors flex items-center gap-2">
+             <button className="px-4 py-2 text-[13px] font-bold hover:bg-red-950/50 hover:text-red-400 text-white/60 rounded-[var(--r-lg)] transition-colors flex items-center gap-2">
                <Trash2 className="w-4 h-4" /> Eliminar
              </button>
            </div>
@@ -409,7 +409,7 @@ function SignalChips({
               s.severity === "blocker" ? "bg-red-50 text-red-700 border border-red-200" :
               s.severity === "warning" ? "bg-amber-50 text-amber-700 border border-amber-200" :
               s.severity === "ok" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" :
-              "bg-gray-50 text-gray-500 border border-gray-200",
+              "bg-[var(--surface-2)] text-ink-6 border border-[color:var(--hairline)]",
               isVariantSignal && "cursor-pointer hover:bg-opacity-80 underline decoration-dotted underline-offset-2"
             )}
             onClick={(e) => isVariantSignal ? handleVariantSignalClick(e, variantInfo.variantId!, variantInfo.action) : undefined}

@@ -13,7 +13,7 @@ export default async function Page() {
   const draft = await getAIGenerationDraft(storeId);
   return (
     <div className="h-[calc(100vh-8rem)]">
-      <NexoraAIShell contextName="Tienda IA" contextIcon={<Sparkles className="w-5 h-5 text-[#111111]" />}>
+      <NexoraAIShell contextName="Tienda IA" contextIcon={<Sparkles className="w-5 h-5 text-ink-0" />}>
         <div className="max-w-7xl mx-auto pt-6 px-4">
           <AIStoreBuilderPage initialDraft={draft} />
         </div>

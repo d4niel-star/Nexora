@@ -47,26 +47,27 @@ export default async function LegalPage({
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8 sm:py-24">
+    <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8 sm:py-28">
       <div className="mb-10">
-        <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">
+        <div className="mb-5 h-px w-10 bg-[var(--accent-500)]" aria-hidden />
+        <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-ink-5">
           Legal
         </p>
-        <h1 className="mt-3 font-semibold text-[32px] leading-[1.08] tracking-[-0.035em] text-ink-0 sm:text-[42px]">
+        <h1 className="mt-4 font-semibold text-[30px] leading-[1.08] tracking-[-0.035em] text-ink-0 sm:text-[40px]">
           {title}
         </h1>
         {settings?.businessInfo && (
-          <p className="mt-4 text-[13px] text-ink-5">
+          <p className="mt-4 text-[13px] leading-relaxed text-ink-5">
             Responsable · {settings.businessInfo}
           </p>
         )}
       </div>
 
-      <article className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-6 py-7 text-[14px] leading-[1.65] text-ink-3 whitespace-pre-wrap sm:px-10 sm:py-10 sm:text-[15px]">
+      <article className="rounded-[var(--r-xl)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-6 py-8 text-[14px] leading-[1.7] text-ink-3 shadow-[var(--shadow-soft)] whitespace-pre-wrap sm:px-10 sm:py-10 sm:text-[15px]">
         {content}
       </article>
 
-      <div className="mt-10 border-t border-[color:var(--hairline)] pt-8">
+      <div className="mt-10 border-t border-[color:var(--hairline-strong)] pt-8">
         <p className="text-[12px] leading-[1.6] text-ink-6">
           La recopilación y tratamiento de datos personales se realiza de
           acuerdo a la Ley N° 25.326 de Protección de los Datos Personales de

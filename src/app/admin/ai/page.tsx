@@ -57,7 +57,7 @@ export default async function AIGeneralPage() {
 
   return (
     <div className="h-[calc(100vh-8rem)]">
-      <NexoraAIShell contextName="General" contextIcon={<Sparkles className="w-5 h-5 text-[#111111]" />}>
+      <NexoraAIShell contextName="General" contextIcon={<Sparkles className="w-5 h-5 text-ink-0" />}>
         
         <div className="space-y-8">
 
@@ -82,7 +82,7 @@ export default async function AIGeneralPage() {
                   <div className="grid grid-cols-3 gap-4">
                     <div>
                       <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Cobrado</p>
-                      <p className="text-[16px] font-black text-[#111111] tabular-nums">${Math.round(data.financeSummary.totalCollected).toLocaleString()}</p>
+                      <p className="text-[16px] font-black text-ink-0 tabular-nums">${Math.round(data.financeSummary.totalCollected).toLocaleString()}</p>
                     </div>
                     <div>
                       <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Pendiente</p>
@@ -108,7 +108,7 @@ export default async function AIGeneralPage() {
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Alertas</p>
-                    <p className="text-[16px] font-black text-[#111111] tabular-nums">{data.recommendations.length}</p>
+                    <p className="text-[16px] font-black text-ink-0 tabular-nums">{data.recommendations.length}</p>
                   </div>
                   <div>
                     <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Borradores</p>
@@ -116,7 +116,7 @@ export default async function AIGeneralPage() {
                   </div>
                   <div>
                     <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Estado</p>
-                    <p className={`text-[13px] font-bold ${data.recommendations.length > 0 || data.drafts.length > 0 ? "text-emerald-600" : "text-[#AAAAAA]"}`}>
+                    <p className={`text-[13px] font-bold ${data.recommendations.length > 0 || data.drafts.length > 0 ? "text-emerald-600" : "text-ink-7"}`}>
                       {data.recommendations.length > 0 || data.drafts.length > 0 ? "Con actividad" : "Sin actividad"}
                     </p>
                   </div>
@@ -162,7 +162,7 @@ export default async function AIGeneralPage() {
                     return (
                       <div key={cmd.id} className="flex items-center gap-3">
                         <Sparkles className="w-3 h-3 text-gray-300 shrink-0" />
-                        <span className="text-[12px] font-medium text-[#111111] truncate flex-1">{label}</span>
+                        <span className="text-[12px] font-medium text-ink-0 truncate flex-1">{label}</span>
                         <span className="text-[10px] text-gray-400 font-bold shrink-0">{getRelativeTime(cmd.createdAt)}</span>
                       </div>
                     );
@@ -182,7 +182,7 @@ export default async function AIGeneralPage() {
           {!hasDecisions && !hasAdWork && !hasFin && (
             <div className="text-center py-16 border border-dashed border-[#EAEAEA] rounded-2xl bg-white">
               <Sparkles className="w-8 h-8 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-bold text-[#111111] mb-2">Nexora AI está lista</h3>
+              <h3 className="text-lg font-bold text-ink-0 mb-2">Nexora AI está lista</h3>
               <p className="text-sm text-gray-400 font-medium max-w-md mx-auto">
                 Usá el comando o entrá a un contexto para empezar a operar. Las alertas y tareas aparecerán acá automáticamente.
               </p>

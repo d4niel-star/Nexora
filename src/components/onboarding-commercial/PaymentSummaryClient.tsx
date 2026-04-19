@@ -99,7 +99,7 @@ export function PaymentSummaryClient({ planInfo }: { planInfo: PlanInfo }) {
       <button
         type="button"
         onClick={() => router.push("/welcome/plan")}
-        className="inline-flex h-10 items-center gap-2 rounded-[var(--r-sm)] px-1 text-[13px] font-medium text-ink-5 transition-colors hover:text-ink-0 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+        className="inline-flex min-h-11 items-center gap-2 rounded-[var(--r-md)] px-1 py-2 text-[13px] font-medium text-ink-5 transition-colors hover:text-ink-0 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
       >
         <ChevronLeft className="h-4 w-4" strokeWidth={1.75} />
         Volver a los planes
@@ -107,7 +107,8 @@ export function PaymentSummaryClient({ planInfo }: { planInfo: PlanInfo }) {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <section className="lg:col-span-7">
-          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">
+          <div className="mb-5 h-px w-10 bg-[var(--accent-500)]" aria-hidden />
+          <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-ink-5">
             Activar suscripción
           </p>
           <h1 className="mt-4 font-semibold text-[34px] leading-[1.04] tracking-[-0.035em] text-ink-0 sm:text-[46px]">
@@ -118,7 +119,7 @@ export function PaymentSummaryClient({ planInfo }: { planInfo: PlanInfo }) {
             datos de tarjeta.
           </p>
 
-          <div className="mt-7 rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 sm:p-6">
+          <div className="mt-7 rounded-[var(--r-xl)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 shadow-[var(--shadow-soft)] sm:p-6">
             <div className="flex items-start justify-between gap-4 border-b border-[color:var(--hairline)] pb-5">
               <div>
                 <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">
@@ -165,7 +166,7 @@ export function PaymentSummaryClient({ planInfo }: { planInfo: PlanInfo }) {
         </section>
 
         <aside className="lg:col-span-5">
-          <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 sm:p-6 lg:sticky lg:top-8">
+          <div className="rounded-[var(--r-xl)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 shadow-[var(--shadow-soft)] sm:p-6 lg:sticky lg:top-8">
             {error && (
               <div
                 role="alert"
@@ -196,7 +197,7 @@ export function PaymentSummaryClient({ planInfo }: { planInfo: PlanInfo }) {
               type="button"
               onClick={handleCheckout}
               disabled={loading}
-              className="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-4 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)] disabled:cursor-not-allowed disabled:opacity-50"
+              className="mt-6 inline-flex h-12 min-h-12 w-full items-center justify-center gap-2 rounded-[var(--r-md)] bg-ink-0 px-4 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? (
                 <>

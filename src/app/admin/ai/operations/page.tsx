@@ -20,7 +20,7 @@ export default async function AIOperationsPage({ searchParams }: Props) {
     <div className="h-[calc(100vh-8rem)]">
       <NexoraAIShell
         contextName="Operación & Fulfillment"
-        contextIcon={<PackageCheck className="w-5 h-5 text-[#111111]" />}
+        contextIcon={<PackageCheck className="w-5 h-5 text-ink-0" />}
       >
         <OrdersClient orders={orders} hideHeader initialTab={tab} />
       </NexoraAIShell>
