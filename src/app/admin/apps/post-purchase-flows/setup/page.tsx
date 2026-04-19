@@ -4,7 +4,9 @@ import { getActiveStoreInfo } from "@/lib/store-engine/admin/queries";
 import { prisma } from "@/lib/db/prisma";
 import { PLAN_DEFINITIONS } from "@/lib/billing/plans";
 import { getPostPurchaseSettings } from "@/lib/apps/post-purchase-flows/settings";
+import { getAppEmailMetrics } from "@/lib/apps/_shared/metrics";
 import { FlowsSetup } from "@/components/admin/apps/post-purchase-flows/FlowsSetup";
+import { AppMetricsCard } from "@/components/admin/apps/_shared/AppMetricsCard";
 
 export const metadata = {
   title: "Post-purchase flows · Setup",
@@ -14,7 +16,7 @@ export default async function PostPurchaseFlowsSetupPage() {
   const store = await getActiveStoreInfo();
   if (!store.id) redirect("/home/login");
 
-  const [sub, settings, install] = await Promise.all([
+  const [sub, settings, install, metrics] = await Promise.all([
     prisma.storeSubscription.findUnique({
       where: { storeId: store.id },
       include: { plan: true },
@@ -29,6 +31,10 @@ export default async function PostPurchaseFlowsSetupPage() {
       },
       select: { status: true },
     }),
+    // Events for this app are logged into EmailLog via sendEmailEvent in
+    // the review-request cron. See src/app/api/cron/post-purchase-review-
+    // requests/route.ts.
+    getAppEmailMetrics(store.id, "POST_PURCHASE_REVIEW_REQUEST"),
   ]);
 
   const planConfig = sub?.plan
@@ -43,11 +49,18 @@ export default async function PostPurchaseFlowsSetupPage() {
     | null;
 
   return (
-    <FlowsSetup
-      settings={settings}
-      planAllows={planAllows}
-      installed={installed}
-      installStatus={installStatus}
-    />
+    <div className="space-y-6">
+      <FlowsSetup
+        settings={settings}
+        planAllows={planAllows}
+        installed={installed}
+        installStatus={installStatus}
+      />
+      <AppMetricsCard
+        title="Actividad del flow post-entrega"
+        sentCaveat="“Envíos” cuenta mails aceptados por el proveedor de email configurado (ver /admin/integrations)."
+        metrics={metrics}
+      />
+    </div>
   );
 }
