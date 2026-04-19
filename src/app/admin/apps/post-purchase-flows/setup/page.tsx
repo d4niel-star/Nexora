@@ -34,7 +34,10 @@ export default async function PostPurchaseFlowsSetupPage() {
     // Events for this app are logged into EmailLog via sendEmailEvent in
     // the review-request cron. See src/app/api/cron/post-purchase-review-
     // requests/route.ts.
-    getAppEmailMetrics(store.id, "POST_PURCHASE_REVIEW_REQUEST"),
+    // V3.3: CTA wrapped with buildTrackedUrl, so we opt in to click stats.
+    getAppEmailMetrics(store.id, "POST_PURCHASE_REVIEW_REQUEST", {
+      trackClicks: true,
+    }),
   ]);
 
   const planConfig = sub?.plan

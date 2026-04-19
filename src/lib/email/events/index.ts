@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db/prisma";
 import { EventType, OrderEmailData, EmailPayload } from "../types";
 import { getEmailProvider } from "../providers";
 import * as templates from "../templates";
+import { buildTrackedUrl } from "../click-tracking";
 import { logSystemEvent } from "../../observability/audit";
 
 interface SendEmailEventParams {
@@ -107,7 +108,15 @@ export async function sendEmailEvent(params: SendEmailEventParams): Promise<bool
         break;
       case "POST_PURCHASE_REVIEW_REQUEST":
         subject = `¿Cómo fue tu experiencia con ${params.data.storeName}?`;
-        htmlContent = templates.generatePostPurchaseReviewRequestTemplate(params.data);
+        // V3.3: wrap the CTA href with the click-tracking redirect so real
+        // clicks land in EmailLog.clickCount. The destination itself is
+        // preserved — the redirect just lands the user at the same URL.
+        htmlContent = templates.generatePostPurchaseReviewRequestTemplate({
+          ...params.data,
+          statusUrl: params.data.statusUrl
+            ? buildTrackedUrl(log.id, params.data.statusUrl)
+            : params.data.statusUrl,
+        });
         break;
       default:
         throw new Error(`Unhandled event type: ${params.eventType}`);

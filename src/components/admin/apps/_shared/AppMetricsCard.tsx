@@ -62,9 +62,47 @@ export function AppMetricsCard({ title, sentCaveat, metrics }: Props) {
         </p>
       )}
 
+      {/* V3.3: real click stats. Rendered ONLY when the app opts in via
+         trackClicks — callers receive null on the three click fields
+         when the CTA is not wrapped, and the whole section is hidden. */}
+      {metrics.clicksTotal !== null && (
+        <div className="mt-5 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] p-4">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">
+              Clicks reales
+            </span>
+            <span className="text-[11px] text-ink-5 tabular-nums">
+              30 días:{" "}
+              <span className="text-ink-3">{metrics.clicksLast30d ?? 0}</span>
+              {" · "}
+              total:{" "}
+              <span className="text-ink-3">{metrics.clicksTotal}</span>
+            </span>
+          </div>
+          {metrics.lastClickedAt && (
+            <p className="mt-2 text-[11px] text-ink-5 tabular-nums">
+              Último click:{" "}
+              <span className="text-ink-3">
+                {new Intl.DateTimeFormat("es-AR", {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                }).format(metrics.lastClickedAt)}
+              </span>
+            </p>
+          )}
+          <p className="mt-2 text-[11px] leading-[1.55] text-ink-5">
+            Cuenta clicks reales contra la redirección <code className="font-mono">/api/r</code>.
+            Algunos clientes de email (Gmail, antivirus corporativos) hacen
+            prefetch automático — Nexora no distingue esos hits de un click
+            humano, así que esta métrica sigue siendo observabilidad, no
+            atribución de conversión.
+          </p>
+        </div>
+      )}
+
       <p className="mt-4 text-[11px] leading-[1.55] text-ink-5">
-        {sentCaveat} Nexora no estima aperturas, clicks ni conversiones — esos
-        números no existen en la infraestructura actual, así que no se muestran.
+        {sentCaveat} Nexora no estima aperturas ni conversiones — esos números
+        no existen en la infraestructura actual, así que no se muestran.
       </p>
     </div>
   );

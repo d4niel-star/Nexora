@@ -597,6 +597,12 @@ model EmailLog {
   
   createdAt      DateTime @default(now())
   sentAt         DateTime?
+
+  // Click tracking (V3.3). Only written by /api/r/[emailLogId] when a
+  // recipient clicks a tracked CTA. Kept on the same row to avoid a side
+  // table for a single counter.
+  clickCount     Int      @default(0)
+  lastClickedAt  DateTime?
   
   // Idempotency constraint: avoid sending the exact same event type for the exact same entity twice
   @@unique([eventType, entityType, entityId])
