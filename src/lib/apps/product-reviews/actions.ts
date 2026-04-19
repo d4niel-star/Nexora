@@ -55,6 +55,52 @@ export interface SubmitReviewInput {
   rating: number;
   title?: string;
   body: string;
+  /**
+   * Optional email used to prove a real purchase. When provided AND a
+   * collected order for the same store + product exists, the review lands
+   * with `verifiedPurchase=true`. Otherwise the flag stays false —
+   * "verification not provable" always degrades to false.
+   */
+  buyerEmail?: string;
+}
+
+/** Email regex is intentionally light — we fail the verification check
+ *  silently on any bad format rather than rejecting the whole review. */
+function isPlausibleEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+/**
+ * Strict verified-purchase check. Returns true iff the tenant has at least
+ * one order for the exact (email, storeId) pair with paymentStatus in the
+ * collected set AND an item matching the reviewed product. Any ambiguity —
+ * missing email, invalid format, no matching order — returns false.
+ */
+async function resolveVerifiedPurchase(
+  storeId: string,
+  productId: string,
+  buyerEmail: string | undefined,
+): Promise<boolean> {
+  if (!buyerEmail) return false;
+  const normalized = buyerEmail.trim().toLowerCase();
+  if (!normalized || !isPlausibleEmail(normalized)) return false;
+
+  try {
+    const order = await prisma.order.findFirst({
+      where: {
+        storeId,
+        email: normalized,
+        paymentStatus: { in: ["approved", "paid"] },
+        items: { some: { productId } },
+      },
+      select: { id: true },
+    });
+    return order !== null;
+  } catch {
+    // Fail-closed: any error → not verified. Never surface a badge
+    // derived from a failed check.
+    return false;
+  }
 }
 
 export async function submitReviewAction(
@@ -76,6 +122,11 @@ export async function submitReviewAction(
   }
   if (title && title.length > 120) {
     return { ok: false, error: "invalid_title" };
+  }
+  // Buyer email is optional and only used to compute verifiedPurchase.
+  // We accept bad formats silently (no verification instead of blocking).
+  if (input.buyerEmail && input.buyerEmail.length > 200) {
+    return { ok: false, error: "invalid_email" };
   }
 
   // Store is resolved from the storefront slug, NOT from an admin session.
@@ -121,6 +172,15 @@ export async function submitReviewAction(
     }
   }
 
+  // Compute verifiedPurchase strictly BEFORE persisting. If the buyer
+  // provided an email AND it matches a collected order of this tenant
+  // containing the reviewed product, mark true. Every other path → false.
+  const verifiedPurchase = await resolveVerifiedPurchase(
+    store.id,
+    product.id,
+    input.buyerEmail,
+  );
+
   await prisma.productReview.create({
     data: {
       storeId: store.id,
@@ -130,6 +190,7 @@ export async function submitReviewAction(
       title: title || null,
       body,
       status: "pending",
+      verifiedPurchase,
       source: "storefront",
       submittedIp: submittedIp || undefined,
     },

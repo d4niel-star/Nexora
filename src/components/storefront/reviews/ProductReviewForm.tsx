@@ -22,6 +22,7 @@ export function ProductReviewForm({ storeSlug, productId }: Props) {
   const [rating, setRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
   const [displayName, setDisplayName] = useState("");
+  const [buyerEmail, setBuyerEmail] = useState("");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -40,6 +41,7 @@ export function ProductReviewForm({ storeSlug, productId }: Props) {
         rating,
         title: title.trim() || undefined,
         body,
+        buyerEmail: buyerEmail.trim() || undefined,
       });
       if (!res.ok) {
         setErrorMsg(mapError(res.error));
@@ -49,6 +51,7 @@ export function ProductReviewForm({ storeSlug, productId }: Props) {
         "Gracias. Tu reseña quedó pendiente de moderación — la tienda la revisará antes de publicarla.",
       );
       setDisplayName("");
+      setBuyerEmail("");
       setTitle("");
       setBody("");
       setRating(5);
@@ -117,6 +120,27 @@ export function ProductReviewForm({ storeSlug, productId }: Props) {
           placeholder="Juan P."
           autoComplete="name"
         />
+      </div>
+
+      <div className="space-y-2">
+        <label className={labelCls} htmlFor="review-email">
+          Email de la compra (opcional)
+        </label>
+        <input
+          id="review-email"
+          type="email"
+          maxLength={200}
+          value={buyerEmail}
+          onChange={(e) => setBuyerEmail(e.target.value)}
+          className={inputCls}
+          placeholder="juan@ejemplo.com"
+          autoComplete="email"
+        />
+        <p className="text-[11px] text-ink-5">
+          Si lo dejás, verificamos que exista una compra tuya de este producto
+          y tu reseña aparecerá con el badge{" "}
+          <strong className="text-ink-3">Verificada</strong>. No se publica.
+        </p>
       </div>
 
       <div className="space-y-2">
@@ -198,6 +222,8 @@ function mapError(code: string | undefined): string {
       return "El comentario debe tener entre 10 y 2000 caracteres.";
     case "invalid_title":
       return "El título no puede superar los 120 caracteres.";
+    case "invalid_email":
+      return "El email ingresado es demasiado largo.";
     case "rate_limited":
       return "Ya enviaste una reseña para este producto recientemente. Intentá de nuevo más tarde.";
     case "app_not_active":
