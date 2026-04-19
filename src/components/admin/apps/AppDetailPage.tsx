@@ -13,6 +13,7 @@ import {
   toggleAppAction,
   uninstallAppAction,
 } from "@/lib/apps/actions";
+import { resolveAppCta, type AppCta } from "@/lib/apps/cta";
 
 import { AppStatusBadge } from "./AppStatusBadge";
 import { getAppIcon } from "./appIcons";
@@ -89,51 +90,25 @@ export function AppDetailPage({ item }: Props) {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {availability.kind === "plan-locked" && (
-              <div className="flex w-full flex-col gap-3 sm:w-auto">
-                {definition.lockedMessage && (
-                  <p className="max-w-sm text-[12px] font-medium leading-[1.5] text-ink-5">
-                    {definition.lockedMessage}
-                  </p>
-                )}
-                <Link href="/admin/billing" className={cn(primaryBtn, "sm:w-max")}>
-                  Ver plan {availability.minPlan}
-                </Link>
-              </div>
-            )}
+            {/* Primary CTA — resolved by the single source of truth in
+                src/lib/apps/cta.ts. Every surface that renders an app
+                action must call resolveAppCta() so labels and destinations
+                stay consistent. */}
+            <PrimaryCta
+              cta={resolveAppCta(item)}
+              lockedMessage={
+                availability.kind === "plan-locked" ? definition.lockedMessage : undefined
+              }
+              isPending={isPending}
+              onInstall={() => handle(() => installAppAction(definition.slug))}
+              onToggle={() => handle(() => toggleAppAction(definition.slug))}
+            />
 
-            {availability.kind === "coming-soon" && (
-              <button type="button" disabled className={secondaryBtn}>
-                Próximamente
-              </button>
-            )}
-
-            {availability.kind === "available" && !state.installed && (
-              <button
-                type="button"
-                disabled={isPending}
-                onClick={() => handle(() => installAppAction(definition.slug))}
-                className={primaryBtn}
-              >
-                {isPending ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Check className="h-3.5 w-3.5" />
-                )}
-                Instalar app
-              </button>
-            )}
-
+            {/* Secondary actions are only meaningful for installed+active. */}
             {availability.kind === "available" &&
               state.installed &&
               state.status === "active" && (
                 <>
-                  {definition.manageRoute && (
-                    <Link href={definition.manageRoute} className={primaryBtn}>
-                      <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.75} />
-                      Abrir app
-                    </Link>
-                  )}
                   <button
                     type="button"
                     disabled={isPending}
@@ -154,34 +129,6 @@ export function AppDetailPage({ item }: Props) {
                     Desinstalar
                   </button>
                 </>
-              )}
-
-            {availability.kind === "available" &&
-              state.installed &&
-              state.status === "disabled" && (
-                <button
-                  type="button"
-                  disabled={isPending}
-                  onClick={() => handle(() => toggleAppAction(definition.slug))}
-                  className={primaryBtn}
-                >
-                  {isPending ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Power className="h-3.5 w-3.5" />
-                  )}
-                  Reactivar
-                </button>
-              )}
-
-            {availability.kind === "available" &&
-              state.installed &&
-              state.status === "needs_setup" &&
-              definition.setupRoute && (
-                <Link href={definition.setupRoute} className={primaryBtn}>
-                  <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.75} />
-                  Completar setup
-                </Link>
               )}
           </div>
         </div>
@@ -302,6 +249,96 @@ function Row({ label, value }: { label: string; value: string }) {
       </dt>
       <dd className="text-[13px] text-ink-0 text-right">{value}</dd>
     </div>
+  );
+}
+
+// ─── Primary CTA renderer ───
+// Pure view for the single primary action. Reads an AppCta produced by
+// resolveAppCta() and nothing else — never re-derives state. Keeps the
+// detail page declarative: what the button says and where it goes lives
+// entirely in src/lib/apps/cta.ts.
+function PrimaryCta({
+  cta,
+  lockedMessage,
+  isPending,
+  onInstall,
+  onToggle,
+}: {
+  cta: AppCta;
+  lockedMessage?: string;
+  isPending: boolean;
+  onInstall: () => void;
+  onToggle: () => void;
+}) {
+  if (cta.kind === "coming-soon") {
+    return (
+      <button type="button" disabled className={secondaryBtn}>
+        {cta.label}
+      </button>
+    );
+  }
+
+  if (cta.kind === "plan-locked") {
+    return (
+      <div className="flex w-full flex-col gap-3 sm:w-auto">
+        {lockedMessage && (
+          <p className="max-w-sm text-[12px] font-medium leading-[1.5] text-ink-5">
+            {lockedMessage}
+          </p>
+        )}
+        <Link href={cta.href} className={cn(primaryBtn, "sm:w-max")}>
+          {cta.label}
+        </Link>
+      </div>
+    );
+  }
+
+  if (cta.kind === "install") {
+    return (
+      <button
+        type="button"
+        disabled={isPending}
+        onClick={onInstall}
+        className={primaryBtn}
+      >
+        {isPending ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={1.75} />
+        ) : (
+          <Check className="h-3.5 w-3.5" strokeWidth={1.75} />
+        )}
+        {cta.label}
+      </button>
+    );
+  }
+
+  if (cta.kind === "reactivate") {
+    return (
+      <button
+        type="button"
+        disabled={isPending}
+        onClick={onToggle}
+        className={primaryBtn}
+      >
+        {isPending ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={1.75} />
+        ) : (
+          <Power className="h-3.5 w-3.5" strokeWidth={1.75} />
+        )}
+        {cta.label}
+      </button>
+    );
+  }
+
+  // "setup" | "open" → both are plain Links. Any other kind is
+  // unreachable by construction (resolveAppCta returns exactly one of
+  // the six kinds above) but we keep a safe fallback that renders
+  // nothing so the surface never blows up.
+  if (cta.kind !== "setup" && cta.kind !== "open") return null;
+  return (
+    <Link href={cta.href} className={primaryBtn}>
+      <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.75} />
+      {cta.label}
+    </Link>
   );
 }
 
