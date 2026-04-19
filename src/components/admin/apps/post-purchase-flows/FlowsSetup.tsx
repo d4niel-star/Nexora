@@ -21,6 +21,10 @@ interface Props {
   settings: PostPurchaseSettingsView;
   planAllows: boolean;
   installed: boolean;
+  /** Raw InstalledApp.status for the current tenant. Drives the visible
+   *  status chip so it matches real cron behaviour rather than the
+   *  possibly-desynced local form state. */
+  installStatus: "active" | "needs_setup" | "disabled" | null;
 }
 
 const inputCls =
@@ -32,7 +36,7 @@ const primaryBtn =
 const chipBase =
   "inline-flex items-center h-6 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2 text-[10px] font-medium uppercase tracking-[0.14em]";
 
-export function FlowsSetup({ settings, planAllows, installed }: Props) {
+export function FlowsSetup({ settings, planAllows, installed, installStatus }: Props) {
   const router = useRouter();
   const [enabled, setEnabled] = useState(settings.reviewRequestEnabled);
   const [delay, setDelay] = useState(settings.reviewRequestDelayDays);
@@ -58,10 +62,15 @@ export function FlowsSetup({ settings, planAllows, installed }: Props) {
     });
   }
 
-  const status: "active" | "needs_setup" | "inactive" = !installed
+  // Reflect the real InstalledApp.status so the chip never drifts from the
+  // cron's filter. "disabled" means admin toggled the app off from the
+  // detail page, which the cron honours over the settings flag.
+  const status: "active" | "needs_setup" | "disabled" | "inactive" = !installed
     ? "inactive"
-    : enabled
+    : installStatus === "active"
     ? "active"
+    : installStatus === "disabled"
+    ? "disabled"
     : "needs_setup";
 
   return (
@@ -100,6 +109,8 @@ export function FlowsSetup({ settings, planAllows, installed }: Props) {
                   ? "Activa"
                   : status === "needs_setup"
                   ? "Requiere setup"
+                  : status === "disabled"
+                  ? "Desactivada"
                   : "Inactiva"}
               </span>
             </div>

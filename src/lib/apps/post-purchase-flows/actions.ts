@@ -62,9 +62,23 @@ export async function savePostPurchaseSettingsAction(
 
   // Mirror InstalledApp.status so the catalog badge is honest: if no flow
   // is enabled, the app reports as needs_setup even when installed.
-  await prisma.installedApp.updateMany({
-    where: { storeId: store.id, appSlug: "post-purchase-flows" },
-    data: { status: enabled ? "active" : "needs_setup" },
+  // Upsert (not updateMany) so that saving settings from /setup also
+  // materialises the install row when the merchant landed there directly
+  // via URL without going through the catalog.
+  const nextAppStatus = enabled ? "active" : "needs_setup";
+  await prisma.installedApp.upsert({
+    where: {
+      storeId_appSlug: {
+        storeId: store.id,
+        appSlug: "post-purchase-flows",
+      },
+    },
+    create: {
+      storeId: store.id,
+      appSlug: "post-purchase-flows",
+      status: nextAppStatus,
+    },
+    update: { status: nextAppStatus },
   });
 
   revalidatePath("/admin/apps");

@@ -61,6 +61,17 @@ async function resolveInitialStatus(
     );
     return complete ? "active" : "needs_setup";
   }
+  if (slug === "post-purchase-flows") {
+    // The single V2.5 flow is opt-in: the app only actually runs when
+    // reviewRequestEnabled=true. Install fresh therefore lands in
+    // needs_setup so the catalog badge matches real behaviour. Re-install
+    // with an already-enabled flow goes straight back to active.
+    const settings = await prisma.postPurchaseFlowsSettings.findUnique({
+      where: { storeId },
+      select: { reviewRequestEnabled: true },
+    });
+    return settings?.reviewRequestEnabled ? "active" : "needs_setup";
+  }
   return "active";
 }
 

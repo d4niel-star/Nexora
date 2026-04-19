@@ -36,12 +36,18 @@ export default async function PostPurchaseFlowsSetupPage() {
     : null;
   const planAllows = Boolean(planConfig?.postPurchaseFlows);
   const installed = install !== null;
+  const installStatus = (install?.status ?? null) as
+    | "active"
+    | "needs_setup"
+    | "disabled"
+    | null;
 
   return (
     <FlowsSetup
       settings={settings}
       planAllows={planAllows}
       installed={installed}
+      installStatus={installStatus}
     />
   );
 }
