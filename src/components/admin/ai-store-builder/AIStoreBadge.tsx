@@ -1,9 +1,14 @@
 import type { AIStoreProjectStatus, ProposalStyleType } from "@/types/ai-store-builder";
 import { cn } from "@/lib/utils";
 
+// ─── AI Store Badges ───
+// Rectangular hairline chips with tokenized signal tints. No pills, no
+// pastel wash — status is carried by a single ink-3/signal text color
+// over a neutral hairline surface.
+
 const projectStatusLabels: Record<AIStoreProjectStatus, string> = {
   draft: "Borrador",
-  in_progress: "En Progreso",
+  in_progress: "En progreso",
   generated: "Generado",
   ready_to_publish: "Listo para publicar",
   active: "Activo",
@@ -11,17 +16,35 @@ const projectStatusLabels: Record<AIStoreProjectStatus, string> = {
 };
 
 const projectStatusStyles: Record<AIStoreProjectStatus, string> = {
-  draft: "bg-gray-100 text-gray-600 ring-gray-500/10",
-  in_progress: "bg-blue-50 text-blue-700 ring-blue-600/15",
-  generated: "bg-purple-50 text-purple-700 ring-purple-600/15",
-  ready_to_publish: "bg-amber-50 text-amber-700 ring-amber-600/15",
-  active: "bg-emerald-50 text-emerald-700 ring-emerald-600/15",
-  inactive: "bg-red-50 text-red-600 ring-red-600/10",
+  draft:
+    "border-[color:var(--hairline)] bg-[var(--surface-1)] text-ink-5",
+  in_progress:
+    "border-[color:var(--hairline)] bg-[var(--surface-1)] text-ink-3",
+  generated:
+    "border-[color:var(--hairline)] bg-[var(--surface-1)] text-ink-3",
+  ready_to_publish:
+    "border-[color:var(--hairline)] bg-[var(--surface-1)] text-[color:var(--signal-warning)]",
+  active:
+    "border-[color:var(--hairline)] bg-[var(--surface-1)] text-[color:var(--signal-success)]",
+  inactive:
+    "border-[color:var(--hairline)] bg-[var(--surface-1)] text-[color:var(--signal-danger)]",
 };
 
-export function AIProjectStatusBadge({ status, className }: { status: AIStoreProjectStatus; className?: string }) {
+export function AIProjectStatusBadge({
+  status,
+  className,
+}: {
+  status: AIStoreProjectStatus;
+  className?: string;
+}) {
   return (
-    <span className={cn("inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.18em] ring-1 ring-inset", projectStatusStyles[status], className)}>
+    <span
+      className={cn(
+        "inline-flex items-center h-6 rounded-[var(--r-xs)] border px-2 text-[10px] font-medium uppercase tracking-[0.14em]",
+        projectStatusStyles[status],
+        className,
+      )}
+    >
       {projectStatusLabels[status]}
     </span>
   );
@@ -29,26 +52,43 @@ export function AIProjectStatusBadge({ status, className }: { status: AIStorePro
 
 const styleTypeLabels: Record<ProposalStyleType, string> = {
   minimal_premium: "Minimal Premium",
-  high_conversion: "Conversion Alta",
-  editorial: "Editorial / Marca",
+  high_conversion: "Alta Conversión",
+  editorial: "Editorial",
 };
 
-export function AIStyleBadge({ style, className }: { style: ProposalStyleType; className?: string }) {
-  const configs = {
-    minimal_premium: "bg-gray-50 text-gray-800 border-gray-200",
-    high_conversion: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    editorial: "bg-purple-50 text-purple-700 border-purple-200",
-  };
+export function AIStyleBadge({
+  style,
+  className,
+}: {
+  style: ProposalStyleType;
+  className?: string;
+}) {
   return (
-    <span className={cn("inline-flex items-center rounded-md border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em]", configs[style], className)}>
+    <span
+      className={cn(
+        "inline-flex items-center h-6 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-3",
+        className,
+      )}
+    >
       {styleTypeLabels[style]}
     </span>
   );
 }
 
-export function AIRecommendationBadge({ label, className }: { label: string; className?: string }) {
+export function AIRecommendationBadge({
+  label,
+  className,
+}: {
+  label: string;
+  className?: string;
+}) {
   return (
-    <span className={cn("inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-amber-700", className)}>
+    <span
+      className={cn(
+        "inline-flex items-center h-6 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2 text-[10px] font-medium uppercase tracking-[0.14em] text-[color:var(--signal-warning)]",
+        className,
+      )}
+    >
       {label}
     </span>
   );
