@@ -5,6 +5,7 @@ import { getStorefrontData } from "@/lib/store-engine/queries";
 import { getCart } from "@/lib/store-engine/cart/queries";
 import { normalizeStorefrontHref } from "@/lib/store-engine/urls";
 import type { StoreConfig } from "@/types/storefront";
+import { isTrackingWidgetActive } from "@/lib/apps/order-tracking-widget/queries";
 
 export default async function StorefrontLayout({
   children,
@@ -47,11 +48,13 @@ export default async function StorefrontLayout({
   const cart = await getCart(storefrontData.store.id);
   config.cartItemCount = cart?.totalQuantity ?? 0;
 
+  const trackingEnabled = await isTrackingWidgetActive(storefrontData.store.id);
+
   return (
     <div className="flex min-h-screen flex-col bg-[var(--surface-1)] font-sans text-ink-0 selection:bg-ink-0 selection:text-ink-12">
       <StoreHeader config={config} />
       <main className="flex-1">{children}</main>
-      <StoreFooter config={config} />
+      <StoreFooter config={config} showTrackingLink={trackingEnabled} />
     </div>
   );
 }

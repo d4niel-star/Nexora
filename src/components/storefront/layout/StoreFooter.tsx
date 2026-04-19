@@ -10,7 +10,16 @@ import { storePath } from "@/lib/store-engine/urls";
 //     by Argentine Res. 424/2020)
 // Visual tokens only — copy and data flow untouched.
 
-export function StoreFooter({ config }: { config: StoreConfig }) {
+export function StoreFooter({
+  config,
+  showTrackingLink = false,
+}: {
+  config: StoreConfig;
+  /** Renders the "Seguir mi pedido" CTA when the order-tracking-widget app
+   *  is installed + active for this tenant. Defaults to false so the
+   *  footer stays neutral when the app is not present. */
+  showTrackingLink?: boolean;
+}) {
   const currentYear = new Date().getFullYear();
 
   return (
@@ -121,6 +130,14 @@ export function StoreFooter({ config }: { config: StoreConfig }) {
               >
                 Política de devoluciones
               </Link>
+              {showTrackingLink && (
+                <Link
+                  href={storePath(config.slug, "tracking")}
+                  className="text-[12px] text-ink-5 transition-colors hover:text-ink-0"
+                >
+                  Seguir mi pedido
+                </Link>
+              )}
             </div>
 
             <Link

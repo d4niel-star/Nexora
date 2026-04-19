@@ -463,27 +463,30 @@ export const APP_REGISTRY: AppDefinition[] = [
     isComingSoon: true,
     tags: ["bundles", "upsell", "aov"],
   },
+  // ── Trust — Order tracking widget (V2.3, real) ────────────────────────
   {
     slug: "order-tracking-widget",
-    name: "Widget de tracking de pedidos",
+    name: "Seguimiento de pedidos",
     iconName: "Truck",
     category: "trust",
     shortDescription:
-      "Página de tracking de marca para reducir consultas de “dónde está mi pedido”.",
+      "Permití que tus clientes consulten el estado real de su pedido y reducí tickets de soporte.",
     problem:
-      "El 30–40 % de los tickets de soporte son sobre el estado del envío.",
+      "Entre el 30 % y el 40 % de los tickets de post-venta son “¿dónde está mi pedido?”. Sin un lugar claro para consultar, el cliente recurre a soporte.",
     outcome:
-      "Página de tracking con tu branding y estado del envío en tiempo real a partir de los webhooks del carrier.",
+      "Nexora expone una página de seguimiento pública en tu storefront. El cliente consulta con número de pedido y email, y ve el estado real sin que inventemos datos que no existen.",
     capabilities: [
-      "Estado por número de pedido.",
-      "Integrado con CarrierWebhookLog.",
-      "Branded theme.",
+      "Lookup por número de pedido + email, aislado por tienda.",
+      "Muestra estado real de envío (unfulfilled, shipped, delivered).",
+      "Link al carrier externo solo si la orden tiene trackingUrl.",
+      "Al activar, Nexora agrega un link “Seguir pedido” en el footer.",
+      "No inventa carrier ni trackingCode — si no hay datos, lo dice.",
     ],
-    setupRoute: null,
-    manageRoute: null,
+    setupRoute: "/admin/apps/order-tracking-widget/setup",
+    manageRoute: "/admin/apps/order-tracking-widget/setup",
     installMode: "builtin",
-    isComingSoon: true,
-    tags: ["tracking", "post-purchase"],
+    setupTime: "Inmediato",
+    tags: ["tracking", "post-purchase", "trust"],
   },
   {
     slug: "post-purchase-flows",
