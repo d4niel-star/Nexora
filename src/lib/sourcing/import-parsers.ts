@@ -35,6 +35,32 @@ export interface SourcingImportPreview {
   validRows: number;
   products: SupplierProductInput[];
   errors: ImportRowError[];
+  // ─── Optional: populated only when the preview comes from the
+  // catalog-resolver URL import pipeline. Legacy CSV/feed parsers leave
+  // these undefined.
+  detectedSource?:
+    | "feed-csv"
+    | "feed-xml"
+    | "feed-json"
+    | "shopify"
+    | "structured-data"
+    | "sitemap"
+    | "html-catalog"
+    | "unknown";
+  extractorUsed?:
+    | "feed"
+    | "shopify"
+    | "structured-data"
+    | "sitemap"
+    | "html-catalog"
+    | null;
+  diagnostics?: {
+    step: string;
+    status: "ok" | "warn" | "error" | "info";
+    message: string;
+    detail?: Record<string, unknown>;
+    elapsedMs: number;
+  }[];
 }
 
 export const SOURCING_CSV_TEMPLATE =

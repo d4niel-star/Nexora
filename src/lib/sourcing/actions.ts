@@ -12,6 +12,7 @@ import {
   type SourcingImportSource,
   type SupplierProductInput,
 } from "./import-parsers";
+import { resolveCatalogFromUrl } from "./catalog-resolver";
 import { LEGACY_SEEDED_PROVIDER_CODES } from "./constants";
 
 type ImportableSource = Extract<SourcingImportSource, "csv" | "feed" | "api">;
@@ -33,9 +34,9 @@ function sourceLabelFromUrl(sourceType: ImportableSource, sourceUrl?: string): s
   if (!sourceUrl) return sourceType === "csv" ? "Import CSV manual" : "Fuente externa";
   try {
     const host = new URL(sourceUrl).host;
-    return sourceType === "api" ? `API ${host}` : `Feed ${host}`;
+    return sourceType === "api" ? `API ${host}` : `Catálogo ${host}`;
   } catch {
-    return sourceType === "api" ? "API proveedor" : "Feed proveedor";
+    return sourceType === "api" ? "API proveedor" : "Catálogo proveedor";
   }
 }
 
@@ -628,11 +629,14 @@ export async function importCsvProductsAction(csvText: string, selectedExternalI
   });
 }
 
+// ─── URL catalog import is powered by the catalog-resolver ────────────
+// It accepts generic store URLs (not only CSV/XML/JSON feeds) and tries
+// multiple extractors in a budgeted pipeline. The raw SourcingImportPreview
+// already carries detection metadata + diagnostics; the UI surfaces them.
+
 export async function previewFeedImportAction(feedUrl: string) {
-  return fetchSupplierProducts({
-    sourceType: "feed",
-    url: feedUrl.trim(),
-  });
+  const resolution = await resolveCatalogFromUrl({ url: feedUrl.trim() });
+  return resolution.preview;
 }
 
 export async function importFeedProductsAction(feedUrl: string, selectedExternalIds: string[]) {
@@ -640,17 +644,18 @@ export async function importFeedProductsAction(feedUrl: string, selectedExternal
   if (!storeId) throw new Error("No active store session");
 
   const sourceUrl = feedUrl.trim();
-  const preview = await fetchSupplierProducts({
-    sourceType: "feed",
-    url: sourceUrl,
-  });
+  const resolution = await resolveCatalogFromUrl({ url: sourceUrl });
+  if (resolution.preview.products.length === 0) {
+    const firstError = resolution.preview.errors[0]?.message;
+    throw new Error(firstError || "No se pudo extraer un catálogo utilizable desde esta URL.");
+  }
 
   return importParsedProductsForStore({
     storeId,
     sourceType: "feed",
     sourceLabel: sourceLabelFromUrl("feed", sourceUrl),
     sourceUrl,
-    products: preview.products,
+    products: resolution.preview.products,
     selectedExternalIds,
   });
 }

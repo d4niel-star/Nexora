@@ -222,6 +222,27 @@ function TabButton({ active, onClick, children, icon, badge }: { active: boolean
   );
 }
 
+function detectionLabel(source: NonNullable<SourcingImportPreview["detectedSource"]>): string {
+  switch (source) {
+    case "feed-csv": return "Feed CSV";
+    case "feed-xml": return "Feed XML";
+    case "feed-json": return "Feed JSON";
+    case "shopify": return "Shopify";
+    case "structured-data": return "schema.org Product";
+    case "sitemap": return "Sitemap";
+    case "html-catalog": return "Catálogo HTML";
+    case "unknown":
+    default: return "Sin detectar";
+  }
+}
+
+function diagnosticColor(status: "ok" | "warn" | "error" | "info"): string {
+  if (status === "error") return "text-[color:var(--signal-danger)]";
+  if (status === "warn") return "text-[color:var(--signal-warning)]";
+  if (status === "ok") return "text-[color:var(--signal-success)]";
+  return "text-ink-5";
+}
+
 function RealImportTab({ onImportComplete }: { onImportComplete: () => void }) {
   const [sourceType, setSourceType] = useState<SourcingImportSource>("csv");
   const [csvText, setCsvText] = useState("");
@@ -349,8 +370,9 @@ function RealImportTab({ onImportComplete }: { onImportComplete: () => void }) {
           <div>
             <h2 className="text-[18px] font-semibold tracking-[-0.02em] text-ink-0">Abastecimiento real</h2>
             <p className="mt-2 max-w-2xl text-[13px] leading-[1.55] text-ink-5">
-              Importá productos que vienen de un archivo, feed o API real. Nexora normaliza nombres, categorías y
-              variantes sin inventar productos ni marcar sync cuando la fuente no responde.
+              Importá productos reales desde un archivo, una URL de tienda o catálogo, o una API de proveedor.
+              Nexora normaliza nombres, categorías y variantes sin inventar productos ni marcar sync cuando la
+              fuente no responde.
             </p>
           </div>
           <button type="button" onClick={downloadTemplate} className={secondaryBtn}>
@@ -369,8 +391,8 @@ function RealImportTab({ onImportComplete }: { onImportComplete: () => void }) {
           />
           <SourceButton
             active={sourceType === "feed"}
-            title="Feed URL"
-            description="XML, JSON o CSV publicado por el proveedor."
+            title="URL de tienda o catálogo"
+            description="Pegá una URL de tienda, colección, sitemap o feed directo. Nexora detecta la fuente."
             icon={<Link2 className="h-4 w-4" />}
             onClick={() => switchSource("feed")}
           />
@@ -409,18 +431,22 @@ function RealImportTab({ onImportComplete }: { onImportComplete: () => void }) {
         {sourceType === "feed" && (
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
             <label className="block">
-              <span className="text-[12px] font-medium text-ink-5">URL del feed</span>
+              <span className="text-[12px] font-medium text-ink-5">URL de tienda, catálogo o feed</span>
               <input
                 value={feedUrl}
                 onChange={(event) => { setFeedUrl(event.target.value); setPreview(null); }}
-                placeholder="https://proveedor.com/feed.csv"
+                placeholder="https://tienda.com, /collections/ofertas o /feed.csv"
                 className={cn(inputCls, "mt-2")}
               />
-              <span className="mt-2 block text-[12px] text-ink-5">Acepta CSV, JSON o XML si la URL responde públicamente.</span>
+              <span className="mt-2 block text-[12px] text-ink-5">
+                Nexora intenta detectar automáticamente el tipo de fuente (feed directo, Shopify, schema.org,
+                sitemap o catálogo HTML). No toda URL es soportable: si no se puede extraer un catálogo
+                utilizable, se reporta el diagnóstico completo.
+              </span>
             </label>
             <button type="button" onClick={runPreview} disabled={isPending || feedUrl.trim().length === 0} className={primaryBtn}>
               {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UploadCloud className="h-3.5 w-3.5" />}
-              Consultar feed
+              Analizar URL
             </button>
           </div>
         )}
@@ -472,7 +498,19 @@ function RealImportTab({ onImportComplete }: { onImportComplete: () => void }) {
         <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] overflow-hidden">
           <div className="flex flex-col gap-3 border-b border-[color:var(--hairline)] bg-[var(--surface-1)] px-6 py-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <h3 className="text-[14px] font-semibold text-ink-0">Preview de productos reales</h3>
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-[14px] font-semibold text-ink-0">Preview de productos reales</h3>
+                {preview.detectedSource && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-0)] px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em] text-ink-3">
+                    {detectionLabel(preview.detectedSource)}
+                  </span>
+                )}
+                {preview.extractorUsed && (
+                  <span className="inline-flex items-center rounded-full bg-ink-0 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em] text-ink-12">
+                    {preview.extractorUsed}
+                  </span>
+                )}
+              </div>
               <p className="mt-1 text-[12px] text-ink-5">
                 {preview.products.length} producto(s) válidos, {preview.errors.length} alerta(s) de validación.
               </p>
@@ -487,6 +525,24 @@ function RealImportTab({ onImportComplete }: { onImportComplete: () => void }) {
               </button>
             </div>
           </div>
+
+          {preview.diagnostics && preview.diagnostics.length > 0 && (
+            <details className="border-b border-[color:var(--hairline)] bg-[var(--surface-1)] px-6 py-3 text-[12px] text-ink-5">
+              <summary className="cursor-pointer select-none text-[11px] font-medium uppercase tracking-[0.1em] text-ink-3">
+                Diagnóstico del pipeline ({preview.diagnostics.length} paso{preview.diagnostics.length === 1 ? "" : "s"})
+              </summary>
+              <ol className="mt-2 max-h-64 space-y-1 overflow-auto pl-0">
+                {preview.diagnostics.map((d, i) => (
+                  <li key={i} className="grid grid-cols-[64px_110px_90px_1fr] gap-2 rounded-[var(--r-xs)] px-2 py-1 font-mono text-[11px]">
+                    <span className="tabular-nums text-ink-5">{d.elapsedMs}ms</span>
+                    <span className="truncate text-ink-3" title={d.step}>{d.step}</span>
+                    <span className={cn("uppercase tracking-[0.08em]", diagnosticColor(d.status))}>{d.status}</span>
+                    <span className="truncate text-ink-3" title={d.message}>{d.message}</span>
+                  </li>
+                ))}
+              </ol>
+            </details>
+          )}
 
           {preview.errors.length > 0 && (
             <div className="border-b border-[color:var(--hairline)] px-6 py-4">
@@ -613,7 +669,7 @@ function DiscoverTab({ providers, connections, onConnect, isPending }: { provide
         </div>
         <h3 className="text-[18px] font-semibold tracking-[-0.02em] text-ink-0">Sin proveedores cargados</h3>
         <p className="mt-2 max-w-sm text-[13px] leading-[1.55] text-ink-5">
-          Cargá un proveedor real desde CSV, feed o API. No hay proveedores preinventados.
+          Cargá un proveedor real desde CSV, URL de tienda/catálogo o API. No hay proveedores preinventados.
         </p>
       </div>
     );
@@ -689,7 +745,7 @@ function ConnectedTab({ connections, onRefresh }: { connections: ConnectedProvid
           <Network className="h-5 w-5 text-ink-5" strokeWidth={1.5} />
         </div>
         <h3 className="text-[18px] font-semibold tracking-[-0.02em] text-ink-0">Ningún proveedor conectado</h3>
-        <p className="mt-2 max-w-sm text-[13px] leading-[1.55] text-ink-5">Usa “Import real” para cargar productos desde CSV, feed o API de tu proveedor.</p>
+        <p className="mt-2 max-w-sm text-[13px] leading-[1.55] text-ink-5">Usa “Import real” para cargar productos desde CSV, URL de tienda o API del proveedor.</p>
       </div>
     );
   }
@@ -940,8 +996,8 @@ function SyncTab({ jobs, connections, onReload }: { jobs: any[], connections: Co
       <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6">
         <h3 className="text-[14px] font-semibold text-ink-0 mb-2">Disparar sincronización</h3>
         <p className="text-[13px] leading-[1.55] text-ink-5 mb-6 max-w-2xl">
-          Ejecuta una lectura real contra feeds o APIs configuradas. Si hay diferencias, Nexora marca el catálogo espejo
-          como pendiente de revisión y no inventa cambios de stock ni precio.
+          Ejecuta una lectura real contra las fuentes configuradas (URL de tienda, feed o API). Si hay diferencias,
+          Nexora marca el catálogo espejo como pendiente de revisión y no inventa cambios de stock ni precio.
         </p>
 
         <div className="flex gap-3 flex-wrap">
