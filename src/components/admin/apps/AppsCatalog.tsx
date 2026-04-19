@@ -40,7 +40,9 @@ export function AppsCatalog({ catalog, summary }: Props) {
       }
 
       if (filter === "all") return true;
-      if (filter === "installed") return state.installed && state.status === "active";
+      // "Instaladas" includes both active and disabled rows so the filter
+      // matches the per-card badge and the summary counter.
+      if (filter === "installed") return state.installed;
       if (filter === "available")
         return availability.kind === "available" && !state.installed;
       if (filter === "coming-soon") return availability.kind === "coming-soon";

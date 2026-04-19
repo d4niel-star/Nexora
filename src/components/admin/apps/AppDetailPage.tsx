@@ -124,7 +124,7 @@ export function AppDetailPage({ item }: Props) {
                   {definition.manageRoute && (
                     <Link href={definition.manageRoute} className={primaryBtn}>
                       <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.75} />
-                      Abrir {categoryLabel.toLowerCase()}
+                      Abrir app
                     </Link>
                   )}
                   <button

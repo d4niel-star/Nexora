@@ -117,11 +117,13 @@ export async function getAppDetail(
   };
 }
 
-/** Used by the catalogue header for the "Instaladas / Disponibles" chips. */
+/** Used by the catalogue header for the "Instaladas / Disponibles" chips.
+ *  `installed` counts every row in InstalledApp regardless of status so it
+ *  stays consistent with the per-card badge ("Instalada" / "Desactivada")
+ *  and with the client-side "Instaladas" filter. */
 export async function getCatalogSummary(storeId: string) {
   const states = await getInstallStates(storeId);
-  const installed = Object.values(states).filter((s) => s.status === "active")
-    .length;
+  const installed = Object.values(states).filter((s) => s.installed).length;
   const total = listVisibleApps().filter((a) => !a.isComingSoon).length;
   return { installed, total, comingSoon: APP_REGISTRY.filter((a) => a.isComingSoon).length };
 }

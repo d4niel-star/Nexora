@@ -514,14 +514,21 @@ export function listVisibleApps(): AppDefinition[] {
 
 /**
  * Pure, plan-aware availability resolution. Does NOT touch the DB.
+ *
+ * Fail-closed: if the app declares a `planGate` and the tenant has no
+ * active plan config (missing / deactivated subscription), treat it as
+ * `plan-locked` rather than silently allowing installation. This covers
+ * trial-expired tenants and any edge case where plan data is unavailable.
  */
 export function resolveAvailability(
   app: AppDefinition,
   planConfig: PlanConfig | null,
 ): AppAvailability {
   if (app.isComingSoon) return { kind: "coming-soon" };
-  if (app.planGate && planConfig && !app.planGate(planConfig)) {
-    return { kind: "plan-locked", minPlan: app.minPlanLabel ?? "Growth" };
+  if (app.planGate) {
+    if (!planConfig || !app.planGate(planConfig)) {
+      return { kind: "plan-locked", minPlan: app.minPlanLabel ?? "Growth" };
+    }
   }
   return { kind: "available" };
 }
