@@ -74,7 +74,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
       {!hideHeader && (
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
-            <h1 className="text-3xl font-black tracking-tight text-ink-0">Pedidos</h1>
+            <h1 className="text-[28px] lg:text-[32px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0">Pedidos.</h1>
             <p className="text-ink-5 text-[15px] mt-1 font-medium">Gestioná el motor logístico corporativo. Todo en un solo lugar.</p>
           </div>
           <div className="flex items-center gap-3">
@@ -92,17 +92,17 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-5 py-4 shadow-[var(--shadow-soft)]">
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-ink-6">Ventas reales</p>
-            <p className="mt-1 text-2xl font-black text-ink-0 tabular-nums">${realRevenue.toLocaleString("es-AR")}</p>
+            <p className="mt-1 text-[22px] font-semibold tracking-[-0.02em] text-ink-0 tabular-nums">${realRevenue.toLocaleString("es-AR")}</p>
             <p className="mt-1 text-xs font-medium text-ink-6">Solo pagos confirmados por webhook.</p>
           </div>
           <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-5 py-4 shadow-[var(--shadow-soft)]">
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-ink-6">Pendientes de pago</p>
-            <p className="mt-1 text-2xl font-black text-amber-700 tabular-nums">{pendingPayment.length}</p>
+            <p className="mt-1 text-[22px] font-semibold tracking-[-0.02em] text-[color:var(--signal-warning)] tabular-nums">{pendingPayment.length}</p>
             <p className="mt-1 text-xs font-medium text-ink-6">No cuentan como venta real.</p>
           </div>
           <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-5 py-4 shadow-[var(--shadow-soft)]">
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-ink-6">Por preparar</p>
-            <p className="mt-1 text-2xl font-black text-ink-0 tabular-nums">{toPrepare.length}</p>
+            <p className="mt-1 text-[22px] font-semibold tracking-[-0.02em] text-ink-0 tabular-nums">{toPrepare.length}</p>
             <p className="mt-1 text-xs font-medium text-ink-6">Pagados sin despacho final.</p>
           </div>
         </div>
@@ -183,7 +183,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
               <div className="inline-flex items-center justify-center w-14 h-14 rounded-[var(--r-sm)] bg-[var(--surface-1)] mb-6 border border-[color:var(--hairline)]">
                 <ShoppingBag className="w-5 h-5 text-ink-5" strokeWidth={1.5} />
               </div>
-              <h3 className="text-xl font-extrabold text-ink-0">Sin pedidos aún</h3>
+              <h3 className="text-[18px] font-semibold tracking-[-0.02em] text-ink-0">Sin pedidos aún.</h3>
               <p className="text-[15px] font-medium text-ink-6 mt-2 max-w-sm mx-auto text-center">
                 Cuando tus clientes realicen compras desde el storefront, los pedidos aparecerán acá en tiempo real.
               </p>
@@ -218,7 +218,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
                       <div className="inline-flex items-center justify-center w-14 h-14 rounded-[var(--r-sm)] bg-[var(--surface-1)] mb-6 border border-[color:var(--hairline)]">
                          <Search className="w-5 h-5 text-ink-5" strokeWidth={1.5} />
                       </div>
-                      <h3 className="text-xl font-extrabold text-ink-0">No encontramos tu orden</h3>
+                      <h3 className="text-[18px] font-semibold tracking-[-0.02em] text-ink-0">No encontramos tu orden.</h3>
                       <p className="text-[15px] font-medium text-ink-6 mt-2 max-w-sm mx-auto">Limpiá los filtros o asegurate de haber escrito bien el ID de seguimiento.</p>
                       <button onClick={() => {setSearchQuery(''); setDateFrom(''); setDateTo(''); setActiveTab('all')}} className="mt-6 px-6 py-2.5 bg-[var(--surface-0)] border border-[color:var(--hairline)] text-ink-0 font-bold text-[13px] rounded-[var(--r-lg)] hover:bg-[var(--surface-2)] transition-colors">
                         Limpiar Filtros
@@ -232,7 +232,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
                     <tr 
                       key={order.id} 
                       onClick={() => setSelectedOrder(order)}
-                      className={`group transition-all cursor-pointer ${isSelected ? 'bg-emerald-50/30' : 'hover:bg-[var(--surface-2)]/50'}`}
+                      className={`group transition-colors cursor-pointer ${isSelected ? 'bg-[var(--surface-2)]' : 'hover:bg-[var(--surface-2)]/50'}`}
                     >
                       <td className="px-6 py-5" onClick={(e) => e.stopPropagation()}>
                          <input 
@@ -256,8 +256,8 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
                       </td>
                       <td className="px-6 py-5">
                         {order.channel === 'Storefront' ? (
-                           <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase tracking-widest rounded-md w-fit shadow-[var(--shadow-soft)]">
-                              <ShoppingBag className="w-3 h-3" /> Tienda
+                           <div className="inline-flex items-center gap-1.5 h-6 px-2 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] text-[10px] font-medium uppercase tracking-[0.14em] text-ink-3 w-fit">
+                              <ShoppingBag className="w-3 h-3" strokeWidth={1.75} /> Tienda
                            </div>
                         ) : (
                            <span className="text-xs font-bold text-ink-6 bg-[var(--surface-2)] px-2 py-1 rounded-md uppercase tracking-wider">{order.channel}</span>
@@ -265,9 +265,9 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
                       </td>
                       <td className="px-6 py-5"><PaymentStatusBadge status={order.paymentStatus} /></td>
                       <td className="px-6 py-5"><OrderStatusBadge status={order.status} /></td>
-                      <td className="px-6 py-5 text-right font-black text-ink-0 tabular-nums tracking-tight text-[15px]">${order.total.toLocaleString('es-AR')}</td>
+                      <td className="px-6 py-5 text-right font-semibold text-ink-0 tabular-nums tracking-[-0.01em] text-[15px]">${order.total.toLocaleString('es-AR')}</td>
                       <td className="px-6 py-5 opacity-0 group-hover:opacity-100 transition-opacity">
-                         <button onClick={(e) => e.stopPropagation()} className="p-2 hover:bg-[var(--surface-0)] border hover:border-[color:var(--hairline)] border-transparent shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-soft)] rounded-lg text-ink-6 hover:text-ink-0 transition-all">
+                         <button onClick={(e) => e.stopPropagation()} className="p-2 hover:bg-[var(--surface-2)] border hover:border-[color:var(--hairline)] border-transparent rounded-[var(--r-sm)] text-ink-6 hover:text-ink-0 transition-colors">
                             <MoreHorizontal className="w-4 h-4" />
                          </button>
                       </td>

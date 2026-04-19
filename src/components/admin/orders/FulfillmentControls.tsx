@@ -60,42 +60,42 @@ export function FulfillmentControls({ order }: { order: Order }) {
   const currentStatus = order.shipping.shippingStatus || "unfulfilled";
 
   return (
-    <div className="bg-gray-50/50 rounded-2xl p-6 border border-[#EAEAEA] shadow-sm shadow-gray-100/50">
+    <div className="bg-[var(--surface-1)] rounded-[var(--r-md)] p-6 border border-[color:var(--hairline)]">
       <div className="flex items-center justify-between mb-6">
-        <span className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Logística de Envío</span>
-        {isPending && <RefreshCw className="w-3.5 h-3.5 text-gray-400 animate-spin" />}
+        <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Logística de envío</span>
+        {isPending && <RefreshCw className="w-3.5 h-3.5 text-ink-5 animate-spin" strokeWidth={1.75} />}
       </div>
 
       {error && (
-        <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm mb-4 flex items-center gap-2 border border-red-100">
-           <AlertCircle className="w-4 h-4" /> {error}
+        <div className="rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-3 mb-4 flex items-center gap-2 text-[13px] text-[color:var(--signal-danger)]">
+           <AlertCircle className="w-4 h-4" strokeWidth={1.75} /> {error}
         </div>
       )}
 
       {order.status === "cancelled" && (
-        <div className="bg-red-50 text-red-800 p-4 rounded-xl border border-red-100 text-sm font-medium mb-6">
-          Logística detenida: El pedido fue cancelado.
+        <div className="rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-4 mb-6 text-[13px] text-[color:var(--signal-danger)]">
+          Logística detenida: el pedido fue cancelado.
         </div>
       )}
 
       {/* Progress Track */}
-      <div className="relative pl-5 space-y-6 before:absolute before:left-[9px] before:top-2 before:bottom-2 before:w-[2px] before:bg-[#EAEAEA]">
+      <div className="relative pl-5 space-y-6 before:absolute before:left-[9px] before:top-2 before:bottom-2 before:w-px before:bg-[color:var(--hairline-strong)]">
         
         {/* Step 1: Prep */}
         <div className="relative">
-          <div className={`absolute -left-[27px] top-1 w-3.5 h-3.5 rounded-full ring-4 ring-white shadow-sm transition-colors ${currentStatus !== 'unfulfilled' ? 'bg-amber-500' : 'bg-gray-300'}`} />
+          <div className={`absolute -left-[27px] top-1 w-3 h-3 rounded-full ring-4 ring-[var(--surface-1)] transition-colors ${currentStatus !== 'unfulfilled' ? 'bg-ink-0' : 'bg-[var(--surface-3)]'}`} />
           <div className="flex justify-between items-start">
             <div>
-              <p className={`text-sm font-bold ${currentStatus !== 'unfulfilled' ? 'text-[#111111]' : 'text-gray-500'}`}>En Preparación</p>
+              <p className={`text-[13px] font-medium ${currentStatus !== 'unfulfilled' ? 'text-ink-0' : 'text-ink-5'}`}>En preparación</p>
               {currentStatus === "unfulfilled" && (
-                <p className="text-xs text-gray-400 mt-1">El pedido aún no fue armado.</p>
+                <p className="text-[11px] text-ink-5 mt-1">El pedido aún no fue armado.</p>
               )}
             </div>
             {currentStatus === "unfulfilled" && order.paymentStatus === "paid" && order.status !== "cancelled" && (
               <button 
                 onClick={() => handleStatusChange("preparing")}
                 disabled={isPending}
-                 className="px-3 py-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-lg text-xs font-bold transition-colors"
+                 className="inline-flex items-center h-8 px-3 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[11px] font-medium text-ink-0 hover:bg-[var(--surface-2)] transition-colors disabled:opacity-50"
                >
                  Comenzar
               </button>
@@ -105,49 +105,49 @@ export function FulfillmentControls({ order }: { order: Order }) {
 
         {/* Step 2: Dispatch */}
         <div className="relative">
-          <div className={`absolute -left-[27px] top-1 w-3.5 h-3.5 rounded-full ring-4 ring-white shadow-sm transition-colors ${currentStatus === 'shipped' || currentStatus === 'delivered' ? 'bg-blue-500' : 'bg-[#EAEAEA]'}`} />
+          <div className={`absolute -left-[27px] top-1 w-3 h-3 rounded-full ring-4 ring-[var(--surface-1)] transition-colors ${currentStatus === 'shipped' || currentStatus === 'delivered' ? 'bg-ink-0' : 'bg-[var(--surface-3)]'}`} />
           <div className="flex justify-between items-start">
             <div className="w-full">
-              <p className={`text-sm font-bold ${currentStatus === 'shipped' || currentStatus === 'delivered' ? 'text-[#111111]' : 'text-gray-400'}`}>Despachado</p>
+              <p className={`text-[13px] font-medium ${currentStatus === 'shipped' || currentStatus === 'delivered' ? 'text-ink-0' : 'text-ink-5'}`}>Despachado</p>
               
               {(currentStatus === "preparing" || currentStatus === "shipped") && !editingTracking && (
-                <div className="mt-3 bg-white p-3 rounded-lg border border-[#EAEAEA] shadow-sm">
+                <div className="mt-3 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-3">
                   {order.shipping.trackingNumber ? (
                     <div>
-                      <p className="text-xs font-bold text-gray-500 mb-1">Rastreo activo</p>
-                      <p className="font-mono text-[13px] text-[#111111]">{order.shipping.trackingNumber}</p>
-                      {order.shipping.carrier && <p className="text-xs text-blue-600 font-semibold mt-0.5">{order.shipping.carrier}</p>}
+                      <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5 mb-1">Rastreo activo</p>
+                      <p className="font-mono text-[13px] text-ink-0">{order.shipping.trackingNumber}</p>
+                      {order.shipping.carrier && <p className="text-[11px] text-ink-4 mt-0.5">{order.shipping.carrier}</p>}
                     </div>
                   ) : (
-                    <p className="text-xs text-gray-500 italic">Aún no hay código de tracking.</p>
+                    <p className="text-[11px] text-ink-5 italic">Aún no hay código de tracking.</p>
                   )}
                   {order.status !== "cancelled" && (
-                    <button onClick={() => setEditingTracking(true)} className="text-xs font-bold text-[#111111] mt-2 block hover:underline">
-                      {order.shipping.trackingNumber ? 'Modificar' : 'Cargar Tracking (Despachar)'}
+                    <button onClick={() => setEditingTracking(true)} className="text-[11px] font-medium text-ink-0 mt-2 block hover:underline">
+                      {order.shipping.trackingNumber ? 'Modificar' : 'Cargar tracking (despachar)'}
                     </button>
                   )}
                 </div>
               )}
 
               {editingTracking && (
-                <form onSubmit={handleSaveTracking} className="mt-3 bg-white p-4 rounded-xl border border-blue-100 shadow-sm space-y-3">
+                <form onSubmit={handleSaveTracking} className="mt-3 rounded-[var(--r-md)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] p-4 space-y-3">
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-[#888888] mb-1.5 block">Logística (Opcional)</label>
-                    <input name="carrier" type="text" defaultValue={order.shipping.carrier || ''} placeholder="Ej: Andreani, OCA" className="w-full px-3 py-2 text-sm bg-gray-50 border border-[#EAEAEA] rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                    <label className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5 mb-1.5 block">Logística (opcional)</label>
+                    <input name="carrier" type="text" defaultValue={order.shipping.carrier || ''} placeholder="Ej: Andreani, OCA" className="w-full px-3 h-10 text-[13px] bg-[var(--surface-0)] border border-[color:var(--hairline)] rounded-[var(--r-sm)] text-ink-0 placeholder:text-ink-6 outline-none transition-[box-shadow,border-color] focus:border-[var(--accent-500)] focus:shadow-[var(--shadow-focus)]" />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-[#888888] mb-1.5 block">Código / Remito</label>
-                    <input name="trackingCode" type="text" defaultValue={order.shipping.trackingNumber || ''} placeholder="Ej: TRK-99213" className="w-full px-3 py-2 text-sm bg-gray-50 border border-[#EAEAEA] rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                    <label className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5 mb-1.5 block">Código / remito</label>
+                    <input name="trackingCode" type="text" defaultValue={order.shipping.trackingNumber || ''} placeholder="Ej: TRK-99213" className="w-full px-3 h-10 text-[13px] bg-[var(--surface-0)] border border-[color:var(--hairline)] rounded-[var(--r-sm)] text-ink-0 placeholder:text-ink-6 outline-none transition-[box-shadow,border-color] focus:border-[var(--accent-500)] focus:shadow-[var(--shadow-focus)]" />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-[#888888] mb-1.5 block">URL Rastreo (Opcional)</label>
-                    <input name="trackingUrl" type="url" defaultValue={order.shipping.trackingUrl || ''} placeholder="https://" className="w-full px-3 py-2 text-sm bg-gray-50 border border-[#EAEAEA] rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                    <label className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5 mb-1.5 block">URL rastreo (opcional)</label>
+                    <input name="trackingUrl" type="url" defaultValue={order.shipping.trackingUrl || ''} placeholder="https://" className="w-full px-3 h-10 text-[13px] bg-[var(--surface-0)] border border-[color:var(--hairline)] rounded-[var(--r-sm)] text-ink-0 placeholder:text-ink-6 outline-none transition-[box-shadow,border-color] focus:border-[var(--accent-500)] focus:shadow-[var(--shadow-focus)]" />
                   </div>
                   <div className="flex gap-2 pt-1">
-                    <button type="submit" disabled={isPending} className="flex-1 bg-blue-600 text-white text-xs font-bold py-2 rounded-lg hover:bg-blue-700">Guardar & Despachar</button>
-                    <button type="button" onClick={() => setEditingTracking(false)} disabled={isPending} className="px-3 bg-gray-100 text-gray-600 text-xs font-bold py-2 rounded-lg hover:bg-gray-200">Cancelar</button>
+                    <button type="submit" disabled={isPending} className="flex-1 inline-flex items-center justify-center h-9 rounded-[var(--r-sm)] bg-ink-0 text-ink-12 text-[12px] font-medium hover:bg-ink-2 transition-colors disabled:opacity-50">Guardar y despachar</button>
+                    <button type="button" onClick={() => setEditingTracking(false)} disabled={isPending} className="inline-flex items-center h-9 px-3 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-ink-0 text-[12px] font-medium hover:bg-[var(--surface-2)] transition-colors">Cancelar</button>
                   </div>
-                  <p className="text-[10px] text-gray-400 text-center mt-1">Al guardar, se enviará el correo ORDER_SHIPPED al cliente.</p>
+                  <p className="text-[10px] text-ink-5 text-center mt-1">Al guardar, se enviará el correo ORDER_SHIPPED al cliente.</p>
                 </form>
               )}
             </div>
@@ -157,17 +157,17 @@ export function FulfillmentControls({ order }: { order: Order }) {
                 <button 
                   onClick={() => handleCreateShipment("mock_carrier")}
                   disabled={isPending}
-                  className="px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 border border-indigo-100 shadow-sm"
+                  className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[11px] font-medium text-ink-0 hover:bg-[var(--surface-2)] transition-colors"
                   title="Genera un ticket automático vía API externa"
                 >
-                  <Zap className="w-3.5 h-3.5" /> Auto-Etiqueta
+                  <Zap className="w-3.5 h-3.5" strokeWidth={1.75} /> Auto-etiqueta
                 </button>
                 <button 
                   onClick={() => handleStatusChange("shipped")}
                   disabled={isPending}
-                  className="px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-xs font-bold transition-colors w-full text-center"
+                  className="inline-flex items-center justify-center h-8 px-3 rounded-[var(--r-sm)] bg-ink-0 text-ink-12 text-[11px] font-medium hover:bg-ink-2 transition-colors w-full"
                 >
-                  Despachar (Manual)
+                  Despachar (manual)
                 </button>
               </div>
             )}
@@ -176,18 +176,18 @@ export function FulfillmentControls({ order }: { order: Order }) {
 
         {/* Step 3: Delivered */}
         <div className="relative">
-          <div className={`absolute -left-[27px] top-1 w-3.5 h-3.5 rounded-full ring-4 ring-white shadow-sm transition-colors ${currentStatus === 'delivered' ? 'bg-emerald-500' : 'bg-[#EAEAEA]'}`} />
+          <div className={`absolute -left-[27px] top-1 w-3 h-3 rounded-full ring-4 ring-[var(--surface-1)] transition-colors ${currentStatus === 'delivered' ? 'bg-[color:var(--signal-success)]' : 'bg-[var(--surface-3)]'}`} />
           <div className="flex justify-between items-start">
             <div>
-              <p className={`text-sm font-bold ${currentStatus === 'delivered' ? 'text-[#111111]' : 'text-gray-400'}`}>Entregado</p>
+              <p className={`text-[13px] font-medium ${currentStatus === 'delivered' ? 'text-ink-0' : 'text-ink-5'}`}>Entregado</p>
             </div>
             {currentStatus === "shipped" && order.status !== "cancelled" && (
               <button 
                 onClick={() => handleStatusChange("delivered")}
                 disabled={isPending}
-                 className="px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-xs font-bold transition-colors"
+                 className="inline-flex items-center h-8 px-3 rounded-[var(--r-sm)] bg-ink-0 text-ink-12 text-[11px] font-medium hover:bg-ink-2 transition-colors"
                >
-                 Marcar Entregado
+                 Marcar entregado
               </button>
             )}
           </div>

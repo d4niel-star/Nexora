@@ -1,10 +1,10 @@
 import { ProductStatus } from "../../../types/product";
 
 export const ProductStatusBadge = ({ status }: { status: ProductStatus }) => {
-  const styles: Record<ProductStatus, string> = {
-    active: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
-    draft: "bg-yellow-50 text-yellow-800 ring-yellow-600/20",
-    archived: "bg-gray-100 text-gray-600 ring-gray-500/20",
+  const tone: Record<ProductStatus, string> = {
+    active: "text-[color:var(--signal-success)]",
+    draft: "text-[color:var(--signal-warning)]",
+    archived: "text-ink-5",
   };
 
   const labels: Record<ProductStatus, string> = {
@@ -14,7 +14,7 @@ export const ProductStatusBadge = ({ status }: { status: ProductStatus }) => {
   };
 
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-1 text-[11px] font-bold uppercase tracking-wider ring-1 ring-inset ${styles[status]}`}>
+    <span className={`inline-flex items-center h-6 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2 text-[10px] font-medium uppercase tracking-[0.14em] ${tone[status]}`}>
       {labels[status]}
     </span>
   );

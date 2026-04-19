@@ -16,7 +16,7 @@ export default async function FiscalDashboardPage() {
     <div className="space-y-10 animate-in fade-in duration-500 py-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-ink-0">Fiscal & Legal</h1>
+          <h1 className="text-[28px] lg:text-[32px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0">Fiscal y legal.</h1>
           <p className="mt-2 text-sm text-ink-5">
             Gestión de facturación electrónica ARCA/AFIP y compliance de comercio electrónico.
           </p>
@@ -92,16 +92,16 @@ export default async function FiscalDashboardPage() {
                        <div className="text-right">
                           <div className="font-bold text-[13px] text-ink-0 mb-1">${inv.total.toFixed(2)}</div>
                           {inv.fiscalStatus === "authorized" ? (
-                             <span className="inline-flex items-center text-[10px] uppercase font-bold text-emerald-600 tracking-wider">
-                                <CheckCircle2 className="w-3 h-3 mr-1" /> CAE APROBADO
+                             <span className="inline-flex items-center text-[10px] uppercase font-medium tracking-[0.14em] text-[color:var(--signal-success)]">
+                                <CheckCircle2 className="w-3 h-3 mr-1" strokeWidth={1.75} /> CAE aprobado
                              </span>
                           ) : inv.fiscalStatus === "error" || inv.fiscalStatus === "rejected" ? (
-                             <span className="inline-flex items-center text-[10px] uppercase font-bold text-red-600 tracking-wider">
-                                <AlertCircle className="w-3 h-3 mr-1" /> RECHAZO ARCA
+                             <span className="inline-flex items-center text-[10px] uppercase font-medium tracking-[0.14em] text-[color:var(--signal-danger)]">
+                                <AlertCircle className="w-3 h-3 mr-1" strokeWidth={1.75} /> Rechazo ARCA
                              </span>
                           ) : (
-                             <span className="inline-flex items-center text-[10px] uppercase font-bold text-amber-600 tracking-wider">
-                                PENDIENTE
+                             <span className="inline-flex items-center text-[10px] uppercase font-medium tracking-[0.14em] text-[color:var(--signal-warning)]">
+                                Pendiente
                              </span>
                           )}
                        </div>
@@ -139,12 +139,12 @@ export default async function FiscalDashboardPage() {
                        <div className="text-right">
                           <div className="text-[11px] text-ink-6 mb-1">{req.createdAt.toLocaleDateString("es-AR")}</div>
                           {req.status === "resolved" ? (
-                             <span className="inline-flex items-center text-[10px] uppercase font-bold text-emerald-600 tracking-wider">
-                                RESUELTO
+                             <span className="inline-flex items-center text-[10px] uppercase font-medium tracking-[0.14em] text-[color:var(--signal-success)]">
+                                Resuelto
                              </span>
                           ) : (
-                             <span className="inline-flex items-center text-[10px] uppercase font-bold text-amber-600 tracking-wider">
-                                PENDIENTE
+                             <span className="inline-flex items-center text-[10px] uppercase font-medium tracking-[0.14em] text-[color:var(--signal-warning)]">
+                                Pendiente
                              </span>
                           )}
                        </div>

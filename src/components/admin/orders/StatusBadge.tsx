@@ -1,14 +1,16 @@
 import { OrderStatus, PaymentStatus } from "../../../types/order";
 
+const baseChip = "inline-flex items-center h-6 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2 text-[10px] font-medium uppercase tracking-[0.14em]";
+
 export const OrderStatusBadge = ({ status }: { status: OrderStatus }) => {
-  const styles: Record<OrderStatus, string> = {
-    new: "bg-blue-50 text-blue-700 ring-blue-600/20",
-    paid: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
-    processing: "bg-yellow-50 text-yellow-800 ring-yellow-600/20",
-    shipped: "bg-purple-50 text-purple-700 ring-purple-600/20",
-    delivered: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
-    cancelled: "bg-red-50 text-red-700 ring-red-600/10",
-    refunded: "bg-gray-100 text-gray-700 ring-gray-600/20",
+  const tone: Record<OrderStatus, string> = {
+    new: "text-ink-3",
+    paid: "text-[color:var(--signal-success)]",
+    processing: "text-[color:var(--signal-warning)]",
+    shipped: "text-ink-3",
+    delivered: "text-[color:var(--signal-success)]",
+    cancelled: "text-[color:var(--signal-danger)]",
+    refunded: "text-ink-5",
   };
 
   const labels: Record<OrderStatus, string> = {
@@ -22,22 +24,22 @@ export const OrderStatusBadge = ({ status }: { status: OrderStatus }) => {
   };
 
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold ring-1 ring-inset ${styles[status] || styles.new}`}>
+    <span className={`${baseChip} ${tone[status] || tone.new}`}>
       {labels[status] || status}
     </span>
   );
 };
 
 export const PaymentStatusBadge = ({ status }: { status: PaymentStatus }) => {
-  const styles: Record<string, string> = {
-    paid: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
-    approved: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
-    pending: "bg-yellow-50 text-yellow-800 ring-yellow-600/20",
-    in_process: "bg-blue-50 text-blue-700 ring-blue-600/20",
-    failed: "bg-red-50 text-red-700 ring-red-600/10",
-    rejected: "bg-red-50 text-red-700 ring-red-600/10",
-    cancelled: "bg-gray-100 text-gray-600 ring-gray-600/20",
-    refunded: "bg-gray-100 text-gray-700 ring-gray-600/20",
+  const tone: Record<string, string> = {
+    paid: "text-[color:var(--signal-success)]",
+    approved: "text-[color:var(--signal-success)]",
+    pending: "text-[color:var(--signal-warning)]",
+    in_process: "text-ink-3",
+    failed: "text-[color:var(--signal-danger)]",
+    rejected: "text-[color:var(--signal-danger)]",
+    cancelled: "text-ink-5",
+    refunded: "text-ink-5",
   };
 
   const labels: Record<string, string> = {
@@ -52,7 +54,7 @@ export const PaymentStatusBadge = ({ status }: { status: PaymentStatus }) => {
   };
 
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-1 text-[11px] font-bold uppercase tracking-wider ring-1 ring-inset ${styles[status] || styles.pending}`}>
+    <span className={`${baseChip} ${tone[status] || tone.pending}`}>
       {labels[status] || status}
     </span>
   );

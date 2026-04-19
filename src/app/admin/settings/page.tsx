@@ -53,7 +53,7 @@ export default function SettingsHubPage() {
       
       {/* Header */}
       <div>
-         <h1 className="text-[28px] font-extrabold tracking-tight text-ink-0 leading-none">Configuración</h1>
+         <h1 className="text-[28px] lg:text-[32px] font-semibold tracking-[-0.035em] text-ink-0 leading-[1.08]">Configuración.</h1>
          <p className="mt-2 text-[13px] text-ink-6">
             Administrá todos los aspectos de tu negocio, suscripción y operaciones de plataforma.
          </p>

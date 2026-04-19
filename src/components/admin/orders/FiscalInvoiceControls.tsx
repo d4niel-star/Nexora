@@ -23,12 +23,12 @@ export function FiscalInvoiceControls({ order }: { order: any }) {
   // Si ya tiene una factura autorizada
   if (order.fiscalInvoice?.fiscalStatus === "authorized") {
      return (
-        <section className="bg-emerald-50 rounded-2xl p-6 border-2 border-emerald-100 shadow-sm">
-           <h3 className="text-[11px] font-bold uppercase tracking-widest text-emerald-800 flex items-center gap-2 mb-2">
-              <CheckCircle2 className="w-4 h-4" /> Facturado Electrónicamente
+        <section className="rounded-[var(--r-md)] p-6 border border-[color:var(--hairline)] bg-[var(--surface-0)]">
+           <h3 className="text-[10px] font-medium uppercase tracking-[0.14em] text-[color:var(--signal-success)] flex items-center gap-2 mb-3">
+              <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={1.75} /> Facturado electrónicamente
            </h3>
-           <p className="text-sm font-medium text-emerald-700 mb-1">{order.fiscalInvoice.invoiceType} {order.fiscalInvoice.pointOfSale.toString().padStart(4,"0")}-{order.fiscalInvoice.invoiceNumber.toString().padStart(8,"0")}</p>
-           <p className="text-xs text-emerald-600 font-mono">CAE: {order.fiscalInvoice.arcaCae}</p>
+           <p className="text-[13px] font-medium text-ink-0 mb-1">{order.fiscalInvoice.invoiceType} {order.fiscalInvoice.pointOfSale.toString().padStart(4,"0")}-{order.fiscalInvoice.invoiceNumber.toString().padStart(8,"0")}</p>
+           <p className="text-[11px] text-ink-5 font-mono">CAE: {order.fiscalInvoice.arcaCae}</p>
         </section>
      )
   }
@@ -36,47 +36,47 @@ export function FiscalInvoiceControls({ order }: { order: any }) {
   // Si hubo un error o rechazo
   if (order.fiscalInvoice?.fiscalStatus === "rejected" || order.fiscalInvoice?.fiscalStatus === "error") {
      return (
-        <section className="bg-rose-50 rounded-2xl p-6 border-2 border-rose-100 shadow-sm">
-           <h3 className="text-[11px] font-bold uppercase tracking-widest text-rose-800 flex items-center gap-2 mb-2">
-              <AlertCircle className="w-4 h-4" /> Error en Facturación ARCA
+        <section className="rounded-[var(--r-md)] p-6 border border-[color:var(--hairline)] bg-[var(--surface-0)]">
+           <h3 className="text-[10px] font-medium uppercase tracking-[0.14em] text-[color:var(--signal-danger)] flex items-center gap-2 mb-3">
+              <AlertCircle className="w-3.5 h-3.5" strokeWidth={1.75} /> Error en facturación ARCA
            </h3>
-           <p className="text-sm font-medium text-rose-700 mb-4 whitespace-pre-wrap">El intento de facturación falló. Podés volver a intentarlo o verificar la configuración fiscal.</p>
+           <p className="text-[13px] text-ink-4 mb-4 leading-[1.55] whitespace-pre-wrap">El intento de facturación falló. Podés volver a intentarlo o verificar la configuración fiscal.</p>
            
            <button 
              onClick={handleIssue} 
              disabled={isPending}
-             className="px-4 py-2 bg-rose-600 text-white rounded-lg text-sm font-bold shadow-sm hover:bg-rose-700 disabled:opacity-50 transition-colors"
+             className="inline-flex items-center h-9 px-4 rounded-[var(--r-sm)] bg-ink-0 text-ink-12 text-[12px] font-medium hover:bg-ink-2 transition-colors disabled:opacity-50"
            >
-             {isPending ? "Procesando..." : "Reintentar Emisión"}
+             {isPending ? "Procesando…" : "Reintentar emisión"}
            </button>
-           {error && <p className="text-xs text-rose-600 mt-2 font-bold">{error}</p>}
+           {error && <p className="text-[11px] text-[color:var(--signal-danger)] mt-2">{error}</p>}
         </section>
      )
   }
 
   // Aún no facturado
   return (
-    <section className="bg-white rounded-2xl p-6 border-2 border-[#FAFAFA] shadow-sm">
-      <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#888888] flex items-center gap-2 mb-4">
-        <Building2 className="w-4 h-4" /> Facturación Electrónica (AFIP)
+    <section className="rounded-[var(--r-md)] p-6 border border-[color:var(--hairline)] bg-[var(--surface-0)]">
+      <h3 className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5 flex items-center gap-2 mb-3">
+        <Building2 className="w-3.5 h-3.5" strokeWidth={1.75} /> Facturación electrónica (AFIP)
       </h3>
-      <p className="text-[13px] text-gray-500 mb-4">
+      <p className="text-[13px] text-ink-4 leading-[1.55] mb-4">
         La orden está paga pero no tiene un comprobante fiscal asociado. Podés emitirlo manualmente.
       </p>
       <button 
         onClick={handleIssue} 
         disabled={isPending || order.paymentStatus !== "paid"}
         className={cn(
-          "px-4 py-2 text-sm font-bold rounded-lg shadow-sm w-full flex items-center justify-center gap-2 transition-colors",
+          "w-full inline-flex items-center justify-center gap-2 h-10 px-4 rounded-[var(--r-sm)] text-[12px] font-medium transition-colors",
           order.paymentStatus === "paid" 
-            ? "bg-black text-white hover:bg-[#333333]" 
-            : "bg-gray-100 text-gray-400 cursor-not-allowed"
+            ? "bg-ink-0 text-ink-12 hover:bg-ink-2" 
+            : "bg-[var(--surface-1)] text-ink-6 border border-[color:var(--hairline)] cursor-not-allowed"
         )}
       >
-        <FileText className="w-4 h-4" />
-        {isPending ? "Generando comprobante..." : order.paymentStatus !== "paid" ? "Requiere pago confirmado" : "Emitir Comprobante (AFIP)"}
+        <FileText className="w-4 h-4" strokeWidth={1.75} />
+        {isPending ? "Generando comprobante…" : order.paymentStatus !== "paid" ? "Requiere pago confirmado" : "Emitir comprobante (AFIP)"}
       </button>
-      {error && <p className="text-xs text-rose-600 mt-2 font-bold">{error}</p>}
+      {error && <p className="text-[11px] text-[color:var(--signal-danger)] mt-2">{error}</p>}
     </section>
   )
 }

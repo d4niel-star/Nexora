@@ -119,7 +119,7 @@ export default function CatalogClient({ products, hideHeader = false, initialTab
       {!hideHeader && (
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
-            <h1 className="text-3xl font-black tracking-tight text-ink-0">Catálogo de Productos</h1>
+            <h1 className="text-[28px] lg:text-[32px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0">Catálogo de productos.</h1>
             <p className="text-ink-5 text-[15px] mt-1 font-medium">Administra tu inventario y descubre productos ganadores listos para importar.</p>
           </div>
           <div className="flex items-center gap-3">
@@ -142,19 +142,19 @@ export default function CatalogClient({ products, hideHeader = false, initialTab
             <button
               key={tab.value}
               onClick={() => setActiveTab(tab.value)}
-              className={`relative py-4 text-[13px] font-bold whitespace-nowrap transition-colors flex items-center gap-2 group
-                ${activeTab === tab.value ? (tab.isSpecial ? "text-amber-600" : "text-ink-0") : "text-ink-6 hover:text-ink-0"}
+              className={`relative py-4 text-[13px] font-medium whitespace-nowrap transition-colors flex items-center gap-2 group
+                ${activeTab === tab.value ? (tab.isSpecial ? "text-[color:var(--signal-warning)]" : "text-ink-0") : "text-ink-6 hover:text-ink-0"}
               `}
             >
-              {tab.isSpecial && <AlertTriangle className={`w-3.5 h-3.5 ${activeTab === tab.value ? 'text-amber-500' : 'text-ink-6'}`} />}
+              {tab.isSpecial && <AlertTriangle className={`w-3.5 h-3.5 ${activeTab === tab.value ? 'text-[color:var(--signal-warning)]' : 'text-ink-6'}`} strokeWidth={1.75} />}
               {tab.label}
               {tab.count !== undefined && tab.count > 0 && (
-                <span className={`tabular inline-flex items-center h-5 px-1.5 rounded-[var(--r-xs)] text-[10px] uppercase tracking-[0.12em] font-medium transition-colors ${activeTab === tab.value ? 'bg-[var(--surface-2)] text-ink-0' : 'bg-transparent text-ink-6 group-hover:bg-[var(--surface-2)]'}`}>
+                <span className={`tabular inline-flex items-center h-5 px-1.5 rounded-[var(--r-xs)] text-[10px] uppercase tracking-[0.12em] font-semibold transition-colors ${activeTab === tab.value ? 'bg-[var(--surface-2)] text-ink-0' : 'bg-transparent text-ink-6 group-hover:bg-[var(--surface-2)]'}`}>
                   {tab.count}
                 </span>
               )}
               {activeTab === tab.value && (
-                <div className={`absolute bottom-0 left-0 right-0 h-[2px] ${tab.isSpecial ? 'bg-amber-500' : 'bg-ink-0'}`} />
+                <div className={`absolute bottom-0 left-0 right-0 h-[2px] ${tab.isSpecial ? 'bg-[color:var(--signal-warning)]' : 'bg-ink-0'}`} />
               )}
             </button>
           ))}
@@ -209,7 +209,7 @@ export default function CatalogClient({ products, hideHeader = false, initialTab
                           <div className="inline-flex items-center justify-center w-14 h-14 rounded-[var(--r-sm)] bg-[var(--surface-1)] mb-6 border border-[color:var(--hairline)]">
                             <Package className="w-5 h-5 text-ink-5" strokeWidth={1.5} />
                           </div>
-                          <h3 className="text-xl font-extrabold text-ink-0">Catálogo Vacío</h3>
+                          <h3 className="text-[18px] font-semibold tracking-[-0.02em] text-ink-0">Catálogo vacío.</h3>
                           <p className="text-[15px] font-medium text-ink-6 mt-2 max-w-sm mx-auto">No tienes productos en esta vista. Prueba importando desde dropshipping.</p>
                         </td>
                       </tr>
@@ -220,7 +220,7 @@ export default function CatalogClient({ products, hideHeader = false, initialTab
                           <tr 
                             key={product.id}
                             onClick={() => setSelectedProduct(product)}
-                            className={`group transition-all cursor-pointer ${isSelected ? 'bg-emerald-50/30' : 'hover:bg-[var(--surface-2)]/50 bg-[var(--surface-0)]'}`}
+                            className={`group transition-colors cursor-pointer ${isSelected ? 'bg-[var(--surface-2)]' : 'hover:bg-[var(--surface-2)]/50 bg-[var(--surface-0)]'}`}
                           >
                             <td className="px-6 py-5" onClick={(e) => e.stopPropagation()}>
                               <input 
@@ -257,34 +257,34 @@ export default function CatalogClient({ products, hideHeader = false, initialTab
                               />
                             </td>
                             <td className="px-6 py-5">
-                              <p className="text-[15px] font-black text-ink-0 tabular-nums tracking-tight">${product.price.toLocaleString('es-AR')}</p>
+                              <p className="text-[15px] font-semibold text-ink-0 tabular-nums tracking-[-0.01em]">${product.price.toLocaleString('es-AR')}</p>
                               {product.costReal ? (
-                                <p className={cn("text-[11px] font-bold mt-0.5 tabular-nums", product.margin >= 0.2 ? "text-emerald-600" : product.margin >= 0.05 ? "text-amber-600" : "text-red-500")}>
+                                <p className={cn("text-[11px] font-medium mt-0.5 tabular-nums", product.margin >= 0.2 ? "text-[color:var(--signal-success)]" : product.margin >= 0.05 ? "text-[color:var(--signal-warning)]" : "text-[color:var(--signal-danger)]")}>
                                   Margen {Math.round(product.margin * 100)}% &middot; Costo ${product.cost.toLocaleString('es-AR')}
                                 </p>
                               ) : (
-                                <p className="text-[11px] font-bold text-red-400 mt-0.5">Sin costo real</p>
+                                <p className="text-[11px] font-medium text-[color:var(--signal-danger)] mt-0.5">Sin costo real</p>
                               )}
                             </td>
                             <td className="px-6 py-5"><ProductStatusBadge status={product.status} /></td>
-                            <td className="px-6 py-5 text-right font-black text-ink-0 text-sm tabular-nums">
+                            <td className="px-6 py-5 text-right font-semibold text-ink-0 text-sm tabular-nums tracking-[-0.01em]">
                               {product.totalStock > 0 ? (
                                 <span className="text-ink-0">{product.totalStock} u.</span>
                               ) : (
-                                <span className="text-red-500">Agotado</span>
+                                <span className="text-[color:var(--signal-danger)]">Agotado</span>
                               )}
                             </td>
                             <td className="px-6 py-5 text-right">
                               <div className="flex items-center justify-end gap-1">
                                 {actionFeedback?.id === product.id ? (
-                                  <span className="text-[11px] font-bold text-emerald-600 animate-in fade-in">{actionFeedback.label}</span>
+                                  <span className="text-[11px] font-medium text-[color:var(--signal-success)] animate-in fade-in">{actionFeedback.label}</span>
                                 ) : (
                                   <>
                                     {product.status === 'draft' && (
                                       <button
                                         onClick={(e) => { e.stopPropagation(); handlePublish(product.id); }}
                                         disabled={actioningId === product.id}
-                                        className="p-1.5 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-all disabled:opacity-50 flex items-center gap-1"
+                                        className="inline-flex items-center gap-1 h-7 px-2 text-[11px] font-medium text-ink-0 bg-[var(--surface-0)] hover:bg-[var(--surface-2)] border border-[color:var(--hairline-strong)] rounded-[var(--r-sm)] transition-colors disabled:opacity-50"
                                         title="Publicar producto"
                                       >
                                         {actioningId === product.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
@@ -406,9 +406,9 @@ function SignalChips({
             key={s.key}
             className={cn(
               "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold transition-colors",
-              s.severity === "blocker" ? "bg-red-50 text-red-700 border border-red-200" :
-              s.severity === "warning" ? "bg-amber-50 text-amber-700 border border-amber-200" :
-              s.severity === "ok" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" :
+              s.severity === "blocker" ? "bg-[var(--surface-1)] text-[color:var(--signal-danger)] border border-[color:var(--hairline)]" :
+              s.severity === "warning" ? "bg-[var(--surface-1)] text-[color:var(--signal-warning)] border border-[color:var(--hairline)]" :
+              s.severity === "ok" ? "bg-[var(--surface-1)] text-[color:var(--signal-success)] border border-[color:var(--hairline)]" :
               "bg-[var(--surface-2)] text-ink-6 border border-[color:var(--hairline)]",
               isVariantSignal && "cursor-pointer hover:bg-opacity-80 underline decoration-dotted underline-offset-2"
             )}
