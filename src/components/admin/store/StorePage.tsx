@@ -176,6 +176,12 @@ export function StorePage({
 
     if (mp === "connected") {
       pushToast("Mercado Pago conectado", "El checkout de la tienda quedo habilitado para pagos reales.");
+      // Force a server re-fetch so paymentProvider status flips from
+      // "disconnected" to "connected" in the rendered UI immediately.
+      // revalidatePath on the server + this refresh are belt-and-suspenders:
+      // if the RSC payload was already cached client-side, refresh() makes
+      // it re-request a fresh render.
+      router.refresh();
     } else if (mp === "platform_not_ready" || mp === "missing_config") {
       // `missing_config` is kept for backward compatibility with old links.
       // Intentionally generic for merchants: we don't leak env names here.
@@ -190,6 +196,16 @@ export function StorePage({
     } else if (mp === "error") {
       pushToast("No se pudo conectar", "Mercado Pago no devolvio credenciales validas.");
     }
+
+    // Strip the `mp` param from the URL so a manual refresh doesn't keep
+    // re-triggering the toast and router.refresh() loop. We preserve the
+    // active tab so the user stays on "pagos" after the cleanup.
+    const url = new URL(window.location.href);
+    url.searchParams.delete("mp");
+    window.history.replaceState(null, "", url.toString());
+    // Intentionally depend only on the presence of `mp`: when it's stripped
+    // this effect re-runs with `mp === null` and exits via the early return.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   const openDrawer = (c: DrawerContent) => setDrawerContent(c);
