@@ -1,8 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState, useTransition } from "react";
+import Link from "next/link";
 import {
+  AlertTriangle,
   ArrowUpRight,
+  BarChart3,
   Check,
   ChevronRight,
   Loader2,
@@ -15,7 +18,8 @@ import {
   getBillingDataAction,
   getPlansAction,
   upgradePlanAction,
-  buyCreditsAction
+  buyCreditsAction,
+  resolvePaymentAction,
 } from "@/lib/billing/actions";
 import type { PlanDefinition, PlanConfig } from "@/lib/billing/plans";
 
@@ -23,6 +27,7 @@ import type { PlanDefinition, PlanConfig } from "@/lib/billing/plans";
 
 interface BillingData {
   storeId: string;
+  isOps: boolean;
   plan: { code: string; name: string; monthlyPrice: number; currency: string };
   subscription: { status: string; startedAt: string; renewsAt: string | null };
   credits: { total: number; used: number; remaining: number };
@@ -83,6 +88,23 @@ export function BillingPage() {
     })
   }
 
+  const handleResolvePayment = () => {
+    startTransition(async () => {
+      try {
+        const result = await resolvePaymentAction();
+        if (result.redirectUrl) {
+          window.location.href = result.redirectUrl;
+          return;
+        }
+        showToast("No se pudo generar el link de pago");
+      } catch (e: any) {
+        showToast(e.message);
+      }
+    });
+  };
+
+  const isTroubled = ["past_due", "unpaid", "cancelled", "trial_expired"].includes(data?.subscription?.status ?? "");
+
   if (isLoading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -105,16 +127,30 @@ export function BillingPage() {
 
   return (
     <div className="animate-in fade-in duration-500 space-y-10">
+      {/* ─── Recovery Card (only when subscription is in trouble) ─── */}
+      {isTroubled && <RecoveryCard status={data.subscription.status} planName={data.plan.name} onResolve={handleResolvePayment} isPending={isPending} />}
+
       {/* ─── Header ─── */}
       <div className="flex items-end justify-between gap-4">
         <div>
           <h1 className="text-[28px] lg:text-[32px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0">Plan y facturación.</h1>
           <p className="mt-2 text-[13px] text-ink-5">Gestioná tu suscripción, créditos y consumo.</p>
         </div>
-        <div className="hidden md:flex items-center gap-1.5 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2.5 h-7">
-          <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--signal-success)]" />
-          <span className="text-[11px] font-medium text-ink-0">{data.plan.name}</span>
-          <span className="text-[11px] text-ink-5">· Activo</span>
+        <div className="hidden md:flex items-center gap-2">
+          <div className="flex items-center gap-1.5 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2.5 h-7">
+            <span className={cn("h-1.5 w-1.5 rounded-full", statusColor(data.subscription.status))} />
+            <span className="text-[11px] font-medium text-ink-0">{data.plan.name}</span>
+            <span className="text-[11px] text-ink-5">· {statusLabel(data.subscription.status)}</span>
+          </div>
+          {data.isOps && (
+            <Link
+              href="/admin/billing/observability"
+              className="inline-flex items-center gap-1.5 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2.5 h-7 text-[11px] font-medium text-ink-5 transition-colors hover:text-ink-0 hover:bg-[var(--surface-2)]"
+            >
+              <BarChart3 className="h-3 w-3" strokeWidth={1.75} />
+              Métricas
+            </Link>
+          )}
         </div>
       </div>
 
@@ -180,6 +216,9 @@ export function BillingPage() {
         <CostPill label="Chat IA" cost="1 cr" />
         <CostPill label="AI Studio" cost="10 cr" />
         <CostPill label="Regenerar sección" cost="3 cr" />
+        <CostPill label="Identidad IA" cost="5 cr" />
+        <CostPill label="Ficha de producto" cost="2 cr" />
+        <CostPill label="Copy marketing" cost="1 cr" />
       </div>
 
       {/* ─── Plans ─── */}
@@ -226,9 +265,15 @@ export function BillingPage() {
                     <PlanLine text={plan.config.maxProducts === 0 ? "Productos ilimitados" : `${plan.config.maxProducts} productos`} active={isCurrent} />
                     <PlanLine text={plan.config.maxOrdersPerMonth === 0 ? "Pedidos ilimitados" : `${plan.config.maxOrdersPerMonth} pedidos/mes`} active={isCurrent} />
                     {plan.config.customDomain && <PlanLine text="Dominio custom" active={isCurrent} />}
-                    {plan.config.byokEnabled && <PlanLine text="BYOK — tu propia IA" active={isCurrent} />}
+                    {plan.config.productReviews && <PlanLine text="Reseñas de productos" active={isCurrent} />}
+                    {plan.config.aiBuilder && <PlanLine text="AI Builder" active={isCurrent} />}
                     {plan.config.aiStudioAdvanced && <PlanLine text="AI Studio avanzado" active={isCurrent} />}
+                    {plan.config.whatsappRecovery && <PlanLine text="WhatsApp Recovery" active={isCurrent} />}
+                    {plan.config.bundlesUpsells && <PlanLine text="Bundles y upsells" active={isCurrent} />}
+                    {plan.config.postPurchaseFlows && <PlanLine text="Flujos post-compra" active={isCurrent} />}
                     {plan.config.advancedCarriers && <PlanLine text="Logística avanzada" active={isCurrent} />}
+                    {plan.config.sourcingAdvanced && <PlanLine text="Sourcing avanzado" active={isCurrent} />}
+                    {plan.config.byokEnabled && <PlanLine text="BYOK — tu propia IA" active={isCurrent} />}
                     <PlanLine text={plan.config.maxStaff === 0 ? "Usuarios ilimitados" : `${plan.config.maxStaff} ${plan.config.maxStaff === 1 ? "usuario" : "usuarios"}`} active={isCurrent} />
                   </div>
                 </div>
@@ -365,4 +410,178 @@ function PlanLine({ text, active }: { text: string; active: boolean }) {
       <span className={cn(active ? "text-ink-12/80" : "text-ink-4")}>{text}</span>
     </div>
   );
+}
+
+function statusLabel(status: string): string {
+  const map: Record<string, string> = {
+    active: "Activo",
+    trialing: "Trial activo",
+    trial_expired: "Trial expirado",
+    cancelled: "Cancelado",
+    past_due: "Pago pendiente",
+    unpaid: "Impago",
+    incomplete: "Incompleto",
+    pending: "Pendiente",
+  };
+  return map[status] || "Activo";
+}
+
+function statusColor(status: string): string {
+  switch (status) {
+    case "active":
+    case "trialing":
+      return "bg-[color:var(--signal-success)]";
+    case "trial_expired":
+    case "past_due":
+    case "unpaid":
+      return "bg-[color:var(--signal-warning)]";
+    case "cancelled":
+      return "bg-[color:var(--signal-danger)]";
+    default:
+      return "bg-ink-5";
+  }
+}
+
+// ─── Recovery Card (dunning UX) ───
+
+interface RecoveryCardProps {
+  status: string;
+  planName: string;
+  onResolve: () => void;
+  isPending: boolean;
+}
+
+function RecoveryCard({ status, planName, onResolve, isPending }: RecoveryCardProps) {
+  const config = getRecoveryConfig(status, planName);
+
+  return (
+    <div className={cn(
+      "rounded-[var(--r-md)] border-2 p-6",
+      status === "past_due"
+        ? "border-[color:var(--signal-warning)] bg-[#FFFBEB]"
+        : "border-[color:var(--signal-danger)] bg-[#FEF2F2]"
+    )}>
+      <div className="flex items-start gap-4">
+        <div className={cn(
+          "flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
+          status === "past_due" ? "bg-[#FEF3C7]" : "bg-[#FEE2E2]"
+        )}>
+          <AlertTriangle className={cn(
+            "h-5 w-5",
+            status === "past_due" ? "text-[#D97706]" : "text-[#DC2626]"
+          )} strokeWidth={1.75} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className={cn(
+            "text-[16px] font-semibold tracking-[-0.01em]",
+            status === "past_due" ? "text-[#92400E]" : "text-[#991B1B]"
+          )}>
+            {config.title}
+          </h3>
+          <p className={cn(
+            "mt-1.5 text-[13px] leading-[1.5]",
+            status === "past_due" ? "text-[#92400E]/80" : "text-[#991B1B]/80"
+          )}>
+            {config.description}
+          </p>
+
+          <div className="mt-4 space-y-1.5">
+            <p className={cn(
+              "text-[11px] font-medium uppercase tracking-[0.1em]",
+              status === "past_due" ? "text-[#92400E]/60" : "text-[#991B1B]/60"
+            )}>
+              Qué implica
+            </p>
+            {config.effects.map((effect, idx) => (
+              <p key={idx} className={cn(
+                "text-[12px] leading-[1.4]",
+                status === "past_due" ? "text-[#92400E]/70" : "text-[#991B1B]/70"
+              )}>
+                · {effect}
+              </p>
+            ))}
+          </div>
+
+          <div className="mt-5 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={onResolve}
+              disabled={isPending}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-[var(--r-sm)] px-5 h-10 text-[13px] font-semibold text-white transition-colors disabled:opacity-50",
+                status === "past_due"
+                  ? "bg-[#D97706] hover:bg-[#B45309]"
+                  : "bg-[#DC2626] hover:bg-[#B91C1C]"
+              )}
+            >
+              {isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <ArrowUpRight className="h-3.5 w-3.5" />
+              )}
+              {config.ctaLabel}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function getRecoveryConfig(status: string, planName: string) {
+  switch (status) {
+    case "past_due":
+      return {
+        title: "Tu cobro no pudo ser procesado",
+        description: `El pago de tu plan ${planName} fue rechazado. Tu tienda sigue online, pero las funcionalidades premium están restringidas hasta que resolvas el pago.`,
+        effects: [
+          "Apps premium bloqueadas (AI Builder, WhatsApp, Bundles, etc.)",
+          "Sourcing avanzado no disponible",
+          "Créditos IA no se pueden consumir",
+          "Tu storefront y pedidos siguen funcionando normalmente",
+        ],
+        ctaLabel: "Resolver pago ahora",
+      };
+    case "unpaid":
+      return {
+        title: "Tu cuenta tiene un pago impago",
+        description: `Tu plan ${planName} no pudo ser cobrado después de múltiples intentos. Todas las funcionalidades premium están bloqueadas.`,
+        effects: [
+          "Todas las apps premium bloqueadas",
+          "AI Studio y Sourcing no disponibles",
+          "Créditos IA congelados",
+          "Tu storefront sigue visible pero no podés operar herramientas avanzadas",
+        ],
+        ctaLabel: "Regularizar cuenta",
+      };
+    case "cancelled":
+      return {
+        title: "Tu suscripción fue cancelada",
+        description: "Tu suscripción está cancelada. Reactivá tu plan para volver a operar con todas las funcionalidades.",
+        effects: [
+          "Todas las funcionalidades premium bloqueadas",
+          "No se pierden datos ni configuraciones",
+          "Podés reactivar el mismo plan en cualquier momento",
+        ],
+        ctaLabel: "Reactivar plan",
+      };
+    case "trial_expired":
+      return {
+        title: "Tu período de prueba terminó",
+        description: "Los 14 días de prueba de Nexora finalizaron. Elegí un plan para seguir operando tu tienda con todas las herramientas.",
+        effects: [
+          "Funcionalidades premium no disponibles",
+          "Tu tienda y datos están preservados",
+          "Activá un plan para desbloquear todo",
+        ],
+        ctaLabel: "Elegir un plan",
+      };
+    default:
+      return {
+        title: "Hay un problema con tu suscripción",
+        description: "Contactá soporte para resolver el estado de tu cuenta.",
+        effects: ["Funcionalidades premium pueden estar limitadas"],
+        ctaLabel: "Resolver",
+      };
+  }
 }

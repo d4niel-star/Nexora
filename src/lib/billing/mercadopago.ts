@@ -1,13 +1,8 @@
 import { prisma } from "@/lib/db/prisma";
 import { LogEventParams } from "@/lib/observability/audit";
+import { getMpAccessToken } from "./mp-env";
 
 const MP_API_BASE = "https://api.mercadopago.com";
-
-// Use billing-specific token if provided, default to main one.
-function getAccessToken(): string {
-  const token = process.env.MERCADOPAGO_BILLING_ACCESS_TOKEN || process.env.MERCADOPAGO_ACCESS_TOKEN || "TEST-8903332800366432-040810-7b561c21051512dbfe74204d80a31d92-231362";
-  return token;
-}
 
 function getAppUrl(): string {
   return process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -54,7 +49,7 @@ export async function createBillingPaymentIntent(storeId: string, type: "plan_up
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${getAccessToken()}`,
+      Authorization: `Bearer ${getMpAccessToken()}`,
     },
     body: JSON.stringify(payload),
   });
