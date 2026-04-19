@@ -108,11 +108,21 @@ const PRODUCTION_SAFETY: SafetyCheck[] = [
   },
   {
     envName: "MP_WEBHOOK_SECRET",
-    predicate: (v) => (v.length < 16 ? `is only ${v.length} chars (recommended ≥ 32)` : null),
+    predicate: (v) => (v.length < 32 ? `is only ${v.length} chars (recommended ≥ 32)` : null),
   },
 ];
 
 // ─── Runner ──────────────────────────────────────────────────────────────
+// IMPORTANT: this script MUST NOT leak NODE_ENV into the calling shell.
+// Setting NODE_ENV=production before this script and forgetting to
+// clear it afterwards causes `next build` in the same shell to fail
+// with spurious "useContext of null" prerender errors (Next 16 ships
+// a dev-only React build when NODE_ENV !== "production" but `next
+// build` also internally forces production, producing an inconsistent
+// runtime). Callers simulate production by setting the env inline on
+// the same command:
+//   NODE_ENV=production npx tsx scripts/check-envs.ts
+// ...instead of exporting it to the shell.
 const GREEN = "\x1b[32m";
 const YELLOW = "\x1b[33m";
 const RED = "\x1b[31m";

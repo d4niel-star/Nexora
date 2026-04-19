@@ -30,6 +30,20 @@ Ejecutar **en este orden** antes de prometer cualquier deploy productivo.
 
 ### 1.3 Variables de entorno
 
+> ⚠️ **Gotcha conocido — `NODE_ENV` en la shell**. El script
+> `scripts/check-envs.ts` necesita simular producción seteando
+> `NODE_ENV=production` en la shell. Si ejecutás ese check *antes* de
+> `npm run build`, la variable queda pegada y `next build` se rompe con
+> errores falsos de prerender ("Cannot read properties of null
+> (reading 'useContext')") y la advertencia "You are using a
+> non-standard NODE_ENV value". **Antes del build limpiá el shell**:
+> ```powershell
+> Remove-Item Env:\NODE_ENV -ErrorAction SilentlyContinue
+> ```
+> ```bash
+> unset NODE_ENV
+> ```
+
 - [ ] `npx tsx scripts/check-envs.ts` sale con exit `0`.
 - [ ] Cada clave marcada REQUIRED en `.env.example` existe en el entorno real.
 - [ ] `ENCRYPTION_KEY` **no** es el fallback de dev, tiene 32 bytes hex reales
