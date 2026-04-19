@@ -10,44 +10,83 @@ import {
   BarChart3,
   Plug,
   Activity,
-  LifeBuoy
+  LifeBuoy,
+  ShieldCheck,
 } from "lucide-react";
+import { isCurrentUserOps } from "@/lib/auth/ops";
 
-const sections = [
-  {
-    title: "Negocio",
-    items: [
-      { name: "Mi Tienda", href: "/admin/store", icon: Store,   desc: "Configuración general, horarios y contacto" },
-      { name: "Branding y Dominio", href: "/admin/store", icon: Palette, desc: "Personalización visual y dominios personalizados" },
-      { name: "Legal & ARCA", href: "/admin/fiscal/settings", icon: FileText, desc: "Facturación electrónica y políticas legales" }
-    ]
-  },
-  {
-    title: "Comercial",
-    items: [
-      { name: "Plan y créditos", href: "/admin/billing", icon: Crown, desc: "Suscripción, límites y compra de créditos IA" },
-      { name: "Finanzas", href: "/admin/finances", icon: CreditCard, desc: "Cuentas bancarias y retiros" }
-    ]
-  },
-  {
-    title: "Crecimiento",
-    items: [
-      { name: "Clientes", href: "/admin/customers", icon: Users, desc: "Gestor de usuarios, compras y audiencias" },
-      { name: "Marketing", href: "#", icon: Megaphone, desc: "Mailing, automatizaciones y descuentos", comingSoon: true },
-      { name: "Analíticas", href: "#", icon: BarChart3, desc: "Ventas, conversiones y tráfico", comingSoon: true }
-    ]
-  },
-  {
-    title: "Plataforma",
-    items: [
-      { name: "Integraciones", href: "/admin/integrations", icon: Plug, desc: "Apps de terceros, APIs y Webhooks" },
-      { name: "Sistema", href: "#", icon: Activity, desc: "Team, roles, auditoría y seguridad", comingSoon: true },
-      { name: "Soporte", href: "#", icon: LifeBuoy, desc: "Centro de ayuda y tickets técnicos", comingSoon: true }
-    ]
+interface SettingsItem {
+  name: string;
+  href: string;
+  icon: typeof Store;
+  desc: string;
+  comingSoon?: boolean;
+}
+
+interface SettingsSection {
+  title: string;
+  items: SettingsItem[];
+}
+
+function buildSections(isOps: boolean): SettingsSection[] {
+  const sections: SettingsSection[] = [
+    {
+      title: "Negocio",
+      items: [
+        { name: "Mi Tienda", href: "/admin/store", icon: Store, desc: "Configuración general, horarios y contacto" },
+        { name: "Branding y Dominio", href: "/admin/store", icon: Palette, desc: "Personalización visual y dominios personalizados" },
+        { name: "Legal & ARCA", href: "/admin/fiscal/settings", icon: FileText, desc: "Facturación electrónica y políticas legales" },
+      ],
+    },
+    {
+      title: "Comercial",
+      items: [
+        { name: "Plan y créditos", href: "/admin/billing", icon: Crown, desc: "Suscripción, límites y compra de créditos IA" },
+        { name: "Finanzas", href: "/admin/finances", icon: CreditCard, desc: "Cuentas bancarias y retiros" },
+      ],
+    },
+    {
+      title: "Crecimiento",
+      items: [
+        { name: "Clientes", href: "/admin/customers", icon: Users, desc: "Gestor de usuarios, compras y audiencias" },
+        { name: "Marketing", href: "#", icon: Megaphone, desc: "Mailing, automatizaciones y descuentos", comingSoon: true },
+        { name: "Analíticas", href: "#", icon: BarChart3, desc: "Ventas, conversiones y tráfico", comingSoon: true },
+      ],
+    },
+    {
+      title: "Plataforma",
+      items: [
+        { name: "Integraciones", href: "/admin/integrations", icon: Plug, desc: "Apps de terceros, APIs y Webhooks" },
+        { name: "Sistema", href: "#", icon: Activity, desc: "Team, roles, auditoría y seguridad", comingSoon: true },
+        { name: "Soporte", href: "#", icon: LifeBuoy, desc: "Centro de ayuda y tickets técnicos", comingSoon: true },
+      ],
+    },
+  ];
+
+  // Ops-only section: platform-wide configuration surfaces. Never shown
+  // to merchants, never indexed in their UI; the page itself is also
+  // gated by isCurrentUserOps() so even if a merchant knew the URL they
+  // would get notFound().
+  if (isOps) {
+    sections.push({
+      title: "Operaciones (Nexora)",
+      items: [
+        {
+          name: "Mercado Pago · Plataforma",
+          href: "/admin/settings/integrations/mercadopago",
+          icon: ShieldCheck,
+          desc: "Readiness global de la integración OAuth con Mercado Pago. Solo diagnóstico.",
+        },
+      ],
+    });
   }
-];
 
-export default function SettingsHubPage() {
+  return sections;
+}
+
+export default async function SettingsHubPage() {
+  const isOps = await isCurrentUserOps();
+  const sections = buildSections(isOps);
   return (
     <div className="animate-in fade-in space-y-10 duration-500 py-6">
       

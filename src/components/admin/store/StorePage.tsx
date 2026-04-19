@@ -38,6 +38,7 @@ import {
 } from "@/lib/store-engine/actions";
 import type { AdminStoreInitialData } from "@/types/store-engine";
 import type { StoreTheme, StoreBranding, StoreSummary, HomeSection, NavItem, StorePage as StorePageType, StoreDomain, StoreStatus } from "@/types/store";
+import type { MercadoPagoPlatformReadiness } from "@/lib/payments/mercadopago/platform-readiness";
 
 type TabValue = "resumen" | "tema" | "branding" | "home" | "navegacion" | "paginas" | "dominio" | "pagos" | "preview";
 
@@ -52,7 +53,15 @@ interface ToastMessage { id: string; title: string; description: string; }
 
 const timeFormatter = new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 
-export function StorePage({ initialData }: { initialData?: AdminStoreInitialData | null }) {
+export function StorePage({
+  initialData,
+  mercadoPagoPlatformReadiness,
+  isOps,
+}: {
+  initialData?: AdminStoreInitialData | null;
+  mercadoPagoPlatformReadiness: MercadoPagoPlatformReadiness;
+  isOps: boolean;
+}) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const tabParam = searchParams.get("tab");
@@ -167,8 +176,15 @@ export function StorePage({ initialData }: { initialData?: AdminStoreInitialData
 
     if (mp === "connected") {
       pushToast("Mercado Pago conectado", "El checkout de la tienda quedo habilitado para pagos reales.");
-    } else if (mp === "missing_config") {
-      pushToast("Falta configuracion", "MP_CLIENT_ID, MP_CLIENT_SECRET o NEXT_PUBLIC_APP_URL no estan configurados.");
+    } else if (mp === "platform_not_ready" || mp === "missing_config") {
+      // `missing_config` is kept for backward compatibility with old links.
+      // Intentionally generic for merchants: we don't leak env names here.
+      pushToast(
+        "Mercado Pago no está listo",
+        isOps
+          ? "La integración está incompleta a nivel plataforma. Abrí la configuración global para ver qué falta."
+          : "La plataforma todavía no habilitó Mercado Pago. Contactá al equipo operativo para configurarlo.",
+      );
     } else if (mp === "invalid_state") {
       pushToast("Conexion rechazada", "La respuesta OAuth no pertenece a esta sesion.");
     } else if (mp === "error") {
@@ -241,7 +257,14 @@ export function StorePage({ initialData }: { initialData?: AdminStoreInitialData
           ) : activeTab === "dominio" ? (
             <DomainSettingsView initialData={initialData!} onAction={handleAction} storeId={initialData?.store.id} />
           ) : activeTab === "pagos" ? (
-            <PaymentsView initialData={initialData ?? null} isConnected={isMercadoPagoConnected} onAction={handleAction} publicPath={publicPath} />
+            <PaymentsView
+              initialData={initialData ?? null}
+              isConnected={isMercadoPagoConnected}
+              onAction={handleAction}
+              publicPath={publicPath}
+              platformReadiness={mercadoPagoPlatformReadiness}
+              isOps={isOps}
+            />
           ) : (
             <PreviewView onAction={handleAction} />
           )}
@@ -706,36 +729,127 @@ function PaymentsView({
   isConnected,
   onAction,
   publicPath,
+  platformReadiness,
+  isOps,
 }: {
   initialData: AdminStoreInitialData | null;
   isConnected: boolean;
   onAction: (a: string) => void;
   publicPath: string;
+  platformReadiness: MercadoPagoPlatformReadiness;
+  isOps: boolean;
 }) {
   const provider = initialData?.paymentProvider ?? null;
   const connectedAt = provider?.connectedAt ? timeFormatter.format(new Date(provider.connectedAt)) : null;
+  const platformReady = platformReadiness.ready;
+  const needsReconnection = provider?.status === "needs_reconnection";
+
+  // ─── Header status: 4 explicit states, never a dead CTA ───────────────
+  // 1. Platform not ready  → no connect CTA for merchants; ops gets a
+  //    link to the platform readiness screen.
+  // 2. Platform ready, tenant disconnected → real OAuth CTA.
+  // 3. Connected           → "Reconectar" CTA.
+  // 4. Needs reconnection  → same CTA, different label + warning copy.
+  let headerAccent: "success" | "warning" | "danger";
+  let headerEyebrow: string;
+  let headerTitle: string;
+  let headerBody: string;
+  let ctaHref: string | null = null;
+  let ctaLabel = "";
+  let ctaSecondary: { href: string; label: string } | null = null;
+
+  if (!platformReady) {
+    headerAccent = "warning";
+    headerEyebrow = "Mercado Pago · Plataforma";
+    headerTitle = "Mercado Pago no está listo a nivel plataforma";
+    headerBody = isOps
+      ? "La integración OAuth de Mercado Pago no tiene toda la configuración global cargada. Abrí la pantalla de configuración global para ver qué variable falta y cargarla en la infraestructura."
+      : "La plataforma todavía no habilitó la integración con Mercado Pago. Hasta que el equipo operativo de Nexora complete la configuración global, ninguna tienda puede conectar su cuenta. Contactá soporte si necesitás acelerarlo.";
+    if (isOps) {
+      ctaHref = "/admin/settings/integrations/mercadopago";
+      ctaLabel = "Configurar Mercado Pago";
+    }
+  } else if (needsReconnection) {
+    headerAccent = "danger";
+    headerEyebrow = "Mercado Pago por tenant";
+    headerTitle = "Reconexión necesaria";
+    headerBody =
+      "La sesión de Mercado Pago de esta tienda expiró o fue revocada. Reconectá la cuenta para volver a habilitar el checkout. Los pedidos existentes no se ven afectados.";
+    ctaHref = "/api/payments/mercadopago/oauth/start";
+    ctaLabel = "Reconectar Mercado Pago";
+  } else if (isConnected) {
+    headerAccent = "success";
+    headerEyebrow = "Mercado Pago por tenant";
+    headerTitle = "Cuenta conectada";
+    headerBody =
+      "Nexora guarda el access token cifrado por tienda. Las órdenes sólo pasan a pagadas cuando Mercado Pago confirma el webhook.";
+    ctaHref = "/api/payments/mercadopago/oauth/start";
+    ctaLabel = "Reconectar";
+  } else {
+    headerAccent = "warning";
+    headerEyebrow = "Mercado Pago por tenant";
+    headerTitle = "Checkout desactivado";
+    headerBody =
+      "La tienda puede publicarse y compartirse, pero el comprador no puede pagar hasta que el dueño conecte su propia cuenta de Mercado Pago.";
+    ctaHref = "/api/payments/mercadopago/oauth/start";
+    ctaLabel = "Conectar Mercado Pago";
+  }
+
+  if (isOps && platformReady) {
+    ctaSecondary = {
+      href: "/admin/settings/integrations/mercadopago",
+      label: "Ver configuración global",
+    };
+  }
+
+  const accentClass =
+    headerAccent === "success"
+      ? "text-[color:var(--signal-success)]"
+      : headerAccent === "danger"
+        ? "text-[color:var(--signal-danger)]"
+        : "text-[color:var(--signal-warning)]";
 
   return (
     <div className="space-y-6 p-6">
       <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
-            <p className={cn("text-[10px] font-medium uppercase tracking-[0.14em]", isConnected ? "text-[color:var(--signal-success)]" : "text-[color:var(--signal-warning)]")}>
-              Mercado Pago por tenant
+            <p className={cn("text-[10px] font-medium uppercase tracking-[0.14em]", accentClass)}>
+              {headerEyebrow}
             </p>
-            <h3 className="mt-2 text-[18px] font-semibold tracking-[-0.02em] text-ink-0">
-              {isConnected ? "Cuenta conectada" : "Checkout desactivado"}
-            </h3>
-            <p className="mt-2 max-w-2xl text-[13px] leading-[1.55] text-ink-5">
-              {isConnected
-                ? "Nexora guarda el access token cifrado por tienda. Las órdenes solo pasan a pagadas cuando Mercado Pago confirma el webhook."
-                : "La tienda puede publicarse y compartirse, pero el comprador no puede pagar hasta que el dueño conecte su propia cuenta de Mercado Pago."}
-            </p>
+            <h3 className="mt-2 text-[18px] font-semibold tracking-[-0.02em] text-ink-0">{headerTitle}</h3>
+            <p className="mt-2 max-w-2xl text-[13px] leading-[1.55] text-ink-5">{headerBody}</p>
+            {!platformReady && !isOps ? (
+              <p className="mt-3 max-w-2xl text-[12px] leading-[1.55] text-ink-6">
+                Esta pantalla se actualizará automáticamente cuando la configuración global esté lista.
+              </p>
+            ) : null}
           </div>
-          <Link className="inline-flex shrink-0 items-center justify-center gap-2 h-10 px-5 rounded-[var(--r-sm)] bg-ink-0 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" href="/api/payments/mercadopago/oauth/start">
-            <CreditCard className="h-3.5 w-3.5" />
-            {isConnected ? "Reconectar" : "Conectar Mercado Pago"}
-          </Link>
+
+          <div className="flex shrink-0 flex-col items-end gap-2">
+            {ctaHref ? (
+              <Link
+                className="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-[var(--r-sm)] bg-ink-0 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+                href={ctaHref}
+              >
+                <CreditCard className="h-3.5 w-3.5" />
+                {ctaLabel}
+              </Link>
+            ) : (
+              <span className="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] text-[12px] font-medium text-ink-5">
+                <AlertTriangle className="h-3.5 w-3.5" strokeWidth={1.75} />
+                Sin acciones disponibles
+              </span>
+            )}
+            {ctaSecondary ? (
+              <Link
+                href={ctaSecondary.href}
+                className="text-[12px] font-medium text-ink-0 underline underline-offset-4"
+              >
+                {ctaSecondary.label}
+              </Link>
+            ) : null}
+          </div>
         </div>
       </div>
 

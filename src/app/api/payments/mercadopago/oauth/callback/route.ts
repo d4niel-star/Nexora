@@ -30,12 +30,17 @@ export async function GET(request: NextRequest) {
     return redirectToStore("error");
   }
 
-  const clientId = process.env.MP_CLIENT_ID;
-  const clientSecret = process.env.MP_CLIENT_SECRET;
-
-  if (!clientId || !clientSecret || !process.env.NEXT_PUBLIC_APP_URL) {
-    return redirectToStore("missing_config");
+  // Platform readiness: same central check as the start route. Fails
+  // closed if the deployment is missing any MP platform env.
+  const { getMercadoPagoPlatformReadiness } = await import(
+    "@/lib/payments/mercadopago/platform-readiness"
+  );
+  const readiness = getMercadoPagoPlatformReadiness();
+  if (!readiness.canStartOAuth) {
+    return redirectToStore("platform_not_ready");
   }
+  const clientId = process.env.MP_CLIENT_ID!;
+  const clientSecret = process.env.MP_CLIENT_SECRET!;
 
   const payload = verifyMercadoPagoOAuthState(state);
   if (!payload) {
