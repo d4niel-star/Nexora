@@ -37,6 +37,34 @@ function invalidateCatalog(slug: string) {
 }
 
 /**
+ * Some apps own tenant-level configuration (credentials, templates). They
+ * must land in `needs_setup` rather than `active` on install so the catalog
+ * badge reflects reality. Apps without tenant config simply activate.
+ */
+async function resolveInitialStatus(
+  slug: string,
+  storeId: string,
+): Promise<"active" | "needs_setup"> {
+  if (slug === "whatsapp-recovery") {
+    const settings = await prisma.whatsappRecoverySettings.findUnique({
+      where: { storeId },
+      select: {
+        phoneNumberId: true,
+        accessTokenEncrypted: true,
+        templateName: true,
+      },
+    });
+    const complete = Boolean(
+      settings?.phoneNumberId &&
+        settings?.accessTokenEncrypted &&
+        settings?.templateName,
+    );
+    return complete ? "active" : "needs_setup";
+  }
+  return "active";
+}
+
+/**
  * Install the app for the current tenant. Honours coming-soon and plan-lock
  * guards. Idempotent — a subsequent install on an existing record flips
  * status back to "active" without duplicating rows.
@@ -56,10 +84,10 @@ export async function installAppAction(slug: string): Promise<AppActionResult> {
     return { ok: false, error: "plan_locked" };
   }
 
-  // deep-link apps go straight to `active`; builtin apps also activate on
-  // install in V1 — no separate configuration step required for the ones
-  // shipped here.
-  const status: "active" = "active";
+  // Most apps activate on install. Apps that require tenant-level setup
+  // (credentials, templates, etc.) land in `needs_setup` until the user
+  // completes configuration. This keeps the catalog badge honest.
+  const status = await resolveInitialStatus(slug, store.id);
 
   await prisma.installedApp.upsert({
     where: {

@@ -166,6 +166,16 @@ export function AppDetailPage({ item }: Props) {
                   Reactivar
                 </button>
               )}
+
+            {availability.kind === "available" &&
+              state.installed &&
+              state.status === "needs_setup" &&
+              definition.setupRoute && (
+                <Link href={definition.setupRoute} className={primaryBtn}>
+                  <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  Completar setup
+                </Link>
+              )}
           </div>
         </div>
 

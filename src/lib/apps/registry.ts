@@ -389,28 +389,31 @@ export const APP_REGISTRY: AppDefinition[] = [
     tags: ["inventory", "stock", "velocity"],
   },
 
-  // ── Coming soon — honestos, pocos ─────────────────────────────────────
+  // ── Retention — WhatsApp recovery (V2.1, real) ────────────────────────
   {
     slug: "whatsapp-recovery",
     name: "WhatsApp Cart Recovery",
     iconName: "MessageCircle",
     category: "retention",
     shortDescription:
-      "Recuperación de carritos por WhatsApp con template aprobado para el mercado argentino.",
+      "Recuperá carritos abandonados por WhatsApp con mejor tasa de apertura que email.",
     problem:
-      "El mail tiene tasas de apertura bajas. WhatsApp sigue siendo el canal directo en Argentina.",
+      "El email tiene tasas de apertura bajas en Argentina. Sin un segundo canal, los carritos con teléfono capturado se pierden igual.",
     outcome:
-      "Mensaje único, plantilla aprobada y link directo al carrito. Sin spam, sin abuso.",
+      "Usando la API oficial de Meta (WABA) y un template aprobado, Nexora envía un único mensaje por carrito al teléfono capturado en el checkout, en paralelo al email y sin duplicar envíos.",
     capabilities: [
-      "Plantilla WABA oficial.",
-      "Un solo envío por carrito.",
-      "Integración con el cron existente.",
+      "API oficial de Meta Cloud (WABA).",
+      "Template aprobado por WhatsApp (obligatorio para marketing).",
+      "Un solo envío por carrito, idempotente como el email.",
+      "Degrada seguro: sin config o sin teléfono, se saltea.",
     ],
-    setupRoute: null,
-    manageRoute: null,
+    setupRoute: "/admin/apps/whatsapp-recovery/setup",
+    manageRoute: "/admin/apps/whatsapp-recovery/setup",
     installMode: "builtin",
-    isComingSoon: true,
-    tags: ["whatsapp", "waba"],
+    setupTime: "10 minutos (requiere cuenta WABA)",
+    planGate: (cfg) => cfg.whatsappRecovery,
+    minPlanLabel: "Growth",
+    tags: ["whatsapp", "waba", "recovery"],
   },
   {
     slug: "product-reviews",

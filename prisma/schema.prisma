@@ -65,6 +65,7 @@ model Store {
   adInsights         AdInsightSnapshot[]
 
   installedApps      InstalledApp[]
+  whatsappRecovery   WhatsappRecoverySettings?
 
   @@index([ownerId])
 }
@@ -1211,5 +1212,21 @@ model InstalledApp {
   @@unique([storeId, appSlug])
   @@index([storeId])
   @@index([storeId, status])
+}
+
+
+// --- WhatsApp Recovery (app whatsapp-recovery) ---
+model WhatsappRecoverySettings {
+  id                    String   @id @default(cuid())
+  storeId               String   @unique
+  store                 Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  phoneNumberId         String?   // Meta Cloud API phone_number_id (public)
+  accessTokenEncrypted  String?   // encrypted with token-crypto
+  templateName          String?   // WABA approved template name
+  templateLanguage      String   @default("es_AR")
+  status                String   @default("needs_setup") // needs_setup | active | disabled
+  lastValidatedAt       DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 }
 

@@ -12,6 +12,7 @@ export interface PlanConfig {
   advancedCarriers: boolean;
   advancedBranding: boolean;
   sourcingAdvanced: boolean;  // Cross-provider sourcing and velocity aptitude
+  whatsappRecovery: boolean;  // Cart recovery via WhatsApp (Meta Cloud API)
   maxStaff: number;
 }
 
@@ -54,6 +55,7 @@ export const PLAN_DEFINITIONS: PlanDefinition[] = [
       advancedCarriers: false,
       advancedBranding: true,
       sourcingAdvanced: false,
+      whatsappRecovery: false,
       maxStaff: 2,
     },
   },
@@ -76,6 +78,7 @@ export const PLAN_DEFINITIONS: PlanDefinition[] = [
       advancedCarriers: true,
       advancedBranding: true,
       sourcingAdvanced: false,
+      whatsappRecovery: true,
       maxStaff: 5,
     },
   },
@@ -97,6 +100,7 @@ export const PLAN_DEFINITIONS: PlanDefinition[] = [
       advancedCarriers: true,
       advancedBranding: true,
       sourcingAdvanced: true,
+      whatsappRecovery: true,
       maxStaff: 15,
     },
   },
@@ -118,6 +122,7 @@ export const PLAN_DEFINITIONS: PlanDefinition[] = [
       advancedCarriers: true,
       advancedBranding: true,
       sourcingAdvanced: true,
+      whatsappRecovery: true,
       maxStaff: 0,
     },
   },

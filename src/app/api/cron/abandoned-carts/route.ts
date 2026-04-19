@@ -16,6 +16,7 @@ import { generateAbandonedCartTemplate } from "@/lib/email/templates";
 import type { AbandonedCartEmailData } from "@/lib/email/types";
 import { logSystemEvent } from "@/lib/observability/audit";
 import { storePath } from "@/lib/store-engine/urls";
+import { maybeSendWhatsappRecovery } from "@/lib/apps/whatsapp-recovery/cron";
 
 export const runtime = "nodejs";
 
@@ -71,6 +72,7 @@ export async function POST(request: NextRequest) {
 
   let sent = 0;
   let skipped = 0;
+  let whatsappSent = 0;
 
   for (const cart of candidates) {
     const checkout = cart.checkouts[0];
@@ -78,6 +80,18 @@ export async function POST(request: NextRequest) {
       skipped++;
       continue;
     }
+
+    // WhatsApp recovery runs independently of email success. Never throws;
+    // any failure is logged inside the helper. Reuses the same EmailLog
+    // idempotency table with eventType=ABANDONED_CART_WHATSAPP.
+    const whatsappOk = await maybeSendWhatsappRecovery({
+      cartId: cart.id,
+      storeId: cart.storeId,
+      storeName: cart.store.name,
+      phone: checkout.phone,
+      customerFirstName: checkout.firstName,
+    });
+    if (whatsappOk) whatsappSent++;
 
     // Idempotency: one ABANDONED_CART email per cart lifetime.
     const existing = await prisma.emailLog.findUnique({
@@ -180,6 +194,7 @@ export async function POST(request: NextRequest) {
     scanned: candidates.length,
     sent,
     skipped,
+    whatsappSent,
     thresholdMinutes,
   });
 }
