@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "postinstall": "prisma generate",
-    "start": "next start",
+    "start": "next start -H 0.0.0.0",
     "migrate:data": "npx tsx scripts/migrate-sqlite-to-pg.ts",
     "lint": "eslint"
   },
