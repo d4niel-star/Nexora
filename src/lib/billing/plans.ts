@@ -38,18 +38,26 @@ export interface PlanDefinition {
 }
 
 // ─── Default Plan Definitions ───
-
+// Nexora ships EXACTLY three operational plans. Enterprise was retired
+// in the V4 monetization consolidation; any historical subscription that
+// pointed to it was migrated to Scale (Scale is a strict superset of its
+// entitlements). The enterprise Plan row still exists in the DB with
+// status='archived' for FK integrity but is never referenced here.
+//
+// Packaging rationale (see commit): Growth is the commercial default and
+// concentrates the full conversion + AI stack; Scale adds BYOK, sourcing
+// and multi-store for teams with real operational scale.
 export const PLAN_DEFINITIONS: PlanDefinition[] = [
   {
     code: "core",
     name: "Core",
-    monthlyPrice: 59900,
+    monthlyPrice: 20000,
     currency: "ARS",
     sortOrder: 0,
     config: {
-      aiCredits: 100,
-      maxProducts: 100,
-      maxOrdersPerMonth: 50,
+      aiCredits: 150,
+      maxProducts: 150,
+      maxOrdersPerMonth: 100,
       maxStores: 1,
       aiBuilder: false,
       customDomain: true,
@@ -59,7 +67,7 @@ export const PLAN_DEFINITIONS: PlanDefinition[] = [
       advancedBranding: true,
       sourcingAdvanced: false,
       whatsappRecovery: false,
-      productReviews: false,
+      productReviews: true,
       bundlesUpsells: false,
       postPurchaseFlows: false,
       maxStaff: 2,
@@ -68,13 +76,13 @@ export const PLAN_DEFINITIONS: PlanDefinition[] = [
   {
     code: "growth",
     name: "Growth",
-    monthlyPrice: 149900,
+    monthlyPrice: 59000,
     currency: "ARS",
     sortOrder: 1,
     highlight: true,
     config: {
-      aiCredits: 500,
-      maxProducts: 1000,
+      aiCredits: 750,
+      maxProducts: 1500,
       maxOrdersPerMonth: 0, // unlimited
       maxStores: 1,
       aiBuilder: true,
@@ -94,11 +102,11 @@ export const PLAN_DEFINITIONS: PlanDefinition[] = [
   {
     code: "scale",
     name: "Scale",
-    monthlyPrice: 349900,
+    monthlyPrice: 119000,
     currency: "ARS",
     sortOrder: 2,
     config: {
-      aiCredits: 2000,
+      aiCredits: 3000,
       maxProducts: 0,
       maxOrdersPerMonth: 0,
       maxStores: 3,
@@ -114,31 +122,6 @@ export const PLAN_DEFINITIONS: PlanDefinition[] = [
       bundlesUpsells: true,
       postPurchaseFlows: true,
       maxStaff: 15,
-    },
-  },
-  {
-    code: "enterprise",
-    name: "Enterprise",
-    monthlyPrice: 0,
-    currency: "ARS",
-    sortOrder: 3,
-    config: {
-      aiCredits: 0,
-      maxProducts: 0,
-      maxOrdersPerMonth: 0,
-      maxStores: 0,
-      aiBuilder: true,
-      customDomain: true,
-      byokEnabled: true,
-      aiStudioAdvanced: true,
-      advancedCarriers: true,
-      advancedBranding: true,
-      sourcingAdvanced: true,
-      whatsappRecovery: true,
-      productReviews: true,
-      bundlesUpsells: true,
-      postPurchaseFlows: true,
-      maxStaff: 0,
     },
   },
 ];

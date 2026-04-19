@@ -17,7 +17,7 @@ export default async function PaymentPage({
 
   const params = await searchParams;
   const planCode = params.plan;
-  if (!planCode || planCode === "enterprise") {
+  if (!planCode) {
     redirect("/welcome/plan");
   }
 

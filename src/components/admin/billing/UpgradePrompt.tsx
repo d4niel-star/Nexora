@@ -16,7 +16,6 @@ const PLAN_DISPLAY_NAMES: Record<string, string> = {
   core: "Core",
   growth: "Growth",
   scale: "Scale",
-  enterprise: "Enterprise",
 };
 
 export function UpgradePrompt({ title, description, feature, planCode, className }: UpgradePromptProps) {

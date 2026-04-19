@@ -16,53 +16,41 @@ const PLAN_FEATURES: Record<string, { tagline: string; features: string[] }> = {
     features: [
       "Catalogo e inventario centralizado",
       "Storefront con checkout integrado",
-      "Dashboard operativo",
       "Dominio personalizado",
       "Branding avanzado",
-      "100 creditos IA / mes",
-      "Hasta 100 productos",
-      "Hasta 50 ventas / mes",
+      "Reseñas de producto con moderacion",
+      "150 creditos IA / mes",
+      "Hasta 150 productos",
+      "Hasta 100 ventas / mes",
       "2 usuarios",
     ],
   },
   growth: {
-    tagline: "IA aplicada, command center y workflows de resolucion.",
+    tagline: "IA aplicada, retencion y herramientas comerciales completas.",
     features: [
       "Todo en Core",
-      "AI Hub completo",
-      "Command Center",
-      "Variant Intelligence",
-      "Variant Economics",
-      "Replenishment Intelligence",
-      "Pricing y cost review workflows",
+      "AI Builder (tiendas e identidad)",
+      "AI Studio avanzado",
       "Carriers y logistica avanzada",
-      "500 creditos IA / mes",
-      "Hasta 1.000 productos",
+      "Whatsapp recovery para carritos",
+      "Bundles, upsells y cross-sell",
+      "Flujos post-compra (reseña + recompra)",
+      "750 creditos IA / mes",
+      "Hasta 1.500 productos",
       "Ventas ilimitadas",
       "5 usuarios",
     ],
   },
   scale: {
-    tagline: "Volumen, equipo y operacion comercial intensiva.",
+    tagline: "Volumen, sourcing avanzado y operacion multi-tienda.",
     features: [
       "Todo en Growth",
-      "Productos ilimitados",
-      "Ventas ilimitadas",
-      "BYOK, tu propia clave de IA",
-      "2.000 creditos IA / mes",
-      "Operacion centralizada avanzada",
+      "Productos y pedidos ilimitados",
+      "BYOK — tu propia clave de IA",
+      "Sourcing avanzado cross-provider",
+      "Hasta 3 tiendas en una misma cuenta",
+      "3.000 creditos IA / mes",
       "15 usuarios",
-    ],
-  },
-  enterprise: {
-    tagline: "Infraestructura a medida para operacion compleja.",
-    features: [
-      "Todo en Scale",
-      "Volumenes custom",
-      "Usuarios ilimitados",
-      "Creditos IA a medida",
-      "Soporte dedicado",
-      "Onboarding asistido",
     ],
   },
 };
@@ -98,10 +86,9 @@ export default function PricingPage() {
       <Hairline />
 
       <section className="mx-auto max-w-7xl px-5 pb-20 pt-4 sm:px-8 sm:pb-24">
-        <StaggerGroup className="grid grid-cols-1 gap-5 lg:grid-cols-4 lg:gap-6">
+        <StaggerGroup className="grid grid-cols-1 gap-5 lg:grid-cols-3 lg:gap-6">
           {PLAN_DEFINITIONS.map((plan) => {
             const meta = PLAN_FEATURES[plan.code];
-            const isEnterprise = plan.code === "enterprise";
             const isHighlight = plan.highlight;
 
             return (
@@ -133,45 +120,30 @@ export default function PricingPage() {
                   </div>
 
                   <div className="mt-6 border-t border-[color:var(--hairline)] pt-5">
-                    {isEnterprise ? (
-                      <p className="tabular text-[28px] font-semibold tracking-[-0.03em] text-ink-0">
-                        Consultar
-                      </p>
-                    ) : (
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="tabular text-[30px] font-semibold tracking-[-0.03em] text-ink-0">
-                          {formatPrice(plan.monthlyPrice)}
-                        </span>
-                        <span className="text-[12px] text-ink-5">/mes</span>
-                      </div>
-                    )}
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="tabular text-[30px] font-semibold tracking-[-0.03em] text-ink-0">
+                        {formatPrice(plan.monthlyPrice)}
+                      </span>
+                      <span className="text-[12px] text-ink-5">/mes</span>
+                    </div>
                   </div>
 
                   <div className="mt-6">
-                    {isEnterprise ? (
-                      <Link
-                        href="mailto:ventas@nexora.io"
-                        className="inline-flex h-12 min-h-12 w-full items-center justify-center rounded-[var(--r-md)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
-                      >
-                        Hablar con ventas
-                      </Link>
-                    ) : (
-                      <Link
-                        href="/home/register"
-                        className={cn(
-                          "group inline-flex h-12 min-h-12 w-full items-center justify-center gap-1.5 rounded-[var(--r-md)] text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
-                          isHighlight
-                            ? "bg-ink-0 text-ink-12 hover:bg-ink-2"
-                            : "border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-ink-0 hover:bg-[var(--surface-2)]",
-                        )}
-                      >
-                        {plan.code === "core" ? "Empezar con Core" : `Elegir ${plan.name}`}
-                        <ArrowRight
-                          className="h-3.5 w-3.5 transition-transform duration-[var(--dur-base)] group-hover:translate-x-0.5"
-                          strokeWidth={1.75}
-                        />
-                      </Link>
-                    )}
+                    <Link
+                      href="/home/register"
+                      className={cn(
+                        "group inline-flex h-12 min-h-12 w-full items-center justify-center gap-1.5 rounded-[var(--r-md)] text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
+                        isHighlight
+                          ? "bg-ink-0 text-ink-12 hover:bg-ink-2"
+                          : "border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-ink-0 hover:bg-[var(--surface-2)]",
+                      )}
+                    >
+                      {plan.code === "core" ? "Empezar con Core" : `Elegir ${plan.name}`}
+                      <ArrowRight
+                        className="h-3.5 w-3.5 transition-transform duration-[var(--dur-base)] group-hover:translate-x-0.5"
+                        strokeWidth={1.75}
+                      />
+                    </Link>
                   </div>
 
                   <div className="mt-6 border-t border-[color:var(--hairline)] pt-5">

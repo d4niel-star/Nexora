@@ -441,7 +441,7 @@ export interface GateResult {
   allowed: boolean;
   reason?: string;
   code?: "trial_expired" | "limit_reached" | "feature_locked" | "no_subscription";
-  upgradeSuggestion?: "growth" | "scale" | "enterprise";
+  upgradeSuggestion?: "growth" | "scale";
 }
 
 /**

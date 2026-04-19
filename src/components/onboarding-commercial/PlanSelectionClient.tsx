@@ -12,49 +12,40 @@ const PLAN_META: Record<string, { tagline: string; features: string[] }> = {
     features: [
       "Catálogo e inventario centralizado",
       "Storefront con checkout integrado",
-      "Dashboard operativo",
       "Dominio personalizado",
-      "100 créditos IA / mes",
-      "Hasta 100 productos",
+      "Branding avanzado",
+      "Reseñas de producto con moderación",
+      "150 créditos IA / mes",
+      "Hasta 150 productos",
+      "Hasta 100 ventas / mes",
       "2 usuarios",
     ],
   },
   growth: {
-    tagline: "IA aplicada, command center y workflows de resolución.",
+    tagline: "IA aplicada, retención y herramientas comerciales completas.",
     features: [
       "Todo en Core",
-      "AI Hub completo",
-      "Command Center",
-      "Variant Intelligence",
-      "Variant Economics",
-      "Replenishment Intelligence",
-      "Pricing y cost review workflows",
+      "AI Builder + AI Studio avanzado",
       "Carriers y logística avanzada",
-      "500 créditos IA / mes",
-      "Hasta 1.000 productos",
+      "Whatsapp recovery",
+      "Bundles, upsells y cross-sell",
+      "Flujos post-compra (reseña + recompra)",
+      "750 créditos IA / mes",
+      "Hasta 1.500 productos",
+      "Ventas ilimitadas",
       "5 usuarios",
     ],
   },
   scale: {
-    tagline: "Volumen, equipo y operación comercial intensiva.",
+    tagline: "Volumen, sourcing avanzado y operación multi-tienda.",
     features: [
       "Todo en Growth",
-      "Productos ilimitados",
-      "Ventas ilimitadas",
-      "BYOK, tu propia clave de IA",
-      "2.000 créditos IA / mes",
+      "Productos y pedidos ilimitados",
+      "BYOK — tu propia clave de IA",
+      "Sourcing avanzado cross-provider",
+      "Hasta 3 tiendas en una cuenta",
+      "3.000 créditos IA / mes",
       "15 usuarios",
-    ],
-  },
-  enterprise: {
-    tagline: "Infraestructura a medida para operación compleja.",
-    features: [
-      "Todo en Scale",
-      "Volúmenes custom",
-      "Usuarios ilimitados",
-      "Créditos IA a medida",
-      "Soporte dedicado",
-      "Onboarding asistido",
     ],
   },
 };
@@ -68,11 +59,6 @@ export function PlanSelectionClient() {
     setLoading(code);
     setError("");
     try {
-      if (code === "enterprise") {
-        window.location.href = "mailto:ventas@nexora.io";
-        setLoading(null);
-        return;
-      }
       router.push(`/welcome/payment?plan=${code}`);
     } catch (err: unknown) {
       setError(
@@ -115,11 +101,10 @@ export function PlanSelectionClient() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {PLAN_DEFINITIONS.map((plan) => {
           const meta = PLAN_META[plan.code];
           const isHighlight = plan.highlight;
-          const isEnterprise = plan.code === "enterprise";
           const isLoading = loading === plan.code;
 
           return (
@@ -149,18 +134,12 @@ export function PlanSelectionClient() {
               </div>
 
               <div className="mt-6 border-t border-[color:var(--hairline)] pt-5">
-                {isEnterprise ? (
-                  <p className="text-[26px] font-semibold tracking-[-0.03em] text-ink-0">
-                    Consultar
-                  </p>
-                ) : (
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="tabular text-[26px] font-semibold tracking-[-0.03em] text-ink-0">
-                      {formatPrice(plan.monthlyPrice)}
-                    </span>
-                    <span className="text-[12px] font-medium text-ink-5">/mes</span>
-                  </div>
-                )}
+                <div className="flex items-baseline gap-1.5">
+                  <span className="tabular text-[26px] font-semibold tracking-[-0.03em] text-ink-0">
+                    {formatPrice(plan.monthlyPrice)}
+                  </span>
+                  <span className="text-[12px] font-medium text-ink-5">/mes</span>
+                </div>
               </div>
 
               <button
@@ -178,11 +157,7 @@ export function PlanSelectionClient() {
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <>
-                    {isEnterprise
-                      ? "Hablar con ventas"
-                      : plan.code === "core"
-                        ? "Empezar con Core"
-                        : `Elegir ${plan.name}`}
+                    {plan.code === "core" ? "Empezar con Core" : `Elegir ${plan.name}`}
                     <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
                   </>
                 )}

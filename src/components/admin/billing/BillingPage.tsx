@@ -125,12 +125,9 @@ export function BillingPage() {
           <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Plan actual</span>
           <div className="mt-4">
             <span className="text-[28px] font-semibold tracking-[-0.03em] text-ink-0 leading-none">{data.plan.name}</span>
-            {data.plan.monthlyPrice > 0 && (
-              <p className="mt-1.5 text-sm text-ink-5">
-                <span className="text-ink-0 font-semibold">{formatARS(data.plan.monthlyPrice)}</span> /mes
-              </p>
-            )}
-            {data.plan.monthlyPrice === 0 && <p className="mt-1.5 text-sm text-ink-5">Consultar</p>}
+            <p className="mt-1.5 text-sm text-ink-5">
+              <span className="text-ink-0 font-semibold">{formatARS(data.plan.monthlyPrice)}</span> /mes
+            </p>
           </div>
         </div>
 
@@ -190,7 +187,7 @@ export function BillingPage() {
         <h2 className="text-[20px] font-semibold tracking-[-0.02em] text-ink-0">Planes.</h2>
         <p className="mt-1.5 text-[13px] text-ink-5 mb-8">Elegí el que mejor se adapte a tu volumen.</p>
 
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
           {plans.map((plan, idx) => {
             const isCurrent = plan.code === data.plan.code;
             const isHigher = plan.sortOrder > (currentPlanIdx >= 0 ? plans[currentPlanIdx].sortOrder : 0);
@@ -218,18 +215,10 @@ export function BillingPage() {
                     {plan.name}
                   </p>
                   <div className="mt-3 flex items-baseline gap-1">
-                    {plan.monthlyPrice === 0 ? (
-                      <span className={cn("text-[28px] font-semibold tracking-[-0.03em] leading-none", isCurrent ? "text-ink-12" : "text-ink-0")}>
-                        Consultar
-                      </span>
-                    ) : (
-                      <>
-                        <span className={cn("text-[28px] font-semibold tracking-[-0.03em] leading-none tabular-nums", isCurrent ? "text-ink-12" : "text-ink-0")}>
-                          {formatARS(plan.monthlyPrice)}
-                        </span>
-                        <span className={cn("text-[11px] font-medium", isCurrent ? "text-ink-12/50" : "text-ink-5")}>/ mes</span>
-                      </>
-                    )}
+                    <span className={cn("text-[28px] font-semibold tracking-[-0.03em] leading-none tabular-nums", isCurrent ? "text-ink-12" : "text-ink-0")}>
+                      {formatARS(plan.monthlyPrice)}
+                    </span>
+                    <span className={cn("text-[11px] font-medium", isCurrent ? "text-ink-12/50" : "text-ink-5")}>/ mes</span>
                   </div>
 
                   <div className={cn("mt-6 space-y-2.5", isCurrent ? "text-ink-12/80" : "")}>
