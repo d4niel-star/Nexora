@@ -1,20 +1,20 @@
 type StockStatus = "in_stock" | "low_stock" | "out_of_stock";
 
 export const StockStatusBadge = ({ status }: { status: StockStatus }) => {
-  const styles: Record<StockStatus, string> = {
-    in_stock: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
-    low_stock: "bg-yellow-50 text-yellow-800 ring-yellow-600/20",
-    out_of_stock: "bg-red-50 text-red-700 ring-red-600/10",
+  const tone: Record<StockStatus, string> = {
+    in_stock: "text-[color:var(--signal-success)]",
+    low_stock: "text-[color:var(--signal-warning)]",
+    out_of_stock: "text-[color:var(--signal-danger)]",
   };
 
   const labels: Record<StockStatus, string> = {
-    in_stock: "En Stock",
-    low_stock: "Stock Bajo",
+    in_stock: "En stock",
+    low_stock: "Stock bajo",
     out_of_stock: "Agotado",
   };
 
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ring-1 ring-inset ${styles[status]}`}>
+    <span className={`inline-flex items-center h-6 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2 text-[10px] font-medium uppercase tracking-[0.14em] ${tone[status]}`}>
       {labels[status]}
     </span>
   );

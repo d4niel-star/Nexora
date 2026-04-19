@@ -14,34 +14,38 @@ const statusLabels: Record<FinanceStatus, string> = {
   stable: "Estable",
 };
 
-const statusStyles: Record<FinanceStatus, string> = {
-  collected: "bg-emerald-50 text-emerald-700 ring-emerald-600/15",
-  pending: "bg-amber-50 text-amber-700 ring-amber-600/15",
-  refunded: "bg-gray-100 text-gray-600 ring-gray-500/10",
-  partial: "bg-amber-50 text-amber-700 ring-amber-600/15",
-  failed: "bg-red-50 text-red-600 ring-red-600/10",
-  review: "bg-blue-50 text-blue-700 ring-blue-600/15",
-  exported: "bg-emerald-50 text-emerald-700 ring-emerald-600/15",
-  scheduled: "bg-blue-50 text-blue-700 ring-blue-600/15",
-  critical: "bg-red-50 text-red-600 ring-red-600/10",
-  stable: "bg-emerald-50 text-emerald-700 ring-emerald-600/15",
+const statusTone: Record<FinanceStatus, string> = {
+  collected: "text-[color:var(--signal-success)]",
+  pending: "text-[color:var(--signal-warning)]",
+  refunded: "text-ink-5",
+  partial: "text-[color:var(--signal-warning)]",
+  failed: "text-[color:var(--signal-danger)]",
+  review: "text-ink-3",
+  exported: "text-[color:var(--signal-success)]",
+  scheduled: "text-ink-3",
+  critical: "text-[color:var(--signal-danger)]",
+  stable: "text-[color:var(--signal-success)]",
 };
 
-
+const chipBase = "inline-flex items-center h-6 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2 text-[10px] font-medium uppercase tracking-[0.14em]";
 
 export function FinanceStatusBadge({ status, className }: { status: FinanceStatus; className?: string }) {
   return (
-    <span className={cn("inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.18em] ring-1 ring-inset", statusStyles[status], className)}>
+    <span className={cn(chipBase, statusTone[status], className)}>
       {statusLabels[status]}
     </span>
   );
 }
 
 export function MarginHealthBadge({ health, className }: { health: "stable" | "warning" | "critical"; className?: string }) {
-  const styles = { stable: "bg-emerald-50 text-emerald-700 ring-emerald-600/15", warning: "bg-amber-50 text-amber-700 ring-amber-600/15", critical: "bg-red-50 text-red-600 ring-red-600/10" };
-  const labels = { stable: "Estable", warning: "Bajo", critical: "Critico" };
+  const tone = {
+    stable: "text-[color:var(--signal-success)]",
+    warning: "text-[color:var(--signal-warning)]",
+    critical: "text-[color:var(--signal-danger)]",
+  };
+  const labels = { stable: "Estable", warning: "Bajo", critical: "Crítico" };
   return (
-    <span className={cn("inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.18em] ring-1 ring-inset", styles[health], className)}>
+    <span className={cn(chipBase, tone[health], className)}>
       {labels[health]}
     </span>
   );
@@ -49,7 +53,7 @@ export function MarginHealthBadge({ health, className }: { health: "stable" | "w
 
 export function ChannelBadge({ channel, className }: { channel: string; className?: string }) {
   return (
-    <span className={cn("inline-flex items-center rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-gray-600", className)}>
+    <span className={cn(chipBase, "text-ink-5", className)}>
       {channel}
     </span>
   );
@@ -57,7 +61,7 @@ export function ChannelBadge({ channel, className }: { channel: string; classNam
 
 export function ExportTypeBadge({ type, className }: { type: string; className?: string }) {
   return (
-    <span className={cn("inline-flex items-center rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-gray-600", className)}>
+    <span className={cn(chipBase, "text-ink-5", className)}>
       {type}
     </span>
   );

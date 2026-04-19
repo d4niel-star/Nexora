@@ -46,74 +46,74 @@ export function IntegrationsClient({ initialData, healthData }: { initialData: U
     <div className="animate-in fade-in space-y-8 pb-32 duration-700">
       <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-[#111111]">Integraciones</h1>
-          <p className="mt-1 text-[15px] font-medium text-[#666666]">Conexiones activas de la tienda a servicios externos.</p>
+          <h1 className="text-[28px] lg:text-[32px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0">Integraciones.</h1>
+          <p className="mt-2 text-[14px] leading-[1.55] text-ink-5">Conexiones activas de la tienda a servicios externos.</p>
         </div>
       </div>
 
-      <div className="relative overflow-hidden rounded-2xl border border-[#EAEAEA] bg-white shadow-sm">
-        <div className="flex items-center gap-8 overflow-x-auto border-b border-[#EAEAEA] bg-[#FAFAFA]/50 px-6 no-scrollbar">
+      <div className="relative overflow-hidden rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)]">
+        <div className="flex items-center gap-7 overflow-x-auto border-b border-[color:var(--hairline)] bg-[var(--surface-1)] px-6 no-scrollbar">
           {tabs.map((tab) => (
             <button
               key={tab.value}
-              className={cn("group relative whitespace-nowrap py-4 text-[13px] font-bold transition-colors", activeTab === tab.value ? "text-[#111111]" : "text-[#888888] hover:text-[#111111]")}
+              className={cn("group relative whitespace-nowrap py-4 text-[13px] font-medium transition-colors", activeTab === tab.value ? "text-ink-0" : "text-ink-5 hover:text-ink-0")}
               onClick={() => setActiveTab(tab.value)}
             >
               <span className="flex items-center gap-2">
                 {tab.icon}
                 {tab.label}
-                <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-[0.18em]", activeTab === tab.value ? "bg-gray-200 text-[#111111]" : "bg-gray-100 text-gray-500 group-hover:bg-gray-200")}>{tab.count}</span>
+                <span className={cn("tabular inline-flex items-center h-5 px-1.5 rounded-[var(--r-xs)] text-[10px] font-medium uppercase tracking-[0.14em]", activeTab === tab.value ? "bg-[var(--surface-2)] text-ink-0" : "bg-transparent text-ink-6 group-hover:bg-[var(--surface-2)]")}>{tab.count}</span>
               </span>
-              {activeTab === tab.value ? <div className="absolute inset-x-0 bottom-0 h-0.5 rounded-t-full bg-[#111111]" /> : null}
+              {activeTab === tab.value ? <div className="absolute inset-x-0 bottom-0 h-[2px] bg-ink-0" /> : null}
             </button>
           ))}
         </div>
 
-        <div className="p-4 border-b border-[#EAEAEA] bg-white">
+        <div className="p-4 border-b border-[color:var(--hairline)] bg-[var(--surface-0)]">
           <div className="relative w-full md:max-w-md group">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-6 group-focus-within:text-ink-0 transition-colors" strokeWidth={1.75} />
             <input
               type="text"
-              placeholder="Buscar integración..."
+              placeholder="Buscar integración…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-transparent rounded-xl text-[13px] font-medium focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+              className="w-full pl-10 pr-4 h-10 bg-[var(--surface-1)] border border-[color:var(--hairline)] rounded-[var(--r-sm)] text-[13px] text-ink-0 placeholder:text-ink-6 outline-none transition-[box-shadow,border-color] focus:border-[var(--accent-500)] focus:shadow-[var(--shadow-focus)] focus:bg-[var(--surface-0)]"
             />
           </div>
         </div>
 
-        <div className="min-h-[400px] bg-[#FAFAFA]/30 p-6">
+        <div className="min-h-[400px] bg-[var(--surface-0)] p-6">
           {activeTab === "health" ? (
             <HealthCenter data={healthData} />
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-20 text-center">
-              <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gray-50 border border-gray-100 shadow-sm">
-                <Plug className="h-8 w-8 text-gray-300" />
+            <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+              <div className="mb-6 inline-flex items-center justify-center w-14 h-14 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)]">
+                <Plug className="h-5 w-5 text-ink-5" strokeWidth={1.5} />
               </div>
-              <h3 className="text-xl font-extrabold text-[#111111]">No hay conexiones</h3>
-              <p className="mt-2 text-[15px] font-medium text-[#888888]">No se encontraron integraciones reales instaladas.</p>
+              <h3 className="text-[18px] font-semibold tracking-[-0.02em] text-ink-0">No hay conexiones.</h3>
+              <p className="mt-2 text-[13px] leading-[1.55] text-ink-5 max-w-sm">No se encontraron integraciones reales instaladas.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filtered.map(c => (
-                <div key={c.id} className="rounded-2xl border border-[#EAEAEA] bg-white p-5 shadow-sm">
+                <div key={c.id} className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5">
                   <div className="flex justify-between items-start mb-3">
-                    <h3 className="font-bold text-[#111111]">{c.name}</h3>
+                    <h3 className="text-[14px] font-semibold text-ink-0">{c.name}</h3>
                     <span className={cn(
-                      "px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.18em]",
-                      c.status === "connected" ? "bg-emerald-50 text-emerald-700" :
-                      c.status === "error" ? "bg-red-50 text-red-700" :
-                      c.status === "pending" ? "bg-amber-50 text-amber-700" :
-                      c.status === "expired" ? "bg-orange-50 text-orange-700" :
-                      "bg-gray-100 text-gray-600"
+                      "inline-flex items-center h-6 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2 text-[10px] font-medium uppercase tracking-[0.14em]",
+                      c.status === "connected" ? "text-[color:var(--signal-success)]" :
+                      c.status === "error" ? "text-[color:var(--signal-danger)]" :
+                      c.status === "pending" ? "text-[color:var(--signal-warning)]" :
+                      c.status === "expired" ? "text-[color:var(--signal-warning)]" :
+                      "text-ink-5"
                     )}>
                       {c.status}
                     </span>
                   </div>
-                  <p className="text-xs font-medium text-gray-500 mb-4">{c.description}</p>
-                  <div className="border-t border-[#EAEAEA] pt-4 mt-4 text-[11px] font-medium text-gray-500 flex justify-between">
+                  <p className="text-[12px] leading-[1.55] text-ink-5 mb-4">{c.description}</p>
+                  <div className="border-t border-[color:var(--hairline)] pt-4 mt-4 text-[11px] text-ink-5 flex justify-between">
                      <span>Último sync: {c.lastSync ? new Date(c.lastSync).toLocaleDateString("es-AR") : "No registrado"}</span>
-                     <span className={c.health === "operational" ? "text-emerald-600 font-bold" : "text-amber-600 font-bold"}>{c.health.toUpperCase()}</span>
+                     <span className={cn("font-medium uppercase tracking-[0.12em]", c.health === "operational" ? "text-[color:var(--signal-success)]" : "text-[color:var(--signal-warning)]")}>{c.health}</span>
                   </div>
                 </div>
               ))}

@@ -24,9 +24,9 @@ interface FinanceDrawerProps {
 
 function MetricCard({ label, value, muted = false }: { label: string; value: string; muted?: boolean }) {
   return (
-    <div className={`p-5 ${muted ? "bg-[#FAFAFA]" : "bg-white"}`}>
-      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-400">{label}</p>
-      <p className="mt-2 text-xl font-black tracking-tight text-[#111111]">{value}</p>
+    <div className={`p-5 ${muted ? "bg-[var(--surface-1)]" : "bg-[var(--surface-0)]"}`}>
+      <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">{label}</p>
+      <p className="mt-2 text-[18px] font-semibold tracking-[-0.02em] text-ink-0 tabular-nums">{value}</p>
     </div>
   );
 }
@@ -34,8 +34,8 @@ function MetricCard({ label, value, muted = false }: { label: string; value: str
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="space-y-1">
-      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-400">{label}</p>
-      <div className="text-sm font-medium text-[#111111]">{value}</div>
+      <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">{label}</p>
+      <div className="text-[13px] text-ink-0 leading-[1.55]">{value}</div>
     </div>
   );
 }
@@ -58,24 +58,24 @@ export function FinanceDrawer({ content, isOpen, onClose, onAction }: FinanceDra
 
   return (
     <>
-      <div aria-hidden="true" className="fixed inset-0 z-40 bg-[#111111]/28 backdrop-blur-[2px]" onClick={onClose} />
+      <div aria-hidden="true" className="fixed inset-0 z-40 bg-ink-0/40 transition-opacity" onClick={onClose} />
       <div
         ref={panelRef}
         aria-labelledby="finance-drawer-title"
         aria-modal="true"
-        className="fixed inset-y-0 right-0 z-50 flex w-full flex-col overflow-y-auto border-l border-[#EAEAEA] bg-white shadow-2xl outline-none animate-in slide-in-from-right-5 duration-300 sm:max-w-xl"
+        className="fixed inset-y-0 right-0 z-50 flex w-full flex-col overflow-y-auto border-l border-[color:var(--hairline)] bg-[var(--surface-0)] shadow-[var(--shadow-overlay)] outline-none animate-in slide-in-from-right-5 duration-[var(--dur-slow)] sm:max-w-xl"
         role="dialog"
         tabIndex={-1}
       >
-        <div className="sticky top-0 z-20 border-b border-[#EAEAEA] bg-white/90 px-6 py-5 backdrop-blur-xl sm:px-8">
+        <div className="sticky top-0 z-20 border-b border-[color:var(--hairline)] bg-[var(--surface-0)]/95 px-6 py-5 backdrop-blur-xl sm:px-8">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 space-y-3">
-              <h2 id="finance-drawer-title" className="truncate text-xl font-extrabold tracking-tight text-[#111111]">
+              <h2 id="finance-drawer-title" className="truncate text-[18px] font-semibold tracking-[-0.02em] text-ink-0">
                 {getTitle(content)}
               </h2>
-              <div className="flex flex-wrap gap-2">{getBadges(content)}</div>
+              <div className="flex flex-wrap gap-1.5">{getBadges(content)}</div>
             </div>
-            <button aria-label="Cerrar drawer" className="rounded-full p-2.5 text-gray-400 transition-all hover:bg-gray-100 hover:text-[#111111] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" onClick={onClose} type="button">
+            <button aria-label="Cerrar drawer" className="shrink-0 rounded-[var(--r-sm)] p-2 text-ink-5 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" onClick={onClose} type="button">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -119,14 +119,14 @@ function getBadges(c: DrawerContent) {
 function MovementDetail({ data, onAction }: { data: FinanceMovement; onAction: (a: string) => void }) {
   return (
     <>
-      <section className="grid grid-cols-2 gap-0 overflow-hidden rounded-2xl border border-[#EAEAEA] shadow-sm">
+      <section className="grid grid-cols-2 gap-0 overflow-hidden rounded-[var(--r-md)] border border-[color:var(--hairline)] divide-x divide-y divide-[color:var(--hairline)]">
         <MetricCard label="Bruto" value={formatCurrency(data.gross)} />
         <MetricCard label="Comision" value={formatCurrency(data.commission)} muted />
         <MetricCard label="Envio" value={formatCurrency(data.shipping)} muted />
         <MetricCard label="Neto" value={formatCurrency(data.net)} />
       </section>
       <section className="space-y-4">
-        <h3 className="flex items-center gap-2 border-b border-[#EAEAEA] pb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Detalles</h3>
+        <h3 className="flex items-center gap-2 border-b border-[color:var(--hairline)] pb-2 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">Detalles</h3>
         <div className="space-y-3">
           <InfoRow label="Cliente" value={data.customer} />
           <InfoRow label="Canal" value={<ChannelBadge channel={data.channel} />} />
@@ -144,12 +144,12 @@ function MovementDetail({ data, onAction }: { data: FinanceMovement; onAction: (
 function PendingDetail({ data, onAction }: { data: PendingPayment; onAction: (a: string) => void }) {
   return (
     <>
-      <section className="grid grid-cols-2 gap-0 overflow-hidden rounded-2xl border border-[#EAEAEA] shadow-sm">
+      <section className="grid grid-cols-2 gap-0 overflow-hidden rounded-[var(--r-md)] border border-[color:var(--hairline)] divide-x divide-y divide-[color:var(--hairline)]">
         <MetricCard label="Monto" value={formatCurrency(data.amount)} />
         <MetricCard label="Vencimiento" value={timeFormatter.format(new Date(data.dueDate))} muted />
       </section>
       <section className="space-y-4">
-        <h3 className="flex items-center gap-2 border-b border-[#EAEAEA] pb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Detalles</h3>
+        <h3 className="flex items-center gap-2 border-b border-[color:var(--hairline)] pb-2 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">Detalles</h3>
         <div className="space-y-3">
           <InfoRow label="Cliente" value={data.customer} />
           <InfoRow label="Causa" value={data.cause} />
@@ -168,12 +168,12 @@ function PendingDetail({ data, onAction }: { data: PendingPayment; onAction: (a:
 function RefundDetail({ data, onAction }: { data: Refund; onAction: (a: string) => void }) {
   return (
     <>
-      <section className="grid grid-cols-2 gap-0 overflow-hidden rounded-2xl border border-[#EAEAEA] shadow-sm">
+      <section className="grid grid-cols-2 gap-0 overflow-hidden rounded-[var(--r-md)] border border-[color:var(--hairline)] divide-x divide-y divide-[color:var(--hairline)]">
         <MetricCard label="Monto" value={formatCurrency(data.amount)} />
         <MetricCard label="Metodo" value={data.method} muted />
       </section>
       <section className="space-y-4">
-        <h3 className="flex items-center gap-2 border-b border-[#EAEAEA] pb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Detalles</h3>
+        <h3 className="flex items-center gap-2 border-b border-[color:var(--hairline)] pb-2 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">Detalles</h3>
         <div className="space-y-3">
           <InfoRow label="Cliente" value={data.customer} />
           <InfoRow label="Motivo" value={data.reason} />
@@ -191,14 +191,14 @@ function RefundDetail({ data, onAction }: { data: Refund; onAction: (a: string) 
 function CommissionDetail({ data, onAction }: { data: CommissionEntry; onAction: (a: string) => void }) {
   return (
     <>
-      <section className="grid grid-cols-2 gap-0 overflow-hidden rounded-2xl border border-[#EAEAEA] shadow-sm">
+      <section className="grid grid-cols-2 gap-0 overflow-hidden rounded-[var(--r-md)] border border-[color:var(--hairline)] divide-x divide-y divide-[color:var(--hairline)]">
         <MetricCard label="Total comision" value={formatCurrency(data.amount)} />
         <MetricCard label="Tasa" value={`${data.percentage}%`} muted />
         <MetricCard label="Transacciones" value={data.transactions.toString()} muted />
         <MetricCard label="Periodo" value={data.period} />
       </section>
       <section className="space-y-4">
-        <h3 className="flex items-center gap-2 border-b border-[#EAEAEA] pb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Detalles</h3>
+        <h3 className="flex items-center gap-2 border-b border-[color:var(--hairline)] pb-2 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">Detalles</h3>
         <div className="space-y-3">
           <InfoRow label="Fuente" value={data.source} />
           <InfoRow label="Tipo" value={<ExportTypeBadge type={data.type} />} />
@@ -214,14 +214,14 @@ function CommissionDetail({ data, onAction }: { data: CommissionEntry; onAction:
 function MarginDetail({ data, onAction }: { data: MarginEntry; onAction: (a: string) => void }) {
   return (
     <>
-      <section className="grid grid-cols-2 gap-0 overflow-hidden rounded-2xl border border-[#EAEAEA] shadow-sm">
+      <section className="grid grid-cols-2 gap-0 overflow-hidden rounded-[var(--r-md)] border border-[color:var(--hairline)] divide-x divide-y divide-[color:var(--hairline)]">
         <MetricCard label="Ingresos" value={formatCurrency(data.revenue)} />
         <MetricCard label="Costo" value={formatCurrency(data.cost)} muted />
         <MetricCard label="Margen" value={formatCurrency(data.margin)} muted />
         <MetricCard label="Margen %" value={`${data.marginPercent}%`} />
       </section>
       <section className="space-y-4">
-        <h3 className="flex items-center gap-2 border-b border-[#EAEAEA] pb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Impactos</h3>
+        <h3 className="flex items-center gap-2 border-b border-[color:var(--hairline)] pb-2 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">Impactos</h3>
         <div className="space-y-3">
           <InfoRow label="Categoria" value={data.category} />
           <InfoRow label="Impacto descuentos" value={formatCurrency(data.discountImpact)} />
@@ -240,7 +240,7 @@ function ExportDetail({ data, onAction }: { data: ExportRecord; onAction: (a: st
   return (
     <>
       <section className="space-y-4">
-        <h3 className="flex items-center gap-2 border-b border-[#EAEAEA] pb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Detalle de exportacion</h3>
+        <h3 className="flex items-center gap-2 border-b border-[color:var(--hairline)] pb-2 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">Detalle de exportacion</h3>
         <div className="space-y-3">
           <InfoRow label="Tipo" value={<ExportTypeBadge type={data.type} />} />
           <InfoRow label="Rango" value={data.range} />
@@ -260,8 +260,8 @@ function DrawerAction({ icon, label, onClick, primary = false }: { icon: React.R
   return (
     <button
       className={primary
-        ? "flex items-center gap-2 rounded-xl bg-[#111111] px-4 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30"
-        : "flex items-center gap-2 rounded-xl border border-[#EAEAEA] bg-white px-4 py-2.5 text-[13px] font-bold text-[#111111] transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30"
+        ? "inline-flex items-center gap-2 rounded-[var(--r-sm)] bg-ink-0 h-9 px-4 text-[12px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+        : "inline-flex items-center gap-2 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] h-9 px-3.5 text-[12px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
       }
       onClick={onClick}
       type="button"

@@ -57,12 +57,12 @@ export function InventoryClient({ items, variantIntel, focusVariantId, focusActi
 
   const variantRiskCount = variantIntel.summary.stockoutVariants + variantIntel.summary.criticalVariants + variantIntel.summary.lowVariants;
 
-  const tabs: { label: string; value: TabValue; count?: number; badgeColor?: string }[] = [
-    { label: "Todo el Inventario", value: "all", count: items.length },
-    { label: "Stock Bajo", value: "low_stock", count: items.filter((i) => i.status === "low_stock").length, badgeColor: "bg-yellow-200 text-yellow-800" },
-    { label: "Agotado", value: "out_of_stock", count: items.filter((i) => i.status === "out_of_stock").length, badgeColor: "bg-red-200 text-red-800" },
-    { label: "Carritos & Reservas", value: "reserved", count: items.filter((i) => i.reservedStock > 0).length },
-    { label: "Riesgo por Variante", value: "variant_risk", count: variantRiskCount, badgeColor: variantRiskCount > 0 ? "bg-purple-200 text-purple-800" : undefined },
+  const tabs: { label: string; value: TabValue; count?: number }[] = [
+    { label: "Todo el inventario", value: "all", count: items.length },
+    { label: "Stock bajo", value: "low_stock", count: items.filter((i) => i.status === "low_stock").length },
+    { label: "Agotado", value: "out_of_stock", count: items.filter((i) => i.status === "out_of_stock").length },
+    { label: "Carritos y reservas", value: "reserved", count: items.filter((i) => i.reservedStock > 0).length },
+    { label: "Riesgo por variante", value: "variant_risk", count: variantRiskCount },
   ];
 
   const handleVariantAdjust = (variantId: string, productTitle: string, variantTitle: string, stock: number, image: string) => {
@@ -138,38 +138,35 @@ export function InventoryClient({ items, variantIntel, focusVariantId, focusActi
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-black tracking-tight text-[#111111]">Control de Inventario</h1>
+            <h1 className="text-[28px] lg:text-[32px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0">Control de inventario.</h1>
             {outOfStockCount > 0 && (
-              <span className="flex items-center gap-1.5 px-2 py-0.5 bg-red-50 border border-red-100 text-red-700 text-[10px] font-black uppercase tracking-widest rounded-md shadow-sm">
-                <AlertCircle className="w-3 h-3" /> {outOfStockCount} agotado{outOfStockCount > 1 ? "s" : ""}
+              <span className="inline-flex items-center gap-1.5 h-6 px-2 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] text-[color:var(--signal-danger)] text-[10px] font-medium uppercase tracking-[0.14em]">
+                <AlertCircle className="w-3 h-3" strokeWidth={1.75} /> {outOfStockCount} agotado{outOfStockCount > 1 ? "s" : ""}
               </span>
             )}
           </div>
-          <p className="text-[#666666] text-[15px] mt-1 font-medium">Stock real por variante de producto. Datos en tiempo real desde la base de datos.</p>
+          <p className="mt-2 text-[14px] leading-[1.55] text-ink-5">Stock real por variante de producto. Datos en tiempo real desde la base de datos.</p>
         </div>
       </div>
 
       {/* Main Container */}
-      <div className="bg-white border rounded-2xl border-[#EAEAEA] shadow-sm overflow-hidden relative">
+      <div className="bg-[var(--surface-0)] border border-[color:var(--hairline)] rounded-[var(--r-md)] overflow-hidden relative">
         {/* Tabs */}
-        <div className="flex items-center gap-8 px-6 border-b border-[#EAEAEA] overflow-x-auto no-scrollbar bg-[#FAFAFA]/50">
+        <div className="flex items-center gap-8 px-6 border-b border-[color:var(--hairline)] overflow-x-auto no-scrollbar bg-[var(--surface-1)]">
           {tabs.map((tab) => (
             <button
               key={tab.value}
               onClick={() => setActiveTab(tab.value)}
-              className={`relative py-4 text-[13px] font-bold whitespace-nowrap transition-colors flex items-center gap-2 group
-                ${activeTab === tab.value ? "text-[#111111]" : "text-[#888888] hover:text-[#111111]"}`}
+              className={`relative py-4 text-[13px] font-medium whitespace-nowrap transition-colors flex items-center gap-2 group
+                ${activeTab === tab.value ? "text-ink-0" : "text-ink-5 hover:text-ink-0"}`}
             >
               {tab.label}
               {tab.count !== undefined && tab.count > 0 && (
-                <span
-                  className={`px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider font-extrabold transition-colors 
-                   ${activeTab === tab.value ? (tab.badgeColor ? tab.badgeColor : "bg-gray-200 text-[#111111]") : "bg-gray-100 text-gray-500 group-hover:bg-gray-200"}`}
-                >
+                <span className={`tabular inline-flex items-center h-5 px-1.5 rounded-[var(--r-xs)] text-[10px] font-medium uppercase tracking-[0.14em] transition-colors ${activeTab === tab.value ? "bg-[var(--surface-2)] text-ink-0" : "bg-transparent text-ink-6 group-hover:bg-[var(--surface-2)]"}`}>
                   {tab.count}
                 </span>
               )}
-              {activeTab === tab.value && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#111111] rounded-t-full" />}
+              {activeTab === tab.value && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-ink-0" />}
             </button>
           ))}
         </div>
@@ -180,56 +177,56 @@ export function InventoryClient({ items, variantIntel, focusVariantId, focusActi
         ) : (
         <>
         {/* Toolbar */}
-        <div className="p-4 flex flex-col md:flex-row gap-4 justify-between items-center bg-white border-b border-[#EAEAEA]">
+        <div className="p-4 flex flex-col md:flex-row gap-4 justify-between items-center bg-[var(--surface-0)] border-b border-[color:var(--hairline)]">
           <div className="relative w-full md:w-[400px] group">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-6 group-focus-within:text-ink-0 transition-colors" strokeWidth={1.75} />
             <input
               type="text"
-              placeholder="Buscar por SKU, producto o variante..."
+              placeholder="Buscar por SKU, producto o variante…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 text-[13px] font-medium bg-gray-50 border border-transparent rounded-xl focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-[#111111] transition-all placeholder:text-gray-400"
+              className="w-full pl-10 pr-4 h-10 text-[13px] bg-[var(--surface-1)] border border-[color:var(--hairline)] rounded-[var(--r-sm)] outline-none transition-[box-shadow,border-color] focus:bg-[var(--surface-0)] focus:border-[var(--accent-500)] focus:shadow-[var(--shadow-focus)] text-ink-0 placeholder:text-ink-6"
             />
           </div>
         </div>
 
         {/* Table */}
-        <div className="min-h-[400px] bg-[#FAFAFA]/30">
+        <div className="min-h-[400px] bg-[var(--surface-0)]">
           <div className="overflow-x-auto">
             <table className="w-full text-left whitespace-nowrap">
               <thead>
-                <tr className="border-b border-[#EAEAEA] bg-[#FAFAFA]">
-                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#888888] w-12">
+                <tr className="border-b border-[color:var(--hairline)] bg-[var(--surface-1)]">
+                  <th className="px-6 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5 w-12">
                     <input
                       type="checkbox"
                       onChange={handleSelectAll}
                       checked={selectedRows.length === filteredItems.length && filteredItems.length > 0}
-                      className="w-4 h-4 rounded border-gray-300 text-[#111111] focus:ring-[#111111] cursor-pointer"
+                      className="w-4 h-4 rounded-[var(--r-xs)] border-[color:var(--hairline-strong)] accent-ink-0 cursor-pointer"
                     />
                   </th>
-                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#888888]">SKU / Ítem</th>
-                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#888888]">Origen</th>
-                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#888888]">Estado</th>
-                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#888888] text-right">Reservado</th>
-                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#888888] text-right">Disponible</th>
-                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#888888] text-right">Reorden</th>
+                  <th className="px-6 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">SKU / ítem</th>
+                  <th className="px-6 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Origen</th>
+                  <th className="px-6 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Estado</th>
+                  <th className="px-6 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5 text-right">Reservado</th>
+                  <th className="px-6 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5 text-right">Disponible</th>
+                  <th className="px-6 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5 text-right">Reorden</th>
                   <th className="px-6 py-4 w-12"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#EAEAEA]/80">
+              <tbody className="divide-y divide-[color:var(--hairline)]">
                 {filteredItems.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="px-6 py-24 text-center">
-                      <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-50 mb-6 border border-gray-100 shadow-sm">
-                        <PackageOpen className="w-8 h-8 text-gray-300" />
+                      <div className="inline-flex items-center justify-center w-14 h-14 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] mb-6">
+                        <PackageOpen className="w-5 h-5 text-ink-5" strokeWidth={1.5} />
                       </div>
-                      <h3 className="text-xl font-extrabold text-[#111111]">No hay inventario aquí</h3>
-                      <p className="text-[15px] font-medium text-[#888888] mt-2 max-w-sm mx-auto">No hay variantes que coincidan con estos filtros.</p>
+                      <h3 className="text-[18px] font-semibold tracking-[-0.02em] text-ink-0">No hay inventario aquí.</h3>
+                      <p className="text-[13px] leading-[1.55] text-ink-5 mt-2 max-w-sm mx-auto">No hay variantes que coincidan con estos filtros.</p>
                       <button
                         onClick={() => { setSearchQuery(""); setActiveTab("all"); }}
-                        className="mt-6 px-6 py-2.5 bg-white border border-[#EAEAEA] text-[#111111] font-bold text-[13px] rounded-xl hover:bg-gray-50 transition-colors"
+                        className="mt-6 inline-flex items-center h-10 px-5 bg-[var(--surface-0)] border border-[color:var(--hairline-strong)] text-ink-0 text-[13px] font-medium rounded-[var(--r-sm)] hover:bg-[var(--surface-2)] transition-colors"
                       >
-                        Limpiar Filtros
+                        Limpiar filtros
                       </button>
                     </td>
                   </tr>
@@ -239,54 +236,54 @@ export function InventoryClient({ items, variantIntel, focusVariantId, focusActi
                     return (
                       <tr
                         key={item.variantId}
-                        className={`group transition-all ${isSelected ? "bg-emerald-50/30" : "hover:bg-gray-50/50 bg-white"}`}
+                        className={`group transition-colors ${isSelected ? "bg-[var(--surface-2)]" : "hover:bg-[var(--surface-1)] bg-[var(--surface-0)]"}`}
                       >
                         <td className="px-6 py-5" onClick={(e) => e.stopPropagation()}>
                           <input
                             type="checkbox"
                             checked={isSelected}
                             onChange={(e) => handleSelectRow(e, item.variantId)}
-                            className="w-4 h-4 rounded border-gray-300 text-[#111111] focus:ring-[#111111] cursor-pointer"
+                            className="w-4 h-4 rounded-[var(--r-xs)] border-[color:var(--hairline-strong)] accent-ink-0 cursor-pointer"
                           />
                         </td>
                         <td className="px-6 py-5">
                           <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-lg bg-gray-50 border border-gray-200 overflow-hidden shadow-sm shrink-0">
+                            <div className="w-10 h-10 rounded-[var(--r-sm)] bg-[var(--surface-1)] border border-[color:var(--hairline)] overflow-hidden shrink-0">
                               {item.image ? (
                                 <img src={item.image} alt="" className="w-full h-full object-cover" />
                               ) : (
-                                <div className="w-full h-full flex items-center justify-center text-gray-300"><PackageOpen className="w-5 h-5" /></div>
+                                <div className="w-full h-full flex items-center justify-center text-ink-6"><PackageOpen className="w-4 h-4" strokeWidth={1.5} /></div>
                               )}
                             </div>
                             <div className="flex flex-col">
-                              <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest font-mono mb-0.5">{item.sku}</span>
-                              <span className="text-[13px] font-bold text-[#111111] truncate max-w-[200px]">{item.productTitle}</span>
+                              <span className="text-[10px] font-medium text-ink-5 uppercase tracking-[0.14em] font-mono mb-0.5">{item.sku}</span>
+                              <span className="text-[13px] font-medium text-ink-0 truncate max-w-[200px]">{item.productTitle}</span>
                               {item.variantTitle !== "Default" && (
-                                <span className="text-xs font-medium text-gray-400 mt-0.5">{item.variantTitle}</span>
+                                <span className="text-[11px] font-medium text-ink-5 mt-0.5">{item.variantTitle}</span>
                               )}
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-5">
-                          <span className={`text-[11px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${item.supplier === "Propio" ? "bg-gray-100 text-gray-700" : "bg-blue-50 text-blue-700"}`}>
+                          <span className="inline-flex items-center h-6 px-2 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] text-[color:var(--signal-warning)] text-[10px] font-medium uppercase tracking-[0.14em]">
                             {item.supplier}
                           </span>
                         </td>
                         <td className="px-6 py-5"><StockStatusBadge status={item.status} /></td>
                         <td className="px-6 py-5 text-right">
                           {item.reservedStock > 0 ? (
-                            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded-md">
-                              <ShoppingCart className="w-3 h-3" /> {item.reservedStock} u.
+                            <span className="inline-flex items-center gap-1.5 h-6 px-2 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] text-[color:var(--signal-warning)] text-[10px] font-medium uppercase tracking-[0.14em]">
+                              <ShoppingCart className="w-3 h-3" strokeWidth={1.75} /> {item.reservedStock} u.
                             </span>
                           ) : (
-                            <span className="text-xs text-gray-300">—</span>
+                            <span className="text-[10px] text-ink-6">—</span>
                           )}
                         </td>
-                        <td className="px-6 py-5 text-right font-black tabular-nums tracking-tight text-[15px]">
+                        <td className="px-6 py-5 text-right font-semibold tabular-nums tracking-[-0.01em] text-[15px]">
                           {item.available > 0 ? (
-                            <span className="text-[#111111]">{item.available} <span className="text-gray-400 text-xs font-semibold ml-0.5">u.</span></span>
+                            <span className="text-ink-0">{item.available} <span className="text-ink-5 text-[11px] font-medium ml-0.5">u.</span></span>
                           ) : (
-                            <span className="text-red-500">—</span>
+                            <span className="text-[color:var(--signal-danger)]">—</span>
                           )}
                         </td>
                         <td className="px-6 py-5 text-right">
@@ -296,14 +293,14 @@ export function InventoryClient({ items, variantIntel, focusVariantId, focusActi
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity justify-end">
                             <button
                               onClick={() => openAdjust(item)}
-                              className="p-2 hover:bg-white border hover:border-[#EAEAEA] border-transparent shadow-sm rounded-lg text-gray-500 hover:text-[#111111] transition-all"
+                              className="p-2 hover:bg-[var(--surface-2)] border hover:border-[color:var(--hairline)] border-transparent rounded-[var(--r-sm)] text-ink-5 hover:text-ink-0 transition-colors"
                               title="Ajustar stock"
                             >
-                              <Edit2 className="w-4 h-4" />
+                              <Edit2 className="w-4 h-4" strokeWidth={1.75} />
                             </button>
                             <Link
                               href={`/admin/catalog`}
-                              className="p-2 hover:bg-white border hover:border-[#EAEAEA] border-transparent shadow-sm rounded-lg text-gray-500 hover:text-[#111111] transition-all"
+                              className="p-2 hover:bg-[var(--surface-2)] border hover:border-[color:var(--hairline)] border-transparent rounded-[var(--r-sm)] text-ink-5 hover:text-ink-0 transition-colors"
                               title="Ver en catálogo"
                             >
                               <MoreHorizontal className="w-4 h-4" />
@@ -321,9 +318,9 @@ export function InventoryClient({ items, variantIntel, focusVariantId, focusActi
 
         {/* Footer Count */}
         {filteredItems.length > 0 && (
-          <div className="px-6 py-4 border-t border-[#EAEAEA] bg-[#FAFAFA]/50 flex items-center justify-between">
-            <span className="text-xs text-[#888888] font-bold uppercase tracking-wider block">
-              Resultados: <b className="text-[#111111] px-1">{filteredItems.length}</b> variantes
+          <div className="px-6 py-3 border-t border-[color:var(--hairline)] bg-[var(--surface-1)] flex items-center justify-between">
+            <span className="text-[10px] text-ink-5 font-medium uppercase tracking-[0.14em] block">
+              Resultados: <b className="text-ink-0 px-1 font-semibold">{filteredItems.length}</b> variantes
             </span>
           </div>
         )}
@@ -334,74 +331,74 @@ export function InventoryClient({ items, variantIntel, focusVariantId, focusActi
       {/* Adjust Stock Modal */}
       {adjustTarget && (
         <>
-          <div className="fixed inset-0 bg-[#111111]/30 backdrop-blur-[2px] z-40" onClick={() => !isPending && setAdjustTarget(null)} />
+          <div className="fixed inset-0 bg-ink-0/40 z-40" onClick={() => !isPending && setAdjustTarget(null)} />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="bg-white border border-[#EAEAEA] rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
-              <div className="px-6 py-5 border-b border-[#EAEAEA] flex items-center justify-between">
-                <h3 className="text-lg font-extrabold text-[#111111]">Ajustar Stock</h3>
-                <button onClick={() => !isPending && setAdjustTarget(null)} className="p-2 text-gray-400 hover:text-[#111111] hover:bg-gray-100 rounded-full transition-all">
+            <div className="bg-[var(--surface-0)] border border-[color:var(--hairline)] rounded-[var(--r-md)] shadow-[var(--shadow-overlay)] w-full max-w-md animate-in fade-in zoom-in-95 duration-[var(--dur-slow)]">
+              <div className="px-6 py-5 border-b border-[color:var(--hairline)] flex items-center justify-between">
+                <h3 className="text-[16px] font-semibold tracking-[-0.01em] text-ink-0">Ajustar stock</h3>
+                <button onClick={() => !isPending && setAdjustTarget(null)} className="p-2 text-ink-5 hover:text-ink-0 hover:bg-[var(--surface-2)] rounded-[var(--r-sm)] transition-colors">
                   <X className="w-4 h-4" />
                 </button>
               </div>
               <div className="p-6 space-y-5">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-gray-50 border border-[#EAEAEA] overflow-hidden shrink-0">
-                    {adjustTarget.image ? <img src={adjustTarget.image} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-gray-100" />}
+                  <div className="w-11 h-11 rounded-[var(--r-sm)] bg-[var(--surface-1)] border border-[color:var(--hairline)] overflow-hidden shrink-0">
+                    {adjustTarget.image ? <img src={adjustTarget.image} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full" />}
                   </div>
                   <div>
-                    <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest font-mono">{adjustTarget.sku}</p>
-                    <p className="text-sm font-bold text-[#111111]">{adjustTarget.productTitle}</p>
-                    {adjustTarget.variantTitle !== "Default" && <p className="text-xs text-gray-500">{adjustTarget.variantTitle}</p>}
+                    <p className="text-[10px] font-medium text-ink-5 uppercase tracking-[0.14em] font-mono">{adjustTarget.sku}</p>
+                    <p className="text-[14px] font-medium text-ink-0">{adjustTarget.productTitle}</p>
+                    {adjustTarget.variantTitle !== "Default" && <p className="text-[11px] text-ink-5">{adjustTarget.variantTitle}</p>}
                   </div>
                 </div>
 
-                <div className="bg-[#FAFAFA] border border-[#EAEAEA] rounded-xl p-4 flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Stock actual</span>
-                  <span className="text-lg font-black text-[#111111] tabular-nums">{adjustTarget.stock} u.</span>
+                <div className="bg-[var(--surface-1)] border border-[color:var(--hairline)] rounded-[var(--r-sm)] p-4 flex items-center justify-between">
+                  <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Stock actual</span>
+                  <span className="text-[18px] font-semibold text-ink-0 tabular-nums">{adjustTarget.stock} u.</span>
                 </div>
 
                 {adjustError && (
-                  <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm font-medium">{adjustError}</div>
+                  <div className="rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] text-[color:var(--signal-danger)] p-3 text-[13px] font-medium">{adjustError}</div>
                 )}
 
-                <div className="space-y-2">
-                  <label className="text-[11px] font-bold uppercase tracking-widest text-gray-500">Ajuste (+ ingreso, - egreso)</label>
+                <div className="space-y-1.5">
+                  <label className="text-[12px] font-medium text-ink-5">Ajuste (+ ingreso, − egreso)</label>
                   <input
                     type="number"
                     value={adjustDelta}
                     onChange={(e) => { setAdjustDelta(e.target.value); setAdjustError(""); }}
                     placeholder="Ej: +50 o -10"
-                    className="w-full px-4 py-3 text-sm font-bold bg-white border border-[#EAEAEA] rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-[#111111] tabular-nums"
+                    className="w-full px-3.5 h-11 text-[14px] font-medium bg-[var(--surface-0)] border border-[color:var(--hairline)] rounded-[var(--r-sm)] outline-none transition-[box-shadow,border-color] focus:border-[var(--accent-500)] focus:shadow-[var(--shadow-focus)] text-ink-0 tabular-nums"
                     disabled={isPending}
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-[11px] font-bold uppercase tracking-widest text-gray-500">Razón del ajuste</label>
+                <div className="space-y-1.5">
+                  <label className="text-[12px] font-medium text-ink-5">Razón del ajuste</label>
                   <input
                     type="text"
                     value={adjustReason}
                     onChange={(e) => { setAdjustReason(e.target.value); setAdjustError(""); }}
-                    placeholder="Ej: Ingreso de proveedor, merma, conteo físico..."
-                    className="w-full px-4 py-3 text-sm font-medium bg-white border border-[#EAEAEA] rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-[#111111]"
+                    placeholder="Ej: ingreso de proveedor, merma, conteo físico…"
+                    className="w-full px-3.5 h-11 text-[14px] bg-[var(--surface-0)] border border-[color:var(--hairline)] rounded-[var(--r-sm)] outline-none transition-[box-shadow,border-color] focus:border-[var(--accent-500)] focus:shadow-[var(--shadow-focus)] text-ink-0"
                     disabled={isPending}
                   />
                 </div>
               </div>
-              <div className="px-6 py-4 border-t border-[#EAEAEA] bg-[#FAFAFA]/50 flex items-center justify-end gap-3 rounded-b-2xl">
+              <div className="px-6 py-4 border-t border-[color:var(--hairline)] bg-[var(--surface-1)] flex items-center justify-end gap-2">
                 <button
                   onClick={() => !isPending && setAdjustTarget(null)}
                   disabled={isPending}
-                  className="px-5 py-2.5 text-[13px] font-bold text-[#111111] bg-white border border-[#EAEAEA] rounded-xl hover:bg-gray-50 transition-all"
+                  className="inline-flex items-center h-10 px-4 text-[13px] font-medium text-ink-0 bg-[var(--surface-0)] border border-[color:var(--hairline-strong)] rounded-[var(--r-sm)] hover:bg-[var(--surface-2)] transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleAdjust}
                   disabled={isPending}
-                  className="px-5 py-2.5 text-[13px] font-bold text-white bg-[#111111] rounded-xl hover:bg-black transition-all shadow-md shadow-black/10 disabled:opacity-50"
+                  className="inline-flex items-center h-10 px-5 text-[13px] font-medium text-ink-12 bg-ink-0 rounded-[var(--r-sm)] hover:bg-ink-2 transition-colors disabled:opacity-50"
                 >
-                  {isPending ? "Aplicando..." : "Confirmar Ajuste"}
+                  {isPending ? "Aplicando…" : "Confirmar ajuste"}
                 </button>
               </div>
             </div>
@@ -411,12 +408,12 @@ export function InventoryClient({ items, variantIntel, focusVariantId, focusActi
 
       {/* Bulk Toolbar */}
       {selectedRows.length > 0 && (
-        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-[#111111] text-white px-2 py-2 rounded-2xl shadow-2xl flex items-center gap-2 animate-in slide-in-from-bottom-5 fade-in duration-300 z-30">
-          <div className="px-4 border-r border-gray-700">
-            <span className="text-[13px] font-bold">{selectedRows.length} ítems</span>
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-ink-0 text-ink-12 px-2 h-12 rounded-[var(--r-md)] shadow-[var(--shadow-overlay)] flex items-center gap-2 animate-in slide-in-from-bottom-5 fade-in duration-[var(--dur-slow)] z-30">
+          <div className="px-4 border-r border-ink-12/15">
+            <span className="text-[13px] font-medium">{selectedRows.length} ítems</span>
           </div>
           <div className="flex items-center gap-1 px-2">
-            <button onClick={() => setSelectedRows([])} className="px-4 py-2 text-[13px] font-bold hover:bg-gray-800 rounded-xl transition-colors">
+            <button onClick={() => setSelectedRows([])} className="px-3 h-8 text-[12px] font-medium hover:bg-ink-12/10 rounded-[var(--r-sm)] transition-colors">
               Deseleccionar
             </button>
           </div>

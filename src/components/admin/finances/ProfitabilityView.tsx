@@ -69,29 +69,29 @@ export function ProfitabilityView({ report }: { report: ProfitabilityReport }) {
       {summary.dataConfidenceScore < 100 ? (
         <div
           className={cn(
-            "flex items-start gap-3 rounded-xl border p-4",
+            "flex items-start gap-3 rounded-[var(--r-md)] border p-4",
             summary.dataConfidenceScore < 40
-              ? "border-red-200 bg-red-50"
+              ? "border-[color:var(--hairline-strong)] bg-[var(--surface-1)]"
               : summary.dataConfidenceScore < 70
-                ? "border-amber-200 bg-amber-50"
-                : "border-blue-200 bg-blue-50"
+                ? "border-[color:var(--hairline-strong)] bg-[var(--surface-1)]"
+                : "border-[color:var(--hairline-strong)] bg-[var(--surface-1)]"
           )}
         >
           <HelpCircle
             className={cn(
               "mt-0.5 h-4 w-4 shrink-0",
               summary.dataConfidenceScore < 40
-                ? "text-red-500"
+                ? "text-[color:var(--signal-danger)]"
                 : summary.dataConfidenceScore < 70
-                  ? "text-amber-500"
-                  : "text-blue-500"
+                  ? "text-[color:var(--signal-warning)]"
+                  : "text-ink-4"
             )}
           />
           <div>
-            <p className="text-sm font-bold text-[#111111]">
+            <p className="text-sm font-semibold text-ink-0">
               Confianza de datos: {summary.dataConfidenceScore}%
             </p>
-            <p className="mt-0.5 text-xs text-[#666666]">
+            <p className="mt-0.5 text-xs text-ink-4">
               {summary.productsWithCost} de{" "}
               {summary.productsWithCost + summary.productsWithoutCost} productos vendidos
               tienen costo disponible. Los casos sin costo quedan marcados como
@@ -101,16 +101,16 @@ export function ProfitabilityView({ report }: { report: ProfitabilityReport }) {
         </div>
       ) : null}
 
-      <div className="flex items-center gap-1 rounded-xl bg-[#F5F5F5] p-1">
+      <div className="flex items-center gap-1 rounded-[var(--r-md)] bg-[var(--surface-1)] p-1">
         {subTabs.map((tab) => (
           <button
             key={tab.value}
             onClick={() => setSubView(tab.value)}
             className={cn(
-              "flex items-center gap-1.5 rounded-lg px-4 py-2 text-[12px] font-bold transition-all",
+              "flex items-center gap-1.5 rounded-[var(--r-sm)] px-4 py-2 text-[12px] font-semibold transition-all",
               subView === tab.value
-                ? "bg-white text-[#111111] shadow-sm"
-                : "text-[#888888] hover:text-[#111111]"
+                ? "bg-[var(--surface-0)] text-ink-0 "
+                : "text-ink-5 hover:text-ink-0"
             )}
             type="button"
           >
@@ -118,10 +118,10 @@ export function ProfitabilityView({ report }: { report: ProfitabilityReport }) {
             {tab.count !== undefined && tab.count > 0 ? (
               <span
                 className={cn(
-                  "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
+                  "rounded-[var(--r-sm)] px-1.5 py-0.5 text-[10px] font-semibold",
                   subView === tab.value
-                    ? "bg-[#111111] text-white"
-                    : "bg-[#EAEAEA] text-[#888888]"
+                    ? "bg-ink-0 text-white"
+                    : "bg-[var(--surface-2)] text-ink-5"
                 )}
               >
                 {tab.count}
@@ -167,9 +167,9 @@ export function ProfitabilityView({ report }: { report: ProfitabilityReport }) {
 
 function ScopeBanner() {
   return (
-    <div className="rounded-2xl border border-[#EAEAEA] bg-[#FAFAFA] p-4 shadow-sm">
-      <p className="text-sm font-bold text-[#111111]">Unit Economics v2</p>
-      <p className="mt-1 text-xs leading-relaxed text-[#666666]">
+    <div className="rounded-[var(--r-md)] border border-[color:var(--hairline-strong)] bg-[var(--surface-1)] p-4 ">
+      <p className="text-sm font-semibold text-ink-0">Unit Economics v2</p>
+      <p className="mt-1 text-xs leading-relaxed text-ink-4">
         Contribución neta por SKU y canal. Incluye COGS, fees de pago reales
         (desde la pasarela), fees de canal, y reembolsos. El envío cobrado al
         comprador se muestra aparte — no representa costo logístico del negocio.
@@ -181,13 +181,13 @@ function ScopeBanner() {
 function EmptyMarginState() {
   return (
     <div className="flex min-h-[420px] flex-col items-center justify-center px-6 py-20 text-center">
-      <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-gray-100 bg-gray-50 shadow-sm">
-        <BarChart3 className="h-8 w-8 text-gray-300" />
+      <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-1)] ">
+        <BarChart3 className="h-8 w-8 text-ink-6" />
       </div>
-      <h3 className="text-xl font-extrabold text-[#111111]">
+      <h3 className="text-xl font-semibold text-ink-0">
         Todavia no hay ordenes cobradas para analizar
       </h3>
-      <p className="mt-2 max-w-xl text-[15px] font-medium text-[#888888]">
+      <p className="mt-2 max-w-xl text-[15px] font-medium text-ink-5">
         La vista se activa cuando existan pagos aprobados, pagados o reembolsos
         registrados con datos de costo y fee disponibles.
       </p>
@@ -254,12 +254,12 @@ function OverviewSection({
           value={summary.totalRefunds}
           sub={`${summary.ordersRefunded} orden(es) reembolsada(s)`}
         />
-        <div className="rounded-2xl border border-[#EAEAEA] bg-white p-4 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">
+        <div className="rounded-[var(--r-md)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] p-4 ">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-5">
             Envío cobrado al comprador
           </p>
-          <p className="mt-1 text-lg font-black text-[#111111]">{formatCurrency(summary.shippingChargedToCustomer)}</p>
-          <p className="mt-0.5 flex items-center gap-1 text-[10px] font-medium text-[#AAAAAA]">
+          <p className="mt-1 text-lg font-semibold text-ink-0">{formatCurrency(summary.shippingChargedToCustomer)}</p>
+          <p className="mt-0.5 flex items-center gap-1 text-[10px] font-medium text-ink-6">
             <Info className="h-3 w-3" /> No es costo logístico
           </p>
         </div>
@@ -267,7 +267,7 @@ function OverviewSection({
 
       {alerts.length > 0 ? (
         <div className="space-y-3">
-          <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">
+          <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-5">
             Alertas criticas
           </h3>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -280,24 +280,24 @@ function OverviewSection({
 
       {byChannel.length > 0 ? (
         <div className="space-y-3">
-          <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">
+          <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-5">
             Contribución neta por canal
           </h3>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {byChannel.map((channel) => (
               <div
                 key={channel.channel}
-                className="flex items-center justify-between rounded-2xl border border-[#EAEAEA] bg-white p-4 shadow-sm"
+                className="flex items-center justify-between rounded-[var(--r-md)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] p-4 "
               >
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-[#111111]">{channel.channel}</p>
-                  <p className="mt-1 text-xs text-[#888888]">
+                  <p className="truncate text-sm font-semibold text-ink-0">{channel.channel}</p>
+                  <p className="mt-1 text-xs text-ink-5">
                     {channel.ordersCount} ordenes / {formatCurrency(channel.totalRevenue)}
                   </p>
                 </div>
                 <div className="text-right">
                   <HealthBadge health={channel.health} />
-                  <p className="mt-1 text-xs font-bold tabular-nums text-[#111111]">
+                  <p className="mt-1 text-xs font-semibold tabular-nums text-ink-0">
                     {formatPercent(channel.netContributionPercent, channel.totalRevenue > 0)}
                   </p>
                 </div>
@@ -324,11 +324,11 @@ function ProductsSection({
   if (products.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <Package className="h-10 w-10 text-[#CCCCCC]" />
-        <p className="mt-4 text-sm font-bold text-[#888888]">
+        <Package className="h-10 w-10 text-ink-6" />
+        <p className="mt-4 text-sm font-semibold text-ink-5">
           Sin productos cobrados para analizar
         </p>
-        <p className="mt-1 text-xs text-[#AAAAAA]">
+        <p className="mt-1 text-xs text-ink-6">
           Cuando haya ventas liquidadas, los margenes apareceran aqui.
         </p>
       </div>
@@ -340,7 +340,7 @@ function ProductsSection({
       <div className="overflow-x-auto">
         <table className="w-full min-w-[1000px] text-left">
           <thead>
-            <tr className="border-b border-[#EAEAEA] bg-[#FAFAFA]/70">
+            <tr className="border-b border-[color:var(--hairline-strong)] bg-[var(--surface-1)]/70">
               <ThCell label="Producto" />
               <ThCell label="Uds." />
               <SortableThCell
@@ -367,39 +367,39 @@ function ProductsSection({
               />
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#EAEAEA]/80">
+          <tbody className="divide-y divide-[color:var(--hairline)]">
             {products.map((product) => (
               <tr
                 key={product.productId}
-                className="bg-white transition-colors hover:bg-gray-50/60"
+                className="bg-[var(--surface-0)] transition-colors hover:bg-[var(--surface-1)]/60"
               >
                 <td className="px-6 py-4">
                   <div className="max-w-[220px]">
-                    <div className="truncate text-sm font-bold text-[#111111]">
+                    <div className="truncate text-sm font-semibold text-ink-0">
                       {product.title}
                     </div>
                     {product.supplier ? (
-                      <p className="mt-0.5 truncate text-[10px] text-[#AAAAAA]">{product.supplier}</p>
+                      <p className="mt-0.5 truncate text-[10px] text-ink-6">{product.supplier}</p>
                     ) : null}
                   </div>
                 </td>
-                <td className="px-6 py-4 text-sm font-bold tabular-nums text-[#111111]">
+                <td className="px-6 py-4 text-sm font-semibold tabular-nums text-ink-0">
                   {product.unitsSold}
                   {product.refundedUnits > 0 ? (
-                    <span className="ml-1 text-[10px] font-medium text-red-400">(-{product.refundedUnits})</span>
+                    <span className="ml-1 text-[10px] font-medium text-ink-4">(-{product.refundedUnits})</span>
                   ) : null}
                 </td>
-                <td className="px-6 py-4 text-sm font-bold tabular-nums text-[#111111]">
+                <td className="px-6 py-4 text-sm font-semibold tabular-nums text-ink-0">
                   {formatCurrency(product.totalNetRevenue)}
                 </td>
-                <td className="px-6 py-4 text-sm font-medium tabular-nums text-[#888888]">
+                <td className="px-6 py-4 text-sm font-medium tabular-nums text-ink-5">
                   {product.hasCostData ? (
                     formatCurrency(product.totalCost)
                   ) : (
-                    <span className="text-red-400">Sin costo</span>
+                    <span className="text-ink-4">Sin costo</span>
                   )}
                 </td>
-                <td className="px-6 py-4 text-sm font-medium tabular-nums text-[#888888]">
+                <td className="px-6 py-4 text-sm font-medium tabular-nums text-ink-5">
                   {formatCurrency(
                     product.totalPaymentFees + product.totalChannelFees
                   )}
@@ -407,14 +407,14 @@ function ProductsSection({
                 <td className="px-6 py-4">
                   <span
                     className={cn(
-                      "text-sm font-bold tabular-nums",
+                      "text-sm font-semibold tabular-nums",
                       product.health === "uncertain"
-                        ? "text-[#AAAAAA]"
+                        ? "text-ink-6"
                         : product.netContributionPercent < 0
-                          ? "text-red-600"
+                          ? "text-[color:var(--signal-danger)]"
                           : product.netContributionPercent < 15
-                            ? "text-amber-600"
-                            : "text-emerald-600"
+                            ? "text-[color:var(--signal-warning)]"
+                            : "text-[color:var(--signal-success)]"
                     )}
                   >
                     {product.health === "uncertain" || product.totalNetRevenue <= 0
@@ -425,12 +425,12 @@ function ProductsSection({
                 <td className="px-6 py-4">
                   <span
                     className={cn(
-                      "text-sm font-bold tabular-nums",
+                      "text-sm font-semibold tabular-nums",
                       product.health === "uncertain"
-                        ? "text-[#AAAAAA]"
+                        ? "text-ink-6"
                         : product.contributionPerUnit < 0
-                          ? "text-red-600"
-                          : "text-emerald-600"
+                          ? "text-[color:var(--signal-danger)]"
+                          : "text-[color:var(--signal-success)]"
                     )}
                   >
                     {product.health === "uncertain" || product.unitsSold <= 0
@@ -449,8 +449,8 @@ function ProductsSection({
           </tbody>
         </table>
       </div>
-      <div className="flex items-center justify-between border-t border-[#EAEAEA] bg-[#FAFAFA]/50 px-6 py-3">
-        <p className="text-xs font-medium text-[#888888]">
+      <div className="flex items-center justify-between border-t border-[color:var(--hairline-strong)] bg-[var(--surface-1)]/50 px-6 py-3">
+        <p className="text-xs font-medium text-ink-5">
           {products.length} producto(s) analizados
         </p>
       </div>
@@ -462,8 +462,8 @@ function ChannelsSection({ channels }: { channels: ChannelProfitability[] }) {
   if (channels.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <BarChart3 className="h-10 w-10 text-[#CCCCCC]" />
-        <p className="mt-4 text-sm font-bold text-[#888888]">Sin datos por canal</p>
+        <BarChart3 className="h-10 w-10 text-ink-6" />
+        <p className="mt-4 text-sm font-semibold text-ink-5">Sin datos por canal</p>
       </div>
     );
   }
@@ -473,14 +473,14 @@ function ChannelsSection({ channels }: { channels: ChannelProfitability[] }) {
       {channels.map((channel) => (
         <div
           key={channel.channel}
-          className="rounded-2xl border border-[#EAEAEA] bg-white p-6 shadow-sm"
+          className="rounded-[var(--r-md)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] p-6 "
         >
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
-              <h3 className="truncate text-lg font-black text-[#111111]">
+              <h3 className="truncate text-lg font-semibold text-ink-0">
                 {channel.channel}
               </h3>
-              <p className="mt-1 text-xs text-[#888888]">
+              <p className="mt-1 text-xs text-ink-5">
                 {channel.ordersCount} ordenes liquidadas
               </p>
             </div>
@@ -533,9 +533,9 @@ function AlertsSection({
   if (criticals.length === 0 && warnings.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <ShieldCheck className="h-10 w-10 text-emerald-400" />
-        <p className="mt-4 text-sm font-bold text-[#111111]">Sin alertas activas</p>
-        <p className="mt-1 text-xs text-[#888888]">
+        <ShieldCheck className="h-10 w-10 text-[color:var(--signal-success)]" />
+        <p className="mt-4 text-sm font-semibold text-ink-0">Sin alertas activas</p>
+        <p className="mt-1 text-xs text-ink-5">
           No hay desvio critico dentro del periodo analizado.
         </p>
       </div>
@@ -546,7 +546,7 @@ function AlertsSection({
     <div className="space-y-6">
       {criticals.length > 0 ? (
         <div className="space-y-3">
-          <h3 className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-red-600">
+          <h3 className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--signal-danger)]">
             <ShieldAlert className="h-3.5 w-3.5" /> Criticas ({criticals.length})
           </h3>
           <div className="space-y-3">
@@ -559,7 +559,7 @@ function AlertsSection({
 
       {warnings.length > 0 ? (
         <div className="space-y-3">
-          <h3 className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-amber-600">
+          <h3 className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--signal-warning)]">
             <AlertTriangle className="h-3.5 w-3.5" /> Advertencias ({warnings.length})
           </h3>
           <div className="space-y-3">
@@ -591,14 +591,14 @@ function KpiCard({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-[#EAEAEA] p-5 shadow-sm",
-        accent ? "bg-[#111111]" : "bg-white"
+        "rounded-[var(--r-md)] border border-[color:var(--hairline-strong)] p-5 ",
+        accent ? "bg-ink-0" : "bg-[var(--surface-0)]"
       )}
     >
       <p
         className={cn(
-          "text-[11px] font-bold uppercase tracking-[0.18em]",
-          accent ? "text-gray-400" : "text-[#888888]"
+          "text-[11px] font-semibold uppercase tracking-[0.18em]",
+          accent ? "text-ink-6" : "text-ink-5"
         )}
       >
         {label}
@@ -606,8 +606,8 @@ function KpiCard({
       <div className="mt-2 flex items-baseline gap-2">
         <p
           className={cn(
-            "text-2xl font-black tracking-tight",
-            accent ? "text-white" : "text-[#111111]"
+            "text-2xl font-semibold tracking-tight",
+            accent ? "text-white" : "text-ink-0"
           )}
         >
           {value}
@@ -619,12 +619,12 @@ function KpiCard({
           className={cn(
             "mt-1 text-xs font-medium",
             accent
-              ? "text-gray-500"
+              ? "text-ink-5"
               : positive === true
-                ? "text-emerald-600"
+                ? "text-[color:var(--signal-success)]"
                 : positive === false
-                  ? "text-red-500"
-                  : "text-[#888888]"
+                  ? "text-[color:var(--signal-danger)]"
+                  : "text-ink-5"
           )}
         >
           {sub}
@@ -638,12 +638,12 @@ function FeeCard({ label, total, value, sub }: { label: string; total: number; v
   const pct = total > 0 ? ((value / total) * 100).toFixed(1) : "0.0";
 
   return (
-    <div className="rounded-2xl border border-[#EAEAEA] bg-white p-4 shadow-sm">
-      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">
+    <div className="rounded-[var(--r-md)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] p-4 ">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-5">
         {label}
       </p>
-      <p className="mt-1 text-lg font-black text-[#111111]">{formatCurrency(value)}</p>
-      <p className="mt-0.5 text-xs font-medium text-[#888888]">
+      <p className="mt-1 text-lg font-semibold text-ink-0">{formatCurrency(value)}</p>
+      <p className="mt-0.5 text-xs font-medium text-ink-5">
         {sub || `${pct}% del volumen`}
       </p>
     </div>
@@ -661,13 +661,13 @@ function MiniKpi({
 }) {
   return (
     <div>
-      <p className="text-[10px] font-bold uppercase tracking-wider text-[#888888]">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-ink-5">
         {label}
       </p>
       <p
         className={cn(
-          "mt-0.5 text-sm font-bold tabular-nums",
-          highlight ? "text-[#111111]" : "text-[#555555]"
+          "mt-0.5 text-sm font-semibold tabular-nums",
+          highlight ? "text-ink-0" : "text-ink-4"
         )}
       >
         {value}
@@ -680,32 +680,32 @@ function AlertCard({ alert }: { alert: ProfitabilityAlert }) {
   return (
     <div
       className={cn(
-        "flex items-start gap-3 rounded-2xl border p-4 shadow-sm",
+        "flex items-start gap-3 rounded-[var(--r-md)] border p-4 ",
         alert.severity === "critical"
-          ? "border-red-200 bg-red-50/50"
-          : "border-amber-200 bg-amber-50/50"
+          ? "border-[color:var(--hairline-strong)] bg-[var(--surface-1)]/50"
+          : "border-[color:var(--hairline-strong)] bg-[var(--surface-1)]/50"
       )}
     >
       <div
         className={cn(
-          "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
-          alert.severity === "critical" ? "bg-red-100" : "bg-amber-100"
+          "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--r-sm)]",
+          alert.severity === "critical" ? "bg-[var(--surface-1)]" : "bg-[var(--surface-1)]"
         )}
       >
         {alert.severity === "critical" ? (
-          <TrendingDown className="h-4 w-4 text-red-600" />
+          <TrendingDown className="h-4 w-4 text-[color:var(--signal-danger)]" />
         ) : (
-          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertTriangle className="h-4 w-4 text-[color:var(--signal-warning)]" />
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-bold text-[#111111]">{alert.title}</p>
-        <p className="mt-1 text-xs leading-relaxed text-[#666666]">
+        <p className="text-sm font-semibold text-ink-0">{alert.title}</p>
+        <p className="mt-1 text-xs leading-relaxed text-ink-4">
           {alert.description}
         </p>
         {alert.actionHref && alert.actionLabel ? (
           <Link
-            className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-[#111111] hover:underline"
+            className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-ink-0 hover:underline"
             href={alert.actionHref}
           >
             {alert.actionLabel} <ArrowRight className="h-3 w-3" />
@@ -718,11 +718,11 @@ function AlertCard({ alert }: { alert: ProfitabilityAlert }) {
 
 function HealthBadge({ health }: { health: MarginHealth }) {
   const config: Record<MarginHealth, { cls: string; label: string }> = {
-    profitable: { label: "Rentable", cls: "bg-emerald-100 text-emerald-700" },
-    thin: { label: "Fino", cls: "bg-amber-100 text-amber-700" },
-    at_risk: { label: "En riesgo", cls: "bg-orange-100 text-orange-700" },
-    negative: { label: "Negativo", cls: "bg-red-100 text-red-700" },
-    uncertain: { label: "Incierto", cls: "bg-gray-100 text-gray-500" },
+    profitable: { label: "Rentable", cls: "bg-[var(--surface-1)] text-[color:var(--signal-success)]" },
+    thin: { label: "Fino", cls: "bg-[var(--surface-1)] text-[color:var(--signal-warning)]" },
+    at_risk: { label: "En riesgo", cls: "bg-[var(--surface-1)] text-[color:var(--signal-warning)]" },
+    negative: { label: "Negativo", cls: "bg-[var(--surface-1)] text-[color:var(--signal-danger)]" },
+    uncertain: { label: "Incierto", cls: "bg-[var(--surface-2)] text-ink-5" },
   };
 
   const current = config[health];
@@ -730,7 +730,7 @@ function HealthBadge({ health }: { health: MarginHealth }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+        "inline-flex items-center rounded-[var(--r-sm)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
         current.cls
       )}
     >
@@ -741,9 +741,9 @@ function HealthBadge({ health }: { health: MarginHealth }) {
 
 function ConfidenceBadge({ confidence }: { confidence: CostConfidence }) {
   const config: Record<CostConfidence, { cls: string; label: string }> = {
-    high: { label: "Alto", cls: "bg-emerald-100 text-emerald-700" },
-    medium: { label: "Medio", cls: "bg-amber-100 text-amber-700" },
-    none: { label: "Sin dato", cls: "bg-red-100 text-red-600" },
+    high: { label: "Alto", cls: "bg-[var(--surface-1)] text-[color:var(--signal-success)]" },
+    medium: { label: "Medio", cls: "bg-[var(--surface-1)] text-[color:var(--signal-warning)]" },
+    none: { label: "Sin dato", cls: "bg-[var(--surface-1)] text-[color:var(--signal-danger)]" },
   };
 
   const current = config[confidence];
@@ -751,7 +751,7 @@ function ConfidenceBadge({ confidence }: { confidence: CostConfidence }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+        "inline-flex items-center rounded-[var(--r-sm)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
         current.cls
       )}
     >
@@ -772,7 +772,7 @@ function ContributionBar({
   revenue: number;
 }) {
   if (revenue <= 0) {
-    return <p className="text-xs font-medium text-[#888888]">Sin ingresos reconocidos.</p>;
+    return <p className="text-xs font-medium text-ink-5">Sin ingresos reconocidos.</p>;
   }
 
   const costPct = Math.min((cost / revenue) * 100, 100);
@@ -782,43 +782,43 @@ function ContributionBar({
 
   return (
     <div className="space-y-1">
-      <div className="flex h-3 overflow-hidden rounded-full bg-[#F0F0F0]">
+      <div className="flex h-3 overflow-hidden rounded-[var(--r-sm)] bg-[var(--surface-2)]">
         <div
-          className="bg-gray-400"
+          className="bg-ink-2"
           style={{ width: `${costPct}%` }}
           title={`Costo: ${costPct.toFixed(1)}%`}
         />
         <div
-          className="bg-amber-400"
+          className="bg-[color:var(--signal-warning)]"
           style={{ width: `${feesPct}%` }}
           title={`Fees: ${feesPct.toFixed(1)}%`}
         />
         <div
-          className="bg-red-400"
+          className="bg-ink-0"
           style={{ width: `${refundPct}%` }}
           title={`Reembolsos: ${refundPct.toFixed(1)}%`}
         />
         <div
-          className="bg-emerald-500"
+          className="bg-ink-0"
           style={{ width: `${contributionPct}%` }}
           title={`Contribución: ${contributionPct.toFixed(1)}%`}
         />
       </div>
-      <div className="flex flex-wrap items-center gap-4 text-[10px] font-bold text-[#888888]">
+      <div className="flex flex-wrap items-center gap-4 text-[10px] font-semibold text-ink-5">
         <span className="flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full bg-gray-400" /> Costo{" "}
+          <span className="h-2 w-2 rounded-[var(--r-sm)] bg-ink-2" /> Costo{" "}
           {costPct.toFixed(0)}%
         </span>
         <span className="flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full bg-amber-400" /> Fees{" "}
+          <span className="h-2 w-2 rounded-[var(--r-sm)] bg-[color:var(--signal-warning)]" /> Fees{" "}
           {feesPct.toFixed(0)}%
         </span>
         <span className="flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full bg-red-400" /> Reembolsos{" "}
+          <span className="h-2 w-2 rounded-[var(--r-sm)] bg-ink-0" /> Reembolsos{" "}
           {refundPct.toFixed(0)}%
         </span>
         <span className="flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full bg-emerald-500" /> Contribución{" "}
+          <span className="h-2 w-2 rounded-[var(--r-sm)] bg-ink-0" /> Contribución{" "}
           {contributionPct.toFixed(0)}%
         </span>
       </div>
@@ -828,7 +828,7 @@ function ContributionBar({
 
 function ThCell({ label }: { label: string }) {
   return (
-    <th className="px-6 py-4 text-left text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">
+    <th className="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-5">
       {label}
     </th>
   );
@@ -849,8 +849,8 @@ function SortableThCell({
     <th className="px-6 py-4 text-left">
       <button
         className={cn(
-          "flex items-center gap-1 text-[11px] font-bold uppercase tracking-[0.18em] transition-colors",
-          active ? "text-[#111111]" : "text-[#888888] hover:text-[#111111]"
+          "flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.18em] transition-colors",
+          active ? "text-ink-0" : "text-ink-5 hover:text-ink-0"
         )}
         onClick={onClick}
         type="button"
