@@ -36,10 +36,11 @@ function nonEmpty(value: string | undefined): boolean {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-function truncate(value: string, max = 8): string {
-  if (value.length <= max) return value;
-  return `${value.slice(0, max)}…`;
-}
+// MP Client IDs are 15-17 digit numeric identifiers. They are NOT secret:
+// every OAuth authorize URL query string contains the client_id in clear
+// text. We expose the full value in the ops surface so the operator can
+// match it against the MP Developer Dashboard; short previews force them
+// to guess. Secrets (MP_CLIENT_SECRET) remain redacted.
 
 /**
  * Evaluates the presence of MP platform-global envs. Server-only callers
@@ -75,7 +76,9 @@ export function getMercadoPagoPlatformReadiness(): MercadoPagoPlatformReadiness 
       key: "MP_CLIENT_ID",
       label: "MP_CLIENT_ID",
       present: hasClientId,
-      preview: hasClientId ? truncate(clientIdRaw!.trim()) : undefined,
+      // Show the full Client ID (public value, not a secret) so the
+      // operator can match it against the MP Developer Dashboard.
+      preview: hasClientId ? clientIdRaw!.trim() : undefined,
       description:
         "Client ID de la aplicación Mercado Pago registrada a nivel plataforma. Obtenido desde el Developer Dashboard de MP.",
     },

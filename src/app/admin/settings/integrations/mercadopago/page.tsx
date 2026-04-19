@@ -6,6 +6,7 @@ import {
   getMercadoPagoPlatformReadiness,
   type MercadoPagoEnvFieldStatus,
 } from "@/lib/payments/mercadopago/platform-readiness";
+import { MercadoPagoSetupChecklist } from "@/components/admin/settings/MercadoPagoSetupChecklist";
 
 // ─── Mercado Pago platform integration readiness (ops-only) ──────────────
 // This is the surface where Nexora ops can *diagnose* whether the platform
@@ -140,6 +141,13 @@ export default async function MercadoPagoPlatformSettingsPage() {
           <ExternalLink className="h-3 w-3" strokeWidth={1.75} />
         </a>
       </section>
+
+      <MercadoPagoSetupChecklist
+        clientIdPreview={
+          readiness.fields.find((f) => f.key === "MP_CLIENT_ID")?.preview ?? null
+        }
+        redirectUri={readiness.redirectUri}
+      />
 
       <section className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6">
         <h2 className="text-[14px] font-semibold text-ink-0">Reglas de seguridad</h2>
