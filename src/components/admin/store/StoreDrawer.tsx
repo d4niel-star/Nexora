@@ -23,11 +23,13 @@ interface StoreDrawerProps {
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="space-y-1">
-      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-400">{label}</p>
-      <div className="text-sm font-medium text-[#111111]">{value}</div>
+      <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">{label}</p>
+      <div className="text-[13px] font-medium text-ink-0">{value}</div>
     </div>
   );
 }
+
+const sectionHeader = "flex items-center gap-2 border-b border-[color:var(--hairline)] pb-2 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5";
 
 const timeFormatter = new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 
@@ -47,24 +49,24 @@ export function StoreDrawer({ content, isOpen, onClose, onAction }: StoreDrawerP
 
   return (
     <>
-      <div aria-hidden="true" className="fixed inset-0 z-40 bg-[#111111]/28 backdrop-blur-[2px]" onClick={onClose} />
+      <div aria-hidden="true" className="fixed inset-0 z-40 bg-ink-0/40" onClick={onClose} />
       <div
         ref={panelRef}
         aria-labelledby="store-drawer-title"
         aria-modal="true"
-        className="fixed inset-y-0 right-0 z-50 flex w-full flex-col overflow-y-auto border-l border-[#EAEAEA] bg-white shadow-2xl outline-none animate-in slide-in-from-right-5 duration-300 sm:max-w-xl"
+        className="fixed inset-y-0 right-0 z-50 flex w-full flex-col overflow-y-auto border-l border-[color:var(--hairline)] bg-[var(--surface-0)] shadow-[var(--shadow-overlay)] outline-none animate-in slide-in-from-right-5 duration-[var(--dur-slow)] sm:max-w-xl"
         role="dialog"
         tabIndex={-1}
       >
-        <div className="sticky top-0 z-20 border-b border-[#EAEAEA] bg-white/90 px-6 py-5 backdrop-blur-xl sm:px-8">
+        <div className="sticky top-0 z-20 border-b border-[color:var(--hairline)] bg-[var(--surface-0)] px-6 py-5 sm:px-8">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 space-y-3">
-              <h2 id="store-drawer-title" className="truncate text-xl font-extrabold tracking-tight text-[#111111]">
+              <h2 id="store-drawer-title" className="truncate text-[18px] font-semibold tracking-[-0.02em] text-ink-0">
                 {getTitle(content)}
               </h2>
               <div className="flex flex-wrap gap-2">{getBadges(content)}</div>
             </div>
-            <button aria-label="Cerrar drawer" className="rounded-full p-2.5 text-gray-400 transition-all hover:bg-gray-100 hover:text-[#111111] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" onClick={onClose} type="button">
+            <button aria-label="Cerrar drawer" className="rounded-[var(--r-sm)] p-2 text-ink-5 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" onClick={onClose} type="button">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -106,7 +108,7 @@ function ThemeDetail({ data, onAction }: { data: StoreTheme; onAction: (a: strin
   return (
     <>
       <section className="space-y-4">
-        <h3 className="flex items-center gap-2 border-b border-[#EAEAEA] pb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Detalles del tema</h3>
+        <h3 className={sectionHeader}>Detalles del tema</h3>
         <div className="space-y-3">
           <InfoRow label="Descripcion" value={data.description} />
           <InfoRow label="Estilo" value={<SectionTypeBadge type={data.style} />} />
@@ -115,7 +117,7 @@ function ThemeDetail({ data, onAction }: { data: StoreTheme; onAction: (a: strin
           <InfoRow label="Colores" value={<div className="flex gap-2">{data.previewColors.map((c) => <ColorDot key={c} color={c} />)}</div>} />
         </div>
       </section>
-      <section className="flex flex-wrap gap-2 text-xs text-gray-400">
+      <section className="flex flex-wrap gap-2 text-[12px] text-ink-5">
         Gestión desde Nexora AI
       </section>
     </>
@@ -126,7 +128,7 @@ function SectionDetail({ data, onAction }: { data: HomeSection; onAction: (a: st
   return (
     <>
       <section className="space-y-4">
-        <h3 className="flex items-center gap-2 border-b border-[#EAEAEA] pb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Detalle de seccion</h3>
+        <h3 className={sectionHeader}>Detalle de seccion</h3>
         <div className="space-y-3">
           <InfoRow label="Tipo" value={<SectionTypeBadge type={data.type} />} />
           <InfoRow label="Descripcion" value={data.description} />
@@ -134,7 +136,7 @@ function SectionDetail({ data, onAction }: { data: HomeSection; onAction: (a: st
           <InfoRow label="Estado" value={<StoreStatusBadge status={data.status} />} />
         </div>
       </section>
-      <section className="flex flex-wrap gap-2 text-xs text-gray-400">
+      <section className="flex flex-wrap gap-2 text-[12px] text-ink-5">
         Gestión desde Nexora AI
       </section>
     </>
@@ -145,16 +147,16 @@ function NavDetail({ data, onAction }: { data: NavItem; onAction: (a: string) =>
   return (
     <>
       <section className="space-y-4">
-        <h3 className="flex items-center gap-2 border-b border-[#EAEAEA] pb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Detalle de navegacion</h3>
+        <h3 className={sectionHeader}>Detalle de navegacion</h3>
         <div className="space-y-3">
           <InfoRow label="Nombre" value={data.label} />
-          <InfoRow label="Destino" value={<span className="break-all text-xs font-mono text-gray-500">{data.destination}</span>} />
+          <InfoRow label="Destino" value={<span className="break-all text-[11px] font-mono text-ink-5">{data.destination}</span>} />
           <InfoRow label="Grupo" value={<NavGroupBadge group={data.group} />} />
           <InfoRow label="Orden" value={`Posicion ${data.order}`} />
           <InfoRow label="Estado" value={<StoreStatusBadge status={data.status} />} />
         </div>
       </section>
-      <section className="flex flex-wrap gap-2 text-xs text-gray-400">
+      <section className="flex flex-wrap gap-2 text-[12px] text-ink-5">
         Gestión desde Nexora AI
       </section>
     </>
@@ -165,16 +167,16 @@ function PageDetail({ data, onAction }: { data: StorePage; onAction: (a: string)
   return (
     <>
       <section className="space-y-4">
-        <h3 className="flex items-center gap-2 border-b border-[#EAEAEA] pb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Detalle de pagina</h3>
+        <h3 className={sectionHeader}>Detalle de pagina</h3>
         <div className="space-y-3">
           <InfoRow label="Nombre" value={data.name} />
-          <InfoRow label="Slug" value={<span className="font-mono text-xs text-gray-500">{data.slug}</span>} />
+          <InfoRow label="Slug" value={<span className="font-mono text-[11px] text-ink-5">{data.slug}</span>} />
           <InfoRow label="Tipo" value={<PageTypeBadge type={data.type} />} />
           <InfoRow label="Ultima modificacion" value={timeFormatter.format(new Date(data.lastModified))} />
           <InfoRow label="Estado" value={<StoreStatusBadge status={data.status} />} />
         </div>
       </section>
-      <section className="flex flex-wrap gap-2 text-xs text-gray-400">
+      <section className="flex flex-wrap gap-2 text-[12px] text-ink-5">
         Gestión desde Nexora AI
       </section>
     </>
@@ -185,10 +187,10 @@ function DomainDetail({ data, onAction }: { data: StoreDomain; onAction: (a: str
   return (
     <>
       <section className="space-y-4">
-        <h3 className="flex items-center gap-2 border-b border-[#EAEAEA] pb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Detalle de dominio</h3>
+        <h3 className={sectionHeader}>Detalle de dominio</h3>
         <div className="space-y-3">
-          <InfoRow label="Subdominio Nexora" value={<span className="font-mono text-xs text-gray-500">{data.subdomain}</span>} />
-          <InfoRow label="Dominio personalizado" value={<span className="font-mono text-xs text-gray-500">{data.customDomain}</span>} />
+          <InfoRow label="Subdominio Nexora" value={<span className="font-mono text-[11px] text-ink-5">{data.subdomain}</span>} />
+          <InfoRow label="Dominio personalizado" value={<span className="font-mono text-[11px] text-ink-5">{data.customDomain}</span>} />
           <InfoRow label="SSL" value={<StoreStatusBadge status={data.ssl} />} />
           <InfoRow label="Conexion" value={<StoreStatusBadge status={data.connection} />} />
           <InfoRow label="Ultima verificacion" value={timeFormatter.format(new Date(data.lastVerified))} />
@@ -205,8 +207,8 @@ function DrawerAction({ icon, label, onClick, primary = false }: { icon: React.R
   return (
     <button
       className={primary
-        ? "flex items-center gap-2 rounded-xl bg-[#111111] px-4 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30"
-        : "flex items-center gap-2 rounded-xl border border-[#EAEAEA] bg-white px-4 py-2.5 text-[13px] font-bold text-[#111111] transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30"
+        ? "inline-flex items-center gap-2 h-10 px-5 rounded-[var(--r-sm)] bg-ink-0 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+        : "inline-flex items-center gap-2 h-10 px-4 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
       }
       onClick={onClick}
       type="button"

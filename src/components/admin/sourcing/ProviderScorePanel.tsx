@@ -42,10 +42,12 @@ export function ProviderScorePanel({ report }: { report: ProviderScoreReport }) 
 
   if (report.providers.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#EAEAEA] bg-white p-12 text-center">
-        <Truck className="h-8 w-8 text-gray-300 mb-3" />
-        <h3 className="text-base font-extrabold text-[#111111]">Sin proveedores conectados</h3>
-        <p className="mt-1 max-w-sm text-xs font-medium text-[#888888]">
+      <div className="flex flex-col items-center justify-center rounded-[var(--r-md)] border border-dashed border-[color:var(--hairline)] bg-[var(--surface-1)] p-12 text-center">
+        <div className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)]">
+          <Truck className="h-5 w-5 text-ink-5" strokeWidth={1.5} />
+        </div>
+        <h3 className="text-[18px] font-semibold tracking-[-0.02em] text-ink-0">Sin proveedores conectados</h3>
+        <p className="mt-2 max-w-sm text-[13px] leading-[1.55] text-ink-5">
           Conectá un proveedor en la pestaña &ldquo;Descubrir&rdquo; para ver el análisis de scoring.
         </p>
       </div>
@@ -57,22 +59,22 @@ export function ProviderScorePanel({ report }: { report: ProviderScoreReport }) 
       {/* ─── Provider Score Cards ─── */}
       <section>
         <div className="flex items-center gap-2 mb-4">
-          <ShieldCheck className="h-4 w-4 text-[#111111]" />
-          <h2 className="text-[11px] font-bold uppercase tracking-widest text-[#111111]">
-            Score de Proveedores
+          <ShieldCheck className="h-4 w-4 text-ink-4" strokeWidth={1.75} />
+          <h2 className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">
+            Score de proveedores
           </h2>
-          <span className="bg-[#111111] text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
+          <span className="inline-flex items-center h-5 px-1.5 rounded-[var(--r-xs)] bg-[var(--surface-2)] text-ink-0 text-[10px] font-medium uppercase tracking-[0.14em]">
             {s.totalProviders}
           </span>
         </div>
 
         {/* Tier KPI strip */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4">
-          <TierChip label="Fuerte" count={s.strong} color="emerald" />
-          <TierChip label="Estable" count={s.stable} color="blue" />
-          <TierChip label="Débil" count={s.weak} color="amber" />
-          <TierChip label="Crítico" count={s.critical} color="red" />
-          <TierChip label="Sin datos" count={s.noData} color="gray" />
+          <TierChip label="Fuerte" count={s.strong} tone="success" />
+          <TierChip label="Estable" count={s.stable} tone="neutral" />
+          <TierChip label="Débil" count={s.weak} tone="warning" />
+          <TierChip label="Crítico" count={s.critical} tone="danger" />
+          <TierChip label="Sin datos" count={s.noData} tone="muted" />
         </div>
 
         {/* Provider cards */}
@@ -91,11 +93,11 @@ export function ProviderScorePanel({ report }: { report: ProviderScoreReport }) 
       {/* ─── Import Score ─── */}
       <section>
         <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="h-4 w-4 text-[#111111]" />
-          <h2 className="text-[11px] font-bold uppercase tracking-widest text-[#111111]">
-            Score de Importables
+          <TrendingUp className="h-4 w-4 text-ink-4" strokeWidth={1.75} />
+          <h2 className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">
+            Score de importables
           </h2>
-          <span className="bg-[#111111] text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
+          <span className="inline-flex items-center h-5 px-1.5 rounded-[var(--r-xs)] bg-[var(--surface-2)] text-ink-0 text-[10px] font-medium uppercase tracking-[0.14em]">
             {report.imports.filter((i) => i.priority !== "already_imported").length}
           </span>
         </div>
@@ -108,32 +110,32 @@ export function ProviderScorePanel({ report }: { report: ProviderScoreReport }) 
             active={importFilter === "all"}
             onClick={() => setImportFilter("all")}
           />
-          <FilterPill label="Alta" count={s.highPriorityImports} active={importFilter === "high"} onClick={() => setImportFilter(importFilter === "high" ? "all" : "high")} color="emerald" />
-          <FilterPill label="Media" count={s.mediumPriorityImports} active={importFilter === "medium"} onClick={() => setImportFilter(importFilter === "medium" ? "all" : "medium")} color="blue" />
-          <FilterPill label="Baja" count={s.lowPriorityImports} active={importFilter === "low"} onClick={() => setImportFilter(importFilter === "low" ? "all" : "low")} color="amber" />
-          <FilterPill label="Omitir" count={s.skipImports} active={importFilter === "skip"} onClick={() => setImportFilter(importFilter === "skip" ? "all" : "skip")} color="red" />
+          <FilterPill label="Alta" count={s.highPriorityImports} active={importFilter === "high"} onClick={() => setImportFilter(importFilter === "high" ? "all" : "high")} tone="success" />
+          <FilterPill label="Media" count={s.mediumPriorityImports} active={importFilter === "medium"} onClick={() => setImportFilter(importFilter === "medium" ? "all" : "medium")} tone="neutral" />
+          <FilterPill label="Baja" count={s.lowPriorityImports} active={importFilter === "low"} onClick={() => setImportFilter(importFilter === "low" ? "all" : "low")} tone="warning" />
+          <FilterPill label="Omitir" count={s.skipImports} active={importFilter === "skip"} onClick={() => setImportFilter(importFilter === "skip" ? "all" : "skip")} tone="danger" />
         </div>
 
         {/* Import list */}
         {filteredImports.length > 0 ? (
-          <div className="rounded-xl border border-[#EAEAEA] bg-white overflow-hidden shadow-sm">
-            <div className="divide-y divide-[#F0F0F0]">
+          <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] overflow-hidden">
+            <div className="divide-y divide-[color:var(--hairline)]">
               {filteredImports.map((imp) => (
                 <ImportRow key={imp.providerProductId} item={imp} />
               ))}
             </div>
           </div>
         ) : (
-          <div className="rounded-xl border border-[#EAEAEA] bg-[#FAFAFA] p-8 text-center">
-            <p className="text-xs font-bold text-[#888888]">Sin importables en esta categoría.</p>
+          <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-1)] p-8 text-center">
+            <p className="text-[12px] font-medium text-ink-5">Sin importables en esta categoría.</p>
           </div>
         )}
       </section>
 
       {/* ─── Scope ─── */}
-      <div className="rounded-2xl border border-[#EAEAEA] bg-[#FAFAFA] p-4 shadow-sm">
-        <p className="text-sm font-bold text-[#111111]">Provider Score + Import Score v1</p>
-        <p className="mt-1 text-xs leading-relaxed text-[#666666]">
+      <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-1)] p-4">
+        <p className="text-[13px] font-semibold text-ink-0">Provider Score + Import Score v1</p>
+        <p className="mt-1 text-[12px] leading-[1.55] text-ink-5">
           Clasifica proveedores y productos importables por señales observables: conexión, sync, stock, costo, margen y dependencia.
           No incluye reputación comercial, performance de ventas ni historial — el schema no lo soporta aún.
           Los scores se derivan exclusivamente de datos reales de la base de datos.
@@ -145,60 +147,73 @@ export function ProviderScorePanel({ report }: { report: ProviderScoreReport }) 
 
 // ─── Sub-components ───
 
-function TierChip({ label, count, color }: { label: string; count: number; color: string }) {
-  const border = color === "red" ? "border-red-200" : color === "amber" ? "border-amber-200" : color === "emerald" ? "border-emerald-200" : color === "blue" ? "border-blue-200" : "border-gray-200";
-  const bg = color === "red" ? "bg-red-50" : color === "amber" ? "bg-amber-50" : color === "emerald" ? "bg-emerald-50" : color === "blue" ? "bg-blue-50" : "bg-gray-50";
-  const valColor = color === "red" ? "text-red-700" : color === "amber" ? "text-amber-700" : color === "emerald" ? "text-emerald-700" : color === "blue" ? "text-blue-700" : "text-gray-500";
+type Tone = "success" | "warning" | "danger" | "neutral" | "muted";
 
+const toneText: Record<Tone, string> = {
+  success: "text-[color:var(--signal-success)]",
+  warning: "text-[color:var(--signal-warning)]",
+  danger: "text-[color:var(--signal-danger)]",
+  neutral: "text-ink-0",
+  muted: "text-ink-5",
+};
+
+const toneDot: Record<Tone, string> = {
+  success: "bg-[var(--signal-success)]",
+  warning: "bg-[var(--signal-warning)]",
+  danger: "bg-[var(--signal-danger)]",
+  neutral: "bg-ink-3",
+  muted: "bg-ink-6",
+};
+
+function TierChip({ label, count, tone }: { label: string; count: number; tone: Tone }) {
   return (
-    <div className={cn("rounded-xl border p-3 shadow-sm", border, bg)}>
-      <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#888888]">{label}</p>
-      <p className={cn("mt-0.5 text-xl font-black tabular-nums", valColor)}>{count}</p>
+    <div className="rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-3">
+      <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">{label}</p>
+      <p className={cn("mt-1 text-[20px] font-semibold tabular-nums tracking-[-0.02em]", toneText[tone])}>{count}</p>
     </div>
   );
 }
 
-function ProviderCard({ provider: p, expanded, onToggle }: { provider: ProviderScore; expanded: boolean; onToggle: () => void }) {
-  const tierStyles: Record<ProviderTier, { border: string; dot: string; bg: string }> = {
-    strong: { border: "border-emerald-200", dot: "bg-emerald-500", bg: "bg-emerald-50" },
-    stable: { border: "border-blue-200", dot: "bg-blue-400", bg: "bg-blue-50" },
-    weak: { border: "border-amber-200", dot: "bg-amber-500", bg: "bg-amber-50" },
-    critical: { border: "border-red-200", dot: "bg-red-500", bg: "bg-red-50" },
-    no_data: { border: "border-gray-200", dot: "bg-gray-400", bg: "bg-gray-50" },
-  };
+const tierTone: Record<ProviderTier, Tone> = {
+  strong: "success",
+  stable: "neutral",
+  weak: "warning",
+  critical: "danger",
+  no_data: "muted",
+};
 
-  const st = tierStyles[p.tier];
+function ProviderCard({ provider: p, expanded, onToggle }: { provider: ProviderScore; expanded: boolean; onToggle: () => void }) {
+  const tone = tierTone[p.tier];
+  const chipBase = "inline-flex items-center h-6 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2 text-[10px] font-medium uppercase tracking-[0.14em]";
 
   return (
-    <div className={cn("rounded-xl border shadow-sm transition-all", st.border)}>
+    <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] overflow-hidden">
       {/* Header row */}
-      <button onClick={onToggle} className="w-full flex items-center gap-3 p-4 text-left hover:bg-[#FAFAFA] transition-colors rounded-xl">
-        <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", st.dot)} />
+      <button onClick={onToggle} className="w-full flex items-center gap-3 p-4 text-left hover:bg-[var(--surface-1)] transition-colors">
+        <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", toneDot[tone])} />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <p className="text-[13px] font-bold text-[#111111]">{p.providerName}</p>
-            <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold", st.bg,
-              p.tier === "strong" ? "text-emerald-700" : p.tier === "stable" ? "text-blue-700" : p.tier === "weak" ? "text-amber-700" : p.tier === "critical" ? "text-red-700" : "text-gray-500"
-            )}>
+            <p className="text-[13px] font-medium text-ink-0">{p.providerName}</p>
+            <span className={cn(chipBase, toneText[tone])}>
               {p.tierLabel}
             </span>
           </div>
-          <div className="flex items-center gap-3 mt-0.5 text-[11px] text-[#999999]">
+          <div className="flex items-center gap-3 mt-1 text-[11px] text-ink-5">
             <span>{p.totalProducts} productos</span>
-            <span className="text-[#E0E0E0]">&bull;</span>
+            <span className="text-ink-7">&bull;</span>
             <span>{p.productsImported} importados</span>
             {p.avgEstimatedMargin !== null && (
               <>
-                <span className="text-[#E0E0E0]">&bull;</span>
-                <span className={cn("font-bold", p.avgEstimatedMargin >= 20 ? "text-emerald-600" : p.avgEstimatedMargin >= 10 ? "text-amber-600" : "text-red-500")}>
+                <span className="text-ink-7">&bull;</span>
+                <span className={cn("font-semibold", p.avgEstimatedMargin >= 20 ? "text-[color:var(--signal-success)]" : p.avgEstimatedMargin >= 10 ? "text-[color:var(--signal-warning)]" : "text-[color:var(--signal-danger)]")}>
                   Margen {p.avgEstimatedMargin}%
                 </span>
               </>
             )}
             {p.catalogDependencyPercent !== null && (
               <>
-                <span className="text-[#E0E0E0]">&bull;</span>
-                <span className={cn("font-bold", p.catalogDependencyPercent > 50 ? "text-red-500" : "text-[#999999]")}>
+                <span className="text-ink-7">&bull;</span>
+                <span className={cn("font-semibold", p.catalogDependencyPercent > 50 ? "text-[color:var(--signal-danger)]" : "text-ink-5")}>
                   {p.catalogDependencyPercent}% catálogo
                 </span>
               </>
@@ -208,28 +223,28 @@ function ProviderCard({ provider: p, expanded, onToggle }: { provider: ProviderS
         <div className="flex items-center gap-3 shrink-0">
           <div className="hidden sm:grid grid-cols-3 gap-4 text-right">
             <div>
-              <p className="text-[10px] text-[#AAAAAA] font-bold">Con costo</p>
-              <p className="text-[12px] font-bold tabular-nums text-[#111111]">{p.productsWithCost}/{p.totalProducts}</p>
+              <p className="text-[10px] text-ink-5 font-medium uppercase tracking-[0.14em]">Con costo</p>
+              <p className="text-[12px] font-semibold tabular-nums text-ink-0">{p.productsWithCost}/{p.totalProducts}</p>
             </div>
             <div>
-              <p className="text-[10px] text-[#AAAAAA] font-bold">Con stock</p>
-              <p className="text-[12px] font-bold tabular-nums text-[#111111]">{p.productsWithStock}/{p.totalProducts}</p>
+              <p className="text-[10px] text-ink-5 font-medium uppercase tracking-[0.14em]">Con stock</p>
+              <p className="text-[12px] font-semibold tabular-nums text-ink-0">{p.productsWithStock}/{p.totalProducts}</p>
             </div>
             <div>
-              <p className="text-[10px] text-[#AAAAAA] font-bold">Sync</p>
-              <p className={cn("text-[12px] font-bold tabular-nums", p.syncJobsFailed > 0 ? "text-red-500" : "text-[#111111]")}>
+              <p className="text-[10px] text-ink-5 font-medium uppercase tracking-[0.14em]">Sync</p>
+              <p className={cn("text-[12px] font-semibold tabular-nums", p.syncJobsFailed > 0 ? "text-[color:var(--signal-danger)]" : "text-ink-0")}>
                 {p.syncJobsFailed > 0 ? `${p.syncJobsFailed} fail` : `${p.syncJobsCompleted} ok`}
               </p>
             </div>
           </div>
-          {expanded ? <ChevronUp className="h-4 w-4 text-[#AAAAAA]" /> : <ChevronDown className="h-4 w-4 text-[#AAAAAA]" />}
+          {expanded ? <ChevronUp className="h-4 w-4 text-ink-5" strokeWidth={1.75} /> : <ChevronDown className="h-4 w-4 text-ink-5" strokeWidth={1.75} />}
         </div>
       </button>
 
       {/* Expanded signals */}
       {expanded && (
-        <div className="border-t border-[#F0F0F0] px-4 py-3 bg-[#FAFAFA] rounded-b-xl">
-          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#888888] mb-2">Señales observadas</p>
+        <div className="border-t border-[color:var(--hairline)] px-4 py-3 bg-[var(--surface-1)]">
+          <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5 mb-2">Señales observadas</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
             {p.signals.map((sig) => (
               <SignalPill key={sig.key} signal={sig} />
@@ -237,11 +252,11 @@ function ProviderCard({ provider: p, expanded, onToggle }: { provider: ProviderS
           </div>
           <div className="mt-3 flex items-center justify-between">
             {p.lastSyncedAt && (
-              <p className="text-[10px] text-[#AAAAAA]">
+              <p className="text-[10px] text-ink-5">
                 Última sync: {new Date(p.lastSyncedAt).toLocaleDateString("es-AR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
               </p>
             )}
-            <Link href={p.actionHref} className="flex items-center gap-1 text-[11px] font-bold text-[#AAAAAA] hover:text-[#111111] transition-colors">
+            <Link href={p.actionHref} className="flex items-center gap-1 text-[11px] font-medium text-ink-5 hover:text-ink-0 transition-colors">
               {p.actionLabel} <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
@@ -252,84 +267,88 @@ function ProviderCard({ provider: p, expanded, onToggle }: { provider: ProviderS
 }
 
 function SignalPill({ signal: s }: { signal: ProviderSignal }) {
-  const colors = {
-    positive: "text-emerald-700 bg-emerald-50 border-emerald-200",
-    negative: "text-red-700 bg-red-50 border-red-200",
-    neutral: "text-[#666666] bg-[#F5F5F5] border-[#E0E0E0]",
+  const impactTone: Record<ProviderSignal["impact"], string> = {
+    positive: "text-[color:var(--signal-success)]",
+    negative: "text-[color:var(--signal-danger)]",
+    neutral: "text-ink-5",
   };
 
   return (
-    <div className={cn("flex items-start gap-2 rounded-lg border px-2.5 py-1.5 text-[11px]", colors[s.impact])}>
-      <span className="shrink-0 mt-0.5">
-        {s.impact === "positive" ? <CheckCircle2 className="h-3 w-3" /> : s.impact === "negative" ? <XCircle className="h-3 w-3" /> : <Package className="h-3 w-3" />}
+    <div className="flex items-start gap-2 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-2.5 py-1.5 text-[11px]">
+      <span className={cn("shrink-0 mt-0.5", impactTone[s.impact])}>
+        {s.impact === "positive" ? <CheckCircle2 className="h-3 w-3" strokeWidth={1.75} /> : s.impact === "negative" ? <XCircle className="h-3 w-3" strokeWidth={1.75} /> : <Package className="h-3 w-3" strokeWidth={1.75} />}
       </span>
       <div>
-        <p className="font-bold">{s.label}</p>
-        <p className="text-[10px] opacity-80">{s.detail}</p>
+        <p className="font-medium text-ink-0">{s.label}</p>
+        <p className="text-[10px] text-ink-5">{s.detail}</p>
       </div>
     </div>
   );
 }
 
-function ImportRow({ item: imp }: { item: ImportScore }) {
-  const prioStyles: Record<ImportPriority, { dot: string; badge: string; badgeText: string }> = {
-    high: { dot: "bg-emerald-500", badge: "bg-emerald-100 text-emerald-700", badgeText: "Alta" },
-    medium: { dot: "bg-blue-400", badge: "bg-blue-100 text-blue-700", badgeText: "Media" },
-    low: { dot: "bg-amber-500", badge: "bg-amber-100 text-amber-700", badgeText: "Baja" },
-    skip: { dot: "bg-red-500", badge: "bg-red-100 text-red-700", badgeText: "Omitir" },
-    already_imported: { dot: "bg-gray-400", badge: "bg-gray-100 text-gray-500", badgeText: "Importado" },
-  };
+const priorityTone: Record<ImportPriority, Tone> = {
+  high: "success",
+  medium: "neutral",
+  low: "warning",
+  skip: "danger",
+  already_imported: "muted",
+};
 
-  const ps = prioStyles[imp.priority];
+const priorityLabel: Record<ImportPriority, string> = {
+  high: "Alta",
+  medium: "Media",
+  low: "Baja",
+  skip: "Omitir",
+  already_imported: "Importado",
+};
+
+function ImportRow({ item: imp }: { item: ImportScore }) {
+  const tone = priorityTone[imp.priority];
+  const chipBase = "inline-flex items-center h-6 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2 text-[10px] font-medium uppercase tracking-[0.14em]";
 
   return (
-    <div className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#FAFAFA] transition-colors">
-      <span className={cn("h-2 w-2 shrink-0 rounded-full", ps.dot)} />
+    <div className="flex items-center gap-4 px-5 py-3.5 hover:bg-[var(--surface-1)] transition-colors">
+      <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", toneDot[tone])} />
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <p className="text-[13px] font-bold text-[#111111] truncate">{imp.title}</p>
-          <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-bold shrink-0", ps.badge)}>
-            {ps.badgeText}
+          <p className="text-[13px] font-medium text-ink-0 truncate">{imp.title}</p>
+          <span className={cn(chipBase, toneText[tone], "shrink-0")}>
+            {priorityLabel[imp.priority]}
           </span>
         </div>
-        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-          {imp.signals.map((sig) => (
-            <span
-              key={sig.key}
-              className={cn(
-                "text-[10px] font-bold px-1.5 py-0.5 rounded",
-                sig.impact === "positive" ? "bg-emerald-50 text-emerald-600" :
-                sig.impact === "negative" ? "bg-red-50 text-red-600" :
-                "bg-gray-50 text-gray-500"
-              )}
-            >
-              {sig.label}
-            </span>
-          ))}
+        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+          {imp.signals.map((sig) => {
+            const sigTone = sig.impact === "positive" ? "text-[color:var(--signal-success)]" : sig.impact === "negative" ? "text-[color:var(--signal-danger)]" : "text-ink-5";
+            return (
+              <span key={sig.key} className={cn("inline-flex items-center h-5 px-1.5 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-0)] text-[10px] font-medium", sigTone)}>
+                {sig.label}
+              </span>
+            );
+          })}
         </div>
       </div>
 
       {/* Metrics */}
       <div className="hidden sm:flex items-center gap-6 shrink-0">
         <div className="text-right w-20">
-          <p className="text-[10px] text-[#AAAAAA] font-bold">Costo</p>
-          <p className={cn("text-[13px] font-bold tabular-nums", imp.cost > 0 ? "text-[#111111]" : "text-red-400")}>
+          <p className="text-[10px] text-ink-5 font-medium uppercase tracking-[0.14em]">Costo</p>
+          <p className={cn("text-[13px] font-semibold tabular-nums", imp.cost > 0 ? "text-ink-0" : "text-[color:var(--signal-danger)]")}>
             {imp.cost > 0 ? `$${imp.cost.toLocaleString("es-AR")}` : "—"}
           </p>
         </div>
         <div className="text-right w-20">
-          <p className="text-[10px] text-[#AAAAAA] font-bold">Stock</p>
-          <p className={cn("text-[13px] font-bold tabular-nums", imp.stock > 0 ? "text-[#111111]" : "text-red-400")}>
+          <p className="text-[10px] text-ink-5 font-medium uppercase tracking-[0.14em]">Stock</p>
+          <p className={cn("text-[13px] font-semibold tabular-nums", imp.stock > 0 ? "text-ink-0" : "text-[color:var(--signal-danger)]")}>
             {imp.stock > 0 ? `${imp.stock} u.` : "0"}
           </p>
         </div>
         {imp.estimatedMarginPercent !== null && (
           <div className="text-right w-20">
-            <p className="text-[10px] text-[#AAAAAA] font-bold">Margen</p>
+            <p className="text-[10px] text-ink-5 font-medium uppercase tracking-[0.14em]">Margen</p>
             <p className={cn(
-              "text-[13px] font-bold tabular-nums",
-              imp.estimatedMarginPercent >= 20 ? "text-emerald-600" : imp.estimatedMarginPercent >= 10 ? "text-amber-600" : "text-red-500"
+              "text-[13px] font-semibold tabular-nums",
+              imp.estimatedMarginPercent >= 20 ? "text-[color:var(--signal-success)]" : imp.estimatedMarginPercent >= 10 ? "text-[color:var(--signal-warning)]" : "text-[color:var(--signal-danger)]"
             )}>
               {imp.estimatedMarginPercent}%
             </p>
@@ -339,7 +358,7 @@ function ImportRow({ item: imp }: { item: ImportScore }) {
 
       <Link
         href={imp.actionHref}
-        className="shrink-0 flex items-center gap-1 text-[11px] font-bold text-[#AAAAAA] transition-colors hover:text-[#111111]"
+        className="shrink-0 flex items-center gap-1 text-[11px] font-medium text-ink-5 transition-colors hover:text-ink-0"
       >
         {imp.actionLabel} <ArrowRight className="h-3 w-3" />
       </Link>
@@ -347,25 +366,21 @@ function ImportRow({ item: imp }: { item: ImportScore }) {
   );
 }
 
-function FilterPill({ label, count, active, onClick, color }: { label: string; count: number; active: boolean; onClick: () => void; color?: string }) {
+function FilterPill({ label, count, active, onClick, tone }: { label: string; count: number; active: boolean; onClick: () => void; tone?: Tone }) {
   return (
     <button
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold transition-all",
+        "inline-flex items-center gap-1.5 h-8 rounded-[var(--r-sm)] border px-3 text-[11px] font-medium uppercase tracking-[0.14em] transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
         active
-          ? "border-[#111111] bg-[#111111] text-white"
-          : color === "emerald" ? "border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-          : color === "blue" ? "border-blue-200 text-blue-700 hover:bg-blue-50"
-          : color === "amber" ? "border-amber-200 text-amber-700 hover:bg-amber-50"
-          : color === "red" ? "border-red-200 text-red-700 hover:bg-red-50"
-          : "border-[#EAEAEA] text-[#888888] hover:bg-[#F5F5F5]"
+          ? "border-transparent bg-ink-0 text-ink-12"
+          : cn("border-[color:var(--hairline)] bg-[var(--surface-0)] hover:bg-[var(--surface-1)]", tone ? toneText[tone] : "text-ink-5")
       )}
     >
       {label}
       <span className={cn(
-        "rounded-full px-1.5 text-[10px]",
-        active ? "bg-white/20" : "bg-black/5"
+        "inline-flex items-center h-4 px-1 rounded-[var(--r-xs)] text-[10px] font-semibold",
+        active ? "bg-ink-12/15 text-ink-12" : "bg-[var(--surface-2)] text-ink-0"
       )}>
         {count}
       </span>

@@ -14,22 +14,24 @@ const statusLabels: Record<StoreStatus, string> = {
   disconnected: "Desconectado",
 };
 
-const statusStyles: Record<StoreStatus, string> = {
-  published: "bg-emerald-50 text-emerald-700 ring-emerald-600/15",
-  draft: "bg-amber-50 text-amber-700 ring-amber-600/15",
-  hidden: "bg-gray-100 text-gray-600 ring-gray-500/10",
-  active: "bg-emerald-50 text-emerald-700 ring-emerald-600/15",
-  inactive: "bg-gray-100 text-gray-600 ring-gray-500/10",
-  verified: "bg-emerald-50 text-emerald-700 ring-emerald-600/15",
-  pending: "bg-amber-50 text-amber-700 ring-amber-600/15",
-  error: "bg-red-50 text-red-600 ring-red-600/10",
-  connected: "bg-emerald-50 text-emerald-700 ring-emerald-600/15",
-  disconnected: "bg-red-50 text-red-600 ring-red-600/10",
+const chipBase = "inline-flex items-center h-6 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2 text-[10px] font-medium uppercase tracking-[0.14em]";
+
+const statusTone: Record<StoreStatus, string> = {
+  published: "text-[color:var(--signal-success)]",
+  draft: "text-[color:var(--signal-warning)]",
+  hidden: "text-ink-5",
+  active: "text-[color:var(--signal-success)]",
+  inactive: "text-ink-5",
+  verified: "text-[color:var(--signal-success)]",
+  pending: "text-[color:var(--signal-warning)]",
+  error: "text-[color:var(--signal-danger)]",
+  connected: "text-[color:var(--signal-success)]",
+  disconnected: "text-[color:var(--signal-danger)]",
 };
 
 export function StoreStatusBadge({ status, className }: { status: StoreStatus; className?: string }) {
   return (
-    <span className={cn("inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.18em] ring-1 ring-inset", statusStyles[status], className)}>
+    <span className={cn(chipBase, statusTone[status], className)}>
       {statusLabels[status]}
     </span>
   );
@@ -37,7 +39,7 @@ export function StoreStatusBadge({ status, className }: { status: StoreStatus; c
 
 export function SectionTypeBadge({ type, className }: { type: string; className?: string }) {
   return (
-    <span className={cn("inline-flex items-center rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-gray-600", className)}>
+    <span className={cn(chipBase, "text-ink-5", className)}>
       {type}
     </span>
   );
@@ -45,7 +47,7 @@ export function SectionTypeBadge({ type, className }: { type: string; className?
 
 export function PageTypeBadge({ type, className }: { type: "system" | "custom"; className?: string }) {
   return (
-    <span className={cn("inline-flex items-center rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-gray-600", className)}>
+    <span className={cn(chipBase, "text-ink-5", className)}>
       {type === "system" ? "Sistema" : "Personalizada"}
     </span>
   );
@@ -54,7 +56,7 @@ export function PageTypeBadge({ type, className }: { type: "system" | "custom"; 
 export function NavGroupBadge({ group, className }: { group: string; className?: string }) {
   const labels: Record<string, string> = { main: "Menu principal", footer: "Footer", "quick-links": "Links rapidos" };
   return (
-    <span className={cn("inline-flex items-center rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-gray-600", className)}>
+    <span className={cn(chipBase, "text-ink-5", className)}>
       {labels[group] || group}
     </span>
   );
@@ -63,7 +65,7 @@ export function NavGroupBadge({ group, className }: { group: string; className?:
 export function ColorDot({ color, size = "md" }: { color: string; size?: "sm" | "md" }) {
   return (
     <span
-      className={cn("inline-block shrink-0 rounded-full border border-gray-200 shadow-sm", size === "sm" ? "h-4 w-4" : "h-5 w-5")}
+      className={cn("inline-block shrink-0 rounded-[var(--r-xs)] border border-[color:var(--hairline)]", size === "sm" ? "h-4 w-4" : "h-5 w-5")}
       style={{ backgroundColor: color }}
       aria-label={`Color ${color}`}
     />

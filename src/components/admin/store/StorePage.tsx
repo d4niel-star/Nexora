@@ -187,33 +187,33 @@ export function StorePage({ initialData }: { initialData?: AdminStoreInitialData
     <div className="animate-in fade-in space-y-8 pb-32 duration-700">
       <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-[#111111]">Mi Tienda</h1>
-          <p className="mt-1 text-[15px] font-medium text-[#666666]">Apariencia, contenido y configuracion de tu tienda online.</p>
+          <h1 className="text-[28px] lg:text-[32px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0">Mi tienda.</h1>
+          <p className="mt-2 text-[14px] leading-[1.55] text-ink-5">Apariencia, contenido y configuración de tu tienda online.</p>
         </div>
       </div>
 
-      <div className="relative overflow-hidden rounded-2xl border border-[#EAEAEA] bg-white shadow-sm">
-        <div aria-label="Secciones de tienda" className="flex items-center gap-8 overflow-x-auto border-b border-[#EAEAEA] bg-[#FAFAFA]/50 px-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden" role="tablist">
+      <div className="relative overflow-hidden rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)]">
+        <div aria-label="Secciones de tienda" className="flex items-center gap-8 overflow-x-auto border-b border-[color:var(--hairline)] bg-[var(--surface-1)] px-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden" role="tablist">
           {tabs.map((tab) => (
-            <button key={tab.value} aria-selected={activeTab === tab.value} className={cn("group relative whitespace-nowrap py-4 text-[13px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30", activeTab === tab.value ? "text-[#111111]" : "text-[#888888] hover:text-[#111111]")} onClick={() => handleTabChange(tab.value)} role="tab" type="button">
+            <button key={tab.value} aria-selected={activeTab === tab.value} className={cn("group relative whitespace-nowrap py-4 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]", activeTab === tab.value ? "text-ink-0" : "text-ink-5 hover:text-ink-0")} onClick={() => handleTabChange(tab.value)} role="tab" type="button">
               <span className="flex items-center gap-2">{tab.icon}{tab.label}</span>
-              {activeTab === tab.value ? <div className="absolute inset-x-0 bottom-0 h-0.5 rounded-t-full bg-[#111111]" /> : null}
+              {activeTab === tab.value ? <div className="absolute inset-x-0 bottom-0 h-[2px] bg-ink-0" /> : null}
             </button>
           ))}
         </div>
 
         {showToolbar ? (
-          <div className="flex flex-col gap-4 border-b border-[#EAEAEA] bg-white p-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex flex-col gap-4 border-b border-[color:var(--hairline)] bg-[var(--surface-0)] p-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex w-full flex-col gap-3 lg:flex-row lg:items-center">
               <div className="group relative w-full lg:max-w-sm">
-                <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 transition-colors group-focus-within:text-emerald-500" />
-                <input aria-label="Buscar en la vista" className="w-full rounded-xl border border-transparent bg-gray-50 py-2.5 pl-10 pr-4 text-[13px] font-medium text-[#111111] transition-all placeholder:text-gray-400 focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20" onChange={(e) => setSearchQuery(e.target.value)} placeholder="Buscar..." type="text" value={searchQuery} />
+                <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-6 transition-colors group-focus-within:text-ink-0" strokeWidth={1.75} />
+                <input aria-label="Buscar en la vista" className="w-full h-10 pl-10 pr-4 text-[13px] font-medium bg-[var(--surface-1)] border border-[color:var(--hairline)] rounded-[var(--r-sm)] outline-none transition-[box-shadow,border-color] focus:bg-[var(--surface-0)] focus:border-[var(--accent-500)] focus:shadow-[var(--shadow-focus)] text-ink-0 placeholder:text-ink-6" onChange={(e) => setSearchQuery(e.target.value)} placeholder="Buscar..." type="text" value={searchQuery} />
               </div>
             </div>
           </div>
         ) : null}
 
-        <div className="min-h-[420px] bg-[#FAFAFA]/30" role="tabpanel">
+        <div className="min-h-[420px] bg-[var(--surface-0)]" role="tabpanel">
           {isLoading ? (
             <TableSkeleton />
           ) : activeTab === "resumen" ? (
@@ -313,62 +313,62 @@ function SummaryView({
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-2xl border border-[#EAEAEA] bg-white p-5 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Logo</p>
-          <div className="mt-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gray-50 text-gray-400">
-            {s.hasLogo ? <Check className="h-5 w-5 text-emerald-500" /> : <X className="h-5 w-5" />}
+        <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5">
+          <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Logo</p>
+          <div className="mt-3 flex h-12 w-12 items-center justify-center rounded-[var(--r-sm)] bg-[var(--surface-1)] border border-[color:var(--hairline)] text-ink-6">
+            {s.hasLogo ? <Check className="h-5 w-5 text-[color:var(--signal-success)]" strokeWidth={1.75} /> : <X className="h-5 w-5" strokeWidth={1.75} />}
           </div>
         </div>
-        <div className="rounded-2xl border border-[#EAEAEA] bg-white p-5 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Colores</p>
+        <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5">
+          <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Colores</p>
           <div className="mt-3 flex gap-2"><ColorDot color={s.primaryColor} /><ColorDot color={s.secondaryColor} /></div>
         </div>
-        <SummaryCard label="Paginas" value={s.pagesCount.toString()} />
+        <SummaryCard label="Páginas" value={s.pagesCount.toString()} />
         <SummaryCard label="Secciones home" value={s.homeSectionsCount.toString()} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="rounded-2xl border border-[#EAEAEA] bg-white p-5 shadow-sm lg:col-span-2">
+        <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 lg:col-span-2">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">URL publica</p>
-              <p className="mt-2 break-all font-mono text-sm font-semibold text-[#111111]">{publicPath}</p>
-              <p className="mt-2 text-[12px] font-medium text-[#777777]">
+              <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">URL pública</p>
+              <p className="mt-2 break-all font-mono text-[13px] font-semibold text-ink-0">{publicPath}</p>
+              <p className="mt-2 text-[12px] leading-[1.55] text-ink-5">
                 {isLive
                   ? isMercadoPagoConnected
-                    ? "La tienda esta publicada y el checkout esta habilitado con la cuenta MP conectada."
-                    : "La tienda esta publicada. El checkout queda desactivado hasta conectar Mercado Pago."
+                    ? "La tienda está publicada y el checkout está habilitado con la cuenta MP conectada."
+                    : "La tienda está publicada. El checkout queda desactivado hasta conectar Mercado Pago."
                   : "La URL queda activa cuando publiques una tienda con productos disponibles."}
               </p>
             </div>
             <div className="flex shrink-0 flex-wrap gap-2">
               {isLive ? (
-                <Link className="inline-flex items-center gap-2 rounded-xl bg-[#111111] px-4 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" href={publicPath} target="_blank">
+                <Link className="inline-flex items-center gap-2 h-10 px-4 rounded-[var(--r-sm)] bg-ink-0 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" href={publicPath} target="_blank">
                   <Eye className="h-3.5 w-3.5" />
                   Ver mi tienda
                 </Link>
               ) : (
-                <button className="inline-flex cursor-not-allowed items-center gap-2 rounded-xl bg-[#111111] px-4 py-2.5 text-[13px] font-bold text-white opacity-40" disabled type="button">
+                <button className="inline-flex cursor-not-allowed items-center gap-2 h-10 px-4 rounded-[var(--r-sm)] bg-ink-0 text-[13px] font-medium text-ink-12 opacity-40" disabled type="button">
                   <Eye className="h-3.5 w-3.5" />
                   Ver mi tienda
                 </button>
               )}
-              <button className="inline-flex items-center gap-2 rounded-xl border border-[#EAEAEA] bg-white px-4 py-2.5 text-[13px] font-bold text-[#111111] transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" disabled={!isLive} onClick={handleShare} type="button">
+              <button className="inline-flex items-center gap-2 h-10 px-4 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" disabled={!isLive} onClick={handleShare} type="button">
                 <Share2 className="h-3.5 w-3.5" />
                 Compartir tienda
               </button>
             </div>
           </div>
         </div>
-        <div className="rounded-2xl border border-[#EAEAEA] bg-white p-5 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Checkout</p>
-          <p className={cn("mt-2 text-sm font-black", isMercadoPagoConnected ? "text-emerald-700" : "text-amber-700")}>
+        <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5">
+          <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Checkout</p>
+          <p className={cn("mt-2 text-[13px] font-semibold", isMercadoPagoConnected ? "text-[color:var(--signal-success)]" : "text-[color:var(--signal-warning)]")}>
             {isMercadoPagoConnected ? "Mercado Pago conectado" : "Mercado Pago pendiente"}
           </p>
-          <p className="mt-2 text-[12px] font-medium leading-relaxed text-[#777777]">
-            {isMercadoPagoConnected ? "Las compras redirigen a la cuenta propia del dueno de la tienda." : "La tienda se puede preparar y publicar, pero no cobra hasta conectar una cuenta real."}
+          <p className="mt-2 text-[12px] leading-[1.55] text-ink-5">
+            {isMercadoPagoConnected ? "Las compras redirigen a la cuenta propia del dueño de la tienda." : "La tienda se puede preparar y publicar, pero no cobra hasta conectar una cuenta real."}
           </p>
-          <button className="mt-4 text-[12px] font-bold text-[#111111] underline underline-offset-4" onClick={() => onNavigate("pagos")} type="button">
+          <button className="mt-4 text-[12px] font-medium text-ink-0 underline underline-offset-4" onClick={() => onNavigate("pagos")} type="button">
             Revisar pagos
           </button>
         </div>
@@ -379,18 +379,18 @@ function SummaryView({
       ) : null}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <NavCard icon={<Palette className="h-5 w-5 text-purple-500" />} title="Tema" description={s.themeName} onClick={() => onNavigate("tema")} />
-        <NavCard icon={<Paintbrush className="h-5 w-5 text-blue-500" />} title="Branding" description="Logo, colores, fuentes" onClick={() => onNavigate("branding")} />
-        <NavCard icon={<Home className="h-5 w-5 text-emerald-500" />} title="Home" description={`${s.homeSectionsCount} secciones`} onClick={() => onNavigate("home")} />
-        <NavCard icon={<Globe className="h-5 w-5 text-amber-500" />} title="Dominio" description={s.domain} onClick={() => onNavigate("dominio")} />
+        <NavCard icon={<Palette className="h-5 w-5 text-ink-4" strokeWidth={1.75} />} title="Tema" description={s.themeName} onClick={() => onNavigate("tema")} />
+        <NavCard icon={<Paintbrush className="h-5 w-5 text-ink-4" strokeWidth={1.75} />} title="Branding" description="Logo, colores, fuentes" onClick={() => onNavigate("branding")} />
+        <NavCard icon={<Home className="h-5 w-5 text-ink-4" strokeWidth={1.75} />} title="Home" description={`${s.homeSectionsCount} secciones`} onClick={() => onNavigate("home")} />
+        <NavCard icon={<Globe className="h-5 w-5 text-ink-4" strokeWidth={1.75} />} title="Dominio" description={s.domain} onClick={() => onNavigate("dominio")} />
       </div>
 
       <div className="flex items-center gap-3">
-        <button className="flex items-center gap-2 rounded-xl bg-[#111111] px-5 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" disabled={isPublishing || sellableProducts === 0} onClick={handlePublish} type="button">
+        <button className="inline-flex items-center gap-2 h-10 px-5 rounded-[var(--r-sm)] bg-ink-0 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" disabled={isPublishing || sellableProducts === 0} onClick={handlePublish} type="button">
           <Eye className="h-3.5 w-3.5" />
           {isPublishing ? "Publicando..." : "Publicar tienda"}
         </button>
-        <button className="flex items-center gap-2 rounded-xl border border-[#EAEAEA] bg-white px-5 py-2.5 text-[13px] font-bold text-[#111111] transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" onClick={() => onNavigate("preview")} type="button">
+        <button className="inline-flex items-center gap-2 h-10 px-5 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" onClick={() => onNavigate("preview")} type="button">
           Ver vista previa
         </button>
       </div>
@@ -418,30 +418,32 @@ function FirstProductPanel({ onAction, onRefresh }: { onAction: (a: string) => v
     });
   };
 
+  const inputCls = "h-11 px-3.5 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] text-[13px] font-medium text-ink-0 outline-none transition-[box-shadow,border-color] focus:border-[var(--accent-500)] focus:shadow-[var(--shadow-focus)] placeholder:text-ink-6";
+
   return (
-    <form className="rounded-2xl border border-[#EAEAEA] bg-white p-5 shadow-sm" onSubmit={handleSubmit}>
+    <form className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5" onSubmit={handleSubmit}>
       <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Primer producto</p>
-          <h3 className="mt-2 text-lg font-black tracking-tight text-[#111111]">Carga un SKU vendible</h3>
-          <p className="mt-1 max-w-xl text-[13px] font-medium leading-relaxed text-[#777777]">
-            Crea un producto real en la DB con una variante, precio y stock. Despues podes editarlo desde Catalogo e Inventario.
+          <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Primer producto</p>
+          <h3 className="mt-2 text-[16px] font-semibold tracking-[-0.01em] text-ink-0">Cargá un SKU vendible</h3>
+          <p className="mt-1 max-w-xl text-[13px] leading-[1.55] text-ink-5">
+            Crea un producto real en la DB con una variante, precio y stock. Después podés editarlo desde Catálogo e Inventario.
           </p>
         </div>
-        <button className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[#111111] px-5 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" disabled={isPending} type="submit">
+        <button className="inline-flex shrink-0 items-center gap-2 h-10 px-5 rounded-[var(--r-sm)] bg-ink-0 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" disabled={isPending} type="submit">
           <Save className="h-3.5 w-3.5" />
           {isPending ? "Creando..." : "Crear producto"}
         </button>
       </div>
 
       <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <input className="rounded-xl border border-[#EAEAEA] bg-white px-3 py-2.5 text-sm font-medium text-[#111111] outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20" name="title" placeholder="Nombre del producto" required />
-        <input className="rounded-xl border border-[#EAEAEA] bg-white px-3 py-2.5 text-sm font-medium text-[#111111] outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20" name="variantTitle" placeholder="Variante, ej. Default" />
-        <input className="rounded-xl border border-[#EAEAEA] bg-white px-3 py-2.5 text-sm font-medium text-[#111111] outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20" min="1" name="price" placeholder="Precio" required step="0.01" type="number" />
-        <input className="rounded-xl border border-[#EAEAEA] bg-white px-3 py-2.5 text-sm font-medium text-[#111111] outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20" min="0" name="stock" placeholder="Stock" required step="1" type="number" />
-        <input className="rounded-xl border border-[#EAEAEA] bg-white px-3 py-2.5 text-sm font-medium text-[#111111] outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 md:col-span-2" name="category" placeholder="Categoria" />
-        <input className="rounded-xl border border-[#EAEAEA] bg-white px-3 py-2.5 text-sm font-medium text-[#111111] outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 md:col-span-2" name="featuredImage" placeholder="URL de imagen publica" type="url" />
-        <textarea className="min-h-24 rounded-xl border border-[#EAEAEA] bg-white px-3 py-2.5 text-sm font-medium text-[#111111] outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 md:col-span-2 xl:col-span-4" name="description" placeholder="Descripcion breve" />
+        <input className={inputCls} name="title" placeholder="Nombre del producto" required />
+        <input className={inputCls} name="variantTitle" placeholder="Variante, ej. Default" />
+        <input className={inputCls} min="1" name="price" placeholder="Precio" required step="0.01" type="number" />
+        <input className={inputCls} min="0" name="stock" placeholder="Stock" required step="1" type="number" />
+        <input className={cn(inputCls, "md:col-span-2")} name="category" placeholder="Categoría" />
+        <input className={cn(inputCls, "md:col-span-2")} name="featuredImage" placeholder="URL de imagen pública" type="url" />
+        <textarea className={cn(inputCls, "min-h-24 md:col-span-2 xl:col-span-4")} name="description" placeholder="Descripción breve" />
       </div>
     </form>
   );
@@ -453,13 +455,13 @@ function ThemeView({ openDrawer, onAction }: { openDrawer: (c: DrawerContent) =>
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Temas disponibles</h3>
+        <h3 className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Temas disponibles</h3>
       </div>
-      <div className="flex h-32 items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50 text-xs font-medium text-gray-400">
+      <div className="flex h-32 items-center justify-center rounded-[var(--r-md)] border border-dashed border-[color:var(--hairline)] bg-[var(--surface-1)] text-[12px] font-medium text-ink-5">
         Gestión de temas en construcción
       </div>
       <div className="flex items-center gap-3">
-        <button disabled className="flex items-center gap-2 rounded-xl border border-[#EAEAEA] bg-white px-5 py-2.5 text-[13px] font-bold text-[#111111] opacity-50" type="button">
+        <button disabled className="inline-flex items-center gap-2 h-10 px-5 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[13px] font-medium text-ink-0 opacity-50" type="button">
           Gestión manual próximamente
         </button>
       </div>
@@ -498,69 +500,73 @@ function BrandingView({
     });
   };
 
+  const inputCls = "w-full h-11 px-3.5 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] text-[13px] font-medium text-ink-0 outline-none transition-[box-shadow,border-color] focus:border-[var(--accent-500)] focus:shadow-[var(--shadow-focus)]";
+  const labelCls = "text-[12px] font-medium text-ink-5";
+  const sectionTitle = "text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5";
+
   return (
     <div className="space-y-8 p-6">
-      <form className="space-y-4 rounded-2xl border border-[#EAEAEA] bg-white p-5 shadow-sm" onSubmit={handleProfileSubmit}>
+      <form className="space-y-4 rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5" onSubmit={handleProfileSubmit}>
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
-            <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Datos publicos de tienda</h3>
-            <p className="mt-2 max-w-xl text-[13px] font-medium leading-relaxed text-[#777777]">
-              Estos datos alimentan el storefront real y validan slug unico antes de publicar.
+            <h3 className={sectionTitle}>Datos públicos de tienda</h3>
+            <p className="mt-2 max-w-xl text-[13px] leading-[1.55] text-ink-5">
+              Estos datos alimentan el storefront real y validan slug único antes de publicar.
             </p>
           </div>
-          <button className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[#111111] px-5 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" disabled={isPending} type="submit">
+          <button className="inline-flex shrink-0 items-center gap-2 h-10 px-5 rounded-[var(--r-sm)] bg-ink-0 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" disabled={isPending} type="submit">
             <Save className="h-3.5 w-3.5" />
             {isPending ? "Guardando..." : "Guardar tienda"}
           </button>
         </div>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <label className="space-y-2">
-            <span className="text-xs font-bold text-[#111111]">Nombre</span>
-            <input className="w-full rounded-xl border border-[#EAEAEA] bg-white px-3 py-2.5 text-sm font-medium text-[#111111] outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20" defaultValue={initialData?.store.name ?? b.storeName} name="name" required />
+          <label className="space-y-1.5">
+            <span className={labelCls}>Nombre</span>
+            <input className={inputCls} defaultValue={initialData?.store.name ?? b.storeName} name="name" required />
           </label>
-          <label className="space-y-2">
-            <span className="text-xs font-bold text-[#111111]">Slug publico</span>
-            <input className="w-full rounded-xl border border-[#EAEAEA] bg-white px-3 py-2.5 font-mono text-sm font-medium text-[#111111] outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20" defaultValue={initialData?.store.slug ?? ""} name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" required />
+          <label className="space-y-1.5">
+            <span className={labelCls}>Slug público</span>
+            <input className={cn(inputCls, "font-mono")} defaultValue={initialData?.store.slug ?? ""} name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" required />
           </label>
-          <label className="space-y-2 lg:col-span-2">
-            <span className="text-xs font-bold text-[#111111]">Descripcion</span>
-            <textarea className="min-h-24 w-full rounded-xl border border-[#EAEAEA] bg-white px-3 py-2.5 text-sm font-medium text-[#111111] outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20" defaultValue={initialData?.store.description ?? ""} maxLength={280} name="description" />
+          <label className="space-y-1.5 lg:col-span-2">
+            <span className={labelCls}>Descripción</span>
+            <textarea className={cn(inputCls, "min-h-24 py-2.5")} defaultValue={initialData?.store.description ?? ""} maxLength={280} name="description" />
           </label>
-          <label className="space-y-2 lg:col-span-2">
-            <span className="text-xs font-bold text-[#111111]">Logo URL</span>
-            <input className="w-full rounded-xl border border-[#EAEAEA] bg-white px-3 py-2.5 text-sm font-medium text-[#111111] outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20" defaultValue={initialData?.store.logo ?? b.logoUrl} name="logo" placeholder="https://..." type="url" />
+          <label className="space-y-1.5 lg:col-span-2">
+            <span className={labelCls}>Logo URL</span>
+            <input className={inputCls} defaultValue={initialData?.store.logo ?? b.logoUrl} name="logo" placeholder="https://..." type="url" />
           </label>
         </div>
       </form>
 
       <div className="space-y-4">
-        <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Identidad de marca</h3>
+        <h3 className={sectionTitle}>Identidad de marca</h3>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <FormBlock label="Nombre de la tienda" value={b.storeName} />
-          <FormBlock label="Tipografia" value={b.fontFamily} />
+          <FormBlock label="Tipografía" value={b.fontFamily} />
         </div>
       </div>
 
       <div className="space-y-4">
-        <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Imagenes</h3>
+        <h3 className={sectionTitle}>Imágenes</h3>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="rounded-2xl border border-[#EAEAEA] bg-white p-5 shadow-sm">
-            <p className="text-xs font-bold text-[#111111]">Logo</p>
-            <div className="mt-3 flex h-20 w-full items-center justify-center rounded-xl border border-[#EAEAEA] bg-white">
-              {b.logoUrl ? <img src={b.logoUrl} alt="Logo" className="max-h-full max-w-full object-contain p-2" /> : <span className="text-xs text-gray-400">Sin logo</span>}
+          <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5">
+            <p className="text-[12px] font-medium text-ink-0">Logo</p>
+            <div className="mt-3 flex h-20 w-full items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)]">
+              {b.logoUrl ? <img src={b.logoUrl} alt="Logo" className="max-h-full max-w-full object-contain p-2" /> : <span className="text-[12px] text-ink-6">Sin logo</span>}
             </div>
           </div>
-          <div className="rounded-2xl border border-[#EAEAEA] bg-white p-5 shadow-sm">
-            <p className="text-xs font-bold text-[#111111]">Favicon</p>
-            <div className="mt-3 flex h-20 w-full items-center justify-center rounded-xl border border-[#EAEAEA] bg-white">
-              {b.faviconUrl ? <img src={b.faviconUrl} alt="Favicon" className="max-h-full max-w-full object-contain p-2" /> : <span className="text-xs text-gray-400">Sin favicon</span>}
+          <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5">
+            <p className="text-[12px] font-medium text-ink-0">Favicon</p>
+            <div className="mt-3 flex h-20 w-full items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)]">
+              {b.faviconUrl ? <img src={b.faviconUrl} alt="Favicon" className="max-h-full max-w-full object-contain p-2" /> : <span className="text-[12px] text-ink-6">Sin favicon</span>}
             </div>
           </div>
         </div>
       </div>
 
       <div className="space-y-4">
-        <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Colores</h3>
+        <h3 className={sectionTitle}>Colores</h3>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <ColorField label="Color principal" color={b.primaryColor} onAction={onAction} />
           <ColorField label="Color secundario" color={b.secondaryColor} onAction={onAction} />
@@ -568,8 +574,8 @@ function BrandingView({
       </div>
 
       <div className="space-y-4">
-        <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Estilo de botones</h3>
-        <p className="text-[12px] text-gray-500">Configuración gestionada desde Nexora AI Store Builder.</p>
+        <h3 className={sectionTitle}>Estilo de botones</h3>
+        <p className="text-[12px] text-ink-5">Configuración gestionada desde Nexora AI Store Builder.</p>
       </div>
     </div>
   );
@@ -581,19 +587,19 @@ function HomeView({ openDrawer, onAction, sections }: { openDrawer: (c: DrawerCo
   return (
     <div className="space-y-4 p-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Secciones del home</h3>
-        <span className="text-xs font-bold text-gray-400">{sections.length} secciones</span>
+        <h3 className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Secciones del home</h3>
+        <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">{sections.length} secciones</span>
       </div>
       <div className="space-y-2">
         {sections.map((sec) => (
-          <button key={sec.id} className="group flex w-full items-center gap-4 rounded-2xl border border-[#EAEAEA] bg-white p-4 text-left shadow-sm transition-all hover:border-gray-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" onClick={() => openDrawer({ kind: "section", data: sec })} type="button">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-50 text-gray-400 transition-colors group-hover:bg-gray-100">
-              <GripVertical className="h-4 w-4" />
+          <button key={sec.id} className="group flex w-full items-center gap-4 rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-4 text-left transition-colors hover:bg-[var(--surface-1)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" onClick={() => openDrawer({ kind: "section", data: sec })} type="button">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--r-sm)] bg-[var(--surface-1)] border border-[color:var(--hairline)] text-ink-5 transition-colors group-hover:text-ink-0">
+              <GripVertical className="h-4 w-4" strokeWidth={1.75} />
             </div>
             <div className="flex flex-1 items-center justify-between gap-3 min-w-0">
               <div className="min-w-0">
-                <p className="truncate text-sm font-bold text-[#111111]">{sec.label}</p>
-                <p className="mt-0.5 truncate text-xs font-medium text-gray-500">{sec.description}</p>
+                <p className="truncate text-[13px] font-medium text-ink-0">{sec.label}</p>
+                <p className="mt-0.5 truncate text-[11px] font-medium text-ink-5">{sec.description}</p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 <SectionTypeBadge type={sec.type} />
@@ -627,16 +633,16 @@ function NavView({ searchQuery, openDrawer, onAction, items }: { searchQuery: st
     <div className="space-y-6 p-6">
       {groups.map((group) => (
         <div key={group.key} className="space-y-2">
-          <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">{group.label}</h3>
+          <h3 className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">{group.label}</h3>
           {group.items.map((item) => (
-            <button key={item.id} className="group flex w-full items-center gap-4 rounded-2xl border border-[#EAEAEA] bg-white p-4 text-left shadow-sm transition-all hover:border-gray-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" onClick={() => openDrawer({ kind: "nav", data: item })} type="button">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-50 text-gray-400 transition-colors group-hover:bg-gray-100">
-                <Link2 className="h-4 w-4" />
+            <button key={item.id} className="group flex w-full items-center gap-4 rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-4 text-left transition-colors hover:bg-[var(--surface-1)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" onClick={() => openDrawer({ kind: "nav", data: item })} type="button">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--r-sm)] bg-[var(--surface-1)] border border-[color:var(--hairline)] text-ink-5 transition-colors group-hover:text-ink-0">
+                <Link2 className="h-4 w-4" strokeWidth={1.75} />
               </div>
               <div className="flex flex-1 items-center justify-between gap-3 min-w-0">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-[#111111]">{item.label}</p>
-                  <p className="mt-0.5 truncate text-xs font-mono font-medium text-gray-400">{item.destination}</p>
+                  <p className="truncate text-[13px] font-medium text-ink-0">{item.label}</p>
+                  <p className="mt-0.5 truncate text-[11px] font-mono font-medium text-ink-5">{item.destination}</p>
                 </div>
                 <StoreStatusBadge status={item.status} />
               </div>
@@ -663,7 +669,7 @@ function PagesView({ searchQuery, openDrawer, onAction, pages }: { searchQuery: 
       <div className="overflow-x-auto">
         <table className="w-full min-w-[700px] text-left">
           <thead>
-            <tr className="border-b border-[#EAEAEA] bg-[#FAFAFA]/70">
+            <tr className="border-b border-[color:var(--hairline)] bg-[var(--surface-1)]">
               <TableHead label="Nombre" />
               <TableHead label="Slug" />
               <TableHead label="Tipo" />
@@ -671,21 +677,21 @@ function PagesView({ searchQuery, openDrawer, onAction, pages }: { searchQuery: 
               <TableHead label="Estado" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#EAEAEA]/80">
+          <tbody className="divide-y divide-[color:var(--hairline)]">
             {filtered.map((p) => (
-              <tr key={p.id} className="group cursor-pointer bg-white transition-colors hover:bg-gray-50/60 focus-within:bg-gray-50/80" onClick={() => openDrawer({ kind: "page", data: p })} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDrawer({ kind: "page", data: p }); } }}>
-                <td className="px-6 py-4 text-sm font-bold text-[#111111]">{p.name}</td>
-                <td className="px-6 py-4 text-xs font-mono font-medium text-gray-500">{p.slug}</td>
+              <tr key={p.id} className="group cursor-pointer bg-[var(--surface-0)] transition-colors hover:bg-[var(--surface-1)] focus-within:bg-[var(--surface-2)]" onClick={() => openDrawer({ kind: "page", data: p })} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDrawer({ kind: "page", data: p }); } }}>
+                <td className="px-6 py-4 text-[13px] font-medium text-ink-0">{p.name}</td>
+                <td className="px-6 py-4 text-[11px] font-mono font-medium text-ink-5">{p.slug}</td>
                 <td className="px-6 py-4"><PageTypeBadge type={p.type} /></td>
-                <td className="px-6 py-4 text-xs font-bold tabular-nums text-gray-500">{timeFormatter.format(new Date(p.lastModified))}</td>
+                <td className="px-6 py-4 text-[11px] font-medium tabular-nums text-ink-5">{timeFormatter.format(new Date(p.lastModified))}</td>
                 <td className="px-6 py-4"><StoreStatusBadge status={p.status} /></td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <div className="flex items-center justify-between border-t border-[#EAEAEA] bg-[#FAFAFA]/50 px-6 py-4">
-        <span className="block text-xs font-bold uppercase tracking-[0.18em] text-[#888888]">Mostrando <b className="px-1 text-[#111111]">{filtered.length}</b> de {pages.length}</span>
+      <div className="flex items-center justify-between border-t border-[color:var(--hairline)] bg-[var(--surface-1)] px-6 py-3">
+        <span className="block text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Mostrando <b className="text-ink-0 px-1 font-semibold">{filtered.length}</b> de {pages.length}</span>
       </div>
     </div>
   );
@@ -711,22 +717,22 @@ function PaymentsView({
 
   return (
     <div className="space-y-6 p-6">
-      <div className={cn("rounded-2xl border p-5 shadow-sm", isConnected ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50")}>
+      <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
-            <p className={cn("text-[11px] font-bold uppercase tracking-[0.18em]", isConnected ? "text-emerald-700" : "text-amber-800")}>
+            <p className={cn("text-[10px] font-medium uppercase tracking-[0.14em]", isConnected ? "text-[color:var(--signal-success)]" : "text-[color:var(--signal-warning)]")}>
               Mercado Pago por tenant
             </p>
-            <h3 className="mt-2 text-xl font-black tracking-tight text-[#111111]">
+            <h3 className="mt-2 text-[18px] font-semibold tracking-[-0.02em] text-ink-0">
               {isConnected ? "Cuenta conectada" : "Checkout desactivado"}
             </h3>
-            <p className="mt-2 max-w-2xl text-[13px] font-medium leading-relaxed text-[#555555]">
+            <p className="mt-2 max-w-2xl text-[13px] leading-[1.55] text-ink-5">
               {isConnected
-                ? "Nexora guarda el access token cifrado por tienda. Las ordenes solo pasan a pagadas cuando Mercado Pago confirma el webhook."
-                : "La tienda puede publicarse y compartirse, pero el comprador no puede pagar hasta que el dueno conecte su propia cuenta de Mercado Pago."}
+                ? "Nexora guarda el access token cifrado por tienda. Las órdenes solo pasan a pagadas cuando Mercado Pago confirma el webhook."
+                : "La tienda puede publicarse y compartirse, pero el comprador no puede pagar hasta que el dueño conecte su propia cuenta de Mercado Pago."}
             </p>
           </div>
-          <Link className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#111111] px-5 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" href="/api/payments/mercadopago/oauth/start">
+          <Link className="inline-flex shrink-0 items-center justify-center gap-2 h-10 px-5 rounded-[var(--r-sm)] bg-ink-0 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" href="/api/payments/mercadopago/oauth/start">
             <CreditCard className="h-3.5 w-3.5" />
             {isConnected ? "Reconectar" : "Conectar Mercado Pago"}
           </Link>
@@ -736,25 +742,25 @@ function PaymentsView({
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <SummaryCard label="Estado" value={isConnected ? "Conectado" : "Pendiente"} accent={isConnected} />
         <SummaryCard label="Cuenta MP" value={provider?.externalAccountId ?? "Sin conectar"} />
-        <SummaryCard label="Ultima validacion" value={provider?.lastValidatedAt ? timeFormatter.format(new Date(provider.lastValidatedAt)) : "Sin validar"} />
+        <SummaryCard label="Última validación" value={provider?.lastValidatedAt ? timeFormatter.format(new Date(provider.lastValidatedAt)) : "Sin validar"} />
       </div>
 
-      <div className="rounded-2xl border border-[#EAEAEA] bg-white p-5 shadow-sm">
+      <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <FormBlock label="Proveedor" value="Mercado Pago" />
           <FormBlock label="Conectado" value={connectedAt ?? "No conectado"} />
-          <FormBlock label="Checkout publico" value={isConnected ? publicPath : "Desactivado hasta conectar MP"} />
+          <FormBlock label="Checkout público" value={isConnected ? publicPath : "Desactivado hasta conectar MP"} />
           <FormBlock label="Token" value={isConnected ? "Cifrado en DB por tienda" : "No guardado"} />
         </div>
       </div>
 
-      <div className="rounded-2xl border border-[#EAEAEA] bg-white p-5 shadow-sm">
-        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Regla operativa</p>
-        <p className="mt-2 max-w-2xl text-sm font-medium leading-relaxed text-[#666666]">
+      <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5">
+        <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Regla operativa</p>
+        <p className="mt-2 max-w-2xl text-[13px] leading-[1.55] text-ink-5">
           No se guarda tarjeta en Nexora. No se marca una orden como pagada desde la vuelta del checkout. El estado pagado depende del webhook firmado y del pago consultado con el token de esta tienda.
         </p>
-        <button className="mt-4 inline-flex items-center gap-2 rounded-xl border border-[#EAEAEA] bg-white px-4 py-2.5 text-[13px] font-bold text-[#111111] transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" onClick={() => onAction("El checkout sigue bloqueado sin una cuenta MP conectada.")} type="button">
-          <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+        <button className="mt-4 inline-flex items-center gap-2 h-10 px-4 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" onClick={() => onAction("El checkout sigue bloqueado sin una cuenta MP conectada.")} type="button">
+          <AlertTriangle className="h-3.5 w-3.5 text-[color:var(--signal-warning)]" strokeWidth={1.75} />
           Verificar regla
         </button>
       </div>
@@ -773,38 +779,38 @@ function PreviewView({ onAction }: { onAction: (a: string) => void }) {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="rounded-2xl border border-[#EAEAEA] bg-white shadow-sm overflow-hidden">
-          <div className="flex items-center gap-2 border-b border-[#EAEAEA] bg-[#FAFAFA]/50 px-5 py-3">
-            <Monitor className="h-4 w-4 text-gray-400" />
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Desktop</span>
+        <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] overflow-hidden">
+          <div className="flex items-center gap-2 border-b border-[color:var(--hairline)] bg-[var(--surface-1)] px-5 py-3">
+            <Monitor className="h-4 w-4 text-ink-5" strokeWidth={1.75} />
+            <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Desktop</span>
           </div>
-          <div className="flex h-48 items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+          <div className="flex h-48 items-center justify-center bg-[var(--surface-1)]">
             <div className="space-y-2 text-center">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-sm"><Monitor className="h-5 w-5 text-gray-400" /></div>
-              <p className="text-xs font-bold text-gray-500">Vista desktop</p>
-              <p className="text-[11px] font-medium text-gray-400">1440 × 900</p>
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-[var(--r-sm)] bg-[var(--surface-0)] border border-[color:var(--hairline)]"><Monitor className="h-5 w-5 text-ink-5" strokeWidth={1.75} /></div>
+              <p className="text-[12px] font-medium text-ink-5">Vista desktop</p>
+              <p className="text-[11px] font-medium text-ink-6">1440 × 900</p>
             </div>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-[#EAEAEA] bg-white shadow-sm overflow-hidden">
-          <div className="flex items-center gap-2 border-b border-[#EAEAEA] bg-[#FAFAFA]/50 px-5 py-3">
-            <Smartphone className="h-4 w-4 text-gray-400" />
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">Mobile</span>
+        <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] overflow-hidden">
+          <div className="flex items-center gap-2 border-b border-[color:var(--hairline)] bg-[var(--surface-1)] px-5 py-3">
+            <Smartphone className="h-4 w-4 text-ink-5" strokeWidth={1.75} />
+            <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Mobile</span>
           </div>
-          <div className="flex h-48 items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+          <div className="flex h-48 items-center justify-center bg-[var(--surface-1)]">
             <div className="space-y-2 text-center">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-sm"><Smartphone className="h-5 w-5 text-gray-400" /></div>
-              <p className="text-xs font-bold text-gray-500">Vista mobile</p>
-              <p className="text-[11px] font-medium text-gray-400">375 × 812</p>
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-[var(--r-sm)] bg-[var(--surface-0)] border border-[color:var(--hairline)]"><Smartphone className="h-5 w-5 text-ink-5" strokeWidth={1.75} /></div>
+              <p className="text-[12px] font-medium text-ink-5">Vista mobile</p>
+              <p className="text-[11px] font-medium text-ink-6">375 × 812</p>
             </div>
           </div>
         </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <button disabled className="flex items-center gap-2 rounded-xl border border-[#EAEAEA] bg-white px-5 py-2.5 text-[13px] font-bold text-[#111111] opacity-50" type="button">
-          Previsualizar en Vivo Mpróximamente
+        <button disabled className="inline-flex items-center gap-2 h-10 px-5 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[13px] font-medium text-ink-0 opacity-50" type="button">
+          Previsualizar en vivo próximamente
         </button>
       </div>
     </div>
@@ -815,59 +821,59 @@ function PreviewView({ onAction }: { onAction: (a: string) => void }) {
 
 function SummaryCard({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
   return (
-    <div className={cn("rounded-2xl border border-[#EAEAEA] p-5 shadow-sm", accent ? "bg-[#111111]" : "bg-white")}>
-      <p className={cn("text-[11px] font-bold uppercase tracking-[0.18em]", accent ? "text-gray-400" : "text-[#888888]")}>{label}</p>
-      <p className={cn("mt-2 truncate text-2xl font-black tracking-tight", accent ? "text-white" : "text-[#111111]")} title={value}>{value}</p>
+    <div className={cn("rounded-[var(--r-md)] border p-5", accent ? "border-transparent bg-ink-0" : "border-[color:var(--hairline)] bg-[var(--surface-0)]")}>
+      <p className={cn("text-[10px] font-medium uppercase tracking-[0.14em]", accent ? "text-ink-11" : "text-ink-5")}>{label}</p>
+      <p className={cn("mt-2 truncate text-[22px] font-semibold tracking-[-0.02em]", accent ? "text-ink-12" : "text-ink-0")} title={value}>{value}</p>
     </div>
   );
 }
 
 function NavCard({ icon, title, description, onClick }: { icon: React.ReactNode; title: string; description: string; onClick: () => void }) {
   return (
-    <button className="group flex items-start gap-4 rounded-2xl border border-[#EAEAEA] bg-white p-5 text-left shadow-sm transition-all hover:border-gray-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30" onClick={onClick} type="button">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-50 transition-colors group-hover:bg-gray-100">{icon}</div>
+    <button className="group flex items-start gap-4 rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 text-left transition-colors hover:bg-[var(--surface-1)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" onClick={onClick} type="button">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--r-sm)] bg-[var(--surface-1)] border border-[color:var(--hairline)] transition-colors group-hover:bg-[var(--surface-2)]">{icon}</div>
       <div className="min-w-0">
-        <p className="text-sm font-bold text-[#111111]">{title}</p>
-        <p className="mt-1 truncate text-xs font-medium text-gray-500">{description}</p>
+        <p className="text-[13px] font-medium text-ink-0">{title}</p>
+        <p className="mt-1 truncate text-[11px] font-medium text-ink-5">{description}</p>
       </div>
-      <span className="ml-auto shrink-0 text-gray-300 transition-colors group-hover:text-[#111111]">→</span>
+      <span className="ml-auto shrink-0 text-ink-6 transition-colors group-hover:text-ink-0">→</span>
     </button>
   );
 }
 
 function FormBlock({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-[#EAEAEA] bg-white p-5 shadow-sm">
-      <p className="text-xs font-bold text-[#111111]">{label}</p>
-      <p className="mt-2 text-sm font-medium text-gray-500">{value}</p>
+    <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5">
+      <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">{label}</p>
+      <p className="mt-2 text-[13px] font-medium text-ink-0">{value}</p>
     </div>
   );
 }
 
 function ColorField({ label, color, onAction }: { label: string; color: string; onAction: (a: string) => void }) {
   return (
-    <div className="rounded-2xl border border-[#EAEAEA] bg-white p-5 shadow-sm">
-      <p className="text-xs font-bold text-[#111111]">{label}</p>
+    <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5">
+      <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">{label}</p>
       <div className="mt-3 flex items-center gap-3">
         <ColorDot color={color} />
-        <span className="font-mono text-xs font-bold text-gray-500">{color}</span>
+        <span className="font-mono text-[11px] font-semibold text-ink-0">{color}</span>
       </div>
     </div>
   );
 }
 
 function TableHead({ label }: { label: string }) {
-  return <th className="px-6 py-4 text-left text-[11px] font-bold uppercase tracking-[0.18em] text-[#888888]">{label}</th>;
+  return <th className="px-6 py-3 text-left text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">{label}</th>;
 }
 
 function NoResultsState({ onReset }: { onReset: () => void }) {
   return (
     <div className="flex min-h-[420px] flex-col items-center justify-center px-6 py-20 text-center">
-      <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-gray-100 bg-gray-50 shadow-sm">
-        <Search className="h-8 w-8 text-gray-300" />
+      <div className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)]">
+        <Search className="h-5 w-5 text-ink-5" strokeWidth={1.5} />
       </div>
-      <h3 className="text-xl font-extrabold text-[#111111]">No encontramos resultados</h3>
-      <p className="mt-2 max-w-md text-[15px] font-medium text-[#888888]">Ajusta la búsqueda y vuelve a intentarlo.</p>
+      <h3 className="text-[18px] font-semibold tracking-[-0.02em] text-ink-0">No encontramos resultados</h3>
+      <p className="mt-2 max-w-md text-[13px] leading-[1.55] text-ink-5">Ajustá la búsqueda y volvé a intentarlo.</p>
     </div>
   );
 }
@@ -877,10 +883,10 @@ function ToastViewport({ toasts, onDismiss }: { toasts: ToastMessage[]; onDismis
   return (
     <div aria-live="polite" className="fixed right-6 top-20 z-[60] flex w-full max-w-sm flex-col gap-3">
       {toasts.map((t) => (
-        <div key={t.id} className="rounded-2xl border border-[#EAEAEA] bg-white p-4 shadow-xl animate-in slide-in-from-right-5 fade-in duration-300">
+        <div key={t.id} className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-4 shadow-[var(--shadow-overlay)] animate-in slide-in-from-right-5 fade-in duration-[var(--dur-slow)]">
           <div className="flex items-start justify-between gap-4">
-            <div><p className="text-sm font-bold text-[#111111]">{t.title}</p><p className="mt-1 text-sm font-medium text-gray-500">{t.description}</p></div>
-            <button aria-label="Cerrar" className="rounded-full p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-[#111111]" onClick={() => onDismiss(t.id)} type="button"><X className="h-4 w-4" /></button>
+            <div><p className="text-[13px] font-semibold text-ink-0">{t.title}</p><p className="mt-1 text-[12px] text-ink-5">{t.description}</p></div>
+            <button aria-label="Cerrar" className="rounded-[var(--r-sm)] p-1 text-ink-5 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0" onClick={() => onDismiss(t.id)} type="button"><X className="h-4 w-4" /></button>
           </div>
         </div>
       ))}
