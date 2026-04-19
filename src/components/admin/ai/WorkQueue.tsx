@@ -25,11 +25,11 @@ interface WorkQueueProps {
 }
 
 const PRIORITY_STYLES: Record<string, string> = {
-  high: "bg-red-50 text-red-600",
-  medium: "bg-amber-50 text-amber-600",
-  low: "bg-gray-50 text-gray-500",
-  action: "bg-purple-50 text-purple-600",
-  review: "bg-red-50 text-red-600",
+  high: "bg-[var(--surface-2)] text-[color:var(--signal-danger)]",
+  medium: "bg-[var(--surface-2)] text-[color:var(--signal-warning)]",
+  low: "bg-[var(--surface-2)] text-ink-5",
+  action: "bg-[var(--surface-2)] text-accent-500",
+  review: "bg-[var(--surface-2)] text-[color:var(--signal-danger)]",
 };
 
 const PRIORITY_LABELS: Record<string, string> = {
@@ -41,10 +41,10 @@ const PRIORITY_LABELS: Record<string, string> = {
 };
 
 const TYPE_CONFIG = {
-  recommendation: { icon: Megaphone, color: "text-emerald-600", borderHover: "hover:border-emerald-200", label: "Ads" },
-  draft: { icon: FileWarning, color: "text-amber-500", borderHover: "hover:border-amber-200", label: "Borrador" },
-  operations: { icon: PackageCheck, color: "text-purple-600", borderHover: "hover:border-purple-200", label: "Operaciones" },
-  catalog: { icon: AlertTriangle, color: "text-red-500", borderHover: "hover:border-red-200", label: "Calidad" },
+  recommendation: { icon: Megaphone, color: "text-[color:var(--signal-success)]", borderHover: "hover:border-[color:var(--hairline-strong)]", label: "Ads" },
+  draft: { icon: FileWarning, color: "text-[color:var(--signal-warning)]", borderHover: "hover:border-[color:var(--hairline-strong)]", label: "Borrador" },
+  operations: { icon: PackageCheck, color: "text-accent-500", borderHover: "hover:border-[color:var(--hairline-strong)]", label: "Operaciones" },
+  catalog: { icon: AlertTriangle, color: "text-[color:var(--signal-danger)]", borderHover: "hover:border-[color:var(--hairline-strong)]", label: "Calidad" },
 };
 
 export function WorkQueue({ items: initialItems }: WorkQueueProps) {
@@ -104,9 +104,9 @@ export function WorkQueue({ items: initialItems }: WorkQueueProps) {
   return (
     <section>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-[11px] font-bold uppercase tracking-widest text-[#111111]">
+        <h2 className="text-[11px] font-medium uppercase tracking-widest text-ink-0">
           Trabajo Pendiente
-          <span className="ml-2 bg-[#111111] text-white text-[10px] px-2 py-0.5 rounded-full">{items.length - resolvedItems.size}</span>
+          <span className="ml-2 bg-ink-0 text-ink-12 text-[10px] px-2 py-0.5 rounded-[var(--r-xs)] font-semibold">{items.length - resolvedItems.size}</span>
         </h2>
       </div>
 
@@ -121,16 +121,16 @@ export function WorkQueue({ items: initialItems }: WorkQueueProps) {
           return (
             <div
               key={item.id}
-              className={`rounded-2xl border border-[#EAEAEA] bg-white p-5 shadow-sm transition-all duration-300 h-full flex flex-col relative overflow-hidden ${
+              className={`rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 shadow-[var(--shadow-soft)] transition-all duration-300 h-full flex flex-col relative overflow-hidden ${
                 isResolved ? "opacity-0 scale-95 pointer-events-none" : config.borderHover
               }`}
             >
               {/* Resolved overlay */}
               {isResolved && (
-                <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/90 animate-in fade-in duration-200">
-                  <div className="flex items-center gap-2 text-emerald-600">
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--surface-0)]/90 animate-in fade-in duration-200">
+                  <div className="flex items-center gap-2 text-[color:var(--signal-success)]">
                     <Check className="w-5 h-5" />
-                    <span className="text-[13px] font-bold">{resolvedLabel}</span>
+                    <span className="text-[13px] font-semibold">{resolvedLabel}</span>
                   </div>
                 </div>
               )}
@@ -139,27 +139,27 @@ export function WorkQueue({ items: initialItems }: WorkQueueProps) {
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Icon className={`w-4 h-4 ${config.color}`} />
-                  <span className={`text-[10px] font-bold uppercase tracking-wider ${config.color}`}>{config.label}</span>
+                  <span className={`text-[10px] font-medium uppercase tracking-wider ${config.color}`}>{config.label}</span>
                 </div>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${PRIORITY_STYLES[item.priority]}`}>
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-[var(--r-xs)] uppercase tracking-wider ${PRIORITY_STYLES[item.priority]}`}>
                   {PRIORITY_LABELS[item.priority]}
                 </span>
               </div>
 
               {/* Content */}
-              <h3 className="text-[15px] font-bold text-[#111111] leading-snug mb-2">{item.title}</h3>
-              <p className="text-[12px] text-[#888888] leading-relaxed flex-1 line-clamp-2">{item.description}</p>
+              <h3 className="text-[15px] font-semibold text-ink-0 leading-snug mb-2">{item.title}</h3>
+              <p className="text-[12px] text-ink-5 leading-relaxed flex-1 line-clamp-2">{item.description}</p>
 
               {/* Footer: Actions */}
-              <div className="mt-4 pt-3 border-t border-[#F0F0F0]">
+              <div className="mt-4 pt-3 border-t border-[color:var(--hairline)]">
                 {item.type === "recommendation" && item.recoId && (
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[11px] font-bold text-gray-400 truncate">{item.budgetLabel}</span>
+                    <span className="text-[11px] font-medium text-ink-6 truncate">{item.budgetLabel}</span>
                     <div className="flex items-center gap-1.5 shrink-0">
                       <button
                         onClick={() => handleDismissReco(item.recoId!, item.id)}
                         disabled={isActioning || isPending}
-                        className="px-2.5 py-1 text-[11px] font-bold text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-0.5"
+                        className="px-2.5 py-1 text-[11px] font-semibold text-ink-5 hover:text-[color:var(--signal-danger)] hover:bg-[var(--surface-2)] rounded-[var(--r-sm)] transition-colors disabled:opacity-50 flex items-center gap-0.5"
                       >
                         {isActioning ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
                         Descartar
@@ -167,7 +167,7 @@ export function WorkQueue({ items: initialItems }: WorkQueueProps) {
                       <button
                         onClick={() => handlePromoteReco(item.recoId!, item.id)}
                         disabled={isActioning || isPending}
-                        className="px-2.5 py-1 text-[11px] font-bold text-white bg-[#111111] hover:bg-black rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1"
+                        className="px-2.5 py-1 text-[11px] font-semibold text-ink-12 bg-ink-0 hover:bg-ink-1 rounded-[var(--r-sm)] transition-colors disabled:opacity-50 flex items-center gap-1"
                       >
                         {isActioning ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
                         Crear Borrador
@@ -178,19 +178,19 @@ export function WorkQueue({ items: initialItems }: WorkQueueProps) {
 
                 {item.type === "draft" && item.draftId && (
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[11px] font-bold text-gray-400">{item.scoreLabel}</span>
+                    <span className="text-[11px] font-medium text-ink-6">{item.scoreLabel}</span>
                     <div className="flex items-center gap-1.5 shrink-0">
                       <button
                         onClick={() => handleArchiveDraft(item.draftId!, item.id)}
                         disabled={isActioning || isPending}
-                        className="px-2.5 py-1 text-[11px] font-bold text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-0.5"
+                        className="px-2.5 py-1 text-[11px] font-semibold text-ink-5 hover:text-[color:var(--signal-danger)] hover:bg-[var(--surface-2)] rounded-[var(--r-sm)] transition-colors disabled:opacity-50 flex items-center gap-0.5"
                       >
                         {isActioning ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
                         Archivar
                       </button>
                       <Link
                         href={item.href}
-                        className="px-2.5 py-1 text-[11px] font-bold text-white bg-[#111111] hover:bg-black rounded-lg transition-colors flex items-center gap-1"
+                        className="px-2.5 py-1 text-[11px] font-semibold text-ink-12 bg-ink-0 hover:bg-ink-1 rounded-[var(--r-sm)] transition-colors flex items-center gap-1"
                       >
                         Continuar <ArrowRight className="w-3 h-3" />
                       </Link>
@@ -200,8 +200,8 @@ export function WorkQueue({ items: initialItems }: WorkQueueProps) {
 
                 {item.type === "operations" && (
                   <Link href={item.href} className="flex items-center justify-between group">
-                    <span className="text-[11px] font-bold text-gray-400">{item.meta}</span>
-                    <span className="text-[11px] font-bold text-purple-600 group-hover:underline flex items-center gap-1">
+                    <span className="text-[11px] font-medium text-ink-6">{item.meta}</span>
+                    <span className="text-[11px] font-semibold text-ink-0 group-hover:underline flex items-center gap-1">
                       Ver pedidos <ArrowRight className="w-3 h-3" />
                     </span>
                   </Link>
@@ -209,8 +209,8 @@ export function WorkQueue({ items: initialItems }: WorkQueueProps) {
 
                 {item.type === "catalog" && (
                   <Link href={item.href} className="flex items-center justify-between group">
-                    <span className="text-[11px] font-bold text-gray-400">{item.meta}</span>
-                    <span className="text-[11px] font-bold text-red-600 group-hover:underline flex items-center gap-1">
+                    <span className="text-[11px] font-medium text-ink-6">{item.meta}</span>
+                    <span className="text-[11px] font-semibold text-[color:var(--signal-danger)] group-hover:underline flex items-center gap-1">
                       Completar datos <ArrowRight className="w-3 h-3" />
                     </span>
                   </Link>

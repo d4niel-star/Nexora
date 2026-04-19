@@ -18,10 +18,10 @@ export function GlobalCommandInput() {
   };
 
   return (
-    <div className="mt-8 rounded-2xl border border-[#EAEAEA] bg-white p-6 shadow-sm relative overflow-hidden">
+    <div className="mt-8 rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6 shadow-[var(--shadow-soft)] relative overflow-hidden">
         <div className="flex items-center gap-3 mb-4">
-          <Sparkles className="w-5 h-5 text-[#111111]" />
-          <h4 className="text-sm font-bold text-[#111111]">Comando Global Rápido</h4>
+          <Sparkles className="w-5 h-5 text-ink-0" />
+          <h4 className="text-sm font-semibold text-ink-0">Comando Global Rápido</h4>
         </div>
         <form onSubmit={handleSubmit} className="relative">
           <textarea 
@@ -33,7 +33,7 @@ export function GlobalCommandInput() {
                  handleSubmit(e);
                }
              }}
-             className="w-full bg-[#FAFAFA] border border-[#EAEAEA] rounded-xl px-4 py-3 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#111111] text-sm resize-none transition-shadow"
+             className="w-full bg-[var(--surface-1)] border border-[color:var(--hairline)] rounded-[var(--r-md)] px-4 py-3 placeholder:text-ink-6 focus:outline-none focus:border-[var(--accent-500)] focus:shadow-[var(--shadow-focus)] text-sm text-ink-0 resize-none transition-[box-shadow,border-color]"
              placeholder="Ej: Analizá mi rentabilidad y sugerime una campaña para el top 1..."
              rows={3}
              disabled={isPending}
@@ -42,16 +42,16 @@ export function GlobalCommandInput() {
             <button 
               type="submit"
               disabled={!input.trim() || isPending}
-              className="bg-[#111111] text-white p-2.5 rounded-lg disabled:opacity-50 disabled:bg-gray-200 disabled:text-gray-400 transition-colors hover:bg-black"
+              className="bg-ink-0 text-ink-12 p-2.5 rounded-[var(--r-sm)] disabled:opacity-50 disabled:bg-[var(--surface-3)] disabled:text-ink-6 transition-colors hover:bg-ink-1"
             >
                {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
             </button>
           </div>
         </form>
         {isPending && (
-           <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] flex items-center justify-center">
-             <div className="bg-[#111111] text-white text-[12px] font-bold px-4 py-2 rounded-full flex items-center gap-2 shadow-lg">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+           <div className="absolute inset-0 bg-[var(--surface-0)]/50 backdrop-blur-[1px] flex items-center justify-center">
+             <div className="bg-ink-0 text-ink-12 text-[12px] font-semibold px-4 py-2 rounded-[var(--r-sm)] flex items-center gap-2 shadow-[var(--shadow-elevated)]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[color:var(--signal-success)] animate-ping" />
                 Ruteando contexto...
              </div>
            </div>

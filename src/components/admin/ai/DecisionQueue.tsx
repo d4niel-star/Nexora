@@ -55,12 +55,12 @@ export function DecisionQueue({ data }: { data: DecisionEngineResult }) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Brain className="h-4 w-4 text-[#111111]" />
-          <h2 className="text-[11px] font-bold uppercase tracking-widest text-[#111111]">
+          <Brain className="h-4 w-4 text-ink-0" />
+          <h2 className="text-[11px] font-medium uppercase tracking-widest text-ink-0">
             Recomendaciones
           </h2>
           {activeCount > 0 && (
-            <span className="bg-[#111111] text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
+            <span className="bg-ink-0 text-ink-12 text-[10px] px-2 py-0.5 rounded-[var(--r-xs)] font-semibold">
               {activeCount}
             </span>
           )}
@@ -94,7 +94,7 @@ function DomainPills({ domains }: { domains: DomainHealth[] }) {
         <span
           key={d.domain}
           className={cn(
-            "flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold",
+            "flex items-center gap-1 rounded-[var(--r-xs)] px-2 py-0.5 text-[10px] font-semibold",
             severityBg(d.maxSeverity)
           )}
         >
@@ -124,12 +124,12 @@ function DomainGroup({
     <div>
       <div className="flex items-center gap-2 mb-2">
         <span className={cn(
-          "flex h-5 w-5 items-center justify-center rounded",
-          domainBg(domain)
+          "flex h-5 w-5 items-center justify-center rounded-[var(--r-xs)]",
+          "bg-[var(--surface-2)]"
         )}>
           <DomainIcon domain={domain} />
         </span>
-        <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#888888]">
+        <span className="text-[10px] font-medium uppercase tracking-[0.15em] text-ink-5">
           {label}
         </span>
       </div>
@@ -210,24 +210,24 @@ function RecommendationCard({
   };
 
   const borderClass = rec.severity === "critical"
-    ? "border-red-200 hover:border-red-300"
+    ? "border-[color:var(--hairline-strong)]"
     : rec.severity === "high"
-      ? "border-amber-200 hover:border-amber-300"
-      : "border-[#EAEAEA] hover:border-gray-300";
+      ? "border-[color:var(--hairline-strong)]"
+      : "border-[color:var(--hairline)] hover:border-[color:var(--hairline-strong)]";
 
   return (
     <div
       className={cn(
-        "relative rounded-xl border bg-white p-4 shadow-sm transition-all duration-300 overflow-hidden",
+        "relative rounded-[var(--r-md)] border bg-[var(--surface-0)] p-4 shadow-[var(--shadow-soft)] transition-all duration-300 overflow-hidden",
         isResolved ? "opacity-0 scale-95 pointer-events-none" : borderClass
       )}
     >
       {/* Resolved overlay */}
       {isResolved && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/90">
-          <div className="flex items-center gap-2 text-emerald-600">
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--surface-0)]/90">
+          <div className="flex items-center gap-2 text-[color:var(--signal-success)]">
             <Check className="h-4 w-4" />
-            <span className="text-[12px] font-bold">{resolvedLabel}</span>
+            <span className="text-[12px] font-semibold">{resolvedLabel}</span>
           </div>
         </div>
       )}
@@ -237,18 +237,18 @@ function RecommendationCard({
         <div className="pt-1 shrink-0">
           <span className={cn(
             "block h-2 w-2 rounded-full",
-            rec.severity === "critical" ? "bg-red-500" :
-            rec.severity === "high" ? "bg-amber-500" :
-            rec.severity === "normal" ? "bg-blue-400" : "bg-gray-400"
+            rec.severity === "critical" ? "bg-[color:var(--signal-danger)]" :
+            rec.severity === "high" ? "bg-[color:var(--signal-warning)]" :
+            rec.severity === "normal" ? "bg-accent-400" : "bg-ink-6"
           )} />
         </div>
 
         {/* Content */}
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-bold text-[#111111] leading-snug">{rec.title}</p>
-          <p className="mt-1 text-[11px] leading-relaxed text-[#666666]">{rec.reason}</p>
-          <p className="mt-1.5 text-[10px] font-medium text-[#AAAAAA] italic">{rec.evidence}</p>
-          {error && <p className="mt-1 text-[10px] font-bold text-red-500">{error}</p>}
+          <p className="text-[13px] font-semibold text-ink-0 leading-snug">{rec.title}</p>
+          <p className="mt-1 text-[11px] leading-relaxed text-ink-4">{rec.reason}</p>
+          <p className="mt-1.5 text-[10px] font-medium text-ink-6 italic">{rec.evidence}</p>
+          {error && <p className="mt-1 text-[10px] font-semibold text-[color:var(--signal-danger)]">{error}</p>}
         </div>
 
         {/* Action area */}
@@ -258,8 +258,8 @@ function RecommendationCard({
               onClick={() => executeAction(rec.action!)}
               disabled={isPending || isResolved}
               className={cn(
-                "px-3 py-1.5 text-[11px] font-bold rounded-lg transition-all flex items-center gap-1.5 disabled:opacity-50",
-                "bg-[#111111] text-white hover:bg-black"
+                "px-3 py-1.5 text-[11px] font-semibold rounded-[var(--r-sm)] transition-all flex items-center gap-1.5 disabled:opacity-50",
+                "bg-ink-0 text-ink-12 hover:bg-ink-1"
               )}
             >
               {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
@@ -268,7 +268,7 @@ function RecommendationCard({
           )}
           <Link
             href={rec.href}
-            className="flex items-center gap-1 text-[11px] font-bold text-[#BBBBBB] transition-colors hover:text-[#111111] whitespace-nowrap"
+            className="flex items-center gap-1 text-[11px] font-semibold text-ink-6 transition-colors hover:text-ink-0 whitespace-nowrap"
           >
             {rec.action ? "Ver" : rec.actionLabel}
             <ArrowRight className="h-3 w-3" />
@@ -292,20 +292,10 @@ function DomainIcon({ domain }: { domain: DecisionDomain }) {
 
 function severityBg(s: DecisionSeverity): string {
   switch (s) {
-    case "critical": return "bg-red-100 text-red-700";
-    case "high": return "bg-amber-100 text-amber-700";
-    case "normal": return "bg-blue-50 text-blue-600";
-    case "info": return "bg-gray-100 text-gray-500";
-  }
-}
-
-function domainBg(d: DecisionDomain): string {
-  switch (d) {
-    case "operations": return "bg-purple-100";
-    case "finance": return "bg-blue-100";
-    case "sourcing": return "bg-emerald-100";
-    case "ads": return "bg-pink-100";
-    case "aptitude": return "bg-violet-100";
+    case "critical": return "bg-[var(--surface-2)] text-[color:var(--signal-danger)]";
+    case "high": return "bg-[var(--surface-2)] text-[color:var(--signal-warning)]";
+    case "normal": return "bg-[var(--surface-2)] text-accent-500";
+    case "info": return "bg-[var(--surface-2)] text-ink-5";
   }
 }
 

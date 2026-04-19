@@ -48,7 +48,7 @@ export function OnboardingDashboard({ data }: { data: ActivationState }) {
         </h2>
         <span className="mt-1 inline-block text-[13px] font-semibold tabular-nums text-ink-0">
           {completedSteps}/{totalSteps}
-          <span className="ml-2 text-emerald-600">{score}%</span>
+          <span className="ml-2 text-[color:var(--signal-success)]">{score}%</span>
         </span>
         <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-[var(--surface-3)]">
           <div
@@ -171,9 +171,9 @@ function StatusIcon({ status }: { status: ActivationStepStatus }) {
     case "in_progress":
       return <AlertTriangle className="h-5 w-5 text-[color:var(--signal-warning)]" />;
     case "blocked":
-      return <Lock className="h-5 w-5 text-[#CCCCCC]" />;
+      return <Lock className="h-5 w-5 text-ink-6" />;
     case "pending":
     default:
-      return <Circle className="h-5 w-5 text-[#CCCCCC]" />;
+      return <Circle className="h-5 w-5 text-ink-6" />;
   }
 }

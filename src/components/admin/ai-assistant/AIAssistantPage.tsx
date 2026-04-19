@@ -46,9 +46,9 @@ interface ConversationSummary {
 function NexoraMark({ size = 20, className }: { size?: number; className?: string }) {
   return (
     <div className={cn("relative flex items-center justify-center", className)} style={{ width: size, height: size }}>
-      <div className="absolute inset-0 rotate-12 rounded-[5px] bg-[#111111]" />
-      <div className="absolute rounded-sm bg-emerald-500" style={{ width: size * 0.25, height: size * 0.25, top: "15%", left: "15%" }} />
-      <div className="absolute rounded-sm bg-white" style={{ width: size * 0.25, height: size * 0.25, bottom: "15%", right: "15%" }} />
+      <div className="absolute inset-0 rotate-12 rounded-[5px] bg-ink-0" />
+      <div className="absolute rounded-sm bg-[color:var(--signal-success)]" style={{ width: size * 0.25, height: size * 0.25, top: "15%", left: "15%" }} />
+      <div className="absolute rounded-sm bg-ink-12" style={{ width: size * 0.25, height: size * 0.25, bottom: "15%", right: "15%" }} />
     </div>
   );
 }
@@ -142,7 +142,7 @@ export function AIAssistantPage() {
   if (isLoading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-[#CCCCCC]" />
+        <Loader2 className="h-6 w-6 animate-spin text-ink-8" />
       </div>
     );
   }
@@ -154,13 +154,13 @@ export function AIAssistantPage() {
         <div className="flex items-center gap-3">
           <NexoraMark size={28} />
           <div>
-            <h1 className="text-[28px] font-extrabold tracking-tight text-[#111111] leading-none">Nexora AI</h1>
-            <p className="mt-1 text-[13px] text-[#999999]">Asistente inteligente para tu negocio</p>
+            <h1 className="text-[28px] font-bold tracking-[var(--tracking-display)] text-ink-0 leading-none">Nexora AI</h1>
+            <p className="mt-1 text-[13px] text-ink-6">Asistente inteligente para tu negocio</p>
           </div>
         </div>
-        <div className="hidden md:flex items-center gap-3 text-[11px] text-[#BBBBBB]">
+        <div className="hidden md:flex items-center gap-3 text-[11px] text-ink-7">
           <span className="tabular-nums">{usageStats.totalConversations} chats</span>
-          <span className="text-[#E5E5E5]">·</span>
+          <span className="text-ink-9">·</span>
           <span className="tabular-nums">{usageStats.totalMessages} mensajes</span>
         </div>
       </div>
@@ -171,7 +171,7 @@ export function AIAssistantPage() {
           {/* New conversation */}
           <button
             onClick={() => handleNewConversation("general")}
-            className="flex w-full items-center gap-2 rounded-lg bg-[#111111] px-4 py-2.5 text-[13px] font-semibold text-white transition-all hover:bg-black"
+            className="flex w-full items-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-4 py-2.5 text-[13px] font-semibold text-ink-12 transition-all hover:bg-ink-1"
             type="button"
           >
             <Plus className="h-3.5 w-3.5" />
@@ -180,13 +180,13 @@ export function AIAssistantPage() {
 
           {/* Context shortcuts */}
           <div className="mt-6">
-            <p className="px-1 mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#BBBBBB]">Contextos</p>
+            <p className="px-1 mb-2 text-[10px] font-medium uppercase tracking-[0.12em] text-ink-7">Contextos</p>
             <div className="space-y-0.5">
               {CONTEXT_OPTIONS.map((ctx) => (
                 <button
                   key={ctx.type}
                   onClick={() => handleNewConversation(ctx.type)}
-                  className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] text-[#777777] transition-colors hover:bg-[#F5F5F5] hover:text-[#111111]"
+                  className="flex w-full items-center gap-2.5 rounded-[var(--r-sm)] px-2.5 py-2 text-[13px] text-ink-5 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0"
                   type="button"
                 >
                   <ctx.icon className="h-3.5 w-3.5" />
@@ -197,10 +197,10 @@ export function AIAssistantPage() {
           </div>
 
           {/* History */}
-          <div className="mt-6 pt-5 border-t border-[#F0F0F0]">
-            <p className="px-1 mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#BBBBBB]">Recientes</p>
+          <div className="mt-6 pt-5 border-t border-[color:var(--hairline)]">
+            <p className="px-1 mb-2 text-[10px] font-medium uppercase tracking-[0.12em] text-ink-7">Recientes</p>
             {conversations.length === 0 ? (
-              <p className="px-2.5 py-2 text-[12px] text-[#CCCCCC]">Sin conversaciones</p>
+              <p className="px-2.5 py-2 text-[12px] text-ink-8">Sin conversaciones</p>
             ) : (
               <div className="space-y-0.5 max-h-[260px] overflow-y-auto">
                 {conversations.map((conv) => (
@@ -208,14 +208,14 @@ export function AIAssistantPage() {
                     key={conv.id}
                     onClick={() => handleOpenConversation(conv.id)}
                     className={cn(
-                      "flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left transition-colors",
+                      "flex w-full items-center gap-2 rounded-[var(--r-sm)] px-2.5 py-2 text-left transition-colors",
                       conv.id === activeConversationId
-                        ? "bg-[#111111] text-white"
-                        : "text-[#777777] hover:bg-[#F5F5F5]"
+                        ? "bg-ink-0 text-ink-12"
+                        : "text-ink-5 hover:bg-[var(--surface-2)]"
                     )}
                     type="button"
                   >
-                    <MessageSquare className={cn("h-3 w-3 shrink-0", conv.id === activeConversationId ? "text-white/50" : "text-[#CCCCCC]")} />
+                    <MessageSquare className={cn("h-3 w-3 shrink-0", conv.id === activeConversationId ? "text-ink-12/50" : "text-ink-8")} />
                     <span className="truncate text-[12px] font-medium">{conv.title}</span>
                   </button>
                 ))}
@@ -225,7 +225,7 @@ export function AIAssistantPage() {
         </div>
 
         {/* ─── Chat Area ─── */}
-        <div className="flex flex-col rounded-2xl border border-[#E5E5E5] bg-white overflow-hidden" style={{ minHeight: "560px", maxHeight: "calc(100vh - 200px)" }}>
+        <div className="flex flex-col rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] overflow-hidden" style={{ minHeight: "560px", maxHeight: "calc(100vh - 200px)" }}>
           {!activeConversationId ? (
             <WelcomeView onNewConversation={handleNewConversation} />
           ) : (
@@ -241,7 +241,7 @@ export function AIAssistantPage() {
                 {isPending && messages.length > 0 && messages[messages.length - 1].role === "user" && (
                   <div className="flex items-start gap-3">
                     <NexoraMark size={22} />
-                    <div className="flex items-center gap-2 text-[13px] text-[#BBBBBB]">
+                    <div className="flex items-center gap-2 text-[13px] text-ink-7">
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       <span>Pensando...</span>
                     </div>
@@ -252,7 +252,7 @@ export function AIAssistantPage() {
 
               {/* Input */}
               {outOfCredits ? (
-                 <div className="border-t border-[#F0F0F0] bg-[#FAFAFA] p-4">
+                 <div className="border-t border-[color:var(--hairline)] bg-[var(--surface-1)] p-4">
                     <UpgradePrompt 
                        title="Se agotaron tus créditos de IA" 
                        description="Alcanzaste el límite de créditos incluidos en tu plan. Podés comprar créditos adicionales o actualizar a un plan con mayor capacidad."
@@ -260,29 +260,29 @@ export function AIAssistantPage() {
                     />
                  </div>
               ) : (
-                 <div className="border-t border-[#F0F0F0] bg-[#FAFAFA] px-4 md:px-6 py-4">
-                   <div className="flex items-end gap-2 rounded-xl border border-[#E5E5E5] bg-white px-3 py-2 focus-within:border-[#111111] transition-colors">
+                 <div className="border-t border-[color:var(--hairline)] bg-[var(--surface-1)] px-4 md:px-6 py-4">
+                   <div className="flex items-end gap-2 rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3 py-2 focus-within:border-ink-0 transition-colors">
                      <textarea
                        ref={inputRef}
                        value={input}
                        onChange={(e) => setInput(e.target.value)}
                        onKeyDown={handleKeyDown}
                        placeholder="Escribí tu mensaje..."
-                       className="flex-1 resize-none bg-transparent py-1 text-[13px] text-[#111111] outline-none placeholder:text-[#CCCCCC]"
+                       className="flex-1 resize-none bg-transparent py-1 text-[13px] text-ink-0 outline-none placeholder:text-ink-8"
                        rows={1}
                        style={{ maxHeight: "100px" }}
                      />
                      <button
                        onClick={handleSend}
                        disabled={!input.trim() || isPending}
-                       className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#111111] text-white transition-all hover:bg-black disabled:opacity-20"
+                       className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--r-sm)] bg-ink-0 text-ink-12 transition-all hover:bg-ink-1 disabled:opacity-20"
                        type="button"
                        aria-label="Enviar mensaje"
                      >
                        <ArrowUp className="h-3.5 w-3.5" />
                      </button>
                    </div>
-                   <p className="mt-2 text-center text-[10px] text-[#CCCCCC]">
+                   <p className="mt-2 text-center text-[10px] text-ink-8">
                      Nexora AI · Las respuestas pueden no ser exactas
                    </p>
                  </div>
@@ -301,8 +301,8 @@ function WelcomeView({ onNewConversation }: { onNewConversation: (ctx: AIContext
   return (
     <div className="flex flex-1 flex-col items-center justify-center p-10 text-center">
       <NexoraMark size={40} className="mb-6" />
-      <h2 className="text-xl font-extrabold tracking-tight text-[#111111]">¿En qué te puedo ayudar?</h2>
-      <p className="mt-2 max-w-sm text-[13px] text-[#999999]">
+      <h2 className="text-xl font-bold tracking-tight text-ink-0">¿En qué te puedo ayudar?</h2>
+      <p className="mt-2 max-w-sm text-[13px] text-ink-6">
         Seleccioná un contexto para comenzar o escribí directamente.
       </p>
       <div className="mt-10 grid grid-cols-2 sm:grid-cols-3 gap-2 max-w-md w-full">
@@ -310,11 +310,11 @@ function WelcomeView({ onNewConversation }: { onNewConversation: (ctx: AIContext
           <button
             key={ctx.type}
             onClick={() => onNewConversation(ctx.type)}
-            className="group flex items-center gap-2 rounded-lg border border-[#E5E5E5] bg-white px-3.5 py-3 text-left transition-all hover:border-[#111111]/20 hover:bg-[#FAFAFA]"
+            className="group flex items-center gap-2 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3.5 py-3 text-left transition-all hover:border-[color:var(--hairline-strong)] hover:bg-[var(--surface-1)]"
             type="button"
           >
-            <ctx.icon className="h-3.5 w-3.5 text-[#BBBBBB] group-hover:text-[#111111] transition-colors" />
-            <span className="text-[12px] font-semibold text-[#777777] group-hover:text-[#111111] transition-colors">{ctx.label}</span>
+            <ctx.icon className="h-3.5 w-3.5 text-ink-7 group-hover:text-ink-0 transition-colors" />
+            <span className="text-[12px] font-semibold text-ink-5 group-hover:text-ink-0 transition-colors">{ctx.label}</span>
           </button>
         ))}
       </div>
@@ -330,7 +330,7 @@ function ChatBlock({ message }: { message: MessageView }) {
   if (isUser) {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[70%] rounded-2xl rounded-br-md bg-[#111111] px-4 py-3 text-[13px] leading-relaxed text-white">
+        <div className="max-w-[70%] rounded-[var(--r-lg)] rounded-br-[var(--r-xs)] bg-ink-0 px-4 py-3 text-[13px] leading-relaxed text-ink-12">
           {message.content}
         </div>
       </div>
@@ -340,7 +340,7 @@ function ChatBlock({ message }: { message: MessageView }) {
   return (
     <div className="flex items-start gap-3">
       <NexoraMark size={22} className="mt-0.5 shrink-0" />
-      <div className="max-w-[85%] text-[13px] leading-[1.7] text-[#333333]">
+      <div className="max-w-[85%] text-[13px] leading-[1.7] text-ink-3">
         <div
           className="prose-nexora"
           dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content) }}
@@ -363,17 +363,17 @@ function SuggestedPrompts({ onSelect }: { onSelect: (prompt: string) => void }) 
   return (
     <div className="flex flex-col items-center py-10">
       <NexoraMark size={28} className="mb-4" />
-      <p className="mb-6 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#BBBBBB]">Prueba preguntando</p>
+      <p className="mb-6 text-[12px] font-medium uppercase tracking-[0.12em] text-ink-7">Prueba preguntando</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-lg">
         {prompts.map((p) => (
           <button
             key={p.text}
             onClick={() => onSelect(p.text)}
-            className="group flex items-start gap-2.5 rounded-xl border border-[#E5E5E5] bg-white px-4 py-3 text-left transition-all hover:border-[#111111]/20 hover:bg-[#FAFAFA]"
+            className="group flex items-start gap-2.5 rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-4 py-3 text-left transition-all hover:border-[color:var(--hairline-strong)] hover:bg-[var(--surface-1)]"
             type="button"
           >
-            <p.icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#CCCCCC] group-hover:text-[#111111] transition-colors" />
-            <span className="text-[12px] text-[#777777] group-hover:text-[#111111] transition-colors">{p.text}</span>
+            <p.icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-8 group-hover:text-ink-0 transition-colors" />
+            <span className="text-[12px] text-ink-5 group-hover:text-ink-0 transition-colors">{p.text}</span>
           </button>
         ))}
       </div>
@@ -399,13 +399,13 @@ function renderMarkdown(text: string): string {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-[#111111]">$1</strong>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-ink-0">$1</strong>')
     .replace(/\*(.+?)\*/g, "<em>$1</em>")
-    .replace(/^### (.+)$/gm, '<h3 class="text-[13px] font-bold text-[#111111] mt-4 mb-1">$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2 class="text-[14px] font-bold text-[#111111] mt-4 mb-1">$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1 class="text-[15px] font-bold text-[#111111] mt-4 mb-1.5">$1</h1>')
-    .replace(/^- (.+)$/gm, '<div class="flex items-start gap-2 ml-1 my-0.5"><span class="mt-[7px] h-1 w-1 rounded-full bg-[#CCCCCC] shrink-0"></span><span>$1</span></div>')
-    .replace(/^(\d+)\. (.+)$/gm, '<div class="flex items-start gap-2 ml-1 my-0.5"><span class="text-[11px] font-bold text-[#BBBBBB] mt-[1px] shrink-0 w-4">$1.</span><span>$2</span></div>')
+    .replace(/^### (.+)$/gm, '<h3 class="text-[13px] font-semibold text-ink-0 mt-4 mb-1">$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2 class="text-[14px] font-semibold text-ink-0 mt-4 mb-1">$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1 class="text-[15px] font-semibold text-ink-0 mt-4 mb-1.5">$1</h1>')
+    .replace(/^- (.+)$/gm, '<div class="flex items-start gap-2 ml-1 my-0.5"><span class="mt-[7px] h-1 w-1 rounded-full bg-ink-8 shrink-0"></span><span>$1</span></div>')
+    .replace(/^(\d+)\. (.+)$/gm, '<div class="flex items-start gap-2 ml-1 my-0.5"><span class="text-[11px] font-medium text-ink-7 mt-[1px] shrink-0 w-4">$1.</span><span>$2</span></div>')
     .replace(/\n{2,}/g, '<div class="h-3"></div>')
     .replace(/\n/g, '<div class="h-1"></div>');
 }

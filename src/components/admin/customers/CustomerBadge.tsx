@@ -19,13 +19,13 @@ const badgeLabels: Record<CustomerBadgeTone, string> = {
 };
 
 const badgeStyles: Record<CustomerBadgeTone, string> = {
-  new: "bg-blue-50 text-blue-700 ring-blue-600/15",
-  recurring: "bg-gray-100 text-gray-700 ring-gray-500/10",
-  vip: "bg-amber-50 text-amber-700 ring-amber-600/15",
-  active: "bg-gray-100 text-gray-600 ring-gray-500/10",
-  inactive: "bg-gray-100 text-gray-500 ring-gray-500/10",
-  risk: "bg-red-50 text-red-700 ring-red-600/10",
-  high_value: "bg-emerald-50 text-emerald-700 ring-emerald-600/15",
+  new: "bg-[var(--surface-2)] text-accent-500 border-[color:var(--hairline)]",
+  recurring: "bg-[var(--surface-2)] text-ink-4 border-[color:var(--hairline)]",
+  vip: "bg-[var(--surface-2)] text-[color:var(--signal-warning)] border-[color:var(--hairline)]",
+  active: "bg-[var(--surface-2)] text-ink-4 border-[color:var(--hairline)]",
+  inactive: "bg-[var(--surface-2)] text-ink-6 border-[color:var(--hairline)]",
+  risk: "bg-[var(--surface-2)] text-[color:var(--signal-danger)] border-[color:var(--hairline)]",
+  high_value: "bg-[var(--surface-2)] text-[color:var(--signal-success)] border-[color:var(--hairline)]",
 };
 
 export function CustomerBadge({
@@ -38,7 +38,7 @@ export function CustomerBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.18em] ring-1 ring-inset",
+        "inline-flex items-center rounded-[var(--r-xs)] border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]",
         badgeStyles[tone],
         className
       )}
