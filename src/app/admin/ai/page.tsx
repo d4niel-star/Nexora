@@ -73,24 +73,24 @@ export default async function AIGeneralPage() {
             {/* Finance snapshot */}
             {hasFin && data.financeSummary && (
               <Link href={data.financeSummary.totalPending > 0 ? "/admin/ai/finances?tab=pendiente" : "/admin/ai/finances"} className="block group">
-                <div className="rounded-2xl border border-[#EAEAEA] bg-white p-5 shadow-sm hover:shadow-md hover:border-blue-200 transition-all h-full">
+                <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 transition-colors hover:border-[color:var(--hairline-strong)] h-full">
                   <div className="flex items-center gap-2 mb-4">
-                    <TrendingUp className="w-4 h-4 text-blue-600" />
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600">Finanzas</span>
-                    <CheckCircle2 className="w-3.5 h-3.5 text-blue-400 ml-auto" />
+                    <TrendingUp className="w-3.5 h-3.5 text-ink-4" strokeWidth={1.75} />
+                    <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Finanzas</span>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-ink-6 ml-auto" strokeWidth={1.75} />
                   </div>
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Cobrado</p>
-                      <p className="text-[16px] font-black text-ink-0 tabular-nums">${Math.round(data.financeSummary.totalCollected).toLocaleString()}</p>
+                      <p className="text-[10px] text-ink-5 font-medium uppercase tracking-[0.14em] mb-1">Cobrado</p>
+                      <p className="tabular text-[16px] font-semibold text-ink-0">${Math.round(data.financeSummary.totalCollected).toLocaleString()}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Pendiente</p>
-                      <p className="text-[16px] font-black text-amber-600 tabular-nums">${Math.round(data.financeSummary.totalPending).toLocaleString()}</p>
+                      <p className="text-[10px] text-ink-5 font-medium uppercase tracking-[0.14em] mb-1">Pendiente</p>
+                      <p className="tabular text-[16px] font-semibold text-[color:var(--signal-warning)]">${Math.round(data.financeSummary.totalPending).toLocaleString()}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Retención</p>
-                      <p className="text-[16px] font-black text-emerald-600 tabular-nums">{data.financeSummary.estimatedMarginPercent}%</p>
+                      <p className="text-[10px] text-ink-5 font-medium uppercase tracking-[0.14em] mb-1">Retención</p>
+                      <p className="tabular text-[16px] font-semibold text-[color:var(--signal-success)]">{data.financeSummary.estimatedMarginPercent}%</p>
                     </div>
                   </div>
                 </div>
@@ -99,24 +99,24 @@ export default async function AIGeneralPage() {
 
             {/* Ads context entry */}
             <Link href="/admin/ai/ads" className="block group">
-              <div className="rounded-2xl border border-[#EAEAEA] bg-white p-5 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all h-full">
+              <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 transition-colors hover:border-[color:var(--hairline-strong)] h-full">
                 <div className="flex items-center gap-2 mb-4">
-                  <Megaphone className="w-4 h-4 text-emerald-600" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Ads & Performance</span>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 ml-auto" />
+                  <Megaphone className="w-3.5 h-3.5 text-ink-4" strokeWidth={1.75} />
+                  <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Ads &amp; Performance</span>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-ink-6 ml-auto" strokeWidth={1.75} />
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Alertas</p>
-                    <p className="text-[16px] font-black text-ink-0 tabular-nums">{data.recommendations.length}</p>
+                    <p className="text-[10px] text-ink-5 font-medium uppercase tracking-[0.14em] mb-1">Alertas</p>
+                    <p className="tabular text-[16px] font-semibold text-ink-0">{data.recommendations.length}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Borradores</p>
-                    <p className="text-[16px] font-black text-amber-600 tabular-nums">{data.drafts.length}</p>
+                    <p className="text-[10px] text-ink-5 font-medium uppercase tracking-[0.14em] mb-1">Borradores</p>
+                    <p className="tabular text-[16px] font-semibold text-[color:var(--signal-warning)]">{data.drafts.length}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Estado</p>
-                    <p className={`text-[13px] font-bold ${data.recommendations.length > 0 || data.drafts.length > 0 ? "text-emerald-600" : "text-ink-7"}`}>
+                    <p className="text-[10px] text-ink-5 font-medium uppercase tracking-[0.14em] mb-1">Estado</p>
+                    <p className={`text-[13px] font-medium ${data.recommendations.length > 0 || data.drafts.length > 0 ? "text-[color:var(--signal-success)]" : "text-ink-6"}`}>
                       {data.recommendations.length > 0 || data.drafts.length > 0 ? "Con actividad" : "Sin actividad"}
                     </p>
                   </div>
@@ -126,24 +126,24 @@ export default async function AIGeneralPage() {
 
             {/* Aptitude summary card */}
             {aptitude.summary.totalProducts > 0 && (
-              <div className="rounded-2xl border border-[#EAEAEA] bg-white p-5 shadow-sm">
+              <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5">
                 <div className="flex items-center gap-2 mb-4">
-                  <Target className="w-4 h-4 text-violet-600" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-violet-600">Aptitud</span>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-violet-400 ml-auto" />
+                  <Target className="w-3.5 h-3.5 text-ink-4" strokeWidth={1.75} />
+                  <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Aptitud</span>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-ink-6 ml-auto" strokeWidth={1.75} />
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Tienda apta</p>
-                    <p className="text-[16px] font-black text-emerald-600 tabular-nums">{aptitude.summary.channelApt}</p>
+                    <p className="text-[10px] text-ink-5 font-medium uppercase tracking-[0.14em] mb-1">Tienda apta</p>
+                    <p className="tabular text-[16px] font-semibold text-[color:var(--signal-success)]">{aptitude.summary.channelApt}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Ads apto</p>
-                    <p className="text-[16px] font-black text-emerald-600 tabular-nums">{aptitude.summary.adsApt}</p>
+                    <p className="text-[10px] text-ink-5 font-medium uppercase tracking-[0.14em] mb-1">Ads apto</p>
+                    <p className="tabular text-[16px] font-semibold text-[color:var(--signal-success)]">{aptitude.summary.adsApt}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Bloqueados</p>
-                    <p className="text-[16px] font-black text-red-600 tabular-nums">{aptitude.summary.channelNotApt + aptitude.summary.adsNotApt}</p>
+                    <p className="text-[10px] text-ink-5 font-medium uppercase tracking-[0.14em] mb-1">Bloqueados</p>
+                    <p className="tabular text-[16px] font-semibold text-[color:var(--signal-danger)]">{aptitude.summary.channelNotApt + aptitude.summary.adsNotApt}</p>
                   </div>
                 </div>
               </div>
@@ -151,19 +151,19 @@ export default async function AIGeneralPage() {
 
             {/* Recent commands */}
             {data.recentCommands.length > 0 && (
-              <div className="rounded-2xl border border-[#EAEAEA] bg-white p-5 shadow-sm">
+              <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5">
                 <div className="flex items-center gap-2 mb-4">
-                  <Clock className="w-4 h-4 text-gray-400" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Últimos Comandos</span>
+                  <Clock className="w-3.5 h-3.5 text-ink-5" strokeWidth={1.75} />
+                  <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Últimos comandos</span>
                 </div>
                 <div className="space-y-2.5">
                   {data.recentCommands.slice(0, 3).map((cmd) => {
                     const label = cmd.message.replace('Comando recibido: "', '').replace('"', '');
                     return (
                       <div key={cmd.id} className="flex items-center gap-3">
-                        <Sparkles className="w-3 h-3 text-gray-300 shrink-0" />
-                        <span className="text-[12px] font-medium text-ink-0 truncate flex-1">{label}</span>
-                        <span className="text-[10px] text-gray-400 font-bold shrink-0">{getRelativeTime(cmd.createdAt)}</span>
+                        <Sparkles className="w-3 h-3 text-ink-6 shrink-0" strokeWidth={1.75} />
+                        <span className="text-[12px] text-ink-0 truncate flex-1">{label}</span>
+                        <span className="tabular text-[10px] text-ink-5 font-medium shrink-0">{getRelativeTime(cmd.createdAt)}</span>
                       </div>
                     );
                   })}
@@ -180,10 +180,10 @@ export default async function AIGeneralPage() {
 
           {/* ─── Zero State ─── */}
           {!hasDecisions && !hasAdWork && !hasFin && (
-            <div className="text-center py-16 border border-dashed border-[#EAEAEA] rounded-2xl bg-white">
-              <Sparkles className="w-8 h-8 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-bold text-ink-0 mb-2">Nexora AI está lista</h3>
-              <p className="text-sm text-gray-400 font-medium max-w-md mx-auto">
+            <div className="text-center py-16 border border-dashed border-[color:var(--hairline-strong)] rounded-[var(--r-md)] bg-[var(--surface-0)]">
+              <Sparkles className="w-8 h-8 text-ink-6 mx-auto mb-4" strokeWidth={1.5} />
+              <h3 className="text-[15px] font-medium text-ink-0 mb-2">Nexora AI está lista.</h3>
+              <p className="text-[13px] text-ink-5 max-w-md mx-auto leading-[1.55]">
                 Usá el comando o entrá a un contexto para empezar a operar. Las alertas y tareas aparecerán acá automáticamente.
               </p>
             </div>

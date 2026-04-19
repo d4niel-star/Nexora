@@ -123,7 +123,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
             >
               {tab.label}
               {tab.count !== undefined && tab.count > 0 && (
-                <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider font-extrabold transition-colors ${activeTab === tab.value ? 'bg-[var(--surface-2)] text-ink-0' : 'bg-transparent text-ink-6 group-hover:bg-[var(--surface-2)]'}`}>
+                <span className={`tabular inline-flex items-center h-5 px-1.5 rounded-[var(--r-xs)] text-[10px] uppercase tracking-[0.12em] font-medium transition-colors ${activeTab === tab.value ? 'bg-[var(--surface-2)] text-ink-0' : 'bg-transparent text-ink-6 group-hover:bg-[var(--surface-2)]'}`}>
                   {tab.count}
                 </span>
               )}
@@ -180,8 +180,8 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
           {orders.length === 0 ? (
             /* Empty State — no orders at all */
             <div className="flex flex-col items-center justify-center py-24 px-6">
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-[var(--surface-1)] mb-6 border border-[color:var(--hairline)] shadow-[var(--shadow-soft)]">
-                <ShoppingBag className="w-8 h-8 text-ink-7" />
+              <div className="inline-flex items-center justify-center w-14 h-14 rounded-[var(--r-sm)] bg-[var(--surface-1)] mb-6 border border-[color:var(--hairline)]">
+                <ShoppingBag className="w-5 h-5 text-ink-5" strokeWidth={1.5} />
               </div>
               <h3 className="text-xl font-extrabold text-ink-0">Sin pedidos aún</h3>
               <p className="text-[15px] font-medium text-ink-6 mt-2 max-w-sm mx-auto text-center">
@@ -215,8 +215,8 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
                 {filteredOrders.length === 0 ? (
                   <tr>
                     <td colSpan={10} className="px-6 py-24 text-center">
-                      <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-[var(--surface-1)] mb-6 border border-[color:var(--hairline)] shadow-[var(--shadow-soft)]">
-                         <Search className="w-8 h-8 text-ink-7" />
+                      <div className="inline-flex items-center justify-center w-14 h-14 rounded-[var(--r-sm)] bg-[var(--surface-1)] mb-6 border border-[color:var(--hairline)]">
+                         <Search className="w-5 h-5 text-ink-5" strokeWidth={1.5} />
                       </div>
                       <h3 className="text-xl font-extrabold text-ink-0">No encontramos tu orden</h3>
                       <p className="text-[15px] font-medium text-ink-6 mt-2 max-w-sm mx-auto">Limpiá los filtros o asegurate de haber escrito bien el ID de seguimiento.</p>
@@ -295,24 +295,24 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
 
       {/* Floating Bulk Actions Toolbar (Linear-Style) */}
       {selectedRows.length > 0 && (
-        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-ink-0 text-white px-2 py-2 rounded-2xl shadow-2xl flex items-center gap-2 animate-in slide-in-from-bottom-5 fade-in duration-300 z-30">
-           <div className="px-4 border-r border-white/10">
-             <span className="text-[13px] font-bold">{selectedRows.length} seleccionados</span>
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-ink-0 text-ink-12 px-2 py-2 rounded-[var(--r-md)] shadow-[var(--shadow-overlay)] flex items-center gap-1 animate-in slide-in-from-bottom-5 fade-in duration-[var(--dur-base)] z-30">
+           <div className="px-3 border-r border-ink-12/15">
+             <span className="tabular text-[13px] font-medium">{selectedRows.length} seleccionados</span>
            </div>
-           <div className="flex items-center gap-1 px-2">
-             <button className="px-4 py-2 text-[13px] font-bold hover:bg-white/10 rounded-[var(--r-lg)] transition-colors flex items-center gap-2">
-               <Package className="w-4 h-4 text-emerald-400" /> Preparar
+           <div className="flex items-center gap-1 px-1">
+             <button className="inline-flex items-center gap-2 px-3 h-9 text-[13px] font-medium hover:bg-ink-12/10 rounded-[var(--r-sm)] transition-colors">
+               <Package className="w-4 h-4" strokeWidth={1.75} /> Preparar
              </button>
-             <button className="px-4 py-2 text-[13px] font-bold hover:bg-white/10 rounded-[var(--r-lg)] transition-colors flex items-center gap-2">
-               <FileText className="w-4 h-4" /> Etiquetas
+             <button className="inline-flex items-center gap-2 px-3 h-9 text-[13px] font-medium hover:bg-ink-12/10 rounded-[var(--r-sm)] transition-colors">
+               <FileText className="w-4 h-4" strokeWidth={1.75} /> Etiquetas
              </button>
-             <button className="px-4 py-2 text-[13px] font-bold hover:bg-red-950/50 hover:text-red-400 text-white/60 rounded-[var(--r-lg)] transition-colors flex items-center gap-2">
+             <button className="inline-flex items-center gap-2 px-3 h-9 text-[13px] font-medium text-ink-12/60 hover:bg-ink-12/10 hover:text-[color:var(--signal-danger)] rounded-[var(--r-sm)] transition-colors">
                <Ban className="w-4 h-4" /> Cancelar
              </button>
            </div>
            <button 
               onClick={() => setSelectedRows([])}
-              className="p-2 mr-1 hover:bg-white/10 rounded-[var(--r-lg)] transition-colors shrink-0 text-white/50 hover:text-white"
+              className="p-2 mr-1 hover:bg-ink-12/10 rounded-[var(--r-sm)] transition-colors shrink-0 text-ink-12/50 hover:text-ink-12"
            >
              <X className="w-4 h-4" />
            </button>

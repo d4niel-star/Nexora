@@ -21,16 +21,16 @@ export default async function FiscalDashboardPage() {
             Gestión de facturación electrónica ARCA/AFIP y compliance de comercio electrónico.
           </p>
         </div>
-        <Link href="/admin/fiscal/settings" className="px-4 py-2 bg-[var(--surface-0)] border border-[color:var(--hairline)] rounded-lg text-sm font-bold shadow-sm hover:bg-[var(--surface-2)] transition-colors">
+        <Link href="/admin/fiscal/settings" className="inline-flex h-9 items-center px-3.5 bg-[var(--surface-0)] border border-[color:var(--hairline-strong)] rounded-[var(--r-sm)] text-[13px] font-medium text-ink-0 hover:bg-[var(--surface-2)] transition-colors">
           Configurar Perfil Fiscal
         </Link>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
          {/* ARCA STatus */}
-         <div className="p-6 bg-[var(--surface-0)] rounded-2xl border border-[color:var(--hairline)] shadow-[var(--shadow-soft)] flex items-start gap-4">
-            <div className={cn("p-4 rounded-xl shrink-0", profile?.status === "active" ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600")}>
-               <Building2 className="w-8 h-8" />
+         <div className="p-6 bg-[var(--surface-0)] rounded-[var(--r-md)] border border-[color:var(--hairline)] flex items-start gap-4">
+            <div className={cn("flex h-12 w-12 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] shrink-0", profile?.status === "active" ? "text-[color:var(--signal-success)]" : "text-[color:var(--signal-warning)]")}>
+               <Building2 className="w-5 h-5" strokeWidth={1.5} />
             </div>
             <div>
                <h3 className="text-sm font-bold uppercase tracking-wider text-ink-0 mb-1">Estado ARCA / AFIP</h3>
@@ -48,9 +48,9 @@ export default async function FiscalDashboardPage() {
          </div>
 
          {/* Revocaciones Status */}
-         <div className="p-6 bg-[var(--surface-0)] rounded-2xl border border-[color:var(--hairline)] shadow-[var(--shadow-soft)] flex items-start gap-4">
-            <div className="p-4 rounded-xl bg-blue-50 text-blue-600 shrink-0">
-               <RotateCcw className="w-8 h-8" />
+         <div className="p-6 bg-[var(--surface-0)] rounded-[var(--r-md)] border border-[color:var(--hairline)] flex items-start gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] text-ink-4 shrink-0">
+               <RotateCcw className="w-5 h-5" strokeWidth={1.5} />
             </div>
             <div>
                <h3 className="text-sm font-bold uppercase tracking-wider text-ink-0 mb-1">Botón de Arrepentimiento</h3>
@@ -66,10 +66,10 @@ export default async function FiscalDashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Comprobantes Emitidos */}
-        <div className="bg-[var(--surface-0)] border border-[color:var(--hairline)] rounded-2xl shadow-[var(--shadow-soft)] overflow-hidden">
+        <div className="bg-[var(--surface-0)] border border-[color:var(--hairline)] rounded-[var(--r-md)] overflow-hidden">
           <div className="p-5 border-b border-[color:var(--hairline)] flex items-center justify-between bg-[var(--surface-1)]">
-             <h2 className="text-[13px] font-bold uppercase tracking-[0.1em] text-ink-0 flex items-center gap-2">
-                <FileText className="w-4 h-4 text-ink-6" />
+             <h2 className="text-[12px] font-medium uppercase tracking-[0.14em] text-ink-0 flex items-center gap-2">
+                <FileText className="w-4 h-4 text-ink-6" strokeWidth={1.75} />
                 Últimos Comprobantes
              </h2>
           </div>
@@ -113,10 +113,10 @@ export default async function FiscalDashboardPage() {
         </div>
 
         {/* Retornos y Revocaciones */}
-        <div className="bg-[var(--surface-0)] border border-[color:var(--hairline)] rounded-2xl shadow-[var(--shadow-soft)] overflow-hidden">
+        <div className="bg-[var(--surface-0)] border border-[color:var(--hairline)] rounded-[var(--r-md)] overflow-hidden">
           <div className="p-5 border-b border-[color:var(--hairline)] flex items-center justify-between bg-[var(--surface-1)]">
-             <h2 className="text-[13px] font-bold uppercase tracking-[0.1em] text-ink-0 flex items-center gap-2">
-                <RotateCcw className="w-4 h-4 text-ink-6" />
+             <h2 className="text-[12px] font-medium uppercase tracking-[0.14em] text-ink-0 flex items-center gap-2">
+                <RotateCcw className="w-4 h-4 text-ink-6" strokeWidth={1.75} />
                 Solicitudes de Arrepentimiento
              </h2>
           </div>

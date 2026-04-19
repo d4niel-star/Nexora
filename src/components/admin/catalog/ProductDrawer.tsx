@@ -49,33 +49,33 @@ export function ProductDrawer({ product, isOpen, onClose, onProductUpdated, focu
   return (
     <>
       <div 
-        className="fixed inset-0 bg-[#111111]/30 backdrop-blur-[2px] z-40 transition-all duration-300 ease-in-out"
+        className="fixed inset-0 bg-ink-0/40 z-40 transition-opacity duration-[var(--dur-base)] ease-[var(--ease-out)]"
         onClick={onClose}
         aria-hidden="true"
       />
       
       <div 
-        className="fixed right-0 top-0 bottom-0 w-full sm:max-w-xl bg-white shadow-2xl z-50 overflow-y-auto transform transition-transform duration-300 ease-out border-l border-[#EAEAEA] outline-none flex flex-col"
+        className="fixed right-0 top-0 bottom-0 w-full sm:max-w-xl bg-[var(--surface-0)] shadow-[var(--shadow-overlay)] z-50 overflow-y-auto transform transition-transform duration-[var(--dur-slow)] ease-[var(--ease-out)] border-l border-[color:var(--hairline)] outline-none flex flex-col"
         role="dialog"
         aria-modal="true"
         tabIndex={-1}
       >
         
         {/* Header - Glassmorphism effect */}
-        <div className="sticky top-0 bg-white/80 backdrop-blur-xl border-b border-[#EAEAEA] px-6 sm:px-8 py-5 flex items-center justify-between z-10 transition-colors shrink-0">
-          <div className="flex items-center gap-4">
-            <h2 className="text-xl font-extrabold text-[#111111] tracking-tight truncate max-w-[250px]">{product.title}</h2>
+        <div className="sticky top-0 bg-[var(--surface-0)]/95 backdrop-blur-xl border-b border-[color:var(--hairline)] px-6 sm:px-8 py-5 flex items-center justify-between z-10 shrink-0">
+          <div className="flex items-center gap-3">
+            <h2 className="text-[18px] font-semibold tracking-[-0.02em] text-ink-0 truncate max-w-[250px]">{product.title}</h2>
             <ProductStatusBadge status={product.status} />
           </div>
           <div className="flex items-center gap-1">
-            <button className="px-4 py-2 text-[13px] font-bold text-[#111111] bg-white border border-[#EAEAEA] hover:border-[#111111] rounded-lg transition-all shadow-sm">
+            <button className="h-9 px-3.5 text-[13px] font-medium text-ink-0 border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] hover:bg-[var(--surface-2)] rounded-[var(--r-sm)] transition-colors">
               Editar
             </button>
-            <button className="p-2.5 text-gray-400 hover:text-[#111111] hover:bg-gray-100 rounded-full transition-all active:scale-95">
+            <button className="p-2 text-ink-5 hover:text-ink-0 hover:bg-[var(--surface-2)] rounded-[var(--r-sm)] transition-colors">
               <MoreHorizontal className="w-4 h-4" />
             </button>
-            <div className="w-px h-5 bg-[#EAEAEA] mx-1" />
-            <button onClick={onClose} className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all active:scale-95">
+            <div className="w-px h-5 bg-[color:var(--hairline)] mx-1" />
+            <button onClick={onClose} className="p-2 text-ink-5 hover:text-ink-0 hover:bg-[var(--surface-2)] rounded-[var(--r-sm)] transition-colors">
                <X className="w-4 h-4" />
             </button>
           </div>
@@ -86,19 +86,19 @@ export function ProductDrawer({ product, isOpen, onClose, onProductUpdated, focu
           
           {/* Main Visuals & Details */}
           <section className="flex gap-6">
-            <div className="w-32 h-32 rounded-2xl bg-gray-50 border border-[#EAEAEA] overflow-hidden shrink-0">
+            <div className="w-32 h-32 rounded-[var(--r-md)] bg-[var(--surface-2)] border border-[color:var(--hairline)] overflow-hidden shrink-0">
               <img src={product.image} alt={product.title} className="w-full h-full object-cover" />
             </div>
             <div className="space-y-3 flex-1">
-               <div className="flex flex-wrap gap-2">
-                 <span className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 text-gray-600 text-[10px] font-black uppercase tracking-widest rounded-md w-fit border border-[#EAEAEA]">
+               <div className="flex flex-wrap gap-1.5">
+                 <span className="inline-flex items-center gap-1.5 px-2 h-6 bg-[var(--surface-1)] text-ink-4 text-[10px] font-medium uppercase tracking-[0.14em] rounded-[var(--r-xs)] border border-[color:var(--hairline)]">
                     <Tag className="w-3 h-3" /> {product.category}
                  </span>
-                 <span className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase tracking-widest rounded-md w-fit border border-emerald-100">
+                 <span className="inline-flex items-center gap-1.5 px-2 h-6 bg-[var(--surface-1)] text-[color:var(--signal-success)] text-[10px] font-medium uppercase tracking-[0.14em] rounded-[var(--r-xs)] border border-[color:var(--hairline)]">
                     <Package className="w-3 h-3" /> Prov: {product.supplier}
                  </span>
                </div>
-               <p className="text-[15px] font-medium text-[#666666] leading-relaxed">
+               <p className="text-[14px] leading-[1.55] text-ink-4">
                  {product.description || "Sin descripción proporcionada por el proveedor."}
                </p>
             </div>
@@ -114,33 +114,33 @@ export function ProductDrawer({ product, isOpen, onClose, onProductUpdated, focu
 
           {/* Variables / Variants Table */}
           <section className="space-y-4">
-            <div className="flex items-center justify-between border-b border-[#EAEAEA] pb-2">
-               <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#888888]">Variantes y Stock</h3>
-               <span className="text-[11px] font-bold text-[#111111] bg-gray-100 px-2 py-0.5 rounded-full">{product.variants.length} SKUs</span>
+            <div className="flex items-center justify-between border-b border-[color:var(--hairline)] pb-2">
+               <h3 className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">Variantes y stock</h3>
+               <span className="tabular text-[11px] font-medium text-ink-0 bg-[var(--surface-2)] px-2 py-0.5 rounded-[var(--r-xs)]">{product.variants.length} SKUs</span>
             </div>
             
-            <div className="rounded-xl border border-[#EAEAEA] overflow-hidden">
+            <div className="rounded-[var(--r-sm)] border border-[color:var(--hairline)] overflow-hidden">
                <table className="w-full text-left whitespace-nowrap">
-                 <thead className="bg-[#FAFAFA] border-b border-[#EAEAEA]">
+                 <thead className="bg-[var(--surface-1)] border-b border-[color:var(--hairline)]">
                    <tr>
-                     <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500">SKU / Variante</th>
-                     <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 text-right">Stock</th>
-                     <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 text-right">Precio</th>
+                     <th className="px-4 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">SKU / variante</th>
+                     <th className="px-4 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5 text-right">Stock</th>
+                     <th className="px-4 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5 text-right">Precio</th>
                    </tr>
                  </thead>
-                 <tbody className="divide-y divide-[#EAEAEA]">
+                 <tbody className="divide-y divide-[color:var(--hairline)]">
                    {product.variants.map(v => (
-                     <tr key={v.id} className="hover:bg-gray-50 transition-colors">
+                     <tr key={v.id} className="hover:bg-[var(--surface-1)] transition-colors">
                        <td className="px-4 py-3">
-                         <p className="text-[13px] font-bold text-[#111111]">{v.title}</p>
-                         <p className="text-[11px] font-mono text-gray-500 mt-0.5">{v.sku}</p>
+                         <p className="text-[13px] font-medium text-ink-0">{v.title}</p>
+                         <p className="text-[11px] font-mono text-ink-5 mt-0.5">{v.sku}</p>
                        </td>
                        <td className="px-4 py-3 text-right">
-                         <span className={`inline-flex px-2 py-0.5 text-[11px] font-bold rounded-full ${(v.availableStock || v.stock) > 10 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                         <span className={cn("tabular inline-flex items-center h-5 px-1.5 text-[11px] font-medium rounded-[var(--r-xs)] border", (v.availableStock || v.stock) > 10 ? 'border-[color:var(--hairline)] bg-[var(--surface-1)] text-[color:var(--signal-success)]' : 'border-[color:var(--hairline)] bg-[var(--surface-1)] text-[color:var(--signal-danger)]')}>
                            {v.availableStock ?? v.stock} u.
                          </span>
                        </td>
-                       <td className="px-4 py-3 text-right text-[13px] font-bold text-[#111111] tabular-nums">
+                       <td className="px-4 py-3 text-right tabular text-[13px] font-medium text-ink-0">
                          ${v.price.toLocaleString('es-AR')}
                        </td>
                      </tr>
@@ -151,12 +151,12 @@ export function ProductDrawer({ product, isOpen, onClose, onProductUpdated, focu
           </section>
 
           {/* Status Sync */}
-          <section className="bg-gray-50 rounded-2xl p-5 border border-[#EAEAEA] flex items-center justify-between">
+          <section className="bg-[var(--surface-1)] rounded-[var(--r-md)] p-5 border border-[color:var(--hairline)] flex items-center justify-between">
              <div>
-                <p className="text-[13px] font-bold text-[#111111]">Última sincronización</p>
-                <p className="text-xs font-medium text-gray-500 mt-0.5">{new Date(product.updatedAt).toLocaleString('es-AR')}</p>
+                <p className="text-[13px] font-medium text-ink-0">Última sincronización</p>
+                <p className="tabular text-[12px] text-ink-5 mt-0.5">{new Date(product.updatedAt).toLocaleString('es-AR')}</p>
              </div>
-             <button className="p-2 bg-white border border-[#EAEAEA] rounded-lg shadow-sm hover:shadow hover:border-gray-300 transition-all text-gray-600 hover:text-[#111111]">
+             <button className="p-2 bg-[var(--surface-0)] border border-[color:var(--hairline)] rounded-[var(--r-sm)] hover:bg-[var(--surface-2)] transition-colors text-ink-4 hover:text-ink-0">
                <RefreshCw className="w-4 h-4" />
              </button>
           </section>
@@ -227,20 +227,20 @@ function InlineCostSection({ product, onCostSaved }: { product: Product; onCostS
   };
 
   return (
-    <section className="grid grid-cols-1 sm:grid-cols-3 gap-0 border border-[#EAEAEA] rounded-2xl overflow-hidden shadow-sm">
+    <section className="grid grid-cols-1 sm:grid-cols-3 gap-0 border border-[color:var(--hairline)] rounded-[var(--r-md)] overflow-hidden">
       {/* Cost cell — editable */}
       <div className={cn(
-        "p-5 border-b sm:border-b-0 sm:border-r border-[#EAEAEA] transition-colors",
-        editing ? "bg-blue-50/40" : !product.costReal ? "bg-red-50/30" : "bg-white"
+        "p-5 border-b sm:border-b-0 sm:border-r border-[color:var(--hairline)] transition-colors",
+        editing ? "bg-[var(--surface-1)]" : !product.costReal ? "bg-[var(--surface-1)]" : "bg-[var(--surface-0)]"
       )}>
-        <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1 flex items-center gap-1.5">
-          <Layers className="w-3 h-3" /> Costo Base
+        <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5 mb-1.5 flex items-center gap-1.5">
+          <Layers className="w-3 h-3" /> Costo base
         </p>
 
         {editing ? (
           <div className="space-y-2">
             <div className="flex items-center gap-1.5">
-              <span className="text-lg font-black text-[#111111]">$</span>
+              <span className="tabular text-[18px] font-semibold text-ink-0">$</span>
               <input
                 ref={inputRef}
                 type="number"
@@ -250,23 +250,23 @@ function InlineCostSection({ product, onCostSaved }: { product: Product; onCostS
                 onChange={(e) => { setValue(e.target.value); setError(null); }}
                 onKeyDown={handleKeyDown}
                 disabled={isPending}
-                className="w-full text-lg font-black text-[#111111] tabular-nums bg-white border border-[#EAEAEA] rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#111111] focus:ring-1 focus:ring-[#111111] transition-all disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="w-full tabular text-[18px] font-semibold text-ink-0 bg-[var(--surface-0)] border border-[color:var(--hairline)] rounded-[var(--r-sm)] px-2.5 py-1.5 focus:outline-none focus:border-[var(--accent-500)] focus:shadow-[var(--shadow-focus)] transition-[box-shadow,border-color] disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 placeholder="0.00"
               />
             </div>
             {hasValidInput && liveMargin !== null && (
-              <p className={cn("text-[11px] font-bold tabular-nums",
-                liveMargin >= 0.2 ? "text-emerald-600" : liveMargin >= 0.05 ? "text-amber-600" : "text-red-500"
+              <p className={cn("tabular text-[11px] font-medium",
+                liveMargin >= 0.2 ? "text-[color:var(--signal-success)]" : liveMargin >= 0.05 ? "text-[color:var(--signal-warning)]" : "text-[color:var(--signal-danger)]"
               )}>
                 Margen resultante: {Math.round(liveMargin * 100)}%
               </p>
             )}
-            {error && <p className="text-[11px] font-bold text-red-500">{error}</p>}
+            {error && <p className="text-[11px] font-medium text-[color:var(--signal-danger)]">{error}</p>}
             <div className="flex gap-1.5">
               <button
                 onClick={saveCost}
                 disabled={isPending || !hasValidInput}
-                className="flex items-center gap-1 px-3 py-1.5 text-[11px] font-bold text-white bg-[#111111] rounded-lg hover:bg-black transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-1 px-3 h-8 text-[12px] font-medium text-ink-12 bg-ink-0 rounded-[var(--r-sm)] hover:bg-ink-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
                 Guardar
@@ -274,7 +274,7 @@ function InlineCostSection({ product, onCostSaved }: { product: Product; onCostS
               <button
                 onClick={cancelEditing}
                 disabled={isPending}
-                className="px-3 py-1.5 text-[11px] font-bold text-gray-500 bg-white border border-[#EAEAEA] rounded-lg hover:bg-gray-50 transition-all disabled:opacity-50"
+                className="px-3 h-8 text-[12px] font-medium text-ink-5 bg-[var(--surface-0)] border border-[color:var(--hairline)] rounded-[var(--r-sm)] hover:bg-[var(--surface-2)] hover:text-ink-0 transition-colors disabled:opacity-50"
               >
                 Cancelar
               </button>
@@ -283,22 +283,22 @@ function InlineCostSection({ product, onCostSaved }: { product: Product; onCostS
         ) : (
           <div className="flex items-center gap-2">
             {product.costReal ? (
-              <p className="text-xl font-black text-[#111111] tabular-nums">${product.cost.toLocaleString('es-AR')}</p>
+              <p className="tabular text-[20px] font-semibold text-ink-0">${product.cost.toLocaleString('es-AR')}</p>
             ) : (
-              <p className="text-sm font-bold text-red-500">Sin costo</p>
+              <p className="text-[13px] font-medium text-[color:var(--signal-danger)]">Sin costo</p>
             )}
             {saved ? (
-              <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 animate-in fade-in">
+              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[color:var(--signal-success)] animate-in fade-in">
                 <Check className="w-3 h-3" /> Guardado
               </span>
             ) : (
               <button
                 onClick={startEditing}
                 className={cn(
-                  "p-1.5 rounded-lg transition-all",
+                  "p-1.5 rounded-[var(--r-sm)] transition-colors",
                   product.costReal
-                    ? "text-gray-400 hover:text-[#111111] hover:bg-gray-100"
-                    : "text-red-400 hover:text-red-600 hover:bg-red-50 border border-red-200"
+                    ? "text-ink-6 hover:text-ink-0 hover:bg-[var(--surface-2)]"
+                    : "text-[color:var(--signal-danger)] hover:bg-[var(--surface-2)] border border-[color:var(--hairline-strong)]"
                 )}
                 title={product.costReal ? "Editar costo" : "Cargar costo real"}
               >
@@ -311,25 +311,25 @@ function InlineCostSection({ product, onCostSaved }: { product: Product; onCostS
 
       {/* Margin cell */}
       <div className={cn(
-        "p-5 border-b sm:border-b-0 sm:border-r border-[#EAEAEA]",
-        product.costReal ? "bg-emerald-50/30" : "bg-gray-50"
+        "p-5 border-b sm:border-b-0 sm:border-r border-[color:var(--hairline)]",
+        product.costReal ? "bg-[var(--surface-0)]" : "bg-[var(--surface-1)]"
       )}>
-        <p className={cn("text-[11px] font-bold uppercase tracking-widest mb-1 flex items-center gap-1.5",
-          product.costReal ? "text-emerald-600" : "text-gray-400"
+        <p className={cn("text-[10px] font-medium uppercase tracking-[0.14em] mb-1.5 flex items-center gap-1.5",
+          product.costReal ? "text-[color:var(--signal-success)]" : "text-ink-6"
         )}>
-          <BarChart2 className="w-3 h-3" /> Margen Est.
+          <BarChart2 className="w-3 h-3" /> Margen est.
         </p>
         {product.costReal ? (
-          <p className="text-xl font-black text-emerald-700 tabular-nums">{(product.margin * 100).toFixed(0)}%</p>
+          <p className="tabular text-[20px] font-semibold text-ink-0">{(product.margin * 100).toFixed(0)}%</p>
         ) : (
-          <p className="text-sm font-bold text-gray-400">—</p>
+          <p className="text-[13px] font-medium text-ink-6">—</p>
         )}
       </div>
 
       {/* PVP cell */}
-      <div className="p-5 bg-[#FAFAFA]">
-        <p className="text-[11px] font-bold uppercase tracking-widest text-[#111111] mb-1">PVP Sugerido</p>
-        <p className="text-xl font-black text-[#111111] tabular-nums">${product.price.toLocaleString('es-AR')}</p>
+      <div className="p-5 bg-[var(--surface-1)]">
+        <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5 mb-1.5">PVP sugerido</p>
+        <p className="tabular text-[20px] font-semibold text-ink-0">${product.price.toLocaleString('es-AR')}</p>
       </div>
     </section>
   );

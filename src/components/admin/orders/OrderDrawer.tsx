@@ -38,37 +38,37 @@ export function OrderDrawer({ order, isOpen, onClose }: OrderDrawerProps) {
 
   return (
     <>
-      {/* Backdrop (Darkened and blurred) */}
+      {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-[#111111]/30 backdrop-blur-[2px] z-40 transition-all duration-300 ease-in-out"
+        className="fixed inset-0 bg-ink-0/40 z-40 transition-opacity duration-[var(--dur-base)] ease-[var(--ease-out)]"
         onClick={onClose}
         aria-hidden="true"
       />
       
       {/* Drawer Panel */}
       <div 
-        className="fixed right-0 top-0 bottom-0 w-full sm:max-w-xl bg-white shadow-2xl z-50 overflow-y-auto transform transition-transform duration-300 ease-out border-l border-[#EAEAEA] outline-none flex flex-col"
+        className="fixed right-0 top-0 bottom-0 w-full sm:max-w-xl bg-[var(--surface-0)] shadow-[var(--shadow-overlay)] z-50 overflow-y-auto transform transition-transform duration-[var(--dur-slow)] ease-[var(--ease-out)] border-l border-[color:var(--hairline)] outline-none flex flex-col"
         role="dialog"
         aria-modal="true"
         aria-labelledby="drawer-title"
         tabIndex={-1}
       >
         
-        {/* Header - Glassmorphism effect */}
-        <div className="sticky top-0 bg-white/80 backdrop-blur-xl border-b border-[#EAEAEA] px-6 sm:px-8 py-5 flex items-center justify-between z-10 transition-colors shrink-0">
-          <div className="flex items-center gap-4">
-            <h2 id="drawer-title" className="text-2xl font-extrabold text-[#111111] tracking-tight">{order.number}</h2>
+        {/* Header */}
+        <div className="sticky top-0 bg-[var(--surface-0)]/95 backdrop-blur-xl border-b border-[color:var(--hairline)] px-6 sm:px-8 py-5 flex items-center justify-between z-10 shrink-0">
+          <div className="flex items-center gap-3">
+            <h2 id="drawer-title" className="font-mono text-[18px] font-medium tracking-wider text-ink-0">{order.number}</h2>
             <OrderStatusBadge status={order.status} />
           </div>
           <div className="flex items-center gap-1">
-            <button className="p-2.5 text-gray-400 hover:text-[#111111] hover:bg-gray-100 rounded-full transition-all active:scale-95">
+            <button className="p-2 text-ink-5 hover:text-ink-0 hover:bg-[var(--surface-2)] rounded-[var(--r-sm)] transition-colors">
               <Printer className="w-4 h-4" />
             </button>
-            <button className="p-2.5 text-gray-400 hover:text-[#111111] hover:bg-gray-100 rounded-full transition-all active:scale-95">
+            <button className="p-2 text-ink-5 hover:text-ink-0 hover:bg-[var(--surface-2)] rounded-[var(--r-sm)] transition-colors">
               <MoreHorizontal className="w-4 h-4" />
             </button>
-            <div className="w-px h-5 bg-[#EAEAEA] mx-1" />
-            <button onClick={onClose} className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all active:scale-95">
+            <div className="w-px h-5 bg-[color:var(--hairline)] mx-1" />
+            <button onClick={onClose} className="p-2 text-ink-5 hover:text-ink-0 hover:bg-[var(--surface-2)] rounded-[var(--r-sm)] transition-colors">
                <X className="w-4 h-4" />
             </button>
           </div>
@@ -82,39 +82,39 @@ export function OrderDrawer({ order, isOpen, onClose }: OrderDrawerProps) {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
              {/* Customer Data */}
-             <div className="space-y-4">
-                <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#888888] flex items-center gap-2 border-b border-[#EAEAEA] pb-2">
-                  <UserCircle className="w-4 h-4" /> Cliente
+             <div className="space-y-3">
+                <h3 className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5 flex items-center gap-2 border-b border-[color:var(--hairline)] pb-2">
+                  <UserCircle className="w-3.5 h-3.5" /> Cliente
                 </h3>
                 <div>
-                  <p className="text-[15px] font-bold text-[#111111]">{order.customer.name}</p>
-                  <p className="text-sm font-medium text-gray-500 mt-1 hover:text-[#111111] cursor-pointer transition-colors max-w-full truncate">{order.customer.email}</p>
-                  {order.customer.phone && <p className="text-sm font-medium text-gray-500 mt-1">{order.customer.phone}</p>}
-                  {order.customer.document && <p className="text-xs font-mono text-gray-400 mt-2">Doc: {order.customer.document}</p>}
+                  <p className="text-[14px] font-medium text-ink-0">{order.customer.name}</p>
+                  <p className="text-[13px] text-ink-5 mt-1 hover:text-ink-0 cursor-pointer transition-colors max-w-full truncate">{order.customer.email}</p>
+                  {order.customer.phone && <p className="text-[13px] text-ink-5 mt-0.5">{order.customer.phone}</p>}
+                  {order.customer.document && <p className="text-[11px] font-mono text-ink-6 mt-2">Doc: {order.customer.document}</p>}
                 </div>
              </div>
              
              {/* Shipping Data */}
-             <div className="space-y-4">
-                <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#888888] flex items-center gap-2 border-b border-[#EAEAEA] pb-2">
-                  <Truck className="w-4 h-4" /> Envío y Logística
+             <div className="space-y-3">
+                <h3 className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5 flex items-center gap-2 border-b border-[color:var(--hairline)] pb-2">
+                  <Truck className="w-3.5 h-3.5" /> Envío y logística
                 </h3>
-                <div className="text-sm">
-                  <p className="font-bold text-[#111111] text-[15px]">{order.shipping.shippingMethodLabel || "Método no especificado"}</p>
+                <div className="text-[13px]">
+                  <p className="font-medium text-ink-0 text-[14px]">{order.shipping.shippingMethodLabel || "Método no especificado"}</p>
                   {order.shipping.shippingEstimate && (
-                     <p className="text-[#888888] font-medium text-[13px]">{order.shipping.shippingEstimate}</p>
+                     <p className="text-ink-5 text-[12px] mt-0.5">{order.shipping.shippingEstimate}</p>
                   )}
                   {order.shipping.carrier && (
-                     <p className="text-gray-500 font-medium text-xs mt-1 border-l-2 pl-2 border-gray-200">Carrier: {order.shipping.carrier}</p>
+                     <p className="text-ink-5 text-[11px] mt-1 border-l pl-2 border-[color:var(--hairline-strong)]">Carrier: {order.shipping.carrier}</p>
                   )}
-                  <p className="text-gray-500 mt-2 font-medium">{order.shipping.address}</p>
-                  <p className="text-gray-500 font-medium">{order.shipping.city}, {order.shipping.state}</p>
+                  <p className="text-ink-5 mt-2">{order.shipping.address}</p>
+                  <p className="text-ink-5">{order.shipping.city}, {order.shipping.state}</p>
                   {order.shipping.trackingNumber && (
                     <div className="mt-3 group flex flex-col gap-1 items-start">
-                       <span className="text-[11px] font-bold uppercase tracking-widest text-[#888888]">Tracking</span>
-                       <div className="flex items-center gap-2 text-[#111111] bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg w-fit cursor-pointer transition-colors active:scale-95 shadow-sm">
-                         <span className="font-mono text-xs font-bold tracking-tight">{order.shipping.trackingNumber}</span>
-                         <Copy className="w-3 h-3 text-gray-500 group-hover:text-[#111111]" />
+                       <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Tracking</span>
+                       <div className="inline-flex items-center gap-2 text-ink-0 bg-[var(--surface-1)] hover:bg-[var(--surface-2)] border border-[color:var(--hairline)] px-2.5 py-1 rounded-[var(--r-xs)] w-fit cursor-pointer transition-colors">
+                         <span className="font-mono text-[11px] font-medium tracking-tight">{order.shipping.trackingNumber}</span>
+                         <Copy className="w-3 h-3 text-ink-5 group-hover:text-ink-0" />
                        </div>
                     </div>
                   )}
@@ -124,33 +124,33 @@ export function OrderDrawer({ order, isOpen, onClose }: OrderDrawerProps) {
 
           {/* Line Items */}
           <section className="space-y-4">
-            <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#888888] border-b border-[#EAEAEA] pb-2">Desglose de Productos</h3>
+            <h3 className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5 border-b border-[color:var(--hairline)] pb-2">Desglose de productos</h3>
             <div className="space-y-4">
               {order.items.map(item => (
-                <div key={item.id} className="flex justify-between items-start group">
-                  <div className="flex gap-4">
-                    <div className="w-14 h-14 bg-gray-50 rounded-xl border border-[#EAEAEA] flex items-center justify-center text-gray-300 font-bold text-xs shadow-sm transition-transform group-hover:scale-105 overflow-hidden">
+                <div key={item.id} className="flex justify-between items-start gap-4">
+                  <div className="flex gap-4 min-w-0">
+                    <div className="w-14 h-14 bg-[var(--surface-2)] rounded-[var(--r-sm)] border border-[color:var(--hairline)] flex items-center justify-center text-ink-6 text-[10px] font-medium uppercase tracking-[0.12em] overflow-hidden shrink-0">
                        {item.image ? (
                          <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
                        ) : (
                          <span>IMG</span>
                        )}
                     </div>
-                    <div className="pt-1">
-                      <p className="text-sm font-bold text-[#111111] leading-tight">{item.title}</p>
-                      {item.sku && <p className="text-xs text-[#888888] font-mono mt-1.5">SKU: {item.sku}</p>}
-                      {item.variantTitle && <p className="text-xs text-gray-500 mt-0.5">{item.variantTitle}</p>}
+                    <div className="pt-0.5 min-w-0">
+                      <p className="text-[13px] font-medium text-ink-0 leading-tight">{item.title}</p>
+                      {item.sku && <p className="text-[11px] text-ink-5 font-mono mt-1">SKU: {item.sku}</p>}
+                      {item.variantTitle && <p className="text-[11px] text-ink-5 mt-0.5">{item.variantTitle}</p>}
                       <Link
                         href={item.variantId ? buildVariantHref(item.variantId) : "/admin/inventory"}
-                        className="mt-2 inline-flex text-[11px] font-bold text-[#111111] underline decoration-dotted underline-offset-4 hover:text-blue-600"
+                        className="mt-2 inline-flex text-[11px] font-medium text-ink-0 underline decoration-[color:var(--hairline-strong)] decoration-dotted underline-offset-4 hover:decoration-ink-0"
                       >
                         Ver en inventory
                       </Link>
                     </div>
                   </div>
-                  <div className="text-right pt-1">
-                    <p className="text-sm font-bold text-[#111111] leading-tight">${(item.lineTotal || item.price * item.quantity).toLocaleString('es-AR')}</p>
-                    <p className="text-xs font-semibold text-gray-400 mt-1.5">Cant: {item.quantity}</p>
+                  <div className="text-right pt-0.5 shrink-0">
+                    <p className="tabular text-[13px] font-medium text-ink-0 leading-tight">${(item.lineTotal || item.price * item.quantity).toLocaleString('es-AR')}</p>
+                    <p className="tabular text-[11px] text-ink-5 mt-1">Cant: {item.quantity}</p>
                   </div>
                 </div>
               ))}
@@ -158,24 +158,24 @@ export function OrderDrawer({ order, isOpen, onClose }: OrderDrawerProps) {
           </section>
 
           {/* Financial Totals */}
-          <section className="bg-white rounded-2xl p-6 border-2 border-[#FAFAFA] shadow-sm">
-            <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#888888] flex items-center gap-2 mb-4">
-              <CreditCard className="w-4 h-4" /> Resumen Financiero
+          <section className="bg-[var(--surface-1)] rounded-[var(--r-md)] p-6 border border-[color:var(--hairline)]">
+            <h3 className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5 flex items-center gap-2 mb-4">
+              <CreditCard className="w-3.5 h-3.5" /> Resumen financiero
             </h3>
             <div className="space-y-3">
-              <div className="flex justify-between text-sm font-medium">
-                <span className="text-gray-500">Subtotal de productos</span>
-                <span className="text-[#111111]">${order.subtotal.toLocaleString('es-AR')}</span>
+              <div className="flex justify-between text-[13px]">
+                <span className="text-ink-5">Subtotal de productos</span>
+                <span className="tabular text-ink-0">${order.subtotal.toLocaleString('es-AR')}</span>
               </div>
-              <div className="flex justify-between text-sm font-medium">
-                <span className="text-gray-500">Logística calculada</span>
-                <span className="text-[#111111]">${order.shippingCost.toLocaleString('es-AR')}</span>
+              <div className="flex justify-between text-[13px]">
+                <span className="text-ink-5">Logística calculada</span>
+                <span className="tabular text-ink-0">${order.shippingCost.toLocaleString('es-AR')}</span>
               </div>
-              <div className="pt-4 mt-2 border-t border-[#EAEAEA]/80 flex justify-between items-end">
-                <span className="font-bold text-[#111111] uppercase tracking-wider text-xs">Abonado por cliente</span>
+              <div className="pt-4 mt-2 border-t border-[color:var(--hairline)] flex justify-between items-end">
+                <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Abonado por cliente</span>
                 <div className="flex items-center gap-3">
                   <PaymentStatusBadge status={order.paymentStatus} />
-                  <span className="text-2xl font-black text-[#111111] tracking-tighter">
+                  <span className="tabular text-[22px] font-semibold tracking-[-0.02em] text-ink-0">
                     ${order.total.toLocaleString('es-AR')}
                   </span>
                 </div>
@@ -185,31 +185,31 @@ export function OrderDrawer({ order, isOpen, onClose }: OrderDrawerProps) {
 
           {/* Notes Card */}
           {order.notes && (
-            <div className="bg-orange-50 text-orange-900 p-5 rounded-2xl text-sm border border-orange-100 shadow-sm leading-relaxed">
-              <span className="font-black text-orange-700 block mb-1 flex items-center gap-2">
+            <div className="border-l-2 border-[color:var(--signal-warning)] bg-[var(--surface-1)] p-4 rounded-r-[var(--r-sm)] text-[13px]">
+              <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-[color:var(--signal-warning)] block mb-1">
                  Nota adjunta
               </span>
-              <p className="font-medium text-orange-800">{order.notes}</p>
+              <p className="leading-[1.55] text-ink-3">{order.notes}</p>
             </div>
           )}
 
           {/* Payment Provider Info */}
           {order.paymentProvider && (
-            <div className="bg-blue-50/50 border border-blue-100 p-5 rounded-2xl text-sm">
-              <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#888888] mb-3 flex items-center gap-2">
-                <CreditCard className="w-4 h-4" /> Proveedor de Pago
+            <div className="bg-[var(--surface-1)] border border-[color:var(--hairline)] p-5 rounded-[var(--r-md)] text-[13px]">
+              <h3 className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5 mb-3 flex items-center gap-2">
+                <CreditCard className="w-3.5 h-3.5" /> Proveedor de pago
               </h3>
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-[#009EE3] flex items-center justify-center">
-                  <CreditCard className="w-4 h-4 text-white" />
+                <div className="w-8 h-8 rounded-[var(--r-sm)] bg-ink-0 flex items-center justify-center">
+                  <CreditCard className="w-4 h-4 text-ink-12" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-[#111111] capitalize">{order.paymentProvider}</p>
+                  <p className="text-[13px] font-medium text-ink-0 capitalize">{order.paymentProvider}</p>
                   {order.mpPaymentId && (
-                    <p className="text-xs text-gray-500 font-mono mt-0.5">ID: {order.mpPaymentId}</p>
+                    <p className="text-[11px] text-ink-5 font-mono mt-0.5">ID: {order.mpPaymentId}</p>
                   )}
                   {!order.mpPaymentId && order.mpPreferenceId && (
-                    <p className="text-xs text-gray-500 font-mono mt-0.5">Preference: {order.mpPreferenceId}</p>
+                    <p className="text-[11px] text-ink-5 font-mono mt-0.5">Preference: {order.mpPreferenceId}</p>
                   )}
                 </div>
               </div>

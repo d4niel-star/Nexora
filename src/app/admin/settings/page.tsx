@@ -71,14 +71,14 @@ export default function SettingsHubPage() {
                  return (
                    <li key={item.name}>
                      {item.comingSoon ? (
-                       <div className="group flex items-start gap-4 p-3 rounded-2xl border border-transparent opacity-50 grayscale select-none">
-                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--surface-2)]/80 text-ink-6">
+                       <div className="group flex items-start gap-4 p-3 rounded-[var(--r-md)] border border-transparent opacity-50 grayscale select-none">
+                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--r-sm)] bg-[var(--surface-2)] text-ink-6">
                            <Icon className="h-4 w-4" />
                          </div>
                          <div className="w-full">
                            <div className="flex items-center justify-between">
                              <h3 className="text-sm font-bold text-ink-0">{item.name}</h3>
-                             <span className="text-[9px] font-black uppercase tracking-widest text-ink-6 bg-[var(--surface-2)] px-2 py-0.5 rounded-full">Próximamente</span>
+                             <span className="text-[9px] font-medium uppercase tracking-[0.14em] text-ink-6 bg-[var(--surface-2)] px-1.5 py-0.5 rounded-[var(--r-xs)]">Próximamente</span>
                            </div>
                            <p className="mt-0.5 text-[13px] font-medium text-ink-6 leading-snug">
                              {item.desc}
@@ -88,9 +88,9 @@ export default function SettingsHubPage() {
                      ) : (
                        <Link 
                          href={item.href}
-                         className="group flex items-start gap-4 p-3 rounded-2xl hover:bg-[var(--surface-0)] hover:shadow-[var(--shadow-soft)] border border-transparent hover:border-[color:var(--hairline)] transition-all"
+                         className="group flex items-start gap-4 p-3 rounded-[var(--r-md)] hover:bg-[var(--surface-0)] border border-transparent hover:border-[color:var(--hairline)] transition-colors"
                        >
-                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--surface-2)]/80 text-ink-6 transition-colors group-hover:bg-ink-0 group-hover:text-white">
+                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--r-sm)] bg-[var(--surface-2)] text-ink-6 transition-colors group-hover:bg-ink-0 group-hover:text-ink-12">
                            <Icon className="h-4 w-4" />
                          </div>
                          <div>
