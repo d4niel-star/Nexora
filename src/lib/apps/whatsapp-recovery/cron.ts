@@ -41,6 +41,16 @@ export async function maybeSendWhatsappRecovery(
     });
     if (!install || install.status !== "active") return false;
 
+    // 0.5. Does the current plan actually allow this? (Fail-closed on downgrade)
+    const sub = await prisma.storeSubscription.findUnique({
+      where: { storeId: ctx.storeId },
+      include: { plan: true },
+    });
+    if (!sub || (sub.status !== "active" && sub.status !== "trialing")) return false;
+    if (!sub.plan) return false;
+    const planConfig = JSON.parse(sub.plan.configJson);
+    if (planConfig.whatsappRecovery !== true) return false;
+
     // 1. Do we have full credentials? Degrade safely if not.
     const creds = await resolveWhatsappCredentials(ctx.storeId);
     if (!creds) return false;

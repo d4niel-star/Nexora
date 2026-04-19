@@ -9,6 +9,7 @@ import {
   type ReviewStatus,
 } from "@/lib/apps/product-reviews/queries";
 import { ReviewsModeration } from "@/components/admin/apps/product-reviews/ReviewsModeration";
+import { UpgradePrompt } from "@/components/admin/billing/UpgradePrompt";
 
 export const metadata = {
   title: "Reseñas · Moderación",
@@ -38,17 +39,31 @@ export default async function ReviewsModerationPage({ searchParams }: PageProps)
     getAdminReviewCounts(store.id),
   ]);
 
-  const planConfig = sub?.plan
-    ? PLAN_DEFINITIONS.find((p) => p.code === sub.plan.code)?.config
-    : null;
+  const planConfig =
+    sub?.plan && (sub.status === "active" || sub.status === "trialing")
+      ? PLAN_DEFINITIONS.find((p) => p.code === sub.plan.code)?.config ?? null
+      : null;
   const planAllows = Boolean(planConfig?.productReviews);
+
+  if (!planAllows) {
+    return (
+      <div className="mx-auto max-w-2xl py-20 px-6">
+        <UpgradePrompt
+          title="Reseñas de Productos Bloqueado"
+          description="Tu suscripción se encuentra inactiva o no tiene un plan asociado. Activá un plan para recolectar y moderar reseñas de clientes."
+          feature="advanced"
+          planCode="core"
+        />
+      </div>
+    );
+  }
 
   return (
     <ReviewsModeration
       initialStatus={filter}
       reviews={reviews}
       counts={counts}
-      planAllows={planAllows}
+      planAllows={true}
     />
   );
 }

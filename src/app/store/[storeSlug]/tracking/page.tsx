@@ -2,7 +2,6 @@ import { getStorefrontData } from "@/lib/store-engine/queries";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db/prisma";
 import { TrackingClient } from "@/components/storefront/tracking/TrackingClient";
-import { getAllProviders } from "@/lib/logistics/registry";
 
 export default async function TrackingPage({ 
   params, 
@@ -69,17 +68,53 @@ export default async function TrackingPage({
         liveTracking: null as any, // Placeholder for live external tracking data
       };
 
-      // Try to fetch live external tracking if possible
-      if (order.trackingCode && order.shippingCarrier) {
-        const providers = getAllProviders();
-        const providerMatch = providers.find(p => p.name === order.shippingCarrier);
-        if (providerMatch) {
-           try {
-              const liveStatus = await providerMatch.getTrackingStatus("unknown_shipment_id", order.trackingCode);
-              trackedOrder.liveTracking = liveStatus;
-           } catch (err) {
-              console.error(`Failed to fetch live tracking from ${providerMatch.name} for ${order.trackingCode}`, err);
-           }
+      // Fetch real live tracking events from CarrierWebhookLog
+      if (order.trackingCode) {
+        try {
+          const logs = await prisma.carrierWebhookLog.findMany({
+            where: { trackingCode: order.trackingCode, status: "processed" },
+            orderBy: { processedAt: 'asc' },
+          });
+
+          if (logs.length > 0) {
+            const STATUS_LABELS: Record<string, string> = {
+              "unfulfilled": "Pendiente de preparación",
+              "preparing": "En preparación",
+              "ready_to_ship": "Listo para despacho",
+              "shipped": "En camino",
+              "in_transit": "En tránsito",
+              "out_for_delivery": "En reparto",
+              "delivered": "Entregado",
+              "failed_delivery": "Intento de entrega fallido",
+              "returned": "Devuelto al remitente",
+              "cancelled": "Envío cancelado"
+            };
+
+            const events = logs.map(log => {
+              let payload: any = {};
+              try {
+                payload = JSON.parse(log.bodyJson);
+              } catch (e) {}
+
+              // Extract data from the payload, fallback to processedAt and generic status
+              const carrierStatus = payload.status as string;
+              let description = payload.description;
+              
+              if (!description) {
+                 description = carrierStatus ? (STATUS_LABELS[carrierStatus] || "Actualización de estado") : "Actualización de envío";
+              }
+
+              return {
+                description,
+                location: payload.location || null,
+                timestamp: payload.timestamp || log.processedAt.toISOString(),
+              };
+            });
+
+            trackedOrder.liveTracking = { events };
+          }
+        } catch (err) {
+          console.error(`Failed to fetch live tracking events for ${order.trackingCode}`, err);
         }
       }
     }

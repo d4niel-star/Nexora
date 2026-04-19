@@ -7,6 +7,7 @@ import { getPublicWhatsappSettings } from "@/lib/apps/whatsapp-recovery/settings
 import { getAppEmailMetrics } from "@/lib/apps/_shared/metrics";
 import { WhatsappSetupForm } from "@/components/admin/apps/whatsapp-recovery/WhatsappSetupForm";
 import { AppMetricsCard } from "@/components/admin/apps/_shared/AppMetricsCard";
+import { UpgradePrompt } from "@/components/admin/billing/UpgradePrompt";
 
 export const metadata = {
   title: "WhatsApp Recovery · Setup",
@@ -27,14 +28,28 @@ export default async function WhatsappRecoverySetupPage() {
     getAppEmailMetrics(store.id, "ABANDONED_CART_WHATSAPP"),
   ]);
 
-  const planConfig = sub?.plan
-    ? PLAN_DEFINITIONS.find((p) => p.code === sub.plan.code)?.config
-    : null;
+  const planConfig =
+    sub?.plan && (sub.status === "active" || sub.status === "trialing")
+      ? PLAN_DEFINITIONS.find((p) => p.code === sub.plan.code)?.config ?? null
+      : null;
   const planAllows = Boolean(planConfig?.whatsappRecovery);
+
+  if (!planAllows) {
+    return (
+      <div className="mx-auto max-w-2xl py-20 px-6">
+        <UpgradePrompt
+          title="WhatsApp Cart Recovery Bloqueado"
+          description="Tu plan actual no incluye automatización de recupero de carritos por WhatsApp. Actualizá a Growth para duplicar tus conversiones."
+          feature="advanced"
+          planCode="growth"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <WhatsappSetupForm settings={settings} planAllows={planAllows} />
+      <WhatsappSetupForm settings={settings} planAllows={true} />
       <AppMetricsCard
         title="Actividad de WhatsApp Recovery"
         sentCaveat="“Envíos” cuenta mensajes aceptados por la API oficial de Meta Cloud (WABA)."

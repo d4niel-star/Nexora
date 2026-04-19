@@ -154,6 +154,10 @@ export async function checkFeatureAccess(storeId: string, feature: string): Prom
   const info = await getStorePlanInfo(storeId);
   if (!info) return { allowed: false, reason: "No hay un plan activo." };
 
+  if (info.subscription.status !== "active" && info.subscription.status !== "trialing") {
+    return { allowed: false, reason: "La suscripción se encuentra inactiva o con pagos pendientes." };
+  }
+
   // Check specific features
   switch (feature) {
     case "custom_domain":
@@ -175,6 +179,11 @@ export async function checkFeatureAccess(storeId: string, feature: string): Prom
       return info.entitlements.advancedCarriers
         ? { allowed: true }
         : { allowed: false, reason: "Carriers avanzados requieren plan Growth o superior" };
+
+    case "sourcing_advanced":
+      return info.entitlements.sourcingAdvanced
+        ? { allowed: true }
+        : { allowed: false, reason: "Sourcing predictivo y operaciones cross-provider requieren plan Scale." };
 
     case "ai_credits":
       return info.credits.remaining > 0
@@ -469,6 +478,22 @@ export async function checkStoreBillingGate(storeId: string): Promise<GateResult
       code: "trial_expired",
       reason: "Tu trial de 14 días terminó. Activá un plan para seguir operando tu tienda.",
       upgradeSuggestion: "growth",
+    };
+  }
+
+  if (sub.status === "cancelled") {
+    return {
+      allowed: false,
+      code: "no_subscription",
+      reason: "Tu suscripción ha sido cancelada. Reactivá tu plan para seguir operando.",
+    };
+  }
+
+  if (sub.status === "past_due" || sub.status === "unpaid") {
+    return {
+      allowed: false,
+      code: "no_subscription",
+      reason: "Tu suscripción presenta un pago pendiente. Actualizá tu método de pago para restablecer el acceso.",
     };
   }
 

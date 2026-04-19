@@ -73,6 +73,12 @@ async function importParsedProductsForStore(input: {
   products: SupplierProductInput[];
   selectedExternalIds: string[];
 }) {
+  const { checkFeatureAccess } = await import("@/lib/billing/service");
+  const gate = await checkFeatureAccess(input.storeId, "sourcing_advanced");
+  if (!gate.allowed) {
+    throw new Error(gate.reason || "Tu plan no permite sourcing avanzado.");
+  }
+
   const selectedSet = new Set(input.selectedExternalIds);
   const selectedProducts = input.products.filter((product) => selectedSet.has(product.externalId));
   const missingExternalIds = input.selectedExternalIds.filter(
@@ -364,6 +370,12 @@ export async function connectProviderAction(providerId: string) {
   const store = await getDefaultStore();
   if (!store) throw new Error("No active store");
 
+  const { checkFeatureAccess } = await import("@/lib/billing/service");
+  const gate = await checkFeatureAccess(store.id, "sourcing_advanced");
+  if (!gate.allowed) {
+    throw new Error(gate.reason || "Tu plan no permite sourcing avanzado.");
+  }
+
   const provider = await prisma.sourcingProvider.findUnique({
     where: { id: providerId },
     select: { code: true },
@@ -481,6 +493,12 @@ export async function getProviderExternalProductsAction(providerId: string) {
 export async function importProductAction(connectionId: string, providerProductId: string) {
   const storeId = await getAdminStoreId();
   if (!storeId) throw new Error("No active store session");
+
+  const { checkFeatureAccess } = await import("@/lib/billing/service");
+  const gate = await checkFeatureAccess(storeId, "sourcing_advanced");
+  if (!gate.allowed) {
+    throw new Error(gate.reason || "Tu plan no permite sourcing avanzado.");
+  }
 
   const connection = await prisma.providerConnection.findUnique({
     where: { id: connectionId, storeId },

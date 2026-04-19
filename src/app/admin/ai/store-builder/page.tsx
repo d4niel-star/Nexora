@@ -3,6 +3,8 @@ import { getAdminStoreId } from "@/lib/store-engine/actions";
 import { getAIGenerationDraft } from "@/lib/store-engine/ai-builder/queries";
 import { NexoraAIShell } from "@/components/admin/ai/NexoraAIShell";
 import { Sparkles } from "lucide-react";
+import { checkAIBuilderAccess } from "@/lib/billing/service";
+import { UpgradePrompt } from "@/components/admin/billing/UpgradePrompt";
 
 export default async function Page() {
   const storeId = await getAdminStoreId();
@@ -10,6 +12,20 @@ export default async function Page() {
     return <div>Esperando inicialización de cuenta...</div>;
   }
   
+  const gate = await checkAIBuilderAccess(storeId);
+  if (!gate.allowed) {
+    return (
+      <div className="mx-auto max-w-2xl py-20 px-6">
+        <UpgradePrompt
+          title="Funcionalidad bloqueada por plan"
+          description={gate.reason || "Tu plan actual no incluye acceso al Constructor IA. Actualizá para automatizar el diseño y contenido de tu tienda."}
+          feature="advanced"
+          planCode={gate.upgradeSuggestion}
+        />
+      </div>
+    );
+  }
+
   const draft = await getAIGenerationDraft(storeId);
   return (
     <div className="h-[calc(100vh-8rem)]">

@@ -22,8 +22,9 @@ async function loadGate() {
     include: { plan: true },
   });
   const planConfig: PlanConfig | null =
-    (sub?.plan && PLAN_DEFINITIONS.find((p) => p.code === sub.plan.code)?.config) ??
-    null;
+    sub?.status === "active" || sub?.status === "trialing"
+      ? (sub.plan && PLAN_DEFINITIONS.find((p) => p.code === sub.plan.code)?.config) ?? null
+      : null;
   return { store, planConfig } as const;
 }
 

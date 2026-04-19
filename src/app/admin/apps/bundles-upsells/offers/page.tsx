@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db/prisma";
 import { PLAN_DEFINITIONS } from "@/lib/billing/plans";
 import { listOffersForAdmin } from "@/lib/apps/bundles-upsells/queries";
 import { OfferList } from "@/components/admin/apps/bundles-upsells/OfferList";
+import { UpgradePrompt } from "@/components/admin/billing/UpgradePrompt";
 
 export const metadata = { title: "Bundles & upsells · Ofertas" };
 
@@ -20,10 +21,24 @@ export default async function BundlesOffersPage() {
     listOffersForAdmin(store.id),
   ]);
 
-  const planConfig = sub?.plan
-    ? PLAN_DEFINITIONS.find((p) => p.code === sub.plan.code)?.config
-    : null;
+  const planConfig =
+    sub?.plan && (sub.status === "active" || sub.status === "trialing")
+      ? PLAN_DEFINITIONS.find((p) => p.code === sub.plan.code)?.config ?? null
+      : null;
   const planAllows = Boolean(planConfig?.bundlesUpsells);
 
-  return <OfferList offers={offers} planAllows={planAllows} />;
+  if (!planAllows) {
+    return (
+      <div className="mx-auto max-w-2xl py-20 px-6">
+        <UpgradePrompt
+          title="Bundles & Upsells Bloqueado"
+          description="Tu plan actual no incluye sugerencias de productos complementarios. Actualizá a Growth para elevar automáticamente tu ticket promedio."
+          feature="advanced"
+          planCode="growth"
+        />
+      </div>
+    );
+  }
+
+  return <OfferList offers={offers} planAllows={true} />;
 }

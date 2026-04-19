@@ -51,14 +51,25 @@ export async function POST(request: NextRequest) {
             where: { appSlug: "post-purchase-flows" },
             select: { status: true },
           },
+          subscription: {
+            select: {
+              status: true,
+              plan: { select: { configJson: true } }
+            }
+          }
         },
       },
     },
   });
 
-  const tenants = settings.filter(
-    (s) => s.store.installedApps[0]?.status === "active",
-  );
+  const tenants = settings.filter((s) => {
+    if (s.store.installedApps[0]?.status !== "active") return false;
+    const sub = s.store.subscription;
+    if (!sub || (sub.status !== "active" && sub.status !== "trialing")) return false;
+    if (!sub.plan) return false;
+    const config = JSON.parse(sub.plan.configJson);
+    return config.postPurchaseFlows === true;
+  });
 
   let scanned = 0;
   let reviewSent = 0;

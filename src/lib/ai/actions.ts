@@ -18,6 +18,12 @@ export async function generateStudioDraftAction(brief: AIBrief) {
   const store = await getDefaultStore();
   if (!store) throw new Error("No se encontró tienda activa");
 
+  const { checkStoreBillingGate } = await import("@/lib/billing/service");
+  const gate = await checkStoreBillingGate(store.id);
+  if (!gate.allowed) {
+    throw new Error(gate.reason || "Acceso denegado a las funcionalidades de IA.");
+  }
+
   // Check credits
   const { CREDIT_COSTS } = await import("@/lib/billing/plans");
   const creditResult = await consumeCredits(store.id, "ai_studio_generation");
@@ -45,6 +51,12 @@ export async function regenerateSectionAction(
 ) {
   const store = await getDefaultStore();
   if (store) {
+    const { checkStoreBillingGate } = await import("@/lib/billing/service");
+    const gate = await checkStoreBillingGate(store.id);
+    if (!gate.allowed) {
+      throw new Error(gate.reason || "Acceso denegado a las funcionalidades de IA.");
+    }
+
     const { CREDIT_COSTS } = await import("@/lib/billing/plans");
     const creditResult = await consumeCredits(store.id, "ai_studio_section_regen");
     if (!creditResult.success) {

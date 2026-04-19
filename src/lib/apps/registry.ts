@@ -90,6 +90,8 @@ export interface AppDefinition {
   planGate?: (cfg: PlanConfig) => boolean;
   /** Minimum plan name displayed to the user when locked. */
   minPlanLabel?: string;
+  /** Comercial copy explaining why to upgrade for this app. */
+  lockedMessage?: string;
   /** When true, the app is modelled for discovery but not installable yet. */
   isComingSoon?: boolean;
   /** Hidden from the catalogue even if defined. */
@@ -266,6 +268,7 @@ export const APP_REGISTRY: AppDefinition[] = [
     setupTime: "15 minutos (propagación DNS)",
     planGate: (cfg) => cfg.customDomain,
     minPlanLabel: "Core",
+    lockedMessage: "Disponible desde el plan Core para proyectar confianza con tu propia URL.",
     tags: ["dns", "ssl"],
   },
   {
@@ -290,6 +293,7 @@ export const APP_REGISTRY: AppDefinition[] = [
     setupTime: "5 minutos",
     planGate: (cfg) => cfg.advancedBranding,
     minPlanLabel: "Core",
+    lockedMessage: "Disponible desde el plan Core para personalizar toda la estética de tu tienda y notificaciones.",
     tags: ["branding", "visual"],
   },
 
@@ -316,6 +320,7 @@ export const APP_REGISTRY: AppDefinition[] = [
     setupTime: "10 minutos",
     planGate: (cfg) => cfg.aiBuilder,
     minPlanLabel: "Growth",
+    lockedMessage: "Disponible en Growth para automatizar el armado inicial o el rediseño completo de tu tienda con IA.",
     tags: ["ai", "generator"],
   },
   {
@@ -364,6 +369,7 @@ export const APP_REGISTRY: AppDefinition[] = [
     setupTime: "Inmediato (requiere proveedor conectado)",
     planGate: (cfg) => cfg.sourcingAdvanced,
     minPlanLabel: "Scale",
+    lockedMessage: "Disponible en Scale para equipos que necesitan visibilidad avanzada y scoring para la toma de decisiones de importación.",
     tags: ["sourcing", "score"],
   },
   {
@@ -413,6 +419,7 @@ export const APP_REGISTRY: AppDefinition[] = [
     setupTime: "10 minutos (requiere cuenta WABA)",
     planGate: (cfg) => cfg.whatsappRecovery,
     minPlanLabel: "Growth",
+    lockedMessage: "Disponible en Growth para maximizar la conversión en carritos abandonados mediante notificaciones directas por WhatsApp.",
     tags: ["whatsapp", "waba", "recovery"],
   },
   // ── Trust — Product reviews (V2.2, real) ──────────────────────────────
@@ -438,7 +445,8 @@ export const APP_REGISTRY: AppDefinition[] = [
     installMode: "builtin",
     setupTime: "Inmediato",
     planGate: (cfg) => cfg.productReviews,
-    minPlanLabel: "Growth",
+    minPlanLabel: "Core",
+    lockedMessage: "Disponible desde el plan Core para aumentar la credibilidad de tu catálogo recolectando y moderando reseñas de clientes reales.",
     tags: ["reviews", "social-proof", "trust"],
   },
   // ── Conversion — Bundles & upsells (V2.4, real) ──────────────────────
@@ -465,6 +473,7 @@ export const APP_REGISTRY: AppDefinition[] = [
     setupTime: "5 minutos por oferta",
     planGate: (cfg) => cfg.bundlesUpsells,
     minPlanLabel: "Growth",
+    lockedMessage: "Disponible en Growth para elevar automáticamente el ticket promedio sugiriendo productos complementarios en la ficha de producto.",
     tags: ["bundles", "upsell", "aov", "cross-sell"],
   },
   // ── Trust — Order tracking widget (V2.3, real) ────────────────────────
@@ -516,6 +525,7 @@ export const APP_REGISTRY: AppDefinition[] = [
     setupTime: "2 minutos",
     planGate: (cfg) => cfg.postPurchaseFlows,
     minPlanLabel: "Growth",
+    lockedMessage: "Disponible en Growth para cerrar el círculo comercial automatizando pedidos de reseñas y fomentando la recompra de tus clientes.",
     tags: ["email", "lifecycle", "reviews"],
   },
 ];

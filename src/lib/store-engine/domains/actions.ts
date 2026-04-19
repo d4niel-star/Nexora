@@ -14,6 +14,12 @@ export async function addCustomDomain(storeId: string, hostname: string) {
     throw new Error("Formato de dominio inválido. Ej: mitienda.com");
   }
 
+  const { checkFeatureAccess } = await import("@/lib/billing/service");
+  const gate = await checkFeatureAccess(storeId, "custom_domain");
+  if (!gate.allowed) {
+    throw new Error(gate.reason || "Tu plan no permite dominios personalizados.");
+  }
+
   // Check if it already exists across ANY store (to prevent hijacking)
   const existing = await prisma.storeDomain.findUnique({
     where: { hostname: cleanHostname }
@@ -88,6 +94,12 @@ export async function setPrimaryDomain(storeId: string, domainNameOrHostname: st
   });
 
   if (domainNameOrHostname.includes(".")) {
+     const { checkFeatureAccess } = await import("@/lib/billing/service");
+     const gate = await checkFeatureAccess(storeId, "custom_domain");
+     if (!gate.allowed) {
+       throw new Error(gate.reason || "Tu plan no permite dominios personalizados.");
+     }
+
      // Setting a custom domain as primary
      const domain = await prisma.storeDomain.findUnique({
        where: { hostname: domainNameOrHostname }

@@ -7,6 +7,7 @@ import { getPostPurchaseSettings } from "@/lib/apps/post-purchase-flows/settings
 import { getAppEmailMetrics } from "@/lib/apps/_shared/metrics";
 import { FlowsSetup } from "@/components/admin/apps/post-purchase-flows/FlowsSetup";
 import { AppMetricsCard } from "@/components/admin/apps/_shared/AppMetricsCard";
+import { UpgradePrompt } from "@/components/admin/billing/UpgradePrompt";
 
 export const metadata = {
   title: "Post-purchase flows · Setup",
@@ -44,9 +45,10 @@ export default async function PostPurchaseFlowsSetupPage() {
       }),
     ]);
 
-  const planConfig = sub?.plan
-    ? PLAN_DEFINITIONS.find((p) => p.code === sub.plan.code)?.config
-    : null;
+  const planConfig =
+    sub?.plan && (sub.status === "active" || sub.status === "trialing")
+      ? PLAN_DEFINITIONS.find((p) => p.code === sub.plan.code)?.config ?? null
+      : null;
   const planAllows = Boolean(planConfig?.postPurchaseFlows);
   const installed = install !== null;
   const installStatus = (install?.status ?? null) as
@@ -54,6 +56,19 @@ export default async function PostPurchaseFlowsSetupPage() {
     | "needs_setup"
     | "disabled"
     | null;
+
+  if (!planAllows) {
+    return (
+      <div className="mx-auto max-w-2xl py-20 px-6">
+        <UpgradePrompt
+          title="Flujos Post-Compra Bloqueados"
+          description="Tu plan actual no incluye automatizaciones post-compra. Actualizá a Growth para cerrar el círculo comercial, pedir reseñas y fomentar la recompra."
+          feature="advanced"
+          planCode="growth"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

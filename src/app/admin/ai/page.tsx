@@ -9,9 +9,36 @@ import { GlobalCommandInput } from "@/components/admin/ai/GlobalCommandInput";
 import { getAIHubData } from "@/app/admin/ai/queries";
 import { getDecisionRecommendations } from "@/lib/ai/decisions";
 import { getAptitudeReport } from "@/lib/aptitude/queries";
+import { checkFeatureAccess } from "@/lib/billing/service";
+import { getAdminStoreId } from "@/lib/store-engine/actions";
+import { UpgradePrompt } from "@/components/admin/billing/UpgradePrompt";
 
 export default async function AIGeneralPage() {
   noStore();
+  const storeId = await getAdminStoreId();
+  if (!storeId) {
+    return <div>Esperando inicialización de cuenta...</div>;
+  }
+
+  const gate = await checkFeatureAccess(storeId, "ai_studio_advanced");
+  
+  if (!gate.allowed) {
+    return (
+      <div className="h-[calc(100vh-8rem)]">
+        <NexoraAIShell contextName="General" contextIcon={<Sparkles className="w-5 h-5 text-ink-0" />}>
+          <div className="mx-auto max-w-2xl py-20 px-6">
+            <UpgradePrompt
+              title="AI Studio Bloqueado"
+              description={gate.reason || "Tu plan no incluye acceso al AI Studio avanzado. Actualizá a Growth para utilizar comandos globales, finanzas predictivas y optimización publicitaria."}
+              feature="advanced"
+              planCode="growth"
+            />
+          </div>
+        </NexoraAIShell>
+      </div>
+    );
+  }
+
   const [data, decisions, aptitude] = await Promise.all([
     getAIHubData(),
     getDecisionRecommendations(),

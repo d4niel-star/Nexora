@@ -48,6 +48,7 @@ async function getPlanConfig(storeId: string): Promise<PlanConfig | null> {
     include: { plan: true },
   });
   if (!sub?.plan) return null;
+  if (sub.status !== "active" && sub.status !== "trialing") return null;
   const def = PLAN_DEFINITIONS.find((p) => p.code === sub.plan.code);
   return def?.config ?? null;
 }

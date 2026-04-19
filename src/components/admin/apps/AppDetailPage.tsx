@@ -90,9 +90,16 @@ export function AppDetailPage({ item }: Props) {
 
           <div className="flex flex-wrap gap-2">
             {availability.kind === "plan-locked" && (
-              <Link href="/admin/billing" className={primaryBtn}>
-                Ver plan {availability.minPlan}
-              </Link>
+              <div className="flex w-full flex-col gap-3 sm:w-auto">
+                {definition.lockedMessage && (
+                  <p className="max-w-sm text-[12px] font-medium leading-[1.5] text-ink-5">
+                    {definition.lockedMessage}
+                  </p>
+                )}
+                <Link href="/admin/billing" className={cn(primaryBtn, "sm:w-max")}>
+                  Ver plan {availability.minPlan}
+                </Link>
+              </div>
             )}
 
             {availability.kind === "coming-soon" && (

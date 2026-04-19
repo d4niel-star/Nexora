@@ -39,6 +39,12 @@ export async function suggestStoreIdentityAction(
     throw new Error("La descripción debe tener al menos 20 caracteres.");
   }
 
+  const { checkAIBuilderAccess } = await import("@/lib/billing/service");
+  const gate = await checkAIBuilderAccess(store.id);
+  if (!gate.allowed) {
+    throw new Error(gate.reason || "Acceso denegado al Constructor IA.");
+  }
+
   const spent = await consumeCredits(store.id, "ai_store_identity");
   if (!spent.success) {
     throw new Error(spent.reason || "Créditos insuficientes.");
@@ -73,6 +79,12 @@ export async function generateProductSheetAction(
 
   if (!input.rawName || input.rawName.trim().length < 3) {
     throw new Error("El nombre del producto debe tener al menos 3 caracteres.");
+  }
+
+  const { checkAIBuilderAccess } = await import("@/lib/billing/service");
+  const gate = await checkAIBuilderAccess(store.id);
+  if (!gate.allowed) {
+    throw new Error(gate.reason || "Acceso denegado al Constructor IA.");
   }
 
   const spent = await consumeCredits(store.id, "ai_product_sheet");
@@ -127,6 +139,12 @@ export async function generateMarketingCopyAction(
 
   if (!input.productTitle || input.productTitle.trim().length < 2) {
     throw new Error("El título del producto es obligatorio.");
+  }
+
+  const { checkAIBuilderAccess } = await import("@/lib/billing/service");
+  const gate = await checkAIBuilderAccess(store.id);
+  if (!gate.allowed) {
+    throw new Error(gate.reason || "Acceso denegado al Constructor IA.");
   }
 
   const spent = await consumeCredits(store.id, "ai_marketing_copy");
