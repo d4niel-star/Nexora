@@ -20,11 +20,9 @@ import { cn } from "@/lib/utils";
 import { TopbarUserMenu } from "./layout/TopbarUserMenu";
 import { NexoraLogo } from "./layout/NexoraLogo";
 
-// ─── Admin Shell ───
-// Flat canvas with vertical hairline between sidebar and main — no rounded
-// island (the prior "Vercel/Cal.com" tell). Active nav item is indicated by
-// an ink-0 foreground + a 2px left accent bar, not a colored fill. Topbar
-// uses a single hairline and the refactored TopbarUserMenu chip.
+// ─── Admin Shell  v3 ───
+// Dark shell (sidebar + topbar) against a cool neutral canvas. Nexora IA
+// stays pinned bottom-left — structure unchanged, tokens only.
 
 const navigation = [
   { href: "/admin/dashboard", label: "Panel de control", icon: LayoutDashboard },
@@ -62,10 +60,11 @@ export function AdminShell({ children, storeName, storeInitials }: AdminShellPro
 
   const sidebarContent = (
     <>
-      <div className="flex h-14 items-center justify-between border-b border-[color:var(--hairline)] px-5">
+      {/* Header — logo on dark */}
+      <div className="flex h-14 items-center justify-between border-b border-[color:var(--sidebar-hairline)] px-5">
         <div className="flex items-center gap-2.5">
-          <NexoraLogo className="h-[22px] w-[22px]" />
-          <span className="font-semibold text-[18px] leading-none tracking-[-0.03em] text-ink-0">
+          <NexoraLogo className="h-[22px] w-[22px]" dark />
+          <span className="font-semibold text-[17px] leading-none tracking-[-0.03em] text-[var(--sidebar-fg-active)]">
             nexora
           </span>
         </div>
@@ -73,12 +72,13 @@ export function AdminShell({ children, storeName, storeInitials }: AdminShellPro
           aria-label="Cerrar menú"
           type="button"
           onClick={closeSidebar}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--r-sm)] text-ink-5 transition-colors hover:bg-ink-11 hover:text-ink-0 md:hidden"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-[var(--r-sm)] text-[var(--sidebar-fg)] transition-colors hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-fg-active)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus-on-dark)] md:hidden"
         >
           <X className="h-4 w-4" strokeWidth={1.75} />
         </button>
       </div>
 
+      {/* Navigation */}
       <nav className="flex-1 px-3 py-5">
         <ul className="flex flex-col gap-0.5">
           {navigation.map((item) => {
@@ -93,7 +93,7 @@ export function AdminShell({ children, storeName, storeInitials }: AdminShellPro
                 {isActive && (
                   <span
                     aria-hidden
-                    className="absolute left-0 top-1/2 h-5 -translate-y-1/2 rounded-r-full bg-[var(--accent-500)]"
+                    className="absolute left-0 top-1/2 h-5 -translate-y-1/2 rounded-r-full bg-[var(--accent-400)]"
                     style={{ width: 2 }}
                   />
                 )}
@@ -103,14 +103,14 @@ export function AdminShell({ children, storeName, storeInitials }: AdminShellPro
                   className={cn(
                     "flex items-center gap-2.5 rounded-[var(--r-sm)] px-3 py-2 text-[13px] transition-colors outline-none focus-visible:shadow-[var(--shadow-focus)]",
                     isActive
-                      ? "font-medium text-ink-0"
-                      : "text-ink-4 hover:bg-ink-11 hover:text-ink-0",
+                      ? "bg-[var(--sidebar-active-bg)] font-medium text-[var(--sidebar-fg-active)]"
+                      : "text-[var(--sidebar-fg)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-fg-active)]",
                   )}
                 >
                   <Icon
                     className={cn(
                       "h-4 w-4",
-                      isActive ? "text-ink-0" : "text-ink-5",
+                      isActive ? "text-[var(--sidebar-fg-active)]" : "text-[var(--sidebar-fg)]",
                     )}
                     strokeWidth={1.75}
                   />
@@ -134,14 +134,14 @@ export function AdminShell({ children, storeName, storeInitials }: AdminShellPro
         <div
           aria-hidden
           onClick={closeSidebar}
-          className="fixed inset-0 z-40 bg-ink-0/40 md:hidden"
+          className="fixed inset-0 z-40 bg-ink-0/50 md:hidden"
         />
       ) : null}
 
       {/* Mobile sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-[color:var(--hairline)] bg-[var(--surface-0)] transition-transform duration-[var(--dur-slow)] ease-[var(--ease-out)] md:hidden",
+          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-[var(--sidebar-bg)] transition-transform duration-[var(--dur-slow)] ease-[var(--ease-out)] md:hidden",
           sidebarOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
@@ -149,28 +149,28 @@ export function AdminShell({ children, storeName, storeInitials }: AdminShellPro
       </aside>
 
       {/* Desktop sidebar */}
-      <aside className="hidden w-60 flex-col border-r border-[color:var(--hairline)] bg-[var(--surface-0)] md:flex">
+      <aside className="hidden w-60 flex-col bg-[var(--sidebar-bg)] md:flex">
         {sidebarContent}
       </aside>
 
       {/* Main column */}
       <main className="flex flex-1 flex-col overflow-hidden">
         {/* Topbar */}
-        <div className="flex h-14 shrink-0 items-center justify-between border-b border-[color:var(--hairline)] bg-[var(--surface-0)] px-4 md:px-8">
+        <div className="flex h-14 shrink-0 items-center justify-between border-b border-[color:var(--chrome-border)] bg-[var(--chrome-bg)] px-4 md:px-8">
           <div className="flex items-center gap-3">
             <button
               aria-label="Abrir menú"
               type="button"
               onClick={() => setSidebarOpen(true)}
-              className="-ml-1 inline-flex h-9 w-9 items-center justify-center rounded-[var(--r-sm)] text-ink-4 transition-colors hover:bg-ink-11 hover:text-ink-0 md:hidden"
+              className="-ml-1 inline-flex h-11 w-11 items-center justify-center rounded-[var(--r-sm)] text-[var(--chrome-fg-muted)] transition-colors hover:bg-[var(--chrome-hover)] hover:text-[var(--chrome-fg)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus-on-dark)] md:hidden"
             >
-              <Menu className="h-4 w-4" strokeWidth={1.75} />
+              <Menu className="h-5 w-5" strokeWidth={1.75} />
             </button>
-            <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--chrome-fg-muted)]">
               Tienda activa
             </span>
-            <span className="hidden h-3 w-px bg-[color:var(--hairline)] sm:block" />
-            <span className="hidden text-[13px] font-medium text-ink-0 sm:block">
+            <span className="hidden h-3 w-px bg-[color:var(--chrome-border)] sm:block" />
+            <span className="hidden text-[13px] font-medium text-[var(--chrome-fg)] sm:block">
               {storeName}
             </span>
           </div>
@@ -188,36 +188,34 @@ export function AdminShell({ children, storeName, storeInitials }: AdminShellPro
   );
 }
 
-// ─── Nexora IA — Sidebar bottom entry ───
-// Separated from the regular nav to create visual hierarchy.
-// Positioned at the bottom of the sidebar via the flex layout (nav has flex-1).
+// ─── Nexora IA — Sidebar bottom entry (dark context) ───
 
 function NexoraIAEntry({ pathname, onNavigate }: { pathname: string; onNavigate: () => void }) {
   const isActive = pathname.startsWith("/admin/ai");
 
   return (
-    <div className="border-t border-[color:var(--hairline)] px-3 py-3">
+    <div className="border-t border-[color:var(--sidebar-hairline)] px-3 py-3">
       <Link
         href="/admin/ai"
         onClick={onNavigate}
         className={cn(
           "group relative flex items-center gap-2.5 rounded-[var(--r-sm)] px-3 py-2.5 text-[13px] transition-colors outline-none focus-visible:shadow-[var(--shadow-focus)]",
           isActive
-            ? "bg-ink-11 font-medium text-ink-0"
-            : "text-ink-4 hover:bg-ink-11 hover:text-ink-0",
+            ? "bg-[var(--sidebar-active-bg)] font-medium text-[var(--sidebar-fg-active)]"
+            : "text-[var(--sidebar-fg)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-fg-active)]",
         )}
       >
         {isActive && (
           <span
             aria-hidden
-            className="absolute left-0 top-1/2 h-5 -translate-y-1/2 rounded-r-full bg-[var(--accent-500)]"
+            className="absolute left-0 top-1/2 h-5 -translate-y-1/2 rounded-r-full bg-[var(--accent-400)]"
             style={{ width: 2 }}
           />
         )}
         <Sparkles
           className={cn(
             "h-4 w-4 shrink-0",
-            isActive ? "text-ink-0" : "text-ink-5 group-hover:text-ink-0",
+            isActive ? "text-[var(--sidebar-fg-active)]" : "text-[var(--sidebar-fg)] group-hover:text-[var(--sidebar-fg-active)]",
           )}
           strokeWidth={1.75}
         />
@@ -227,7 +225,7 @@ function NexoraIAEntry({ pathname, onNavigate }: { pathname: string; onNavigate:
             "inline-flex h-[18px] items-center rounded-[var(--r-xs)] px-1.5 text-[9px] font-semibold uppercase tracking-[0.08em]",
             isActive
               ? "bg-[var(--accent-500)] text-white"
-              : "bg-ink-11 text-ink-5 group-hover:bg-[var(--accent-50)] group-hover:text-[var(--accent-700)]",
+              : "bg-[var(--sidebar-hover)] text-[var(--sidebar-fg)] group-hover:bg-[var(--accent-500)]/20 group-hover:text-[var(--accent-200)]",
           )}
         >
           AI

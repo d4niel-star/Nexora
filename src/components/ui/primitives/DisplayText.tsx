@@ -9,10 +9,10 @@ import { cn } from "@/lib/utils";
 type DisplaySize = "sm" | "md" | "lg" | "xl";
 
 const SIZE_CLASS: Record<DisplaySize, string> = {
-  sm: "text-[22px] sm:text-[28px] leading-[1.15]",
-  md: "text-[28px] sm:text-[38px] leading-[1.1]",
-  lg: "text-[40px] sm:text-[56px] leading-[1.05]",
-  xl: "text-[48px] sm:text-[72px] leading-[1.02]",
+  sm: "text-[24px] sm:text-[30px] leading-[1.1]",
+  md: "text-[30px] sm:text-[42px] leading-[1.04]",
+  lg: "text-[40px] sm:text-[58px] leading-[1.02]",
+  xl: "text-[48px] sm:text-[72px] leading-[0.99]",
 };
 
 export interface DisplayTextProps extends React.HTMLAttributes<HTMLHeadingElement> {
@@ -25,7 +25,7 @@ export const DisplayText = React.forwardRef<HTMLHeadingElement, DisplayTextProps
     <Tag
       ref={ref as never}
       className={cn(
-        "font-sans font-semibold tracking-[-0.035em] text-ink-0",
+        "font-sans font-bold tracking-[var(--tracking-display)] text-ink-0",
         SIZE_CLASS[size],
         className,
       )}

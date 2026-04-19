@@ -48,25 +48,25 @@ export default async function CheckoutPage({ params }: { params: Promise<{ store
 
   return (
     <div className="min-h-screen bg-[var(--surface-1)]">
-      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-10 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-12 lg:gap-12 lg:px-8">
+      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-12 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-12 lg:gap-14 lg:px-8">
         <section className="lg:col-span-7 xl:col-span-8" aria-labelledby="checkout-title">
-          <div className="mb-8">
-            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">
+          <div className="mb-10">
+            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-ink-5">
               Checkout
             </p>
             <h1
               id="checkout-title"
-              className="mt-2 font-semibold text-[34px] leading-[1.04] tracking-[-0.035em] text-ink-0 sm:text-[48px]"
+              className="mt-3 font-semibold text-[32px] leading-[1.05] tracking-[-0.035em] text-ink-0 sm:text-[44px]"
             >
               Finalizá tu compra
             </h1>
-            <p className="mt-3 max-w-xl text-[14px] leading-[1.55] text-ink-5">
+            <p className="mt-4 max-w-xl text-[14px] leading-[1.6] text-ink-5">
               Completá tus datos y te redirigimos a Mercado Pago para pagar de
               forma segura.
             </p>
           </div>
 
-          <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 sm:p-7">
+          <div className="rounded-[var(--r-xl)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 shadow-[var(--shadow-soft)] sm:p-8">
           {hasStockIssues ? (
             <div role="alert">
               <h2 className="text-[16px] font-semibold tracking-[-0.01em] text-ink-0">
@@ -119,10 +119,10 @@ export default async function CheckoutPage({ params }: { params: Promise<{ store
         </section>
 
         <aside className="lg:col-span-5 xl:col-span-4" aria-labelledby="order-summary-title">
-          <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 sm:p-6 lg:sticky lg:top-24">
+          <div className="rounded-[var(--r-xl)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 shadow-[var(--shadow-soft)] sm:p-6 lg:sticky lg:top-28">
           <h2
             id="order-summary-title"
-            className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5"
+            className="text-[11px] font-medium uppercase tracking-[0.2em] text-ink-5"
           >
             Resumen del pedido
           </h2>
@@ -162,7 +162,7 @@ export default async function CheckoutPage({ params }: { params: Promise<{ store
               <dt className="text-ink-5">Envío</dt>
               <dd className="tabular font-medium text-ink-0">{shippingAmount > 0 ? priceFormatted(shippingAmount) : "Gratis"}</dd>
             </div>
-            <div className="flex justify-between border-t border-[color:var(--hairline)] pt-4 text-[16px] font-semibold text-ink-0">
+            <div className="flex justify-between border-t border-[color:var(--hairline)] pt-4 text-[17px] font-semibold tracking-[-0.02em] text-ink-0">
               <dt>Total</dt>
               <dd className="tabular">{priceFormatted(total)}</dd>
             </div>

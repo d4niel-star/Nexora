@@ -77,9 +77,10 @@ export default function PricingPage() {
 
   return (
     <>
-      <section className="mx-auto flex min-h-[46vh] max-w-5xl items-center justify-center px-5 py-16 text-center sm:px-8 sm:py-24">
+      <section className="mx-auto flex min-h-[48vh] max-w-5xl items-center justify-center px-5 py-20 text-center sm:px-8 sm:py-28">
         <PageReveal className="max-w-4xl">
-          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">
+          <div className="mx-auto mb-6 h-px w-10 bg-[var(--accent-500)]" aria-hidden />
+          <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-ink-5">
             Planes
           </p>
           <DisplayText as="h1" size="lg" className="mt-6 text-center">
@@ -96,8 +97,8 @@ export default function PricingPage() {
 
       <Hairline />
 
-      <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20">
-        <StaggerGroup className="grid grid-cols-1 gap-4 lg:grid-cols-4">
+      <section className="mx-auto max-w-7xl px-5 pb-20 pt-4 sm:px-8 sm:pb-24">
+        <StaggerGroup className="grid grid-cols-1 gap-5 lg:grid-cols-4 lg:gap-6">
           {PLAN_DEFINITIONS.map((plan) => {
             const meta = PLAN_FEATURES[plan.code];
             const isEnterprise = plan.code === "enterprise";
@@ -110,8 +111,9 @@ export default function PricingPage() {
                   hairline
                   radius="lg"
                   className={cn(
-                    "flex h-full flex-col transition-transform duration-[var(--dur-base)] hover:-translate-y-[2px] p-5 sm:p-6",
-                    isHighlight && "border-[color:var(--hairline-strong)]",
+                    "flex h-full flex-col p-6 shadow-[var(--shadow-soft)] transition-[box-shadow,transform] duration-[var(--dur-base)] hover:shadow-[var(--shadow-elevated)] sm:p-7",
+                    isHighlight &&
+                      "border-[color:var(--accent-400)]/40 bg-[var(--accent-50)] ring-1 ring-[color:var(--accent-500)]/20",
                   )}
                 >
                   <div className="flex items-start justify-between gap-4">
@@ -124,7 +126,7 @@ export default function PricingPage() {
                       </p>
                     </div>
                     {isHighlight && (
-                      <span className="inline-flex h-5 items-center rounded-[var(--r-xs)] bg-[var(--surface-2)] px-2 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">
+                      <span className="inline-flex h-6 items-center rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-4">
                         Recomendado
                       </span>
                     )}
@@ -149,7 +151,7 @@ export default function PricingPage() {
                     {isEnterprise ? (
                       <Link
                         href="mailto:ventas@nexora.io"
-                        className="inline-flex h-11 w-full items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-transparent text-[13px] font-medium text-ink-0 transition-colors hover:bg-ink-11"
+                        className="inline-flex h-12 min-h-12 w-full items-center justify-center rounded-[var(--r-md)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
                       >
                         Hablar con ventas
                       </Link>
@@ -157,10 +159,10 @@ export default function PricingPage() {
                       <Link
                         href="/home/register"
                         className={cn(
-                          "group inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-[var(--r-sm)] text-[13px] font-medium transition-colors",
+                          "group inline-flex h-12 min-h-12 w-full items-center justify-center gap-1.5 rounded-[var(--r-md)] text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
                           isHighlight
                             ? "bg-ink-0 text-ink-12 hover:bg-ink-2"
-                            : "border border-[color:var(--hairline-strong)] bg-transparent text-ink-0 hover:bg-ink-11",
+                            : "border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-ink-0 hover:bg-[var(--surface-2)]",
                         )}
                       >
                         {plan.code === "core" ? "Empezar con Core" : `Elegir ${plan.name}`}

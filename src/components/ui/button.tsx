@@ -23,17 +23,17 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     }
 
     const sizes = {
-      default: "h-11 px-5 text-sm",
-      sm: "h-9 px-3.5 text-[13px]",
-      lg: "h-12 px-7 text-[15px]",
-      icon: "h-10 w-10",
+      default: "h-11 min-h-11 px-5 text-sm",
+      sm: "h-9 min-h-9 px-3.5 text-[13px]",
+      lg: "h-12 min-h-12 px-7 text-[15px]",
+      icon: "h-11 w-11 min-h-11 min-w-11",
     }
 
     return (
       <button
         ref={ref}
         className={cn(
-          "inline-flex items-center justify-center gap-2 rounded-[var(--r-sm)] font-medium tracking-[-0.01em]",
+          "inline-flex items-center justify-center gap-2 rounded-[var(--r-md)] font-medium tracking-[-0.01em]",
           "transition-[background-color,color,box-shadow,transform] duration-[var(--dur-base)] ease-[var(--ease-out)]",
           "focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
           "active:translate-y-px",

@@ -2,16 +2,13 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 // ─── Card ───
-// Default card = raised surface with hairline border, no heavy shadow.
-// Use `bg-[var(--surface-0)]` for pure-white cards on top of canvas; default
-// sits on raised surface so it reads as a deliberate panel, not a floating
-// box. Header/Content/Footer tighten padding to a more editorial 20px.
+// Raised panel: white surface, hairline, soft shadow — reads precise, not fluffy.
 const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
       className={cn(
-        "rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-surface text-ink-0",
+        "rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] text-ink-0 shadow-[var(--shadow-soft)]",
         className
       )}
       {...props}

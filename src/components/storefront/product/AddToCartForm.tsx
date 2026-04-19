@@ -125,10 +125,11 @@ export function AddToCartForm({
           rendered at page level) */}
       <div className="mt-8 flex flex-col gap-3">
         <button
+          id="add-to-cart"
           type="button"
           onClick={handleAddToCart}
           disabled={!selectedVariant?.inStock || isPending}
-          className="inline-flex h-[54px] w-full items-center justify-center gap-2 rounded-[var(--r-sm)] bg-ink-0 text-[15px] font-medium text-ink-12 transition-colors hover:bg-ink-2 active:translate-y-px disabled:bg-ink-8 disabled:text-ink-12 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+          className="inline-flex h-12 min-h-12 w-full items-center justify-center gap-2 rounded-[var(--r-md)] bg-ink-0 text-[15px] font-medium text-ink-12 transition-colors hover:bg-ink-2 active:translate-y-px disabled:cursor-not-allowed disabled:bg-ink-8 disabled:text-ink-12 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
         >
           {isPending ? (
             <>

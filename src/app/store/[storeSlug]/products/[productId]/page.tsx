@@ -9,7 +9,6 @@ import { ProductCard } from "@/components/storefront/product/ProductCard";
 import { AddToCartForm } from "@/components/storefront/product/AddToCartForm";
 import { toMetaDescription, toPlainText } from "@/lib/store-engine/seo";
 import { storePath } from "@/lib/store-engine/urls";
-import { Hairline } from "@/components/ui/primitives";
 
 type ProductPageProps = {
   params: Promise<{ storeSlug: string; productId: string }>;
@@ -120,12 +119,15 @@ export default async function ProductPage({ params }: ProductPageProps) {
       />
 
       {/* Breadcrumb */}
-      <nav aria-label="Breadcrumb" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <ol role="list" className="flex items-center gap-2 py-5 text-[12px] text-ink-5">
+      <nav aria-label="Breadcrumb" className="border-b border-[color:var(--hairline-strong)] bg-[var(--surface-0)]">
+        <ol
+          role="list"
+          className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-4 text-[12px] text-ink-5 sm:px-6 lg:px-8"
+        >
           <li>
             <Link
               href={storePath(resolvedParams.storeSlug)}
-              className="transition-colors hover:text-ink-0"
+              className="rounded-[var(--r-xs)] transition-colors hover:text-ink-0 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
             >
               Inicio
             </Link>
@@ -139,36 +141,34 @@ export default async function ProductPage({ params }: ProductPageProps) {
         </ol>
       </nav>
 
-      <Hairline />
-
-      <main className="mx-auto max-w-7xl px-4 pb-32 pt-10 sm:px-6 sm:pb-16 lg:px-8 lg:pt-14">
-        <div className="grid gap-10 lg:grid-cols-2 lg:items-start lg:gap-16">
+      <main className="mx-auto max-w-7xl px-4 pb-32 pt-8 sm:px-6 sm:pb-16 lg:px-8 lg:pt-12">
+        <div className="grid gap-10 lg:grid-cols-2 lg:items-start lg:gap-14 xl:gap-16">
           {/* Gallery */}
           <ProductGallery images={galleryImages} />
 
           {/* Info */}
-          <div className="flex flex-col">
+          <div className="flex flex-col rounded-[var(--r-xl)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6 shadow-[var(--shadow-soft)] sm:p-8">
             {product.brand && (
-              <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">
+              <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-ink-5">
                 {product.brand}
               </p>
             )}
-            <h1 className="mt-2 font-semibold text-[34px] leading-[1.02] tracking-[-0.035em] text-ink-0 sm:text-[44px]">
+            <h1 className="mt-3 font-semibold text-[32px] leading-[1.05] tracking-[-0.035em] text-ink-0 sm:text-[40px]">
               {product.title}
             </h1>
 
             {/* Price block */}
-            <div className="mt-6 flex items-baseline gap-3">
-              <p className="tabular text-[32px] font-medium leading-none tracking-[-0.01em] text-ink-0">
+            <div className="mt-8 flex flex-wrap items-baseline gap-x-3 gap-y-2 border-b border-[color:var(--hairline)] pb-8">
+              <p className="tabular text-[34px] font-semibold leading-none tracking-[-0.02em] text-ink-0 sm:text-[38px]">
                 {priceFormatted}
               </p>
               {compareAtFormatted && (
-                <p className="tabular text-[18px] leading-none text-ink-6 line-through">
+                <p className="tabular text-[17px] leading-none text-ink-6 line-through">
                   {compareAtFormatted}
                 </p>
               )}
               {discountPct !== null && discountPct > 0 && (
-                <span className="inline-flex items-center rounded-[var(--r-xs)] bg-[color:var(--accent-50)] px-2 py-0.5 text-[11px] font-medium uppercase tracking-[0.12em] text-[color:var(--accent-700)]">
+                <span className="inline-flex items-center rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[color:var(--accent-700)]">
                   −{discountPct}%
                 </span>
               )}
@@ -177,7 +177,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             {/* Description */}
             {product.description ? (
               <div
-                className="mt-8 max-w-prose text-[15px] leading-[1.65] text-ink-3 [&_p]:mb-4 [&_p:last-child]:mb-0 [&_strong]:text-ink-0 [&_a]:underline [&_a]:decoration-[color:var(--hairline-strong)] [&_a]:underline-offset-2"
+                className="mt-8 max-w-prose text-[15px] leading-[1.65] text-ink-4 [&_p]:mb-4 [&_p:last-child]:mb-0 [&_strong]:text-ink-0 [&_a]:underline [&_a]:decoration-[color:var(--hairline-strong)] [&_a]:underline-offset-2"
                 dangerouslySetInnerHTML={{ __html: product.description }}
               />
             ) : (
@@ -195,8 +195,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
             {/* Features (if provided by catalog) */}
             {product.features && product.features.length > 0 && (
-              <div className="mt-12 border-t border-[color:var(--hairline)] pt-10">
-                <h3 className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">
+              <div className="mt-10 border-t border-[color:var(--hairline)] pt-8">
+                <h3 className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">
                   Características
                 </h3>
                 <ul role="list" className="mt-5 space-y-2.5 text-[14px] text-ink-3">
@@ -217,8 +217,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
         {/* Related products */}
         {relatedProducts.length > 0 && (
-          <div className="mt-24 border-t border-[color:var(--hairline)] pt-16">
-            <h2 className="mb-10 font-semibold text-[28px] leading-[1.02] tracking-[-0.03em] text-ink-0 sm:text-[36px]">
+          <div className="mt-20 border-t border-[color:var(--hairline-strong)] pt-14 sm:mt-24 sm:pt-16">
+            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-ink-5">
+              Relacionados
+            </p>
+            <h2 className="mb-8 mt-3 font-semibold text-[26px] leading-[1.05] tracking-[-0.03em] text-ink-0 sm:mb-10 sm:text-[32px]">
               También te puede interesar
             </h2>
             <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
@@ -238,11 +241,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
           The actual add-to-cart action runs inside AddToCartForm so this is
           purely a scroll-anchor for mobile conversion. */}
       {product.inStock && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[color:var(--hairline)] bg-[var(--surface-0)] px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 shadow-[var(--shadow-elevated)] lg:hidden">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 shadow-[var(--shadow-elevated)] lg:hidden">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
             <div className="min-w-0">
               <p className="truncate text-[12px] text-ink-5">{product.title}</p>
-              <p className="tabular text-[18px] font-medium text-ink-0">{priceFormatted}</p>
+              <p className="tabular text-[18px] font-semibold text-ink-0">{priceFormatted}</p>
             </div>
             <a
               href="#add-to-cart"
@@ -253,7 +256,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 );
                 btn?.scrollIntoView({ behavior: "smooth", block: "center" });
               }}
-              className="inline-flex h-11 shrink-0 items-center justify-center rounded-[var(--r-sm)] bg-ink-0 px-5 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
+              className="inline-flex h-12 min-h-12 shrink-0 items-center justify-center rounded-[var(--r-md)] bg-ink-0 px-6 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
             >
               Comprar
             </a>

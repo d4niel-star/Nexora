@@ -9,16 +9,14 @@ import type { StoreConfig } from "@/types/storefront";
 import { storePath } from "@/lib/store-engine/urls";
 
 // ─── Store Header ───
-// Editorial rewrite. No glassmorphism: a solid surface with a single hairline
-// reads cleaner at any scroll position and plays better with tenant logos on
-// dark backgrounds. Nav typography dropped from uppercase-widest to a sober
-// sentence case with tight tracking.
+// Solid light surface (tenant logos stay legible). Hairline + soft lift —
+// no glass, no heavy shadow.
 export function StoreHeader({ config }: { config: StoreConfig }) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-[color:var(--hairline)] bg-[var(--surface-0)]">
+    <header className="sticky top-0 z-50 w-full border-b border-[color:var(--hairline-strong)] bg-[var(--surface-0)] shadow-[var(--shadow-soft)]">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Mobile menu trigger */}
         <div className="flex flex-1 items-center lg:hidden">

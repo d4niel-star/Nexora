@@ -1,81 +1,106 @@
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Nexora — Design tokens
+   Nexora — Design tokens  v3
    Single source of truth for color, type, radius, shadow, motion.
-   Every component should reference these tokens; never hardcode a hex.
+   Cool neutral canvas + dark chrome (shell) + one sober accent.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  /* ─── Ink scale (warm near-black → white) ─── */
-  --ink-0: #0A0B0E;   /* primary foreground, deepest */
-  --ink-1: #141519;
-  --ink-2: #1F2128;
-  --ink-3: #2E313C;
-  --ink-4: #4A4D59;
-  --ink-5: #6A6D7A;   /* muted copy */
-  --ink-6: #9295A0;   /* tertiary copy / icons */
-  --ink-7: #B8BAC2;   /* disabled */
-  --ink-8: #D6D7DC;   /* hairline strong */
-  --ink-9: #E8E9EC;   /* border default */
-  --ink-10: #F2F3F5;  /* subtle hover / sunken */
-  --ink-11: #F8F8FA;  /* canvas raised */
-  --ink-12: #FFFFFF;
+  /* ─── Ink scale (cool near-black → white) ─── */
+  --ink-0: #07080d;
+  --ink-1: #0e1018;
+  --ink-2: #161a22;
+  --ink-3: #222731;
+  --ink-4: #3a4050;
+  --ink-5: #5c6274;
+  --ink-6: #848a9a;
+  --ink-7: #a8adb9;
+  --ink-8: #c9cdd6;
+  --ink-9: #dce0e8;
+  --ink-10: #e8ebf1;
+  --ink-11: #f0f2f7;
+  --ink-12: #ffffff;
 
-  /* ─── Surfaces ─── */
-  --surface-0: var(--ink-12);       /* pure white, use sparingly */
-  --surface-1: #FCFCFD;             /* canvas (app background) */
-  --surface-2: var(--ink-11);       /* raised panels */
-  --surface-3: var(--ink-10);       /* sunken areas / hover */
+  /* ─── Surfaces (light commerce canvas — raised cards stay crisp) ─── */
+  --surface-0: var(--ink-12);
+  --surface-1: #e9ecf3;
+  --surface-2: var(--ink-11);
+  --surface-3: var(--ink-10);
 
-  /* ─── Hairlines (use on any surface — alpha-based for mix safety) ─── */
-  --hairline: rgba(10, 11, 14, 0.08);
-  --hairline-strong: rgba(10, 11, 14, 0.14);
+  /* ─── Dark shell (admin sidebar, marketing chrome, topbar) ─── */
+  --shell-dark: #06070b;
+  --shell-dark-elevated: #0c0e15;
 
-  /* ─── Accent (quiet commerce-neutral) ─── */
-  --accent-50: #F4F4F5;
-  --accent-100: #EAEBEE;
-  --accent-200: #DADCE1;
-  --accent-400: #6F7280;
-  --accent-500: #4A4D59;   /* base */
-  --accent-600: #2E313C;
-  --accent-700: #141519;
-  --accent-ink: #FFFFFF;   /* foreground atop accent bg */
+  /* ─── Hairlines (cool-neutral, works on light; chrome uses separate) ─── */
+  --hairline: rgba(7, 8, 13, 0.09);
+  --hairline-strong: rgba(7, 8, 13, 0.16);
 
-  /* ─── Signal colors (sparingly, sobriety first) ─── */
-  --signal-success: #1FAE7A;
-  --signal-warning: #CC8A00;
-  --signal-danger:  #D84343;
+  /* ─── Marketing / topbar chrome (on dark) ─── */
+  --chrome-bg: var(--shell-dark);
+  --chrome-bg-elevated: var(--shell-dark-elevated);
+  --chrome-fg: rgba(255, 255, 255, 0.92);
+  --chrome-fg-muted: rgba(255, 255, 255, 0.52);
+  --chrome-border: rgba(255, 255, 255, 0.1);
+  --chrome-hover: rgba(255, 255, 255, 0.07);
+  --chrome-accent-line: rgba(124, 138, 214, 0.45);
 
-  /* ─── Radii ─── */
+  /* ─── Accent (blue-slate — controlled, technical) ─── */
+  --accent-50: #eef0fb;
+  --accent-100: #dcdff5;
+  --accent-200: #b9c0ea;
+  --accent-400: #5f6eb8;
+  --accent-500: #3f4f9a;
+  --accent-600: #323f82;
+  --accent-700: #263066;
+  --accent-ink: #ffffff;
+
+  /* ─── Signal colors (sparingly) ─── */
+  --signal-success: #15956a;
+  --signal-warning: #b37400;
+  --signal-danger: #c93636;
+
+  /* ─── Radii (tight / technical) ─── */
   --r-xs: 4px;
   --r-sm: 6px;
   --r-md: 8px;
-  --r-lg: 8px;
-  --r-xl: 8px;
+  --r-lg: 12px;
+  --r-xl: 16px;
   --r-full: 9999px;
 
-  /* ─── Shadows (tight, precise — no dramatic elevations) ─── */
-  --shadow-soft: 0 1px 2px rgba(10, 11, 14, 0.04), 0 0 0 1px rgba(10, 11, 14, 0.04);
-  --shadow-elevated: 0 12px 32px -8px rgba(10, 11, 14, 0.10), 0 2px 6px rgba(10, 11, 14, 0.05);
-  --shadow-focus: 0 0 0 3px rgba(10, 11, 14, 0.14);
+  /* ─── Shadows (precise depth, low drama) ─── */
+  --shadow-soft: 0 1px 2px rgba(7, 8, 13, 0.05), 0 0 0 1px rgba(7, 8, 13, 0.05);
+  --shadow-elevated: 0 18px 44px -14px rgba(7, 8, 13, 0.14), 0 6px 16px rgba(7, 8, 13, 0.07);
+  --shadow-focus: 0 0 0 2px var(--surface-0), 0 0 0 4px rgba(63, 79, 154, 0.38);
+  --shadow-focus-on-dark: 0 0 0 2px var(--shell-dark), 0 0 0 4px rgba(255, 255, 255, 0.28);
 
   /* ─── Typography ─── */
   --font-sans: var(--font-inter), "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  /* Display stack intentionally aliases sans — Nexora ships one serious
-     sans-serif everywhere. The `font-display` utility still exists so
-     components can opt into tighter tracking without importing a serif. */
   --font-display: var(--font-inter), "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: "SFMono-Regular", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --tracking-display: -0.045em;
+  --tracking-tight: -0.02em;
 
-  /* ─── Motion (subtle, useful, never decorative) ─── */
+  /* ─── Motion ─── */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   --dur-fast: 120ms;
   --dur-base: 180ms;
   --dur-slow: 320ms;
 
-  /* ─── Back-compat tokens (legacy components still reference these) ─── */
+  /* ─── Spacing rhythm (reference — use in custom CSS / sections) ─── */
+  --space-gutter: 1.25rem;
+  --space-section-y: 2.5rem;
+
+  /* ─── Admin sidebar (aligns with dark shell) ─── */
+  --sidebar-bg: var(--shell-dark);
+  --sidebar-fg: rgba(255, 255, 255, 0.68);
+  --sidebar-fg-active: #ffffff;
+  --sidebar-hairline: rgba(255, 255, 255, 0.09);
+  --sidebar-hover: rgba(255, 255, 255, 0.06);
+  --sidebar-active-bg: rgba(255, 255, 255, 0.08);
+
+  /* ─── Back-compat tokens ─── */
   --color-background: var(--surface-1);
   --color-foreground: var(--ink-0);
   --color-primary: var(--ink-0);
@@ -104,7 +129,12 @@
   --color-surface-muted: var(--surface-2);
   --color-border: var(--ink-9);
 
-  /* Ink scale utilities (bg-ink-0, text-ink-5, border-ink-9, etc.) */
+  --color-chrome-bg: var(--chrome-bg);
+  --color-chrome-fg: var(--chrome-fg);
+  --color-chrome-fg-muted: var(--chrome-fg-muted);
+  --color-chrome-border: var(--chrome-border);
+
+  /* Ink scale utilities */
   --color-ink-0: var(--ink-0);
   --color-ink-1: var(--ink-1);
   --color-ink-2: var(--ink-2);
@@ -131,7 +161,7 @@
   --color-signal-warning: var(--signal-warning);
   --color-signal-danger: var(--signal-danger);
 
-  /* Tailwind compatibility palette: keeps older modules visually aligned. */
+  /* Tailwind compatibility palette */
   --color-gray-50: var(--ink-11);
   --color-gray-100: var(--ink-10);
   --color-gray-200: var(--ink-9);
@@ -181,6 +211,25 @@
   --color-purple-600: var(--accent-600);
   --color-purple-700: var(--accent-700);
 
+  /* Emerald — Nexora AI module */
+  --color-emerald-50: #ecfdf5;
+  --color-emerald-100: #d1fae5;
+  --color-emerald-200: #a7f3d0;
+  --color-emerald-400: #34d399;
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #059669;
+  --color-emerald-700: #047857;
+  --color-emerald-800: #065f46;
+
+  --color-amber-500: #f59e0b;
+  --color-amber-600: #d97706;
+
+  --color-red-50: #fef2f2;
+  --color-red-100: #fee2e2;
+  --color-red-400: #f87171;
+  --color-red-500: #ef4444;
+  --color-red-600: #dc2626;
+
   --radius-lg: var(--r-lg);
   --radius-xl: var(--r-xl);
   --radius-2xl: var(--r-xl);
@@ -207,9 +256,10 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
   font-feature-settings: "cv11", "ss01", "ss03";
+  letter-spacing: -0.011em;
 }
 
-/* Tabular numerics on any numeric-bearing element (prices, KPIs, orders) */
+/* Tabular numerics on any numeric-bearing element */
 .tabular,
 [data-numeric] {
   font-variant-numeric: tabular-nums;
@@ -217,12 +267,12 @@ body {
 }
 
 ::selection {
-  background: var(--ink-0);
+  background: var(--accent-500);
   color: var(--ink-12);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Primitive utilities (escape hatch for non-component contexts)
+   Primitive utilities
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .surface-1 { background: var(--surface-1); }
@@ -237,15 +287,15 @@ body {
 
 .text-display {
   font-family: var(--font-display);
-  font-weight: 600;
-  letter-spacing: -0.035em;
+  font-weight: 700;
+  letter-spacing: var(--tracking-display);
   line-height: 1.0;
 }
 
 .text-eyebrow {
-  font-size: 11px;
+  font-size: 10px;
   line-height: 1;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   font-weight: 600;
   color: var(--ink-5);
@@ -258,13 +308,12 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Legacy utilities kept for compatibility (still used in AIStoreStudio).
-   Rewritten to use the unified accent instead of stray violet.
+   Legacy utilities kept for compatibility
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .glass {
-  background: color-mix(in srgb, var(--surface-0) 72%, transparent);
-  backdrop-filter: blur(10px) saturate(140%);
+  background: color-mix(in srgb, var(--surface-0) 88%, transparent);
+  backdrop-filter: blur(6px) saturate(118%);
   border: 1px solid var(--hairline);
 }
 

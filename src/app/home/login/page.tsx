@@ -8,7 +8,7 @@ import { PageReveal } from "@/components/public/PublicMotion";
 import { loginAction, resendVerificationAction } from "@/app/home/auth-actions";
 
 const inputClass =
-  "flex h-11 w-full rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3.5 text-[15px] text-ink-0 placeholder:text-ink-6 " +
+  "flex min-h-12 h-12 w-full rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3.5 text-[15px] text-ink-0 placeholder:text-ink-6 " +
   "transition-[box-shadow,border-color] duration-[var(--dur-base)] ease-[var(--ease-out)] " +
   "focus:border-[var(--accent-500)] focus:outline-none focus:shadow-[var(--shadow-focus)]";
 
@@ -24,13 +24,14 @@ export default function LoginPage() {
   const showVerificationBlock = state?.needsVerification && state?.userId;
 
   return (
-    <section className="mx-auto flex min-h-[calc(100vh-145px)] max-w-7xl items-center justify-center px-4 py-14 sm:px-8 sm:py-20">
-      <PageReveal className="w-full max-w-md">
-        <div className="mb-8 text-center">
-          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">
+    <section className="mx-auto flex min-h-[calc(100vh-145px)] max-w-7xl items-center justify-center px-4 py-16 sm:px-8 sm:py-24">
+      <PageReveal className="w-full max-w-[420px]">
+        <div className="mb-10 text-center">
+          <div className="mx-auto mb-6 h-px w-10 bg-[var(--accent-500)]" aria-hidden />
+          <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-ink-5">
             Acceso
           </p>
-          <h1 className="mt-4 text-[34px] font-semibold leading-[1.04] tracking-[-0.035em] text-ink-0">
+          <h1 className="mt-4 text-[32px] font-semibold leading-[1.06] tracking-[-0.035em] text-ink-0 sm:text-[36px]">
             Ingresa a tu cuenta.
           </h1>
           <p className="mt-3 text-[14px] leading-[1.6] text-ink-5">
@@ -38,7 +39,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <Surface level={0} hairline radius="lg" className="p-5 sm:p-6">
+        <Surface level={0} hairline radius="lg" className="p-6 shadow-[var(--shadow-soft)] sm:p-8">
           <form className="space-y-4" action={formAction}>
             {state?.error && !showVerificationBlock && (
               <div
@@ -125,7 +126,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isPending}
-              className="inline-flex h-12 w-full items-center justify-center rounded-[var(--r-sm)] bg-ink-0 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2 active:translate-y-px disabled:cursor-not-allowed disabled:bg-ink-8 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+              className="inline-flex h-12 min-h-12 w-full items-center justify-center rounded-[var(--r-md)] bg-ink-0 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2 active:translate-y-px disabled:cursor-not-allowed disabled:bg-ink-8 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
             >
               {isPending ? "Ingresando..." : "Iniciar sesion"}
             </button>

@@ -72,7 +72,7 @@ export function CartList({
           type="button"
           onClick={handleClear}
           disabled={clearPending}
-          className="inline-flex h-9 items-center gap-1.5 self-start rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-transparent px-3 text-[12px] font-medium text-ink-5 transition-colors hover:border-[color:var(--hairline-strong)] hover:bg-ink-11 hover:text-ink-0 disabled:cursor-not-allowed disabled:opacity-50 sm:self-auto"
+          className="inline-flex h-11 min-h-11 items-center gap-1.5 self-start rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3.5 text-[12px] font-medium text-ink-5 transition-colors hover:border-[color:var(--hairline-strong)] hover:bg-[var(--surface-2)] hover:text-ink-0 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)] sm:self-auto"
         >
           {clearPending ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -95,7 +95,7 @@ export function CartList({
 
       <ul
         role="list"
-        className="divide-y divide-[color:var(--hairline)] border-y border-[color:var(--hairline)]"
+        className="divide-y divide-[color:var(--hairline)] overflow-hidden rounded-[var(--r-xl)] border border-[color:var(--hairline)] bg-[var(--surface-0)] shadow-[var(--shadow-soft)]"
       >
         {items.map((item) => (
           <CartItem
@@ -154,7 +154,7 @@ function CartItem({
   };
 
   return (
-    <li className="flex gap-4 py-5 sm:gap-5 sm:py-6">
+    <li className="flex gap-4 px-4 py-5 sm:gap-5 sm:px-6 sm:py-6">
       {/* Thumb */}
       <div className="h-24 w-20 shrink-0 overflow-hidden rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-2)] sm:h-28 sm:w-24">
         {item.imageSnapshot ? (
@@ -209,13 +209,13 @@ function CartItem({
 
         <div className="mt-auto flex items-center justify-between pt-4">
           {/* Stepper */}
-          <div className="inline-flex h-10 items-center rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)]">
+          <div className="inline-flex h-11 items-center rounded-[var(--r-md)] border border-[color:var(--hairline-strong)] bg-[var(--surface-1)]">
             <button
               type="button"
               onClick={() => handleUpdate(item.quantity - 1)}
               disabled={isPending || item.quantity <= 1}
               aria-label="Reducir cantidad"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-[var(--r-sm)] text-ink-3 transition-colors hover:bg-ink-11 hover:text-ink-0 disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-[var(--r-md)] text-ink-3 transition-colors hover:bg-ink-11 hover:text-ink-0 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
             >
               <Minus className="h-3.5 w-3.5" strokeWidth={2} />
             </button>
@@ -227,7 +227,7 @@ function CartItem({
               onClick={() => handleUpdate(item.quantity + 1)}
               disabled={isPending}
               aria-label="Aumentar cantidad"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-[var(--r-sm)] text-ink-3 transition-colors hover:bg-ink-11 hover:text-ink-0 disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-[var(--r-md)] text-ink-3 transition-colors hover:bg-ink-11 hover:text-ink-0 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
             >
               <Plus className="h-3.5 w-3.5" strokeWidth={2} />
             </button>
@@ -238,7 +238,7 @@ function CartItem({
             onClick={handleRemove}
             disabled={isPending}
             aria-label="Eliminar del carrito"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-[var(--r-sm)] text-ink-5 transition-colors hover:bg-ink-11 hover:text-[color:var(--signal-danger)] disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-[var(--r-md)] text-ink-5 transition-colors hover:bg-ink-11 hover:text-[color:var(--signal-danger)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
           >
             <X className="h-4 w-4" strokeWidth={1.75} />
           </button>

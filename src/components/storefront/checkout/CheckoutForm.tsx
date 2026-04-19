@@ -28,17 +28,17 @@ const SECTIONS = {
 // Local token-based input styling — keeps the form uncluttered without
 // turning every <input> into an imported component.
 const inputClass =
-  "block w-full rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3.5 text-[15px] text-ink-0 placeholder:text-ink-6 " +
+  "block min-h-12 h-12 w-full rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3.5 text-[15px] text-ink-0 placeholder:text-ink-6 " +
   "transition-[box-shadow,border-color] duration-[var(--dur-base)] ease-[var(--ease-out)] " +
-  "focus:border-[var(--accent-500)] focus:outline-none focus:shadow-[var(--shadow-focus)] h-12";
+  "focus:border-[var(--accent-500)] focus:outline-none focus:shadow-[var(--shadow-focus)]";
 
 const labelClass = "block text-[12px] font-medium text-ink-5 mb-1.5";
 
 function SectionHeader({ step, title }: { step: string; title: string }) {
   return (
-    <div className="mb-5 flex items-baseline gap-3">
-      <span className="tabular text-[11px] font-medium text-ink-6">{step}</span>
-      <h2 className="text-[16px] font-semibold tracking-[-0.01em] text-ink-0">
+    <div className="mb-6 flex items-baseline gap-3 border-b border-[color:var(--hairline)] pb-4">
+      <span className="font-mono tabular text-[11px] font-medium text-ink-6">{step}</span>
+      <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-ink-0">
         {title}
       </h2>
     </div>
@@ -369,7 +369,7 @@ export function CheckoutForm({
           step={SECTIONS.payment.number}
           title={SECTIONS.payment.title}
         />
-        <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-4">
+        <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-1)] p-4 sm:p-5">
           <div className="flex items-center gap-3">
             <div
               className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--r-sm)] text-ink-12"
@@ -400,7 +400,7 @@ export function CheckoutForm({
         <button
           type="submit"
           disabled={isPending}
-          className="inline-flex h-[54px] w-full items-center justify-center gap-2 rounded-[var(--r-sm)] bg-ink-0 text-[15px] font-medium text-ink-12 transition-colors hover:bg-ink-2 active:translate-y-px disabled:bg-ink-8 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+          className="inline-flex h-12 min-h-12 w-full items-center justify-center gap-2 rounded-[var(--r-md)] bg-ink-0 text-[15px] font-medium text-ink-12 transition-colors hover:bg-ink-2 active:translate-y-px disabled:cursor-not-allowed disabled:bg-ink-8 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
         >
           {isPending ? (
             <>

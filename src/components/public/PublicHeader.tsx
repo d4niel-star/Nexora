@@ -5,26 +5,26 @@ import { PageReveal } from "./PublicMotion";
 
 export function PublicHeader() {
   return (
-    <header className="border-b border-[color:var(--hairline)] bg-[var(--surface-0)]">
+    <header className="border-b border-[color:var(--chrome-border)] bg-[var(--chrome-bg)]">
       <PageReveal className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8">
-        <PublicWordmark />
+        <PublicWordmark chrome />
 
-        <nav className="flex items-center gap-6 text-[13px]">
+        <nav className="flex items-center gap-1 sm:gap-2 text-[13px]">
           <Link
             href="/home/pricing"
-            className="hidden text-ink-5 transition-colors hover:text-ink-0 sm:inline"
+            className="hidden rounded-[var(--r-sm)] px-3 py-2.5 text-[var(--chrome-fg-muted)] transition-colors hover:bg-[var(--chrome-hover)] hover:text-[var(--chrome-fg)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus-on-dark)] sm:inline-flex sm:min-h-11 sm:items-center"
           >
             Planes
           </Link>
           <Link
             href="/home/login"
-            className="text-ink-5 transition-colors hover:text-ink-0"
+            className="inline-flex min-h-11 items-center rounded-[var(--r-sm)] px-3 py-2.5 text-[var(--chrome-fg-muted)] transition-colors hover:bg-[var(--chrome-hover)] hover:text-[var(--chrome-fg)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus-on-dark)]"
           >
             Ingresar
           </Link>
           <Link
             href="/home/register"
-            className="group inline-flex h-10 items-center gap-1.5 rounded-[var(--r-sm)] bg-ink-0 px-4 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
+            className="group inline-flex min-h-11 items-center gap-1.5 rounded-[var(--r-md)] bg-[var(--accent-500)] px-4 text-[13px] font-medium text-[var(--accent-ink)] transition-colors hover:bg-[var(--accent-600)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus-on-dark)]"
           >
             Empezar
             <ArrowRight

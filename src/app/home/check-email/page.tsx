@@ -7,20 +7,21 @@ import { PageReveal } from "@/components/public/PublicMotion";
 
 export default function CheckEmailPage() {
   return (
-    <section className="mx-auto flex min-h-[calc(100vh-145px)] max-w-7xl items-center justify-center px-4 py-14 sm:px-8 sm:py-20">
-      <PageReveal className="w-full max-w-md text-center">
-        <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">
+    <section className="mx-auto flex min-h-[calc(100vh-145px)] max-w-7xl items-center justify-center px-4 py-16 sm:px-8 sm:py-24">
+      <PageReveal className="w-full max-w-[420px] text-center">
+        <div className="mx-auto mb-6 h-px w-10 bg-[var(--accent-500)]" aria-hidden />
+        <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-ink-5">
           Verificacion
         </p>
-        <h1 className="mt-4 text-[34px] font-semibold leading-[1.04] tracking-[-0.035em] text-ink-0">
+        <h1 className="mt-4 text-[32px] font-semibold leading-[1.06] tracking-[-0.035em] text-ink-0 sm:text-[36px]">
           Revisa tu correo.
         </h1>
         <p className="mx-auto mt-3 max-w-sm text-[14px] leading-[1.6] text-ink-5">
           Te enviamos un email de verificacion con un enlace para activar tu cuenta.
         </p>
 
-        <Surface level={0} hairline radius="lg" className="mt-8 p-6 sm:p-7">
-          <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] text-ink-4">
+        <Surface level={0} hairline radius="lg" className="mt-10 p-7 shadow-[var(--shadow-soft)] sm:p-8">
+          <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-1)] text-ink-4">
             <Mail className="h-5 w-5" strokeWidth={1.75} />
           </div>
 

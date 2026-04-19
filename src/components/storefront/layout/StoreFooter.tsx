@@ -15,7 +15,7 @@ export function StoreFooter({ config }: { config: StoreConfig }) {
 
   return (
     <footer
-      className="border-t border-[color:var(--hairline)] bg-[var(--surface-1)]"
+      className="border-t border-[color:var(--hairline-strong)] bg-[var(--surface-1)]"
       aria-labelledby="footer-heading"
     >
       <h2 id="footer-heading" className="sr-only">
