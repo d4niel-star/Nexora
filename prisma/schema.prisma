@@ -64,6 +64,8 @@ model Store {
   adRecommendations  AdRecommendation[]
   adInsights         AdInsightSnapshot[]
 
+  installedApps      InstalledApp[]
+
   @@index([ownerId])
 }
 
@@ -1192,3 +1194,22 @@ model AdInsightSnapshot {
   @@index([storeId])
   @@index([connectionId])
 }
+
+// --- Nexora Apps V1 ---
+// Tenant-scoped installed apps. Definitions live in code at src/lib/apps/registry.ts.
+model InstalledApp {
+  id           String   @id @default(cuid())
+  storeId      String
+  store        Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  appSlug      String   // references the code-side registry
+  status       String   @default("active") // active | needs_setup | disabled
+  settingsJson String?  // JSON blob with per-app config
+  installedAt  DateTime @default(now())
+  installedBy  String?
+  updatedAt    DateTime @updatedAt
+
+  @@unique([storeId, appSlug])
+  @@index([storeId])
+  @@index([storeId, status])
+}
+
