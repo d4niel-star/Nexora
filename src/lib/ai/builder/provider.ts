@@ -34,7 +34,10 @@ export function registerBuilderProvider(provider: AIBuilderProvider) {
 }
 
 export function getBuilderProvider(id?: string): AIBuilderProvider {
-  const key = id ?? process.env.AI_PROVIDER_DEFAULT ?? "mock";
+  // Resolution order: explicit id > AI_PROVIDER > AI_PROVIDER_DEFAULT > mock.
+  // AI_PROVIDER is the canonical env documented for Gemini; AI_PROVIDER_DEFAULT
+  // is kept for backward compatibility with the prior Anthropic-only setup.
+  const key = id ?? process.env.AI_PROVIDER ?? process.env.AI_PROVIDER_DEFAULT ?? "mock";
   const provider = builderProviders[key];
   if (!provider) {
     throw new Error(

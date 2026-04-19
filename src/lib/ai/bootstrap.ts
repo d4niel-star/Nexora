@@ -14,3 +14,13 @@ if (process.env.ANTHROPIC_API_KEY) {
     registerBuilderProvider(AnthropicBuilderProvider);
   });
 }
+
+// Registrar Gemini solo si la API key está presente.
+// Si falla el import (SDK no instalado) o la key es inválida en runtime,
+// el provider degrada silenciosamente: getBuilderProvider() caerá a mock
+// o al provider activo restante y las páginas siguen renderizando.
+if (process.env.GEMINI_API_KEY) {
+  import("@/lib/ai/builder/gemini-provider").then(({ GeminiBuilderProvider }) => {
+    registerBuilderProvider(GeminiBuilderProvider);
+  });
+}
