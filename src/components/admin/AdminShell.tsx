@@ -39,9 +39,10 @@ interface AdminShellProps {
   children: React.ReactNode;
   storeName: string;
   storeInitials: string;
+  dunningBanner?: React.ReactNode;
 }
 
-export function AdminShell({ children, storeName, storeInitials }: AdminShellProps) {
+export function AdminShell({ children, storeName, storeInitials, dunningBanner }: AdminShellProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -178,6 +179,9 @@ export function AdminShell({ children, storeName, storeInitials }: AdminShellPro
           </div>
           <TopbarUserMenu storeName={storeName} storeInitials={storeInitials} />
         </div>
+
+        {/* Dunning banner — persistent, above content */}
+        {dunningBanner}
 
         {/* Content */}
         <div className="flex-1 overflow-auto">

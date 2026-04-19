@@ -1,5 +1,7 @@
 import { getActiveStoreInfo } from "@/lib/store-engine/admin/queries";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { getDunningState, type DunningState } from "@/lib/billing/dunning";
+import { DunningBanner } from "@/components/admin/billing/DunningBanner";
 
 export default async function AdminLayout({
   children,
@@ -30,8 +32,15 @@ export default async function AdminLayout({
     .slice(0, 2)
     .toUpperCase();
 
+  // Dunning: check subscription health for global banner
+  const dunningState = await getDunningState(store.id);
+
   return (
-    <AdminShell storeName={store.name} storeInitials={initials}>
+    <AdminShell
+      storeName={store.name}
+      storeInitials={initials}
+      dunningBanner={dunningState ? <DunningBanner state={dunningState} /> : undefined}
+    >
       {children}
     </AdminShell>
   );
