@@ -67,6 +67,7 @@ model Store {
   installedApps      InstalledApp[]
   whatsappRecovery   WhatsappRecoverySettings?
   productReviews     ProductReview[]
+  bundleOffers       BundleOffer[]
 
   @@index([ownerId])
 }
@@ -229,6 +230,8 @@ model Product {
   stockMovements StockMovement[]
   catalogMirror  CatalogMirrorProduct?
   reviews        ProductReview[]
+  bundleTriggers BundleOffer[]     @relation("BundleOfferTrigger")
+  bundleMemberships BundleOfferItem[]
 
   @@unique([storeId, handle])
 }
@@ -1260,5 +1263,41 @@ model ProductReview {
   @@index([storeId, status])
   @@index([productId, status])
   @@index([storeId, createdAt])
+}
+
+
+// --- Bundle Offers (app bundles-upsells) ---
+// Manual cross-sell block surfaced on PDP. No pricing logic, no cart impact.
+// Storefront filters items by isPublished+inStock at render time.
+model BundleOffer {
+  id                String   @id @default(cuid())
+  storeId           String
+  store             Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  name              String   // internal label for admin
+  title             String?  // customer-facing headline (optional)
+  description       String?  // optional short line in PDP
+  triggerProductId  String
+  trigger           Product  @relation("BundleOfferTrigger", fields: [triggerProductId], references: [id], onDelete: Cascade)
+  status            String   @default("draft") // draft | active
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  items             BundleOfferItem[]
+
+  @@index([storeId, status])
+  @@index([triggerProductId, status])
+}
+
+model BundleOfferItem {
+  id         String   @id @default(cuid())
+  bundleId   String
+  bundle     BundleOffer @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  position   Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@unique([bundleId, productId])
+  @@index([bundleId])
+  @@index([productId])
 }
 

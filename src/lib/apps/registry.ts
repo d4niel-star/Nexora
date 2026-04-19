@@ -441,27 +441,31 @@ export const APP_REGISTRY: AppDefinition[] = [
     minPlanLabel: "Growth",
     tags: ["reviews", "social-proof", "trust"],
   },
+  // ── Conversion — Bundles & upsells (V2.4, real) ──────────────────────
   {
     slug: "bundles-upsells",
     name: "Bundles y upsells",
     iconName: "BadgePercent",
     category: "conversion",
     shortDescription:
-      "Aumentá el ticket con combos y upsells sugeridos en PDP y cart.",
+      "Aumentá el ticket promedio ofreciendo bundles y productos complementarios de forma clara y controlada.",
     problem:
-      "El ticket promedio se estanca si no ofrecés combinaciones ni up-sell.",
+      "Sin productos sugeridos, el cliente compra solo lo que buscaba y el ticket promedio se estanca. Las “sugerencias” hardcodeadas generan desconfianza.",
     outcome:
-      "Configurás bundles y reglas de upsell, y el storefront los muestra en el contexto correcto.",
+      "Configurás ofertas manuales por producto (producto trigger → lista de complementarios). La PDP muestra un bloque “Productos complementarios” con datos reales y stock real. Sin descuentos inventados.",
     capabilities: [
-      "Bundles fijos y dinámicos.",
-      "Reglas de upsell por categoría.",
-      "Visibilidad en PDP y cart.",
+      "Ofertas manuales por producto trigger, activables de a una.",
+      "Bloque en PDP con ProductCard real (imagen, precio, stock).",
+      "Filtra automáticamente productos no publicados o sin stock.",
+      "Sin tocar checkout, cart ni pricing — cero riesgo comercial.",
     ],
-    setupRoute: null,
-    manageRoute: null,
+    setupRoute: "/admin/apps/bundles-upsells/offers",
+    manageRoute: "/admin/apps/bundles-upsells/offers",
     installMode: "builtin",
-    isComingSoon: true,
-    tags: ["bundles", "upsell", "aov"],
+    setupTime: "5 minutos por oferta",
+    planGate: (cfg) => cfg.bundlesUpsells,
+    minPlanLabel: "Growth",
+    tags: ["bundles", "upsell", "aov", "cross-sell"],
   },
   // ── Trust — Order tracking widget (V2.3, real) ────────────────────────
   {

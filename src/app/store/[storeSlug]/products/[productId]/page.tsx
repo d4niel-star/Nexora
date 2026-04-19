@@ -15,6 +15,8 @@ import {
   listApprovedReviews,
 } from "@/lib/apps/product-reviews/queries";
 import { ProductReviewsBlock } from "@/components/storefront/reviews/ProductReviewsBlock";
+import { getActiveUpsellsForProduct } from "@/lib/apps/bundles-upsells/queries";
+import { UpsellBlock } from "@/components/storefront/bundles/UpsellBlock";
 
 type ProductPageProps = {
   params: Promise<{ storeSlug: string; productId: string }>;
@@ -118,6 +120,30 @@ export default async function ProductPage({ params }: ProductPageProps) {
         getApprovedReviewAggregate(storefrontData.store.id, product.id),
       ])
     : [[], { count: 0, averageRating: null as number | null }];
+
+  // ─── Bundles / upsells (only if the app is installed + active) ───
+  // Fail-closed same as reviews: never crash the PDP because of this app.
+  let upsellsEnabled = false;
+  try {
+    const install = await prisma.installedApp.findUnique({
+      where: {
+        storeId_appSlug: {
+          storeId: storefrontData.store.id,
+          appSlug: "bundles-upsells",
+        },
+      },
+      select: { status: true },
+    });
+    upsellsEnabled = install?.status === "active";
+  } catch {
+    upsellsEnabled = false;
+  }
+
+  const upsellOffer = upsellsEnabled
+    ? await getActiveUpsellsForProduct(storefrontData.store.id, product.id).catch(
+        () => null,
+      )
+    : null;
 
   // ─── JSON-LD Product schema ───
   // aggregateRating ONLY when we have real approved reviews. Never fake.
@@ -259,6 +285,17 @@ export default async function ProductPage({ params }: ProductPageProps) {
             )}
           </div>
         </div>
+
+        {/* Bundles / upsells — only when the app is installed + active AND
+            the offer has at least one in-stock published product. */}
+        {upsellOffer && upsellOffer.products.length > 0 && (
+          <UpsellBlock
+            storeSlug={resolvedParams.storeSlug}
+            title={upsellOffer.title}
+            description={upsellOffer.description}
+            products={upsellOffer.products}
+          />
+        )}
 
         {/* Product reviews — only when the app is installed + active */}
         {reviewsEnabled && (
