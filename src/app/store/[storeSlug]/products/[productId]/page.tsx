@@ -9,6 +9,12 @@ import { ProductCard } from "@/components/storefront/product/ProductCard";
 import { AddToCartForm } from "@/components/storefront/product/AddToCartForm";
 import { toMetaDescription, toPlainText } from "@/lib/store-engine/seo";
 import { storePath } from "@/lib/store-engine/urls";
+import { prisma } from "@/lib/db/prisma";
+import {
+  getApprovedReviewAggregate,
+  listApprovedReviews,
+} from "@/lib/apps/product-reviews/queries";
+import { ProductReviewsBlock } from "@/components/storefront/reviews/ProductReviewsBlock";
 
 type ProductPageProps = {
   params: Promise<{ storeSlug: string; productId: string }>;
@@ -87,8 +93,34 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   const galleryImages = (product.images.length > 0 ? product.images : [product.featuredImage]).filter(Boolean);
 
+  // ─── Product reviews (only if the app is installed + active) ───
+  // Fail-closed: if the lookup errors, treat the app as off and skip the
+  // block entirely so PDP never crashes because of reviews.
+  let reviewsEnabled = false;
+  try {
+    const install = await prisma.installedApp.findUnique({
+      where: {
+        storeId_appSlug: {
+          storeId: storefrontData.store.id,
+          appSlug: "product-reviews",
+        },
+      },
+      select: { status: true },
+    });
+    reviewsEnabled = install?.status === "active";
+  } catch {
+    reviewsEnabled = false;
+  }
+
+  const [approvedReviews, reviewAggregate] = reviewsEnabled
+    ? await Promise.all([
+        listApprovedReviews(storefrontData.store.id, product.id, 20),
+        getApprovedReviewAggregate(storefrontData.store.id, product.id),
+      ])
+    : [[], { count: 0, averageRating: null as number | null }];
+
   // ─── JSON-LD Product schema ───
-  // Unchanged from the SEO baseline — we only reformatted the page visually.
+  // aggregateRating ONLY when we have real approved reviews. Never fake.
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "");
   const productUrl = `${appUrl}${storePath(resolvedParams.storeSlug, `/products/${product.handle || product.id}`)}`;
   const productJsonLd: Record<string, unknown> = {
@@ -110,6 +142,19 @@ export default async function ProductPage({ params }: ProductPageProps) {
       itemCondition: "https://schema.org/NewCondition",
     },
   };
+  if (
+    reviewsEnabled &&
+    reviewAggregate.count > 0 &&
+    reviewAggregate.averageRating != null
+  ) {
+    productJsonLd.aggregateRating = {
+      "@type": "AggregateRating",
+      ratingValue: reviewAggregate.averageRating.toFixed(1),
+      reviewCount: reviewAggregate.count,
+      bestRating: "5",
+      worstRating: "1",
+    };
+  }
 
   return (
     <div className="bg-[var(--surface-1)]">
@@ -215,6 +260,16 @@ export default async function ProductPage({ params }: ProductPageProps) {
           </div>
         </div>
 
+        {/* Product reviews — only when the app is installed + active */}
+        {reviewsEnabled && (
+          <ProductReviewsBlock
+            storeSlug={resolvedParams.storeSlug}
+            productId={product.id}
+            reviews={approvedReviews}
+            aggregate={reviewAggregate}
+          />
+        )}
+
         {/* Related products */}
         {relatedProducts.length > 0 && (
           <div className="mt-20 border-t border-[color:var(--hairline-strong)] pt-14 sm:mt-24 sm:pt-16">
@@ -249,13 +304,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
             </div>
             <a
               href="#add-to-cart"
-              onClick={(e) => {
-                e.preventDefault();
-                const btn = document.querySelector<HTMLButtonElement>(
-                  "form button[type='button'], main button[type='button']",
-                );
-                btn?.scrollIntoView({ behavior: "smooth", block: "center" });
-              }}
               className="inline-flex h-12 min-h-12 shrink-0 items-center justify-center rounded-[var(--r-md)] bg-ink-0 px-6 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
             >
               Comprar

@@ -66,6 +66,7 @@ model Store {
 
   installedApps      InstalledApp[]
   whatsappRecovery   WhatsappRecoverySettings?
+  productReviews     ProductReview[]
 
   @@index([ownerId])
 }
@@ -227,6 +228,7 @@ model Product {
   orderItems     OrderItem[]
   stockMovements StockMovement[]
   catalogMirror  CatalogMirrorProduct?
+  reviews        ProductReview[]
 
   @@unique([storeId, handle])
 }
@@ -1228,5 +1230,35 @@ model WhatsappRecoverySettings {
   lastValidatedAt       DateTime?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
+}
+
+
+// --- Product Reviews (app product-reviews) ---
+// Pending-first: all submissions land in status=pending until an admin
+// approves (status=approved) or hides (status=hidden). Storefront only
+// renders approved rows; aggregates are derived on demand from approved.
+model ProductReview {
+  id                String   @id @default(cuid())
+  storeId           String
+  store             Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  productId         String
+  product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  displayName       String
+  rating            Int      // 1..5, validated in app layer
+  title             String?
+  body              String
+  status            String   @default("pending") // pending | approved | hidden
+  verifiedPurchase  Boolean  @default(false)
+  source            String   @default("storefront") // storefront | admin | import
+  submittedIp       String?  // light anti-abuse signal, not PII-heavy
+  moderatedBy       String?
+  moderatedAt       DateTime?
+  publishedAt       DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([storeId, status])
+  @@index([productId, status])
+  @@index([storeId, createdAt])
 }
 

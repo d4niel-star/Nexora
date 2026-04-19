@@ -415,27 +415,31 @@ export const APP_REGISTRY: AppDefinition[] = [
     minPlanLabel: "Growth",
     tags: ["whatsapp", "waba", "recovery"],
   },
+  // ── Trust — Product reviews (V2.2, real) ──────────────────────────────
   {
     slug: "product-reviews",
     name: "Reseñas de productos",
     iconName: "Star",
     category: "trust",
     shortDescription:
-      "Reseñas verificadas post-compra. Prueba social sin depender de Google ni Trustpilot.",
+      "Mostrá reseñas reales de clientes para aumentar confianza y conversión.",
     problem:
-      "Sin reseñas visibles, la conversión cae especialmente en categorías nuevas.",
+      "Sin prueba social visible, la conversión cae — especialmente en categorías nuevas o tickets altos. Sin moderación, las reseñas se vuelven un riesgo.",
     outcome:
-      "Invitaciones post-compra, moderación liviana y widget en PDP.",
+      "Nexora expone un bloque de reseñas en la PDP con promedio y cantidad reales (nunca inventados). Toda reseña entra como pendiente y solo se publica cuando la aprobás desde el panel.",
     capabilities: [
-      "Solicitud automática post-entrega.",
-      "Moderación por tenant.",
-      "Widget en PDP nativo del storefront.",
+      "Formulario público en PDP con rating 1–5, título y comentario.",
+      "Moderación pending-first: nada se publica sin tu OK.",
+      "Promedio y cantidad calculados solo sobre reseñas aprobadas.",
+      "JSON-LD aggregateRating solo cuando hay datos reales (sin humo SEO).",
     ],
-    setupRoute: null,
-    manageRoute: null,
+    setupRoute: "/admin/apps/product-reviews/moderation",
+    manageRoute: "/admin/apps/product-reviews/moderation",
     installMode: "builtin",
-    isComingSoon: true,
-    tags: ["reviews", "social-proof"],
+    setupTime: "Inmediato",
+    planGate: (cfg) => cfg.productReviews,
+    minPlanLabel: "Growth",
+    tags: ["reviews", "social-proof", "trust"],
   },
   {
     slug: "bundles-upsells",

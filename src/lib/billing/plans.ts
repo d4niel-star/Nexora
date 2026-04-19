@@ -13,6 +13,7 @@ export interface PlanConfig {
   advancedBranding: boolean;
   sourcingAdvanced: boolean;  // Cross-provider sourcing and velocity aptitude
   whatsappRecovery: boolean;  // Cart recovery via WhatsApp (Meta Cloud API)
+  productReviews: boolean;    // Product reviews with moderation (storefront + admin)
   maxStaff: number;
 }
 
@@ -56,6 +57,7 @@ export const PLAN_DEFINITIONS: PlanDefinition[] = [
       advancedBranding: true,
       sourcingAdvanced: false,
       whatsappRecovery: false,
+      productReviews: false,
       maxStaff: 2,
     },
   },
@@ -79,6 +81,7 @@ export const PLAN_DEFINITIONS: PlanDefinition[] = [
       advancedBranding: true,
       sourcingAdvanced: false,
       whatsappRecovery: true,
+      productReviews: true,
       maxStaff: 5,
     },
   },
@@ -101,6 +104,7 @@ export const PLAN_DEFINITIONS: PlanDefinition[] = [
       advancedBranding: true,
       sourcingAdvanced: true,
       whatsappRecovery: true,
+      productReviews: true,
       maxStaff: 15,
     },
   },
@@ -123,6 +127,7 @@ export const PLAN_DEFINITIONS: PlanDefinition[] = [
       advancedBranding: true,
       sourcingAdvanced: true,
       whatsappRecovery: true,
+      productReviews: true,
       maxStaff: 0,
     },
   },
