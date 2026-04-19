@@ -5,7 +5,10 @@ services:
     repo: https://github.com/d4niel-star/Nexora
     branch: main
     buildCommand: npm install && npm run build
-    startCommand: npm start
+    # Bind Next.js to all interfaces on Render's $PORT.
+    # -H 0.0.0.0 is required for Render's port scanner to detect the listener.
+    # Next respects $PORT from env automatically.
+    startCommand: npx next start -H 0.0.0.0 -p $PORT
     healthCheckPath: /api/system/health
     envVars:
       - key: NODE_VERSION
@@ -23,20 +26,21 @@ services:
       - key: RESEND_FROM_EMAIL
         sync: false
 
-databases:
-  - name: nexora-db
-    plan: free
-    databaseName: nexora
-
   - type: cron
     name: nexora-ads-sync
     runtime: node
     repo: https://github.com/d4niel-star/Nexora
     branch: main
     schedule: "0 2 * * *" # Run at 2:00 AM every day
-    command: "curl -H \"Authorization: Bearer $CRON_SECRET\" $NEXT_PUBLIC_APP_URL/api/ads/sync"
+    buildCommand: echo "no build required for cron"
+    startCommand: "curl -fsSL -H \"Authorization: Bearer $CRON_SECRET\" $NEXT_PUBLIC_APP_URL/api/ads/sync"
     envVars:
       - key: CRON_SECRET
         sync: false
       - key: NEXT_PUBLIC_APP_URL
         sync: false
+
+databases:
+  - name: nexora-db
+    plan: free
+    databaseName: nexora
