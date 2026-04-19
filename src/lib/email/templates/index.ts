@@ -242,6 +242,32 @@ export function generateOrderDeliveredTemplate(data: OrderEmailData) {
   return BaseTemplate("¡Pedido entregado con éxito!", data.storeName, content, data.statusUrl, "Ver detalles del Pedido");
 }
 
+// ─── Post-purchase review request (app post-purchase-flows) ───
+// Sent N days after an order's deliveredAt when the tenant enabled the
+// flow. Invites the customer to leave a review on their order items.
+export function generatePostPurchaseReviewRequestTemplate(data: OrderEmailData) {
+  const content = `
+    <h2 style="margin: 0 0 20px 0; font-size: 20px; font-weight: 700; color: #111111;">¿Cómo fue tu experiencia?</h2>
+    <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.5; color: #374151;">
+      Hola ${data.customerName},<br>
+      Ya pasaron unos días desde que recibiste tu pedido <strong>${data.orderNumber}</strong>. Nos encantaría saber qué te pareció.
+    </p>
+    <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.5; color: #374151;">
+      Si te tomás un minuto para dejar tu reseña, ayudás a otros clientes a decidir mejor. Sin spam, una sola vez.
+    </p>
+    <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #6B7280;">
+      Esta es la única comunicación que vas a recibir sobre tu reseña para este pedido.
+    </p>
+  `;
+  return BaseTemplate(
+    "Contanos qué te pareció",
+    data.storeName,
+    content,
+    data.statusUrl,
+    "Dejar mi reseña",
+  );
+}
+
 export function generateStockCriticalTemplate(data: StockCriticalEmailData) {
   const variantLabel = data.variantTitle ? ` · <strong>${data.variantTitle}</strong>` : "";
   const skuLabel = data.sku ? `<span style="font-family: monospace; font-size: 13px; color: #6B7280;"> (SKU: ${data.sku})</span>` : "";

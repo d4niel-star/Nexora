@@ -105,6 +105,10 @@ export async function sendEmailEvent(params: SendEmailEventParams): Promise<bool
         subject = `¡Tu pedido ${params.data.orderNumber} ha sido entregado!`;
         htmlContent = templates.generateOrderDeliveredTemplate(params.data);
         break;
+      case "POST_PURCHASE_REVIEW_REQUEST":
+        subject = `¿Cómo fue tu experiencia con ${params.data.storeName}?`;
+        htmlContent = templates.generatePostPurchaseReviewRequestTemplate(params.data);
+        break;
       default:
         throw new Error(`Unhandled event type: ${params.eventType}`);
     }

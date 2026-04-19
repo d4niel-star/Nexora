@@ -492,27 +492,31 @@ export const APP_REGISTRY: AppDefinition[] = [
     setupTime: "Inmediato",
     tags: ["tracking", "post-purchase", "trust"],
   },
+  // ── Retention — Post-purchase flows (V2.5, real) ─────────────────────
   {
     slug: "post-purchase-flows",
     name: "Flujos de post-compra",
     iconName: "ShoppingBag",
     category: "retention",
     shortDescription:
-      "Secuencia de mails post-compra: confirmación, seguimiento, upsell y segunda compra.",
+      "Automatizá comunicaciones útiles después de la compra para mejorar experiencia, recompra y soporte.",
     problem:
-      "Una sola compra no construye LTV. Sin flujo de post-compra, el cliente no vuelve.",
+      "Los emails transaccionales (confirmación, envío, entrega) ya salen solos en Nexora. Lo que falta es un seguimiento post-entrega que pida reseña al cliente y cierre el loop. Sin ese paso, las reseñas no llegan y la recompra no sube.",
     outcome:
-      "Secuencia tokenizada con tiempos y condiciones por tenant.",
+      "N días después de que Nexora marca una orden como entregada, se envía un único mail de pedido de reseña al cliente. Usa el mismo motor de emails transaccionales, es idempotente vía EmailLog y sólo funciona si activaste el flow.",
     capabilities: [
-      "Secuencia configurable.",
-      "Gatillos basados en eventos reales.",
-      "Un solo envío por evento.",
+      "Un solo flow real en V2.5: pedido de reseña post-entrega.",
+      "Delay configurable entre 1 y 60 días.",
+      "Idempotente: un solo envío por orden (EmailLog).",
+      "Degrada seguro: si no hay deliveredAt o faltan datos, no envía.",
     ],
-    setupRoute: null,
-    manageRoute: null,
+    setupRoute: "/admin/apps/post-purchase-flows/setup",
+    manageRoute: "/admin/apps/post-purchase-flows/setup",
     installMode: "builtin",
-    isComingSoon: true,
-    tags: ["email", "lifecycle"],
+    setupTime: "2 minutos",
+    planGate: (cfg) => cfg.postPurchaseFlows,
+    minPlanLabel: "Growth",
+    tags: ["email", "lifecycle", "reviews"],
   },
 ];
 

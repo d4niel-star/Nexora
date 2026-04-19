@@ -68,6 +68,7 @@ model Store {
   whatsappRecovery   WhatsappRecoverySettings?
   productReviews     ProductReview[]
   bundleOffers       BundleOffer[]
+  postPurchaseFlows  PostPurchaseFlowsSettings?
 
   @@index([ownerId])
 }
@@ -1299,5 +1300,18 @@ model BundleOfferItem {
   @@unique([bundleId, productId])
   @@index([bundleId])
   @@index([productId])
+}
+
+
+// --- Post-Purchase Flows (app post-purchase-flows) ---
+// V2.5: review-request flow only. Toggled per tenant; delay in days.
+model PostPurchaseFlowsSettings {
+  id                      String   @id @default(cuid())
+  storeId                 String   @unique
+  store                   Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  reviewRequestEnabled    Boolean  @default(false)
+  reviewRequestDelayDays  Int      @default(7)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
 }
 

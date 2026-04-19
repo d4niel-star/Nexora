@@ -10,7 +10,8 @@ export type EventType =
   | "ORDER_DELIVERED"
   | "ORDER_IN_TRANSIT"
   | "STOCK_CRITICAL"
-  | "ABANDONED_CART";
+  | "ABANDONED_CART"
+  | "POST_PURCHASE_REVIEW_REQUEST";
 
 export interface AbandonedCartEmailData {
   storeSlug: string;

@@ -15,6 +15,7 @@ export interface PlanConfig {
   whatsappRecovery: boolean;  // Cart recovery via WhatsApp (Meta Cloud API)
   productReviews: boolean;    // Product reviews with moderation (storefront + admin)
   bundlesUpsells: boolean;    // Manual cross-sell / upsell blocks on PDP
+  postPurchaseFlows: boolean; // Automated post-purchase email flows
   maxStaff: number;
 }
 
@@ -60,6 +61,7 @@ export const PLAN_DEFINITIONS: PlanDefinition[] = [
       whatsappRecovery: false,
       productReviews: false,
       bundlesUpsells: false,
+      postPurchaseFlows: false,
       maxStaff: 2,
     },
   },
@@ -85,6 +87,7 @@ export const PLAN_DEFINITIONS: PlanDefinition[] = [
       whatsappRecovery: true,
       productReviews: true,
       bundlesUpsells: true,
+      postPurchaseFlows: true,
       maxStaff: 5,
     },
   },
@@ -109,6 +112,7 @@ export const PLAN_DEFINITIONS: PlanDefinition[] = [
       whatsappRecovery: true,
       productReviews: true,
       bundlesUpsells: true,
+      postPurchaseFlows: true,
       maxStaff: 15,
     },
   },
@@ -133,6 +137,7 @@ export const PLAN_DEFINITIONS: PlanDefinition[] = [
       whatsappRecovery: true,
       productReviews: true,
       bundlesUpsells: true,
+      postPurchaseFlows: true,
       maxStaff: 0,
     },
   },
