@@ -1,13 +1,31 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Search, CreditCard, Plug, Radio, ShieldCheck } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  CheckCircle2,
+  CreditCard,
+  MessageSquare,
+  Plug,
+  Radio,
+  RefreshCw,
+  Search,
+  ShieldCheck,
+  ShoppingBag,
+  Truck,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { UnifiedConnection } from "@/lib/integrations/queries";
+import type {
+  IntegrationCategory,
+  IntegrationState,
+  UnifiedConnection,
+} from "@/lib/integrations/queries";
 import type { HealthCenterData } from "@/types/health";
 import { HealthCenter } from "./HealthCenter";
 
-type TabValue = "all" | "payments" | "providers" | "ads" | "health";
+type TabValue = "all" | "payments" | "logistics" | "providers" | "retention" | "ads" | "health";
 
 export function IntegrationsClient({ initialData, healthData }: { initialData: UnifiedConnection[]; healthData: HealthCenterData }) {
   const [activeTab, setActiveTab] = useState<TabValue>("all");
@@ -15,19 +33,34 @@ export function IntegrationsClient({ initialData, healthData }: { initialData: U
 
   const tabCounts = useMemo(() => ({
     all: initialData.length,
-    payments: initialData.filter(c => c.type === "payment").length,
+    payments: initialData.filter(c => c.type === "payment" || c.type === "platform").length,
+    logistics: initialData.filter(c => c.type === "logistics").length,
     providers: initialData.filter(c => c.type === "provider").length,
+    retention: initialData.filter(c => c.type === "retention").length,
     ads: initialData.filter(c => c.type === "ad_platform").length,
   }), [initialData]);
+
+  // Visible attention count: anything that isn't ready or not_installed.
+  // Drives the header chip so the merchant immediately sees "X integraciones
+  // necesitan acción" instead of scanning the mosaic.
+  const attentionCount = useMemo(
+    () =>
+      initialData.filter(
+        (c) => c.state !== "ready" && c.state !== "not_installed",
+      ).length,
+    [initialData],
+  );
 
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return initialData.filter(c => {
       const matchesSearch = !q || c.name.toLowerCase().includes(q) || c.platform.toLowerCase().includes(q);
-      const matchesTab = 
+      const matchesTab =
         activeTab === "all" ? true
-        : activeTab === "payments" ? c.type === "payment"
+        : activeTab === "payments" ? (c.type === "payment" || c.type === "platform")
+        : activeTab === "logistics" ? c.type === "logistics"
         : activeTab === "providers" ? c.type === "provider"
+        : activeTab === "retention" ? c.type === "retention"
         : activeTab === "ads" ? c.type === "ad_platform"
         : false;
       return matchesSearch && matchesTab;
@@ -36,9 +69,11 @@ export function IntegrationsClient({ initialData, healthData }: { initialData: U
 
   const tabs: Array<{ label: string; value: TabValue; count: number; icon: React.ReactNode }> = [
     { label: "Todas", value: "all", count: tabCounts.all, icon: <Radio className="h-3.5 w-3.5" /> },
-    { label: "Publicidad", value: "ads", count: tabCounts.ads, icon: <Radio className="h-3.5 w-3.5" /> },
     { label: "Pagos", value: "payments", count: tabCounts.payments, icon: <CreditCard className="h-3.5 w-3.5" /> },
+    { label: "Logística", value: "logistics", count: tabCounts.logistics, icon: <Truck className="h-3.5 w-3.5" /> },
     { label: "Proveedores", value: "providers", count: tabCounts.providers, icon: <Plug className="h-3.5 w-3.5" /> },
+    { label: "Retención", value: "retention", count: tabCounts.retention, icon: <MessageSquare className="h-3.5 w-3.5" /> },
+    { label: "Publicidad", value: "ads", count: tabCounts.ads, icon: <Radio className="h-3.5 w-3.5" /> },
     { label: "Salud", value: "health", count: healthData.signals.length, icon: <ShieldCheck className="h-3.5 w-3.5" /> },
   ];
 
@@ -47,8 +82,22 @@ export function IntegrationsClient({ initialData, healthData }: { initialData: U
       <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
         <div>
           <h1 className="text-[28px] lg:text-[32px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0">Integraciones.</h1>
-          <p className="mt-2 text-[14px] leading-[1.55] text-ink-5">Conexiones activas de la tienda a servicios externos.</p>
+          <p className="mt-2 text-[14px] leading-[1.55] text-ink-5">
+            Pagos, logística, proveedores, retención y publicidad. Todas las conexiones reales de tu tienda, con diagnóstico y acción correcta.
+          </p>
         </div>
+        {/* Header attention chip — reflects the honest count of items that
+            aren't ready or absent; never a fabricated health score. */}
+        {attentionCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setActiveTab("health")}
+            className="inline-flex h-9 items-center gap-2 rounded-[var(--r-sm)] border border-[color:var(--signal-warning)]/30 bg-[color:var(--signal-warning)]/10 px-3 text-[12px] font-medium text-[color:var(--signal-warning)] hover:bg-[color:var(--signal-warning)]/15 focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
+          >
+            <AlertTriangle className="h-3.5 w-3.5" strokeWidth={2} />
+            {attentionCount} {attentionCount === 1 ? "integración requiere atención" : "integraciones requieren atención"}
+          </button>
+        )}
       </div>
 
       <div className="relative overflow-hidden rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)]">
@@ -95,27 +144,8 @@ export function IntegrationsClient({ initialData, healthData }: { initialData: U
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filtered.map(c => (
-                <div key={c.id} className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5">
-                  <div className="flex justify-between items-start mb-3">
-                    <h3 className="text-[14px] font-semibold text-ink-0">{c.name}</h3>
-                    <span className={cn(
-                      "inline-flex items-center h-6 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2 text-[10px] font-medium uppercase tracking-[0.14em]",
-                      c.status === "connected" ? "text-[color:var(--signal-success)]" :
-                      c.status === "error" ? "text-[color:var(--signal-danger)]" :
-                      c.status === "pending" ? "text-[color:var(--signal-warning)]" :
-                      c.status === "expired" ? "text-[color:var(--signal-warning)]" :
-                      "text-ink-5"
-                    )}>
-                      {c.status}
-                    </span>
-                  </div>
-                  <p className="text-[12px] leading-[1.55] text-ink-5 mb-4">{c.description}</p>
-                  <div className="border-t border-[color:var(--hairline)] pt-4 mt-4 text-[11px] text-ink-5 flex justify-between">
-                     <span>Último sync: {c.lastSync ? new Date(c.lastSync).toLocaleDateString("es-AR") : "No registrado"}</span>
-                     <span className={cn("font-medium uppercase tracking-[0.12em]", c.health === "operational" ? "text-[color:var(--signal-success)]" : "text-[color:var(--signal-warning)]")}>{c.health}</span>
-                  </div>
-                </div>
+              {filtered.map((c) => (
+                <IntegrationCard key={c.id} connection={c} />
               ))}
             </div>
           )}
@@ -123,4 +153,189 @@ export function IntegrationsClient({ initialData, healthData }: { initialData: U
       </div>
     </div>
   );
+}
+
+// ─── IntegrationCard ─────────────────────────────────────────────────────
+// Rich per-integration card. Replaces the old logo + status-string layout.
+// Every piece of text on the card maps to a real field on the
+// UnifiedConnection: state drives the chip, metric is optional DB count,
+// lastError surfaces only when the state is error or needs_reconnection,
+// and the CTA is a real Link to the resolving module — never a no-op.
+
+function IntegrationCard({ connection: c }: { connection: UnifiedConnection }) {
+  const meta = describeState(c.state);
+  const categoryIcon = categoryIconFor(c.type);
+
+  return (
+    <div
+      className={cn(
+        "group relative flex flex-col rounded-[var(--r-md)] border bg-[var(--surface-0)] p-5 transition-colors",
+        meta.frame,
+      )}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] text-ink-3">
+            {categoryIcon}
+          </span>
+          <div className="min-w-0">
+            <h3 className="truncate text-[14px] font-semibold text-ink-0">{c.name}</h3>
+            <p className="truncate text-[11px] font-medium uppercase tracking-[0.12em] text-ink-6">
+              {categoryLabel(c.type)}
+            </p>
+          </div>
+        </div>
+        <span
+          className={cn(
+            "inline-flex shrink-0 items-center gap-1 h-6 rounded-[var(--r-xs)] px-2 text-[10px] font-semibold uppercase tracking-[0.14em]",
+            meta.chipClass,
+          )}
+        >
+          {meta.icon}
+          {meta.label}
+        </span>
+      </div>
+
+      <p className="mt-3 text-[12px] leading-[1.5] text-ink-5">{c.description}</p>
+
+      {/* Honest metric line — only rendered when the DB had a real value. */}
+      {c.metric && (
+        <p className="mt-3 text-[11px] font-mono text-ink-3">{c.metric}</p>
+      )}
+
+      {/* Error surfacing — only for real error / reconnection states. */}
+      {c.lastError &&
+        (c.state === "error" || c.state === "needs_reconnection") && (
+          <p className="mt-3 rounded-[var(--r-xs)] border border-[color:var(--signal-danger)]/20 bg-[color:var(--signal-danger)]/5 px-2.5 py-1.5 text-[11px] leading-[1.5] text-[color:var(--signal-danger)]">
+            {c.lastError}
+          </p>
+        )}
+
+      <div className="mt-4 flex items-center justify-between border-t border-[color:var(--hairline)] pt-3 text-[11px] text-ink-6">
+        <span>
+          {c.lastSync
+            ? `Último sync · ${new Date(c.lastSync).toLocaleDateString("es-AR", { day: "2-digit", month: "short" })}`
+            : "Sin actividad registrada"}
+        </span>
+        <Link
+          href={c.href}
+          className={cn(
+            "inline-flex items-center gap-1 font-medium transition-colors",
+            meta.ctaClass,
+          )}
+        >
+          {c.ctaLabel}
+          <ArrowRight className="h-3 w-3" strokeWidth={1.75} />
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// ─── State / category helpers ───────────────────────────────────────────
+
+function describeState(state: IntegrationState): {
+  label: string;
+  icon: React.ReactNode;
+  chipClass: string;
+  frame: string;
+  ctaClass: string;
+} {
+  switch (state) {
+    case "ready":
+      return {
+        label: "Listo",
+        icon: <CheckCircle2 className="h-3 w-3" strokeWidth={2} />,
+        chipClass:
+          "border border-[color:var(--signal-success)]/30 bg-[color:var(--signal-success)]/10 text-[color:var(--signal-success)]",
+        frame: "border-[color:var(--hairline)]",
+        ctaClass: "text-ink-0 hover:text-ink-2",
+      };
+    case "needs_setup":
+      return {
+        label: "Por configurar",
+        icon: <Plug className="h-3 w-3" strokeWidth={1.75} />,
+        chipClass:
+          "border border-[color:var(--hairline)] bg-[var(--surface-2)] text-ink-3",
+        frame: "border-[color:var(--hairline)]",
+        ctaClass: "text-ink-0 hover:text-ink-2",
+      };
+    case "needs_reconnection":
+      return {
+        label: "Reconectar",
+        icon: <RefreshCw className="h-3 w-3" strokeWidth={2} />,
+        chipClass:
+          "border border-[color:var(--signal-danger)]/30 bg-[color:var(--signal-danger)]/10 text-[color:var(--signal-danger)]",
+        frame: "border-[color:var(--signal-danger)]/20",
+        ctaClass:
+          "text-[color:var(--signal-danger)] hover:text-[color:var(--signal-danger)]",
+      };
+    case "degraded":
+      return {
+        label: "Degradada",
+        icon: <AlertTriangle className="h-3 w-3" strokeWidth={2} />,
+        chipClass:
+          "border border-[color:var(--signal-warning)]/30 bg-[color:var(--signal-warning)]/10 text-[color:var(--signal-warning)]",
+        frame: "border-[color:var(--signal-warning)]/20",
+        ctaClass:
+          "text-[color:var(--signal-warning)] hover:text-[color:var(--signal-warning)]",
+      };
+    case "error":
+      return {
+        label: "Error",
+        icon: <AlertTriangle className="h-3 w-3" strokeWidth={2} />,
+        chipClass:
+          "border border-[color:var(--signal-danger)]/30 bg-[color:var(--signal-danger)]/10 text-[color:var(--signal-danger)]",
+        frame: "border-[color:var(--signal-danger)]/20",
+        ctaClass:
+          "text-[color:var(--signal-danger)] hover:text-[color:var(--signal-danger)]",
+      };
+    case "not_installed":
+    default:
+      return {
+        label: "No instalada",
+        icon: <Plug className="h-3 w-3" strokeWidth={1.75} />,
+        chipClass:
+          "border border-[color:var(--hairline)] bg-[var(--surface-1)] text-ink-5",
+        frame: "border-[color:var(--hairline)]",
+        ctaClass: "text-ink-3 hover:text-ink-0",
+      };
+  }
+}
+
+function categoryIconFor(type: IntegrationCategory): React.ReactNode {
+  switch (type) {
+    case "payment":
+    case "platform":
+      return <CreditCard className="h-4 w-4" strokeWidth={1.75} />;
+    case "logistics":
+      return <Truck className="h-4 w-4" strokeWidth={1.75} />;
+    case "provider":
+      return <ShoppingBag className="h-4 w-4" strokeWidth={1.75} />;
+    case "retention":
+      return <MessageSquare className="h-4 w-4" strokeWidth={1.75} />;
+    case "ad_platform":
+      return <Radio className="h-4 w-4" strokeWidth={1.75} />;
+    default:
+      return <Plug className="h-4 w-4" strokeWidth={1.75} />;
+  }
+}
+
+function categoryLabel(type: IntegrationCategory): string {
+  switch (type) {
+    case "payment":
+      return "Pagos";
+    case "platform":
+      return "Plataforma";
+    case "logistics":
+      return "Logística";
+    case "provider":
+      return "Sourcing";
+    case "retention":
+      return "Retención";
+    case "ad_platform":
+      return "Publicidad";
+    default:
+      return "Integración";
+  }
 }

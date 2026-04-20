@@ -4,6 +4,7 @@
 
 import { getCurrentStore } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
+import { getMercadoPagoPlatformReadiness } from "@/lib/payments/mercadopago/platform-readiness";
 import type {
   ConnectionHealthEntry,
   HealthCenterData,
@@ -32,7 +33,7 @@ export async function getHealthCenterData(): Promise<HealthCenterData> {
   const sid = store.id;
   const now = new Date();
 
-  const [adConns, providerConns, syncJobsFailed, mirrorsOutOfSync] = await Promise.all([
+  const [adConns, providerConns, syncJobsFailed, mirrorsOutOfSync, mpTenant] = await Promise.all([
     prisma.adPlatformConnection.findMany({
       where: { storeId: sid },
       select: {
@@ -55,10 +56,82 @@ export async function getHealthCenterData(): Promise<HealthCenterData> {
     prisma.catalogMirrorProduct.count({
       where: { storeId: sid, syncStatus: "out_of_sync" },
     }),
+    prisma.storePaymentProvider.findUnique({
+      where: { storeId_provider: { storeId: sid, provider: "mercadopago" } },
+      select: {
+        id: true,
+        status: true,
+        accessTokenEncrypted: true,
+        lastError: true,
+        tokenExpiresAt: true,
+        lastValidatedAt: true,
+        updatedAt: true,
+      },
+    }),
   ]);
 
   const connections: ConnectionHealthEntry[] = [];
   const signals: HealthSignal[] = [];
+
+  // ── Payments (Mercado Pago) ───────────────────────────────────────────
+  // The platform env layer is a hard prerequisite: without it, tenant
+  // OAuth cannot even start, so we emit a critical signal that routes
+  // the operator (and merchants, transparently) to the ops diagnostic.
+  const platformMp = getMercadoPagoPlatformReadiness();
+  if (!platformMp.ready) {
+    signals.push({
+      id: "mp-platform-env",
+      severity: "critical",
+      title: "Mercado Pago: plataforma no configurada",
+      description: `Faltan variables de infraestructura: ${platformMp.missing.join(", ")}. Ninguna tienda puede iniciar la conexión OAuth hasta resolverlo.`,
+      href: "/admin/settings/integrations/mercadopago",
+      actionLabel: "Ver diagnóstico",
+    });
+  }
+
+  // Tenant-level MP status — surface reconnection and error states so
+  // the merchant sees them in the health center, not just buried in
+  // /admin/store?tab=pagos.
+  if (mpTenant) {
+    const tokenExpired =
+      mpTenant.tokenExpiresAt != null && mpTenant.tokenExpiresAt.getTime() < now.getTime();
+    if (
+      mpTenant.status === "needs_reconnection" ||
+      mpTenant.status === "expired" ||
+      tokenExpired
+    ) {
+      signals.push({
+        id: `mp-tenant-reconnect-${mpTenant.id}`,
+        severity: "critical",
+        title: "Mercado Pago: reconexión requerida",
+        description:
+          "La conexión OAuth de tu tienda expiró. Hasta que la renueves, el checkout no puede cobrar.",
+        href: "/admin/store?tab=pagos",
+        actionLabel: "Reconectar",
+      });
+    } else if (mpTenant.status === "error" || mpTenant.lastError) {
+      signals.push({
+        id: `mp-tenant-error-${mpTenant.id}`,
+        severity: "high",
+        title: "Mercado Pago: error en la conexión",
+        description: mpTenant.lastError ?? "La conexión de pagos reporta un error.",
+        href: "/admin/store?tab=pagos",
+        actionLabel: "Revisar conexión",
+      });
+    }
+  } else if (platformMp.ready) {
+    // Platform is ready but no tenant row — surface as a normal-severity
+    // "not connected yet" hint rather than as a silent gap.
+    signals.push({
+      id: "mp-tenant-missing",
+      severity: "normal",
+      title: "Mercado Pago: tienda aún sin conectar",
+      description:
+        "Tu tienda todavía no completó la conexión OAuth con Mercado Pago. Hasta entonces el checkout queda desactivado.",
+      href: "/admin/store?tab=pagos",
+      actionLabel: "Conectar Mercado Pago",
+    });
+  }
 
   for (const ad of adConns) {
     const name = resolveAdPlatformName(ad.platform);
