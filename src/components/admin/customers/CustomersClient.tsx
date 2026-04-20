@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search, ChevronDown, Filter, AlertTriangle, Users } from "lucide-react";
+import Link from "next/link";
+import { Search, ChevronDown, Filter, AlertTriangle, Users, ExternalLink } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
 import { CustomerBadge } from "./CustomerBadge";
 import type { AggregatedCustomer } from "@/lib/customers/queries";
@@ -114,11 +115,28 @@ export function CustomersClient({ initialCustomers }: { initialCustomers: Aggreg
                   <th className="px-6 py-4 text-[11px] text-right font-medium uppercase tracking-[0.18em] text-ink-5">LTV</th>
                   <th className="px-6 py-4 text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">Segmento</th>
                   <th className="px-6 py-4 text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">Estado</th>
+                  <th className="px-6 py-4 w-12"></th>
                 </tr>
               </thead>
+              {/* Rows are now a cross-module hyperlink. Clicking any cell
+                  jumps to /admin/orders?customer=<email>, which
+                  pre-seeds the search field in OrdersClient via its
+                  URL param effect. No duplicate order table or CRM
+                  inside customers — the existing orders surface is
+                  the single source of truth for per-customer history. */}
               <tbody className="divide-y divide-[color:var(--hairline)]">
                 {filteredCustomers.map((c) => (
-                  <tr key={c.id} className="hover:bg-[var(--surface-1)] bg-[var(--surface-0)] transition-colors">
+                  <tr
+                    key={c.id}
+                    className="group bg-[var(--surface-0)] transition-colors hover:bg-[var(--surface-1)] cursor-pointer"
+                    onClick={() => {
+                      // Programmatic navigation to keep <tr> semantics
+                      // (nested <a> inside tbody rows is invalid HTML).
+                      if (typeof window !== "undefined") {
+                        window.location.href = `/admin/orders?customer=${encodeURIComponent(c.email)}`;
+                      }
+                    }}
+                  >
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-4">
                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--r-sm)] bg-[var(--surface-2)] text-xs font-semibold uppercase text-ink-0">
@@ -136,6 +154,17 @@ export function CustomersClient({ initialCustomers }: { initialCustomers: Aggreg
                     <td className="px-6 py-5 text-right text-[15px] font-semibold tracking-tight tabular-nums text-ink-0">{formatCurrency(c.totalSpent)}</td>
                     <td className="px-6 py-5"><CustomerBadge tone={c.segment} /></td>
                     <td className="px-6 py-5"><CustomerBadge tone={c.lifecycleStatus === "active" ? "active" : c.lifecycleStatus} /></td>
+                    <td className="px-6 py-5 text-right">
+                      <Link
+                        href={`/admin/orders?customer=${encodeURIComponent(c.email)}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center gap-1.5 text-[12px] font-medium text-ink-5 opacity-0 transition-opacity group-hover:opacity-100 hover:text-ink-0"
+                        title={`Ver pedidos de ${c.name}`}
+                      >
+                        Pedidos
+                        <ExternalLink className="h-3 w-3" strokeWidth={1.75} />
+                      </Link>
+                    </td>
                   </tr>
                 ))}
               </tbody>

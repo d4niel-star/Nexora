@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { Search, Download, Filter, MoreHorizontal, ChevronDown, Package, FileText, Ban, X, ShoppingBag, CalendarDays } from "lucide-react";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { useSearchParams } from "next/navigation";
+import { Search, Download, Filter, Package, X, ShoppingBag, CalendarDays, Zap, Truck, AlertTriangle } from "lucide-react";
 import { Order } from "../../../types/order";
 import { OrderStatusBadge, PaymentStatusBadge } from "../../../components/admin/orders/StatusBadge";
 import { OrderDrawer } from "../../../components/admin/orders/OrderDrawer";
+import { deriveOrderNextAction, orderNeedsAction, type OrderNextAction } from "@/lib/orders/workqueue";
+import { bulkUpdateFulfillment } from "@/lib/store-engine/orders/bulk-actions";
 
-type TabValue = 'all' | 'new' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
+type TabValue = 'action' | 'all' | 'new' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
 
 interface OrdersClientProps {
   orders: Order[];
@@ -14,16 +17,49 @@ interface OrdersClientProps {
   initialTab?: TabValue;
 }
 
-export default function OrdersClient({ orders, hideHeader = false, initialTab = 'all' }: OrdersClientProps) {
+export default function OrdersClient({ orders, hideHeader = false, initialTab = 'action' }: OrdersClientProps) {
+  const urlParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabValue>(initialTab);
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
+  const [bulkPending, startBulkTransition] = useTransition();
+  const [bulkFeedback, setBulkFeedback] = useState<string | null>(null);
+
+  // ── Cross-module navigation ────────────────────────────────────────────
+  // When the merchant arrives from /admin/customers?customer=<email>,
+  // seed the search field so the table immediately narrows to that
+  // customer's orders. One-shot: subsequent typing must not be clobbered.
+  useEffect(() => {
+    const fromCustomer = urlParams?.get("customer");
+    if (fromCustomer) {
+      setSearchQuery(fromCustomer);
+      setActiveTab("all");
+    }
+  }, [urlParams]);
+
+  // Compute the next-action map once per render so the table, the tab
+  // count and the KPI all agree (single source of truth).
+  const nextActions = useMemo(() => {
+    const map = new Map<string, OrderNextAction | null>();
+    for (const o of orders) map.set(o.id, deriveOrderNextAction(o));
+    return map;
+  }, [orders]);
+
+  const actionCount = useMemo(
+    () => orders.reduce((n, o) => n + (nextActions.get(o.id) ? 1 : 0), 0),
+    [orders, nextActions],
+  );
 
   const filteredOrders = orders.filter(order => {
-    const matchesTab = activeTab === 'all' || order.status === activeTab;
+    const matchesTab =
+      activeTab === 'all'
+        ? true
+        : activeTab === 'action'
+          ? orderNeedsAction(order)
+          : order.status === activeTab;
     const matchesSearch = order.number.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           order.customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           order.customer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -40,6 +76,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
   const realRevenue = realSales.reduce((acc, order) => acc + order.total, 0);
 
   const tabs: { label: string, value: TabValue, count?: number }[] = [
+    { label: "Requiere acción", value: "action", count: actionCount },
     { label: "Todos", value: "all", count: orders.length },
     { label: "Nuevos", value: "new", count: orders.filter(o => o.status === 'new').length },
     { label: "Pagados", value: "paid", count: orders.filter(o => o.status === 'paid').length },
@@ -49,6 +86,44 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
     { label: "Cancelados", value: "cancelled", count: orders.filter(o => o.status === 'cancelled').length },
     { label: "Reembolsados", value: "refunded", count: orders.filter(o => o.status === 'refunded').length },
   ];
+
+  // ── Bulk action — mark preparing ───────────────────────────────────────
+  // Real server call (no fake buttons). Only enabled when every selected
+  // order is in a state where "preparing" is a valid forward transition:
+  // paid/approved + shipping=unfulfilled. The backend also enforces this,
+  // but filtering client-side avoids partial failures.
+  const bulkPreparingEligibleIds = useMemo(() => {
+    const set = new Set(selectedRows);
+    return orders
+      .filter((o) => set.has(o.id))
+      .filter((o) => {
+        const action = nextActions.get(o.id);
+        return action?.kind === "mark_preparing";
+      })
+      .map((o) => o.id);
+  }, [selectedRows, orders, nextActions]);
+
+  const handleBulkMarkPreparing = () => {
+    if (bulkPreparingEligibleIds.length === 0 || bulkPending) return;
+    setBulkFeedback(null);
+    startBulkTransition(async () => {
+      try {
+        const result = await bulkUpdateFulfillment(bulkPreparingEligibleIds, "preparing");
+        const okCount = result.succeeded.length;
+        const failCount = result.failed.length;
+        setBulkFeedback(
+          failCount === 0
+            ? `${okCount} ${okCount === 1 ? "pedido pasó" : "pedidos pasaron"} a preparación.`
+            : `${okCount} actualizadas · ${failCount} con error.`,
+        );
+        setSelectedRows([]);
+      } catch (err) {
+        setBulkFeedback(
+          err instanceof Error ? err.message : "Error al actualizar los pedidos.",
+        );
+      }
+    });
+  };
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
@@ -90,21 +165,41 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
 
       {!hideHeader && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Ventas reales is informational (money total), not a filter. */}
           <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-5 py-4 shadow-[var(--shadow-soft)]">
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-ink-6">Ventas reales</p>
             <p className="mt-1 text-[22px] font-semibold tracking-[-0.02em] text-ink-0 tabular-nums">${realRevenue.toLocaleString("es-AR")}</p>
             <p className="mt-1 text-xs font-medium text-ink-6">Solo pagos confirmados por webhook.</p>
           </div>
-          <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-5 py-4 shadow-[var(--shadow-soft)]">
+          {/* Clicking these two KPIs filters the table to the matching
+              work-queue subset. No invented counts: both numbers are
+              direct reads of order.paymentStatus and shippingStatus. */}
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab("action");
+              setSearchQuery("");
+            }}
+            className="group text-left rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-5 py-4 shadow-[var(--shadow-soft)] transition-colors hover:bg-[var(--surface-2)] focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
+            aria-label="Ver pedidos pendientes de pago"
+          >
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-ink-6">Pendientes de pago</p>
             <p className="mt-1 text-[22px] font-semibold tracking-[-0.02em] text-[color:var(--signal-warning)] tabular-nums">{pendingPayment.length}</p>
             <p className="mt-1 text-xs font-medium text-ink-6">No cuentan como venta real.</p>
-          </div>
-          <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-5 py-4 shadow-[var(--shadow-soft)]">
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab("action");
+              setSearchQuery("");
+            }}
+            className="group text-left rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-5 py-4 shadow-[var(--shadow-soft)] transition-colors hover:bg-[var(--surface-2)] focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
+            aria-label="Ver pedidos por preparar"
+          >
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-ink-6">Por preparar</p>
             <p className="mt-1 text-[22px] font-semibold tracking-[-0.02em] text-ink-0 tabular-nums">{toPrepare.length}</p>
             <p className="mt-1 text-xs font-medium text-ink-6">Pagados sin despacho final.</p>
-          </div>
+          </button>
         </div>
       )}
 
@@ -207,14 +302,14 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
                   <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-ink-6">Origen</th>
                   <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-ink-6">Estado Cobro</th>
                   <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-ink-6">Logística</th>
+                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-ink-6">Próxima acción</th>
                   <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-ink-6 text-right">Monto</th>
-                  <th className="px-6 py-4 w-12"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[color:var(--hairline)]">
                 {filteredOrders.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="px-6 py-24 text-center">
+                    <td colSpan={9} className="px-6 py-24 text-center">
                       <div className="inline-flex items-center justify-center w-14 h-14 rounded-[var(--r-sm)] bg-[var(--surface-1)] mb-6 border border-[color:var(--hairline)]">
                          <Search className="w-5 h-5 text-ink-5" strokeWidth={1.5} />
                       </div>
@@ -228,6 +323,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
                 ) : (
                   filteredOrders.map((order) => {
                     const isSelected = selectedRows.includes(order.id);
+                    const nextAction = nextActions.get(order.id) ?? null;
                     return (
                     <tr 
                       key={order.id} 
@@ -265,12 +361,29 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
                       </td>
                       <td className="px-6 py-5"><PaymentStatusBadge status={order.paymentStatus} /></td>
                       <td className="px-6 py-5"><OrderStatusBadge status={order.status} /></td>
-                      <td className="px-6 py-5 text-right font-semibold text-ink-0 tabular-nums tracking-[-0.01em] text-[15px]">${order.total.toLocaleString('es-AR')}</td>
-                      <td className="px-6 py-5 opacity-0 group-hover:opacity-100 transition-opacity">
-                         <button onClick={(e) => e.stopPropagation()} className="p-2 hover:bg-[var(--surface-2)] border hover:border-[color:var(--hairline)] border-transparent rounded-[var(--r-sm)] text-ink-6 hover:text-ink-0 transition-colors">
-                            <MoreHorizontal className="w-4 h-4" />
-                         </button>
+                      <td className="px-6 py-5">
+                        {nextAction ? (
+                          <span
+                            className={`inline-flex items-center gap-1.5 h-6 px-2 rounded-[var(--r-xs)] text-[11px] font-semibold ${
+                              nextAction.urgent
+                                ? "bg-[color:var(--signal-danger)]/10 text-[color:var(--signal-danger)]"
+                                : "bg-[var(--surface-2)] text-ink-0"
+                            }`}
+                          >
+                            {nextAction.urgent ? (
+                              <AlertTriangle className="w-3 h-3" strokeWidth={2} />
+                            ) : nextAction.kind === "mark_shipped" || nextAction.kind === "add_tracking" ? (
+                              <Truck className="w-3 h-3" strokeWidth={1.75} />
+                            ) : (
+                              <Zap className="w-3 h-3" strokeWidth={1.75} />
+                            )}
+                            {nextAction.label}
+                          </span>
+                        ) : (
+                          <span className="text-[12px] font-medium text-ink-6">—</span>
+                        )}
                       </td>
+                      <td className="px-6 py-5 text-right font-semibold text-ink-0 tabular-nums tracking-[-0.01em] text-[15px]">${order.total.toLocaleString('es-AR')}</td>
                     </tr>
                   )})
                 )}
@@ -293,22 +406,43 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
         )}
       </div>
 
-      {/* Floating Bulk Actions Toolbar (Linear-Style) */}
+      {/* Floating Bulk Actions Toolbar ──────────────────────────────────
+       *
+       * Previous iteration had three buttons (Preparar / Etiquetas /
+       * Cancelar) with NO onClick. That read as automation that doesn't
+       * exist. Replaced here with a single honest action — "Marcar
+       * preparando" — that actually calls bulkUpdateFulfillment on the
+       * server. Eligibility is computed from the same work-queue rules
+       * the row chip uses; if nothing in the selection can transition
+       * to preparing, the button is disabled with an explicit hint. */}
       {selectedRows.length > 0 && (
         <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-ink-0 text-ink-12 px-2 py-2 rounded-[var(--r-md)] shadow-[var(--shadow-overlay)] flex items-center gap-1 animate-in slide-in-from-bottom-5 fade-in duration-[var(--dur-base)] z-30">
            <div className="px-3 border-r border-ink-12/15">
              <span className="tabular text-[13px] font-medium">{selectedRows.length} seleccionados</span>
+             {bulkPreparingEligibleIds.length !== selectedRows.length && (
+               <span className="ml-2 text-[11px] text-ink-12/50">
+                 {bulkPreparingEligibleIds.length} elegibles
+               </span>
+             )}
            </div>
            <div className="flex items-center gap-1 px-1">
-             <button className="inline-flex items-center gap-2 px-3 h-9 text-[13px] font-medium hover:bg-ink-12/10 rounded-[var(--r-sm)] transition-colors">
-               <Package className="w-4 h-4" strokeWidth={1.75} /> Preparar
+             <button
+               type="button"
+               onClick={handleBulkMarkPreparing}
+               disabled={bulkPending || bulkPreparingEligibleIds.length === 0}
+               title={
+                 bulkPreparingEligibleIds.length === 0
+                   ? "Seleccioná pedidos pagados y sin despacho iniciado."
+                   : `Marcar ${bulkPreparingEligibleIds.length} como preparando`
+               }
+               className="inline-flex items-center gap-2 px-3 h-9 text-[13px] font-medium hover:bg-ink-12/10 rounded-[var(--r-sm)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+             >
+               <Package className="w-4 h-4" strokeWidth={1.75} />
+               {bulkPending ? "Actualizando…" : "Marcar preparando"}
              </button>
-             <button className="inline-flex items-center gap-2 px-3 h-9 text-[13px] font-medium hover:bg-ink-12/10 rounded-[var(--r-sm)] transition-colors">
-               <FileText className="w-4 h-4" strokeWidth={1.75} /> Etiquetas
-             </button>
-             <button className="inline-flex items-center gap-2 px-3 h-9 text-[13px] font-medium text-ink-12/60 hover:bg-ink-12/10 hover:text-[color:var(--signal-danger)] rounded-[var(--r-sm)] transition-colors">
-               <Ban className="w-4 h-4" /> Cancelar
-             </button>
+             {bulkFeedback && (
+               <span className="ml-2 text-[11px] text-ink-12/75 px-2">{bulkFeedback}</span>
+             )}
            </div>
            <button 
               onClick={() => setSelectedRows([])}
