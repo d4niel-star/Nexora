@@ -97,41 +97,145 @@ export function buildMercadoPagoOAuthUrl(input: {
   return url.toString();
 }
 
+// ─── Structured OAuth exchange error ─────────────────────────────────────
+// Callers (the callback route) need the MP error code to emit an honest,
+// specific diagnostic to the user. Raw Error messages force the callback
+// to guess. This class exposes the HTTP status and the MP error code
+// (parsed from the response body) as first-class fields.
+export class MercadoPagoOAuthExchangeError extends Error {
+  readonly status: number;
+  /** Normalized reason: invalid_grant | invalid_client | invalid_redirect_uri | same_account | no_access_token | network | unknown. */
+  readonly reason: string;
+  /** Raw error code as returned by Mercado Pago (`error` field), if any. */
+  readonly mpError: string | null;
+  readonly mpMessage: string | null;
+
+  constructor(input: {
+    status: number;
+    reason: string;
+    mpError: string | null;
+    mpMessage: string | null;
+  }) {
+    super(
+      `mp_oauth_exchange_failed status=${input.status} reason=${input.reason} mp_error=${input.mpError ?? "none"}`,
+    );
+    this.name = "MercadoPagoOAuthExchangeError";
+    this.status = input.status;
+    this.reason = input.reason;
+    this.mpError = input.mpError;
+    this.mpMessage = input.mpMessage;
+  }
+}
+
 export async function exchangeMercadoPagoOAuthCode(input: {
   clientId: string;
   clientSecret: string;
   code: string;
   redirectUri: string;
-  state: string;
 }): Promise<MercadoPagoOAuthTokenResponse> {
+  // Per MP OAuth docs, the token endpoint expects ONLY the five fields
+  // below — `state` is an authorize-step parameter and MUST NOT be sent
+  // here. Some MP edge stacks reject requests with unknown fields with a
+  // misleading "invalid_client" or "bad_request" error, which previously
+  // surfaced in the UI as a generic "no devolvió credenciales válidas".
   const body = new URLSearchParams({
     client_id: input.clientId,
     client_secret: input.clientSecret,
     grant_type: "authorization_code",
     code: input.code,
     redirect_uri: input.redirectUri,
-    state: input.state,
   });
 
-  const response = await fetch(MP_OAUTH_TOKEN_URL, {
-    method: "POST",
-    headers: {
-      accept: "application/json",
-      "content-type": "application/x-www-form-urlencoded",
-    },
-    body,
-  });
+  let response: Response;
+  try {
+    response = await fetch(MP_OAUTH_TOKEN_URL, {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "content-type": "application/x-www-form-urlencoded",
+      },
+      body,
+    });
+  } catch (err) {
+    throw new MercadoPagoOAuthExchangeError({
+      status: 0,
+      reason: "network",
+      mpError: null,
+      mpMessage: err instanceof Error ? err.message : "fetch_failed",
+    });
+  }
 
   if (!response.ok) {
-    throw new Error(`mp_oauth_token_failed_${response.status}`);
+    // MP returns JSON error bodies with an `error` and `message` field.
+    // We read defensively: some 5xx responses come as HTML.
+    let mpError: string | null = null;
+    let mpMessage: string | null = null;
+    try {
+      const text = await response.text();
+      if (text) {
+        try {
+          const parsed = JSON.parse(text) as {
+            error?: unknown;
+            message?: unknown;
+            cause?: unknown;
+          };
+          if (typeof parsed.error === "string") mpError = parsed.error;
+          if (typeof parsed.message === "string") mpMessage = parsed.message;
+        } catch {
+          mpMessage = text.slice(0, 300);
+        }
+      }
+    } catch {
+      /* response body unreadable, fall through */
+    }
+
+    throw new MercadoPagoOAuthExchangeError({
+      status: response.status,
+      reason: classifyMpOAuthError(response.status, mpError, mpMessage),
+      mpError,
+      mpMessage,
+    });
   }
 
   const data = (await response.json()) as MercadoPagoOAuthTokenResponse;
   if (!data.access_token) {
-    throw new Error("mp_oauth_missing_access_token");
+    throw new MercadoPagoOAuthExchangeError({
+      status: response.status,
+      reason: "no_access_token",
+      mpError: null,
+      mpMessage: "Response did not include access_token",
+    });
   }
 
   return data;
+}
+
+/**
+ * Normalizes the many error shapes MP returns at the token endpoint into
+ * a small, stable vocabulary that the UI can map to user-facing copy:
+ *
+ *   - invalid_grant:        code already used, expired, or wrong scope
+ *   - invalid_client:       client_id / secret mismatch or inactive app
+ *   - invalid_redirect_uri: redirect_uri not whitelisted in MP dashboard
+ *   - same_account:         user tried to link the MP account that owns
+ *                           the Developer application (MP refuses this)
+ *   - unknown:              any other 4xx / 5xx response
+ */
+function classifyMpOAuthError(
+  status: number,
+  mpError: string | null,
+  mpMessage: string | null,
+): string {
+  const haystack = `${mpError ?? ""} ${mpMessage ?? ""}`.toLowerCase();
+  if (/invalid_grant/.test(haystack)) return "invalid_grant";
+  if (/invalid_client/.test(haystack)) return "invalid_client";
+  if (/redirect_uri/.test(haystack)) return "invalid_redirect_uri";
+  // MP returns this when you try to link the app owner's own account
+  if (/same.{0,20}(user|account|owner)|cannot.{0,20}link.{0,20}owner/.test(haystack)) {
+    return "same_account";
+  }
+  if (status === 401 || status === 403) return "invalid_client";
+  return "unknown";
 }
 
 /**

@@ -5,6 +5,7 @@ import { getCurrentStore, getCurrentUser } from "@/lib/auth/session";
 import {
   exchangeMercadoPagoOAuthCode,
   getMercadoPagoOAuthRedirectUri,
+  MercadoPagoOAuthExchangeError,
   verifyMercadoPagoOAuthState,
 } from "@/lib/payments/mercadopago/oauth";
 import { encryptToken } from "@/lib/security/token-crypto";
@@ -58,7 +59,6 @@ export async function GET(request: NextRequest) {
       clientSecret,
       code,
       redirectUri: getMercadoPagoOAuthRedirectUri(),
-      state,
     });
 
     const now = new Date();
@@ -113,7 +113,28 @@ export async function GET(request: NextRequest) {
     revalidatePath(storePath(store.slug, "checkout"));
 
     return redirectToStore("connected");
-  } catch {
+  } catch (err) {
+    // Surface the specific MP error reason to the UI so the toast is
+    // actionable (e.g. "Redirect URI no autorizada", "Código ya usado",
+    // "Cuenta MP dueña de la app"). We also log the full error shape
+    // server-side so ops can correlate failures with MP's raw response.
+    if (err instanceof MercadoPagoOAuthExchangeError) {
+      console.error(
+        "[mp-oauth-callback] exchange failed",
+        JSON.stringify({
+          status: err.status,
+          reason: err.reason,
+          mpError: err.mpError,
+          mpMessage: err.mpMessage,
+          storeId: store.id,
+        }),
+      );
+      return redirectToStore(`error_${err.reason}`);
+    }
+    console.error(
+      "[mp-oauth-callback] unexpected failure",
+      err instanceof Error ? err.message : String(err),
+    );
     return redirectToStore("error");
   }
 }

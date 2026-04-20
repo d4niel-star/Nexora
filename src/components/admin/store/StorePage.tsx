@@ -53,6 +53,58 @@ interface ToastMessage { id: string; title: string; description: string; }
 
 const timeFormatter = new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 
+// ─── Mercado Pago error reason → user-facing copy ────────────────────────
+// Maps the stable error vocabulary emitted by the OAuth callback
+// (see `classifyMpOAuthError` in lib/payments/mercadopago/oauth.ts) into
+// actionable toast messages. Anything we don't recognize falls back to
+// a generic copy that still points the user at the Developer Dashboard.
+function mpReasonCopy(reason: string): { title: string; description: string } {
+  switch (reason) {
+    case "invalid_grant":
+      return {
+        title: "Código de autorización inválido",
+        description:
+          "El código de Mercado Pago ya fue usado o expiró. Volvé a iniciar la conexión desde cero (los códigos duran sólo unos minutos).",
+      };
+    case "invalid_client":
+      return {
+        title: "Credenciales de la app rechazadas",
+        description:
+          "Mercado Pago rechazó el Client ID o Secret de la app. Verificá que los valores cargados en la infraestructura correspondan a las credenciales de PRODUCCIÓN de la aplicación.",
+      };
+    case "invalid_redirect_uri":
+      return {
+        title: "Redirect URI no autorizada",
+        description:
+          "La URL de retorno no coincide con ninguna dada de alta en el Developer Dashboard de Mercado Pago. Agregá el redirect URI exacto que figura en la configuración global y volvé a intentarlo.",
+      };
+    case "same_account":
+      return {
+        title: "Cuenta MP dueña de la app",
+        description:
+          "Mercado Pago no permite vincular la misma cuenta que creó la aplicación. Conectate con otra cuenta MP (podés crear una cuenta de prueba desde el Developer Panel).",
+      };
+    case "no_access_token":
+      return {
+        title: "Respuesta incompleta de Mercado Pago",
+        description:
+          "MP devolvió una respuesta OK pero sin access_token. Reintentá la conexión; si persiste, revisá el estado de la aplicación en el Developer Dashboard.",
+      };
+    case "network":
+      return {
+        title: "No se pudo contactar a Mercado Pago",
+        description:
+          "La request al endpoint de Mercado Pago falló antes de llegar. Revisá la conectividad del deployment y reintentá.",
+      };
+    default:
+      return {
+        title: "No se pudo conectar",
+        description:
+          "Mercado Pago rechazó el intercambio de código. Revisá el estado de la app en el Developer Dashboard (OAuth habilitado, Redirect URI dada de alta, credenciales de producción activas).",
+      };
+  }
+}
+
 export function StorePage({
   initialData,
   mercadoPagoPlatformReadiness,
@@ -192,9 +244,16 @@ export function StorePage({
           : "La plataforma todavía no habilitó Mercado Pago. Contactá al equipo operativo para configurarlo.",
       );
     } else if (mp === "invalid_state") {
-      pushToast("Conexion rechazada", "La respuesta OAuth no pertenece a esta sesion.");
+      pushToast("Conexión rechazada", "La respuesta OAuth no pertenece a esta sesión. Volvé a iniciar la conexión.");
+    } else if (mp && mp.startsWith("error_")) {
+      // Specific diagnostics from the structured MP exchange error. These
+      // are fail-honest messages: they point at the real cause instead of
+      // the old generic "no devolvió credenciales válidas".
+      const reason = mp.slice("error_".length);
+      const { title, description } = mpReasonCopy(reason);
+      pushToast(title, description);
     } else if (mp === "error") {
-      pushToast("No se pudo conectar", "Mercado Pago no devolvio credenciales validas.");
+      pushToast("No se pudo conectar", "Mercado Pago no devolvió credenciales válidas. Revisá la configuración de la app en el Developer Dashboard.");
     }
 
     // Strip the `mp` param from the URL so a manual refresh doesn't keep
