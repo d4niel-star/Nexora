@@ -18,6 +18,7 @@ import { analyzeCatalog } from "@/lib/ai/builder/catalog-analyzer";
 import { prisma } from "@/lib/db/prisma";
 import { getCurrentStore } from "@/lib/auth/session";
 import { buildCommandCenter } from "./command-center";
+import { getCommerceIntelligence } from "./commerce-intel";
 import type { CommandCenterData } from "@/types/command-center";
 import type { DecisionEngineResult, DecisionRecommendation } from "@/types/decisions";
 
@@ -57,6 +58,12 @@ export async function getCommandCenterData(): Promise<CommandCenterData> {
   // Step 3: Variant intelligence uses pre-computed replenishment + economics for merged context.
   const variantIntel = await getVariantIntelligenceReport(replenishment, variantEcon);
 
+  // Step 4: Commerce / merchandising intelligence. Uses the already-
+  // computed velocity report as the "winners" feed, then crosses it
+  // with real DB state (reviews, bundles, variants, price) to emit
+  // merchandising-quality signals. No new cost over velocity itself.
+  const commerce = await getCommerceIntelligence(storeId, velocity);
+
   // Build a lightweight decision-like structure from operations + health
   // so the command center orchestrator can extract sourcing signals
   // without needing the full decision engine cascade.
@@ -76,6 +83,7 @@ export async function getCommandCenterData(): Promise<CommandCenterData> {
     variantEcon,
     catalogReport,
     paidOrdersLast30d,
+    commerce,
   );
 }
 

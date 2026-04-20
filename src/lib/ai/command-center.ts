@@ -13,6 +13,7 @@ import type { OperationsCenterData } from "@/types/operations";
 import type { VariantIntelligenceReport } from "@/types/variant-intelligence";
 import type { VariantEconomicsReport } from "@/types/variant-economics";
 import type { CatalogAnalysisReport } from "@/lib/ai/builder/types";
+import type { CommerceIntelligence } from "./commerce-intel";
 
 export function buildCommandCenter(
   velocity: VelocityReport,
@@ -24,6 +25,7 @@ export function buildCommandCenter(
   variantEconomics?: VariantEconomicsReport,
   catalogReport?: CatalogAnalysisReport,
   paidOrdersLast30d: number = 0,
+  commerce?: CommerceIntelligence,
 ): CommandCenterData {
   const directives: CommandDirective[] = [];
 
@@ -551,6 +553,113 @@ export function buildCommandCenter(
       href: op.href,
       actionLabel: op.actionLabel,
     });
+  }
+
+  // ════════════════════════════════════════════
+  // COMMERCE / MERCHANDISING DIRECTIVES (real data only)
+  // ════════════════════════════════════════════
+  //
+  // These directives cross the velocity report (already computed)
+  // against live DB state (ProductReview, BundleOffer, Product) to
+  // surface honest merchandising gaps:
+  //   * winners without any approved review
+  //   * winners that aren't the trigger of any active bundle
+  //   * published products with price <= 0
+  //   * published products with zero variants
+  //   * winners missing compareAtPrice (soft anchor-price signal)
+  //
+  // All emitters below self-skip when the underlying signal is empty,
+  // so quiet stores never see hollow chrome. CTAs link to the real
+  // admin surfaces (/admin/catalog, /admin/apps/product-reviews,
+  // /admin/apps/bundles-upsells, /admin/growth) — no duplicated
+  // screens.
+
+  if (commerce) {
+    // Published without price — storefront falls back to "Consultar
+    // precio" on these rows, which is a silent drop in conversion.
+    if (commerce.noPricePublished.length > 0) {
+      const sample = commerce.noPricePublished[0];
+      directives.push({
+        id: "cmd-commerce-no-price",
+        priority: "critical",
+        domain: "revenue",
+        title: `${commerce.noPricePublished.length} producto${commerce.noPricePublished.length !== 1 ? "s" : ""} publicado${commerce.noPricePublished.length !== 1 ? "s" : ""} sin precio`,
+        reason: "Productos con price ≤ 0 que igualmente se listan en la tienda. El storefront muestra 'Consultar precio' y la mayoría de compradores se va.",
+        evidence: `"${sample.title}" publicado sin precio cargado.`,
+        href: "/admin/catalog",
+        actionLabel: "Cargar precios",
+        productCount: commerce.noPricePublished.length,
+      });
+    }
+
+    // Published without variants — PDP renders but AddToCart has
+    // nothing to add. Literally unsellable.
+    if (commerce.noVariantsPublished.length > 0) {
+      const sample = commerce.noVariantsPublished[0];
+      directives.push({
+        id: "cmd-commerce-no-variants",
+        priority: "critical",
+        domain: "revenue",
+        title: `${commerce.noVariantsPublished.length} producto${commerce.noVariantsPublished.length !== 1 ? "s" : ""} publicado${commerce.noVariantsPublished.length !== 1 ? "s" : ""} sin variantes`,
+        reason: "Productos publicados que no tienen ninguna variante cargada. La ficha se ve pero no se puede agregar al carrito.",
+        evidence: `"${sample.title}" sin variantes.`,
+        href: "/admin/catalog",
+        actionLabel: "Completar variantes",
+        productCount: commerce.noVariantsPublished.length,
+      });
+    }
+
+    // Top sellers with zero approved reviews — real growth-linked
+    // signal. Only surfaces when the reviews app is actually active.
+    if (commerce.winnersWithoutReviews.length > 0) {
+      const sample = commerce.winnersWithoutReviews[0];
+      directives.push({
+        id: "cmd-commerce-winners-no-reviews",
+        priority: "medium",
+        domain: "revenue",
+        title: `${commerce.winnersWithoutReviews.length} top seller${commerce.winnersWithoutReviews.length !== 1 ? "s" : ""} sin reseñas aprobadas`,
+        reason: "Productos que se vendieron en los últimos 30 días y todavía no tienen ninguna reseña pública. Activar el flujo de review request o moderar pendientes.",
+        evidence: `"${sample.title}": ${sample.units30d ?? 0} u. vendidas en 30d, 0 reseñas aprobadas.`,
+        href: "/admin/apps/product-reviews",
+        actionLabel: "Abrir reseñas",
+        productCount: commerce.winnersWithoutReviews.length,
+      });
+    }
+
+    // Top sellers not attached to any active bundle — only when the
+    // bundles app is active (so we never nudge on an uninstalled app).
+    if (commerce.winnersWithoutBundles.length > 0) {
+      const sample = commerce.winnersWithoutBundles[0];
+      directives.push({
+        id: "cmd-commerce-winners-no-bundles",
+        priority: "medium",
+        domain: "revenue",
+        title: `${commerce.winnersWithoutBundles.length} top seller${commerce.winnersWithoutBundles.length !== 1 ? "s" : ""} sin bundle activo`,
+        reason: "Productos con rotación que no disparan ningún bundle. Oportunidad directa de aumentar ticket promedio sin tocar precio.",
+        evidence: `"${sample.title}": ${sample.units30d ?? 0} u. vendidas en 30d, sin bundle configurado.`,
+        href: "/admin/apps/bundles-upsells",
+        actionLabel: "Crear bundle",
+        productCount: commerce.winnersWithoutBundles.length,
+      });
+    }
+
+    // High-rotation winners without compareAtPrice — soft signal.
+    // Never critical — the anchor price is a merchandising nuance,
+    // not a blocker. Surfaced as "low" so it sits at the bottom.
+    if (commerce.noCompareAtHighRotation.length > 0) {
+      const sample = commerce.noCompareAtHighRotation[0];
+      directives.push({
+        id: "cmd-commerce-no-compareat-winner",
+        priority: "low",
+        domain: "revenue",
+        title: `${commerce.noCompareAtHighRotation.length} producto${commerce.noCompareAtHighRotation.length !== 1 ? "s" : ""} de alta rotación sin precio de referencia`,
+        reason: "Productos con rotación alta que no muestran precio tachado. Un compareAtPrice real — cuando existe — comunica mejor el valor percibido.",
+        evidence: `"${sample.title}": ${sample.units30d ?? 0} u. vendidas en 30d, sin compareAtPrice cargado.`,
+        href: "/admin/catalog",
+        actionLabel: "Revisar pricing",
+        productCount: commerce.noCompareAtHighRotation.length,
+      });
+    }
   }
 
   // ════════════════════════════════════════════
