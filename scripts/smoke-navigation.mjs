@@ -24,7 +24,13 @@ const shellPath = resolve(
   process.cwd(),
   "src/components/admin/AdminShell.tsx",
 );
-const settingsPath = resolve(process.cwd(), "src/app/admin/settings/page.tsx");
+// The tenant settings index moved into the (tenant) route group so that
+// the new SettingsShell layout only wraps tenant pages (ops-only routes
+// stay outside). URL is still /admin/settings.
+const settingsPath = resolve(
+  process.cwd(),
+  "src/app/admin/settings/(tenant)/page.tsx",
+);
 
 const shellRaw = readFileSync(shellPath, "utf8");
 const settingsRaw = readFileSync(settingsPath, "utf8");
@@ -61,13 +67,36 @@ function fail(label, detail) {
   failed += 1;
 }
 
-for (const href of uniqueHrefs) {
+// Resolve an /admin/* href against the filesystem. Next.js route groups
+// (`(name)`) don't affect the URL, so a URL like /admin/settings can
+// live at either src/app/admin/settings/page.tsx or inside any route
+// group under src/app/admin/settings/(group)/page.tsx. We probe the
+// direct path first and fall back to scanning route-group children.
+function resolveHrefToPageFile(href) {
   const rel = href.replace(/^\/+/, "");
-  const pageFile = resolve(process.cwd(), "src", "app", rel, "page.tsx");
-  if (existsSync(pageFile)) {
+  const direct = resolve(process.cwd(), "src", "app", rel, "page.tsx");
+  if (existsSync(direct)) return direct;
+  const parentDir = resolve(process.cwd(), "src", "app", rel);
+  if (!existsSync(parentDir)) return null;
+  try {
+    for (const entry of readdirSync(parentDir)) {
+      if (entry.startsWith("(") && entry.endsWith(")")) {
+        const grouped = resolve(parentDir, entry, "page.tsx");
+        if (existsSync(grouped)) return grouped;
+      }
+    }
+  } catch {
+    /* parentDir is a file, not a directory — let the caller fail below */
+  }
+  return null;
+}
+
+for (const href of uniqueHrefs) {
+  const pageFile = resolveHrefToPageFile(href);
+  if (pageFile) {
     ok(`href resolves: ${href}`);
   } else {
-    fail(`href resolves: ${href}`, `missing file: ${pageFile}`);
+    fail(`href resolves: ${href}`, `no page.tsx found for ${href}`);
   }
 }
 
@@ -84,13 +113,17 @@ const structuralChecks = [
       /id:\s*"sales"[\s\S]*id:\s*"catalog"[\s\S]*id:\s*"store"[\s\S]*id:\s*"apps"/,
   },
   {
-    label: "configuración group exists and sits below Nexora IA",
+    label: "configuración is a single pinned leaf below Nexora IA",
     pattern:
-      /NexoraIAEntry[\s\S]{0,500}SidebarGroup[\s\S]{0,200}settingsGroup/,
+      /NexoraIAEntry[\s\S]{0,500}SidebarLeaf[\s\S]{0,200}settingsLeaf/,
   },
   {
-    label: "settings group label is literally 'Configuración'",
-    pattern: /label:\s*"Configuración"/,
+    label: "settings leaf label is literally 'Configuración'",
+    pattern: /settingsLeaf:\s*NavLeaf[\s\S]{0,200}label:\s*"Configuración"/,
+  },
+  {
+    label: "settings leaf links to the dedicated settings page",
+    pattern: /settingsLeaf:\s*NavLeaf[\s\S]{0,200}href:\s*"\/admin\/settings"/,
   },
   {
     label: "collapse/expand wiring (useState + onToggle + aria-expanded)",
@@ -161,38 +194,42 @@ for (const needle of mustNotInSettings) {
   }
 }
 
+// The overview page lists real category pages — each card link points
+// into /admin/settings/<slug>. Those are the hrefs that must show up;
+// older routes (/admin/billing, /admin/fiscal/settings, …) now live
+// inside each category page, not in the overview.
 const mustBeInSettings = [
-  '"/admin/fiscal/settings"',
-  '"/admin/billing"',
-  '"/admin/finances"',
-  '"/admin/integrations"',
+  '"/admin/settings/pagos"',
+  '"/admin/settings/dominios"',
+  '"/admin/settings/legal"',
+  '"/admin/settings/comunicacion"',
+  '"/admin/settings/plan"',
+  '"/admin/settings/finanzas"',
+  '"/admin/settings/integraciones"',
 ];
 for (const needle of mustBeInSettings) {
   if (settings.includes(needle)) {
-    ok(`settings hub keeps real setting: ${needle}`);
+    ok(`settings overview links to category: ${needle}`);
   } else {
-    fail(`settings hub keeps real setting: ${needle}`, "missing");
+    fail(`settings overview links to category: ${needle}`, "missing");
   }
 }
 
-// ─── Step 4 · No duplication between primary nav and settings group ──
-
-// Duplication guard: each settings route should appear exactly once in
-// the shell (inside settingsGroup). If a route also appeared in
-// primaryNav, the occurrence count would be ≥ 2.
-const duplicateFinder = [
-  "/admin/billing",
-  "/admin/finances",
-  "/admin/fiscal/settings",
-  "/admin/integrations",
-  "/admin/settings",
-];
+// ─── Step 4 · Sidebar duplication guard ──────────────────────────────
+//
+// Configuración is a SINGLE leaf in the sidebar pointing at /admin/settings.
+// Sub-routes of /admin/settings must NOT appear in the global sidebar —
+// they live inside the settings page's own right-nav. We only assert
+// /admin/settings appears exactly once (settingsLeaf). Everything else
+// that used to live in the sidebar settings group (plan, finanzas,
+// legal, integrations) is intentionally absent now.
+const duplicateFinder = ["/admin/settings"];
 for (const route of duplicateFinder) {
+  // Count against the comment-stripped shell so a doc comment that
+  // references the route doesn't inflate the occurrence count.
   const occurrencesInShell = (
-    shellRaw.match(new RegExp(route.replace(/\//g, "\\/"), "g")) || []
+    shell.match(new RegExp(route.replace(/\//g, "\\/"), "g")) || []
   ).length;
-  // 1 occurrence = only in the settings block (expected).
-  // 2 occurrences would mean duplication in primaryNav.
   if (occurrencesInShell === 1) {
     ok(`no duplication for ${route}`);
   } else if (occurrencesInShell === 0) {
@@ -202,6 +239,29 @@ for (const route of duplicateFinder) {
       `no duplication for ${route}`,
       `appears ${occurrencesInShell} times`,
     );
+  }
+}
+
+// Global sidebar must NOT expose any /admin/settings/<sub-route>.
+// The shell points at /admin/settings only; subcategories are the
+// settings page's own responsibility.
+const forbiddenSubroutes = [
+  "/admin/settings/pagos",
+  "/admin/settings/dominios",
+  "/admin/settings/legal",
+  "/admin/settings/comunicacion",
+  "/admin/settings/plan",
+  "/admin/settings/finanzas",
+  "/admin/settings/integraciones",
+];
+for (const route of forbiddenSubroutes) {
+  if (shellRaw.includes(route)) {
+    fail(
+      `sidebar does not surface settings subroutes`,
+      `sidebar references ${route}`,
+    );
+  } else {
+    ok(`sidebar does not surface settings subroutes: ${route}`);
   }
 }
 

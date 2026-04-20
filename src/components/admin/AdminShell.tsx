@@ -6,15 +6,11 @@ import { usePathname } from "next/navigation";
 import {
   Boxes,
   ChevronRight,
-  CreditCard,
-  Crown,
-  FileText,
   LayoutDashboard,
   LineChart,
   Menu,
   Package,
   PackageSearch,
-  Plug,
   Puzzle,
   Settings,
   ShoppingBag,
@@ -119,24 +115,17 @@ const primaryNav: readonly NavEntry[] = [
   },
 ];
 
-// Bottom-pinned Configuración group. Sits BELOW Nexora IA — this is an
-// explicit brief requirement, not a cosmetic choice. Contains only true
-// settings surfaces: account-level preferences, plan/billing, fiscal
-// config, finance payouts, cross-platform integrations. Everything that
-// used to live here but is NOT a setting (Mi tienda, Clientes, Branding)
-// was moved to its real group above.
-const settingsGroup: NavGroup = {
-  kind: "group",
-  id: "settings",
+// Bottom-pinned Configuración entry. Sits BELOW Nexora IA — this is an
+// explicit brief requirement, not a cosmetic choice. Configuración is a
+// SINGLE sidebar leaf on purpose: clicking it opens a dedicated settings
+// surface (/admin/settings) that owns its own right-side category nav.
+// We do not expand categories in the global sidebar — the settings
+// surface is the settings center, not a dropdown of links.
+const settingsLeaf: NavLeaf = {
+  kind: "leaf",
+  href: "/admin/settings",
   label: "Configuración",
   icon: Settings,
-  items: [
-    { kind: "leaf", href: "/admin/settings", label: "General", icon: Settings },
-    { kind: "leaf", href: "/admin/billing", label: "Plan y facturación", icon: Crown },
-    { kind: "leaf", href: "/admin/finances", label: "Finanzas", icon: CreditCard },
-    { kind: "leaf", href: "/admin/fiscal/settings", label: "Legal y ARCA", icon: FileText },
-    { kind: "leaf", href: "/admin/integrations", label: "Integraciones", icon: Plug },
-  ],
 };
 
 // An entry is "active" when it owns the current pathname. For leaves:
@@ -177,9 +166,6 @@ export function AdminShell({ children, storeName, storeInitials, dunningBanner }
         seed[entry.id] = true;
       }
     }
-    if (isGroupActive(settingsGroup, pathname)) {
-      seed[settingsGroup.id] = true;
-    }
     return seed;
   }, [pathname]);
 
@@ -197,10 +183,6 @@ export function AdminShell({ children, storeName, storeInitials, dunningBanner }
           next[entry.id] = true;
           changed = true;
         }
-      }
-      if (isGroupActive(settingsGroup, pathname) && !prev[settingsGroup.id]) {
-        next[settingsGroup.id] = true;
-        changed = true;
       }
       return changed ? next : prev;
     });
@@ -273,11 +255,9 @@ export function AdminShell({ children, storeName, storeInitials, dunningBanner }
       <div className="border-t border-[color:var(--sidebar-hairline)] px-3 py-3">
         <NexoraIAEntry pathname={pathname} onNavigate={closeSidebar} />
         <ul className="mt-1 flex flex-col gap-0.5">
-          <SidebarGroup
-            group={settingsGroup}
+          <SidebarLeaf
+            leaf={settingsLeaf}
             pathname={pathname}
-            expanded={Boolean(expanded[settingsGroup.id])}
-            onToggle={toggleGroup}
             onNavigate={closeSidebar}
           />
         </ul>
