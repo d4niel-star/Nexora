@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { Order } from "../../../types/order";
 import { OrderStatusBadge, PaymentStatusBadge } from "./StatusBadge";
-import { X, Truck, CreditCard, PackageOpen, MoreHorizontal, Copy, RefreshCw, Printer, UserCircle } from "lucide-react";
+import { X, Truck, CreditCard, PackageOpen, Copy, RefreshCw, UserCircle } from "lucide-react";
 import { FulfillmentControls } from "./FulfillmentControls";
 import { CancelOrderControls } from "./CancelOrderControls";
 import { FiscalInvoiceControls } from "./FiscalInvoiceControls";
@@ -60,16 +60,20 @@ export function OrderDrawer({ order, isOpen, onClose }: OrderDrawerProps) {
             <h2 id="drawer-title" className="font-mono text-[18px] font-medium tracking-wider text-ink-0">{order.number}</h2>
             <OrderStatusBadge status={order.status} />
           </div>
+          {/* Drawer header previously had Printer + MoreHorizontal icon
+              buttons with no handlers. Removed as part of the polish
+              pass — dead icons are worse than missing ones because
+              they promise an action that never arrives. A real print
+              flow (PDF packing slip) and a context menu can return
+              once we have the backend to back them. */}
           <div className="flex items-center gap-1">
-            <button className="p-2 text-ink-5 hover:text-ink-0 hover:bg-[var(--surface-2)] rounded-[var(--r-sm)] transition-colors">
-              <Printer className="w-4 h-4" />
-            </button>
-            <button className="p-2 text-ink-5 hover:text-ink-0 hover:bg-[var(--surface-2)] rounded-[var(--r-sm)] transition-colors">
-              <MoreHorizontal className="w-4 h-4" />
-            </button>
-            <div className="w-px h-5 bg-[color:var(--hairline)] mx-1" />
-            <button onClick={onClose} className="p-2 text-ink-5 hover:text-ink-0 hover:bg-[var(--surface-2)] rounded-[var(--r-sm)] transition-colors">
-               <X className="w-4 h-4" />
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-2 text-ink-5 hover:text-ink-0 hover:bg-[var(--surface-2)] rounded-[var(--r-sm)] transition-colors"
+              aria-label="Cerrar detalle del pedido"
+            >
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>

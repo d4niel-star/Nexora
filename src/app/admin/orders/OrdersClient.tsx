@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
-import { Search, Download, Filter, Package, X, ShoppingBag, CalendarDays, Zap, Truck, AlertTriangle } from "lucide-react";
+import { Search, Filter, Package, X, ShoppingBag, CalendarDays, Zap, Truck, AlertTriangle } from "lucide-react";
 import { Order } from "../../../types/order";
 import { OrderStatusBadge, PaymentStatusBadge } from "../../../components/admin/orders/StatusBadge";
 import { OrderDrawer } from "../../../components/admin/orders/OrderDrawer";
 import { deriveOrderNextAction, orderNeedsAction, type OrderNextAction } from "@/lib/orders/workqueue";
 import { bulkUpdateFulfillment } from "@/lib/store-engine/orders/bulk-actions";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type TabValue = 'action' | 'all' | 'new' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
 
@@ -152,14 +153,11 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
             <h1 className="text-[28px] lg:text-[32px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0">Pedidos.</h1>
             <p className="text-ink-5 text-[15px] mt-1 font-medium">Gestioná el motor logístico corporativo. Todo en un solo lugar.</p>
           </div>
-          <div className="flex items-center gap-3">
-            <button className="px-5 py-2.5 text-[13px] font-bold text-ink-0 bg-[var(--surface-0)] border border-[color:var(--hairline)] rounded-[var(--r-lg)] hover:bg-[var(--surface-2)] flex items-center gap-2 transition-all active:scale-95 shadow-[var(--shadow-soft)]">
-              <Download className="w-4 h-4" /> Exportar CSV
-            </button>
-            <button className="px-5 py-2.5 text-[13px] font-bold text-white bg-ink-0 rounded-[var(--r-lg)] hover:bg-ink-2 transition-all active:scale-95 shadow-[var(--shadow-soft)]">
-              Crear Pedido
-            </button>
-          </div>
+          {/* Header CTAs removed: "Exportar CSV" and "Crear Pedido" had
+              no handlers — honest polish requires cutting dead buttons.
+              Both features require real backend work (CSV generator,
+              manual-order creation wizard) and will land as separate
+              features when that work ships. */}
         </div>
       )}
 
@@ -273,16 +271,13 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
         {/* 3. Data Table */}
         <div className="overflow-x-auto min-h-[400px]">
           {orders.length === 0 ? (
-            /* Empty State — no orders at all */
-            <div className="flex flex-col items-center justify-center py-24 px-6">
-              <div className="inline-flex items-center justify-center w-14 h-14 rounded-[var(--r-sm)] bg-[var(--surface-1)] mb-6 border border-[color:var(--hairline)]">
-                <ShoppingBag className="w-5 h-5 text-ink-5" strokeWidth={1.5} />
-              </div>
-              <h3 className="text-[18px] font-semibold tracking-[-0.02em] text-ink-0">Sin pedidos aún.</h3>
-              <p className="text-[15px] font-medium text-ink-6 mt-2 max-w-sm mx-auto text-center">
-                Cuando tus clientes realicen compras desde el storefront, los pedidos aparecerán acá en tiempo real.
-              </p>
-            </div>
+            <EmptyState
+              icon={ShoppingBag}
+              title="Sin pedidos aún"
+              description="Cuando tus compradores paguen desde el storefront, los pedidos aparecerán acá en tiempo real con su estado de cobro y logística."
+              action={{ label: "Ver storefront", href: "/admin/store" }}
+              secondaryAction={{ label: "Cargar productos", href: "/admin/catalog" }}
+            />
           ) : (
             <table className="w-full text-left whitespace-nowrap">
               <thead>
@@ -309,15 +304,22 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
               <tbody className="divide-y divide-[color:var(--hairline)]">
                 {filteredOrders.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-6 py-24 text-center">
-                      <div className="inline-flex items-center justify-center w-14 h-14 rounded-[var(--r-sm)] bg-[var(--surface-1)] mb-6 border border-[color:var(--hairline)]">
-                         <Search className="w-5 h-5 text-ink-5" strokeWidth={1.5} />
-                      </div>
-                      <h3 className="text-[18px] font-semibold tracking-[-0.02em] text-ink-0">No encontramos tu orden.</h3>
-                      <p className="text-[15px] font-medium text-ink-6 mt-2 max-w-sm mx-auto">Limpiá los filtros o asegurate de haber escrito bien el ID de seguimiento.</p>
-                      <button onClick={() => {setSearchQuery(''); setDateFrom(''); setDateTo(''); setActiveTab('all')}} className="mt-6 px-6 py-2.5 bg-[var(--surface-0)] border border-[color:var(--hairline)] text-ink-0 font-bold text-[13px] rounded-[var(--r-lg)] hover:bg-[var(--surface-2)] transition-colors">
-                        Limpiar Filtros
-                      </button>
+                    <td colSpan={9} className="p-0">
+                      <EmptyState
+                        icon={Search}
+                        title="Sin resultados para este filtro"
+                        description="Ajustá los filtros o probá limpiar la búsqueda para volver a ver todo el catálogo de pedidos."
+                        size="compact"
+                        action={{
+                          label: "Limpiar filtros",
+                          onClick: () => {
+                            setSearchQuery("");
+                            setDateFrom("");
+                            setDateTo("");
+                            setActiveTab("all");
+                          },
+                        }}
+                      />
                     </td>
                   </tr>
                 ) : (

@@ -24,6 +24,7 @@ import type {
 } from "@/lib/integrations/queries";
 import type { HealthCenterData } from "@/types/health";
 import { HealthCenter } from "./HealthCenter";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type TabValue = "all" | "payments" | "logistics" | "providers" | "retention" | "ads" | "health";
 
@@ -135,13 +136,12 @@ export function IntegrationsClient({ initialData, healthData }: { initialData: U
           {activeTab === "health" ? (
             <HealthCenter data={healthData} />
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-              <div className="mb-6 inline-flex items-center justify-center w-14 h-14 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)]">
-                <Plug className="h-5 w-5 text-ink-5" strokeWidth={1.5} />
-              </div>
-              <h3 className="text-[18px] font-semibold tracking-[-0.02em] text-ink-0">No hay conexiones.</h3>
-              <p className="mt-2 text-[13px] leading-[1.55] text-ink-5 max-w-sm">No se encontraron integraciones reales instaladas.</p>
-            </div>
+            <EmptyState
+              icon={Plug}
+              title="Sin integraciones en esta categoría"
+              description="Todavía no hay conexiones que coincidan con este filtro. Cambiá de categoría o revisá qué falta por activar."
+              action={{ label: "Ver todas", onClick: () => setActiveTab("all") }}
+            />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filtered.map((c) => (

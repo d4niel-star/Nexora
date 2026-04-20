@@ -11,6 +11,7 @@ import {
   setOfferStatusAction,
 } from "@/lib/apps/bundles-upsells/actions";
 import type { AdminOfferRow } from "@/lib/apps/bundles-upsells/queries";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 interface Props {
   offers: AdminOfferRow[];
@@ -98,17 +99,19 @@ export function OfferList({ offers, planAllows }: Props) {
 
       {/* List */}
       {offers.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-[var(--r-md)] border border-dashed border-[color:var(--hairline)] bg-[var(--surface-1)] py-16 text-center">
-          <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)]">
-            <BadgePercent className="h-4 w-4 text-ink-5" strokeWidth={1.5} />
-          </div>
-          <h3 className="text-[16px] font-semibold tracking-[-0.02em] text-ink-0">
-            No hay ofertas configuradas
-          </h3>
-          <p className="mt-2 max-w-sm text-[13px] leading-[1.55] text-ink-5">
-            Creá tu primera oferta: elegí un producto trigger y los
-            complementarios que querés mostrar en su PDP.
-          </p>
+        <div className="rounded-[var(--r-md)] border border-dashed border-[color:var(--hairline)] bg-[var(--surface-1)]">
+          <EmptyState
+            icon={BadgePercent}
+            tone="muted"
+            size="compact"
+            title="No hay bundles todavía"
+            description="Elegí un producto trigger y los complementarios que querés mostrar en su PDP. Un bundle con más de un ítem cross-sell convierte mejor que un CTA suelto."
+            action={
+              planAllows
+                ? { label: "Crear bundle", href: "/admin/apps/bundles-upsells/offers/new" }
+                : undefined
+            }
+          />
         </div>
       ) : (
         <ul className="space-y-3">

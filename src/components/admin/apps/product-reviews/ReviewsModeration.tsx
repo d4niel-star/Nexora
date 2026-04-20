@@ -24,6 +24,7 @@ import type {
   AdminReview,
   ReviewStatus,
 } from "@/lib/apps/product-reviews/queries";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 interface Counts {
   pending: number;
@@ -142,21 +143,26 @@ export function ReviewsModeration({
 
       {/* List */}
       {reviews.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-[var(--r-md)] border border-dashed border-[color:var(--hairline)] bg-[var(--surface-1)] py-16 text-center">
-          <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)]">
-            <Star className="h-4 w-4 text-ink-5" strokeWidth={1.5} />
-          </div>
-          <h3 className="text-[16px] font-semibold tracking-[-0.02em] text-ink-0">
-            {filter === "pending"
-              ? "No hay reseñas pendientes"
-              : filter === "approved"
-              ? "Aún no aprobaste reseñas"
-              : "Sin reseñas ocultas"}
-          </h3>
-          <p className="mt-2 max-w-sm text-[13px] leading-[1.55] text-ink-5">
-            Las reseñas se cargan desde la PDP del storefront. Si la app está
-            activa, todo envío queda pendiente hasta tu revisión.
-          </p>
+        <div className="rounded-[var(--r-md)] border border-dashed border-[color:var(--hairline)] bg-[var(--surface-1)]">
+          <EmptyState
+            icon={Star}
+            tone="muted"
+            size="compact"
+            title={
+              filter === "pending"
+                ? "Nada por moderar ahora"
+                : filter === "approved"
+                  ? "Aún no aprobaste reseñas"
+                  : "Sin reseñas ocultas"
+            }
+            description={
+              filter === "pending"
+                ? "Las nuevas reseñas del storefront caen acá y esperan tu revisión antes de publicarse."
+                : filter === "approved"
+                  ? "Cuando aprobés una reseña, aparecerá pública en la PDP del producto."
+                  : "Las reseñas que ocultes no se ven en el storefront y se listan acá por si querés restaurarlas."
+            }
+          />
         </div>
       ) : (
         <ul className="space-y-3">

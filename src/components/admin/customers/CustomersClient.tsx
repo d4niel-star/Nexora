@@ -6,6 +6,7 @@ import { Search, ChevronDown, Filter, AlertTriangle, Users, ExternalLink } from 
 import { cn, formatCurrency } from "@/lib/utils";
 import { CustomerBadge } from "./CustomerBadge";
 import type { AggregatedCustomer } from "@/lib/customers/queries";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type TabValue = "all" | "new" | "recurring" | "vip" | "inactive" | "risk";
 
@@ -97,13 +98,30 @@ export function CustomersClient({ initialCustomers }: { initialCustomers: Aggreg
 
         <div className="min-h-[400px] bg-[var(--surface-0)] overflow-x-auto">
           {filteredCustomers.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-20 text-center">
-              <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-[var(--r-sm)] bg-[var(--surface-1)] border border-[color:var(--hairline)]">
-                <Users className="h-8 w-8 text-ink-8" />
-              </div>
-              <h3 className="text-xl font-bold text-ink-0">No hay clientes</h3>
-              <p className="mt-2 text-[15px] font-medium text-ink-5">No se encontraron clientes que coincidan con la búsqueda.</p>
-            </div>
+            <EmptyState
+              icon={Users}
+              title={
+                searchQuery || activeTab !== "all"
+                  ? "Sin resultados para este filtro"
+                  : "Aún no hay clientes"
+              }
+              description={
+                searchQuery || activeTab !== "all"
+                  ? "Ajustá la búsqueda o cambiá de segmento para volver a ver toda la base."
+                  : "La base de clientes se arma automáticamente con cada pedido pagado. Traé tráfico al storefront para verla crecer."
+              }
+              action={
+                searchQuery || activeTab !== "all"
+                  ? {
+                      label: "Limpiar filtros",
+                      onClick: () => {
+                        setSearchQuery("");
+                        setActiveTab("all");
+                      },
+                    }
+                  : { label: "Ver pedidos", href: "/admin/orders" }
+              }
+            />
           ) : (
             <table className="w-full min-w-[1000px] text-left">
               <thead>
