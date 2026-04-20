@@ -17,6 +17,9 @@ import {
 import { ProductReviewsBlock } from "@/components/storefront/reviews/ProductReviewsBlock";
 import { getActiveUpsellsForProduct } from "@/lib/apps/bundles-upsells/queries";
 import { UpsellBlock } from "@/components/storefront/bundles/UpsellBlock";
+import { getStorefrontTrustSignals } from "@/lib/storefront/trust";
+import { TrustSignals } from "@/components/storefront/product/TrustSignals";
+import { ReviewSummary } from "@/components/storefront/product/ReviewSummary";
 
 type ProductPageProps = {
   params: Promise<{ storeSlug: string; productId: string }>;
@@ -71,7 +74,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
     notFound();
   }
 
-  const relatedProducts = await getRelatedProducts(storefrontData.store.id, product.id, 4);
+  const [relatedProducts, trustSignals] = await Promise.all([
+    getRelatedProducts(storefrontData.store.id, product.id, 4),
+    getStorefrontTrustSignals(
+      storefrontData.store.id,
+      storefrontData.store.currency,
+      storefrontData.store.locale,
+    ),
+  ]);
 
   const priceFormatted = new Intl.NumberFormat(storefrontData.store.locale, {
     style: "currency",
@@ -182,11 +192,38 @@ export default async function ProductPage({ params }: ProductPageProps) {
     };
   }
 
+  // ─── BreadcrumbList JSON-LD ───
+  // Real SEO signal that mirrors the visual breadcrumb above the gallery.
+  // Only references fields (store root + product page) that actually
+  // exist; no invented category layer.
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Inicio",
+        item: `${appUrl}${storePath(resolvedParams.storeSlug)}`,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: product.title,
+        item: productUrl,
+      },
+    ],
+  };
+
   return (
     <div className="bg-[var(--surface-1)]">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
 
       {/* Breadcrumb */}
@@ -228,6 +265,17 @@ export default async function ProductPage({ params }: ProductPageProps) {
               {product.title}
             </h1>
 
+            {/* Inline review summary — renders only when the Product
+                Reviews app is active AND the product has at least one
+                approved review. Links to the full reviews block below. */}
+            {reviewsEnabled && (
+              <ReviewSummary
+                count={reviewAggregate.count}
+                averageRating={reviewAggregate.averageRating}
+                anchorHref="#reviews"
+              />
+            )}
+
             {/* Price block */}
             <div className="mt-8 flex flex-wrap items-baseline gap-x-3 gap-y-2 border-b border-[color:var(--hairline)] pb-8">
               <p className="tabular text-[34px] font-semibold leading-none tracking-[-0.02em] text-ink-0 sm:text-[38px]">
@@ -264,6 +312,18 @@ export default async function ProductPage({ params }: ProductPageProps) {
               storeSlug={resolvedParams.storeSlug}
             />
 
+            {/* Trust signals — payment, shipping threshold, returns.
+                Every line here is derived from real store config; the
+                component itself returns null if zero signals are
+                available, so PDPs on stores without MP connected or
+                without a free-shipping method don't render a hollow
+                block. */}
+            <TrustSignals
+              signals={trustSignals}
+              storeSlug={resolvedParams.storeSlug}
+              variant="pdp"
+            />
+
             {/* Features (if provided by catalog) */}
             {product.features && product.features.length > 0 && (
               <div className="mt-10 border-t border-[color:var(--hairline)] pt-8">
@@ -297,14 +357,18 @@ export default async function ProductPage({ params }: ProductPageProps) {
           />
         )}
 
-        {/* Product reviews — only when the app is installed + active */}
+        {/* Product reviews — only when the app is installed + active.
+            Wrapped in an anchor so the inline ReviewSummary link at the
+            top of the decision area scrolls here. */}
         {reviewsEnabled && (
-          <ProductReviewsBlock
-            storeSlug={resolvedParams.storeSlug}
-            productId={product.id}
-            reviews={approvedReviews}
-            aggregate={reviewAggregate}
-          />
+          <div id="reviews" className="scroll-mt-24">
+            <ProductReviewsBlock
+              storeSlug={resolvedParams.storeSlug}
+              productId={product.id}
+              reviews={approvedReviews}
+              aggregate={reviewAggregate}
+            />
+          </div>
         )}
 
         {/* Related products */}

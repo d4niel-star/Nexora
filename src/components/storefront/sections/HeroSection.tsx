@@ -19,6 +19,25 @@ export function HeroSection({
       : "products";
   const primaryHref = normalizeStorefrontHref(primaryActionLink, storeSlug);
 
+  // The secondary CTA used to render with href="#" when the CMS left
+  // secondaryActionLink blank — a dead link that hurts trust and SEO.
+  // We now only render it when the CMS provides a real link target,
+  // and we route it through the same normalizeStorefrontHref helper so
+  // relative paths like "collections" still resolve correctly.
+  const secondaryActionLabel =
+    typeof settings.secondaryActionLabel === "string" &&
+    settings.secondaryActionLabel.trim()
+      ? settings.secondaryActionLabel.trim()
+      : null;
+  const secondaryActionLink =
+    typeof settings.secondaryActionLink === "string" &&
+    settings.secondaryActionLink.trim()
+      ? settings.secondaryActionLink.trim()
+      : null;
+  const secondaryHref = secondaryActionLink
+    ? normalizeStorefrontHref(secondaryActionLink, storeSlug)
+    : null;
+
   return (
     <section className="relative isolate overflow-hidden border-b border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-ink-0">
       {settings.backgroundImageUrl ? (
@@ -56,14 +75,14 @@ export function HeroSection({
               {settings.primaryActionLabel}
               <ArrowRight className="h-4 w-4" strokeWidth={2} />
             </Link>
-            {settings.secondaryActionLabel && (
-              <a
-                href="#"
+            {secondaryActionLabel && secondaryHref && (
+              <Link
+                href={secondaryHref}
                 className="inline-flex h-12 min-h-12 items-center justify-center gap-1.5 rounded-[var(--r-md)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-8 text-[15px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] active:translate-y-px focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
               >
-                {settings.secondaryActionLabel}
+                {secondaryActionLabel}
                 <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
-              </a>
+              </Link>
             )}
           </div>
         </div>

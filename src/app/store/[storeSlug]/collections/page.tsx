@@ -2,7 +2,9 @@ import { getStoreCollections } from "@/lib/store-engine/catalog/queries";
 import { getStorefrontData } from "@/lib/store-engine/queries";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { PackageOpen } from "lucide-react";
 import { storePath } from "@/lib/store-engine/urls";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 // ─── Collections index ───
 // 3-column hairline tile grid matching FeaturedCategoriesSection styling so
@@ -40,11 +42,15 @@ export default async function CollectionsPage({
         </header>
 
         {collections.length === 0 ? (
-          <div className="rounded-[var(--r-xl)] border border-dashed border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-6 py-16 text-center shadow-[var(--shadow-soft)]">
-            <h2 className="text-[15px] font-semibold text-ink-0">
-              No hay colecciones publicadas.
-            </h2>
-            <p className="mt-2 text-[13px] text-ink-5">Volvé más tarde.</p>
+          <div className="rounded-[var(--r-xl)] border border-dashed border-[color:var(--hairline-strong)] bg-[var(--surface-0)] shadow-[var(--shadow-soft)]">
+            <EmptyState
+              icon={PackageOpen}
+              tone="muted"
+              size="compact"
+              title="Todavía no hay colecciones publicadas"
+              description="Esta tienda está organizando su catálogo. Mientras tanto, podés explorar todos los productos disponibles."
+              action={{ label: "Ver productos", href: storePath(resolvedParams.storeSlug, "products") }}
+            />
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">

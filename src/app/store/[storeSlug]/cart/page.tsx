@@ -6,6 +6,8 @@ import { ArrowRight, ShoppingBag } from "lucide-react";
 import { CartList } from "@/components/storefront/cart/CartList";
 import { storePath } from "@/lib/store-engine/urls";
 import { Surface } from "@/components/ui/primitives";
+import { getStorefrontTrustSignals } from "@/lib/storefront/trust";
+import { TrustSignals } from "@/components/storefront/product/TrustSignals";
 
 // ─── Cart Page ───
 // 12-col editorial grid: items dominate (7 cols) and summary docks on the
@@ -25,7 +27,14 @@ export default async function CartPage({
   }
 
   const cart = await getCart(storefrontData.store.id);
-  const stockIssues = cart ? await getCartStockIssues(cart.id) : [];
+  const [stockIssues, trustSignals] = await Promise.all([
+    cart ? getCartStockIssues(cart.id) : Promise.resolve([]),
+    getStorefrontTrustSignals(
+      storefrontData.store.id,
+      storefrontData.store.currency,
+      storefrontData.store.locale,
+    ),
+  ]);
   const hasStockIssues = stockIssues.length > 0;
 
   const formatCurrency = (price: number) =>
@@ -171,6 +180,15 @@ export default async function CartPage({
                     continuar comprando
                   </Link>
                 </p>
+
+                {/* Cart-variant trust signals — payment method + shipping
+                    threshold + returns. Self-hides when the store has no
+                    real signals to show. */}
+                <TrustSignals
+                  signals={trustSignals}
+                  storeSlug={resolvedParams.storeSlug}
+                  variant="cart"
+                />
               </Surface>
             </aside>
           </form>
