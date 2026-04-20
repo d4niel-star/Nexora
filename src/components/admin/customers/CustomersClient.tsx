@@ -127,10 +127,11 @@ export function CustomersClient({ initialCustomers }: { initialCustomers: Aggreg
               <thead>
                 <tr className="border-b border-[color:var(--hairline)] bg-[var(--surface-1)]">
                   <th className="px-6 py-4 text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">Cliente</th>
-                  <th className="px-6 py-4 text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">Canal Prominente</th>
+                  <th className="px-6 py-4 text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">Canal</th>
                   <th className="px-6 py-4 text-[11px] text-right font-medium uppercase tracking-[0.18em] text-ink-5">Pedidos</th>
+                  <th className="px-6 py-4 text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">Última compra</th>
                   <th className="px-6 py-4 text-[11px] text-right font-medium uppercase tracking-[0.18em] text-ink-5">Ticket M.</th>
-                  <th className="px-6 py-4 text-[11px] text-right font-medium uppercase tracking-[0.18em] text-ink-5">LTV</th>
+                  <th className="px-6 py-4 text-[11px] text-right font-medium uppercase tracking-[0.18em] text-ink-5">Total gastado</th>
                   <th className="px-6 py-4 text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">Segmento</th>
                   <th className="px-6 py-4 text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">Estado</th>
                   <th className="px-6 py-4 w-12"></th>
@@ -168,6 +169,14 @@ export function CustomersClient({ initialCustomers }: { initialCustomers: Aggreg
                     </td>
                     <td className="px-6 py-5 text-sm font-medium text-ink-4">{c.channel}</td>
                     <td className="px-6 py-5 text-right font-semibold tabular-nums text-ink-0">{c.ordersCount}</td>
+                    {/* Última compra — the thead has always declared this column
+                        but tbody was missing the cell, so every downstream
+                        column rendered under the wrong header. Real
+                        lastPurchaseAt was already fetched by
+                        getAggregatedCustomers; we just surface it now. */}
+                    <td className="px-6 py-5 text-sm font-medium tabular-nums text-ink-4">
+                      {dateFormatter.format(new Date(c.lastPurchaseAt))}
+                    </td>
                     <td className="px-6 py-5 text-right text-sm font-medium tabular-nums text-ink-4">{formatCurrency(c.averageTicket)}</td>
                     <td className="px-6 py-5 text-right text-[15px] font-semibold tracking-tight tabular-nums text-ink-0">{formatCurrency(c.totalSpent)}</td>
                     <td className="px-6 py-5"><CustomerBadge tone={c.segment} /></td>

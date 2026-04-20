@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   Boxes,
   LayoutDashboard,
+  LineChart,
   Menu,
   Package,
   PackageSearch,
@@ -14,6 +15,7 @@ import {
   Sparkles,
   Store,
   Truck,
+  Users,
   X,
 } from "lucide-react";
 
@@ -33,6 +35,8 @@ const navigation = [
   { href: "/admin/inventory", label: "Inventario", icon: Boxes },
   { href: "/admin/sourcing", label: "Abastecimiento", icon: Truck },
   { href: "/admin/operations", label: "Operaciones", icon: PackageSearch },
+  { href: "/admin/customers", label: "Clientes", icon: Users },
+  { href: "/admin/growth", label: "Crecimiento", icon: LineChart },
   { href: "/admin/store-ai", label: "Tienda IA", icon: Store },
   { href: "/admin/apps", label: "Apps", icon: Puzzle },
 ];
