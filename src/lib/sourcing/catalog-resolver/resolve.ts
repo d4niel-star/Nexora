@@ -10,10 +10,12 @@ import { ResolverLogger } from "./logger";
 import { detectPageKind, detectSourceType } from "./detect";
 import { extractFromFeed } from "./extractors/feed";
 import { detectShopify, extractFromShopify } from "./extractors/shopify";
-import { extractStructuredDataFromHtml } from "./extractors/structured-data";
 import { extractFromSitemap } from "./extractors/sitemap";
 import { extractFromHtmlCatalog } from "./extractors/html-catalog";
-import { extractSingleProductFromHtml } from "./extractors/single-product";
+import {
+  extractProductsFromHtmlPage,
+  extractSingleProductFromHtml,
+} from "./extractors/single-product";
 import { dedupeByExternalId } from "./normalize";
 import type {
   BudgetSnapshot,
@@ -202,7 +204,11 @@ export async function resolveCatalogFromUrl(input: ResolveInput): Promise<Catalo
 
   // 1. Structured data on the landing page itself (covers landing pages
   //    that include featured-product schema even when they're not PDPs).
-  const direct = extractStructuredDataFromHtml(rootResp.body, rootResp.url);
+  //    Uses the unified rich helper so a single-Product landing whose
+  //    page-kind detection failed to classify still benefits from the
+  //    full 5-layer PDP pipeline. Multi-product landings keep the legacy
+  //    behavior (one SupplierProductInput per JSON-LD Product node).
+  const direct = extractProductsFromHtmlPage(rootResp.body, rootResp.url);
   if (direct.length > 0) {
     logger.ok("structured-data", `Root page exposed ${direct.length} Product node(s)`);
     return finalize(url, "structured-data", "structured-data", dedupeByExternalId(direct), [], budget, logger);

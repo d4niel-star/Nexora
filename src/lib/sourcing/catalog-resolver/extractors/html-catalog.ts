@@ -9,7 +9,7 @@ import {
   looksLikeProductUrl,
   sameHost,
 } from "../html-utils";
-import { extractStructuredDataFromHtml } from "./structured-data";
+import { extractProductsFromHtmlPage } from "./single-product";
 import { dedupeByExternalId } from "../normalize";
 
 // ─── HTML catalog extractor ──────────────────────────────────────────────
@@ -25,7 +25,7 @@ export async function extractFromHtmlCatalog(
   logger: ResolverLogger,
 ): Promise<SupplierProductInput[] | null> {
   // First, does the landing page itself declare Product structured data?
-  const directProducts = extractStructuredDataFromHtml(rootHtml, rootUrl);
+  const directProducts = extractProductsFromHtmlPage(rootHtml, rootUrl);
   if (directProducts.length > 0) {
     logger.ok("html-catalog.root", `Root page is a product: ${directProducts.length}`);
     return dedupeByExternalId(directProducts);
@@ -64,7 +64,7 @@ export async function extractFromHtmlCatalog(
     if (budget.pagesFetched >= budget.maxPages) break;
     const resp = await budgetedFetch(productUrl, budget, logger, { label: "html.product" });
     if (!resp.ok) continue;
-    const extracted = extractStructuredDataFromHtml(resp.body, resp.url);
+    const extracted = extractProductsFromHtmlPage(resp.body, resp.url);
     for (const product of extracted) {
       if (products.length >= budget.maxProducts) break;
       products.push(product);

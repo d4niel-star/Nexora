@@ -3,7 +3,7 @@ import { budgetedFetch } from "../fetcher";
 import type { Budget } from "../budget";
 import type { ResolverLogger } from "../logger";
 import { isClearlyNonProduct, looksLikeProductUrl, originOf, sameHost } from "../html-utils";
-import { extractStructuredDataFromHtml } from "./structured-data";
+import { extractProductsFromHtmlPage } from "./single-product";
 import { dedupeByExternalId } from "../normalize";
 
 // ─── Sitemap extractor ───────────────────────────────────────────────────
@@ -95,7 +95,7 @@ async function fetchProductPages(
     const pageUrl = urls[i];
     const resp = await budgetedFetch(pageUrl, budget, logger, { label: "sitemap.page" });
     if (!resp.ok) continue;
-    const extracted = extractStructuredDataFromHtml(resp.body, resp.url);
+    const extracted = extractProductsFromHtmlPage(resp.body, resp.url);
     for (const product of extracted) {
       if (out.length >= budget.maxProducts) break;
       out.push(product);

@@ -120,8 +120,14 @@ type NormalizedRecordKey =
   | "category"
   | "cost"
   | "suggestedPrice"
+  | "compareAtPrice"
+  | "currency"
   | "stock"
+  | "availability"
   | "imageUrl"
+  | "brand"
+  | "gtin"
+  | "mpn"
   | "variantName"
   | "variantSku"
   | "variantPrice"
@@ -154,15 +160,45 @@ const HEADER_ALIASES: Record<string, NormalizedRecordKey> = {
   suggested_price: "suggestedPrice",
   price: "suggestedPrice",
   precio: "suggestedPrice",
+  compareatprice: "compareAtPrice",
+  compare_at_price: "compareAtPrice",
+  compareat: "compareAtPrice",
+  listprice: "compareAtPrice",
+  list_price: "compareAtPrice",
+  oldprice: "compareAtPrice",
+  old_price: "compareAtPrice",
+  wasprice: "compareAtPrice",
+  was_price: "compareAtPrice",
+  preciotachado: "compareAtPrice",
+  currency: "currency",
+  pricecurrency: "currency",
+  moneda: "currency",
   stock: "stock",
   inventory: "stock",
   inventario: "stock",
   quantity: "stock",
+  availability: "availability",
+  disponibilidad: "availability",
+  instock: "availability",
   image: "imageUrl",
   imageurl: "imageUrl",
   image_url: "imageUrl",
   images: "imageUrl",
   imagen: "imageUrl",
+  brand: "brand",
+  marca: "brand",
+  manufacturer: "brand",
+  gtin: "gtin",
+  gtin8: "gtin",
+  gtin12: "gtin",
+  gtin13: "gtin",
+  gtin14: "gtin",
+  ean: "gtin",
+  upc: "gtin",
+  barcode: "gtin",
+  mpn: "mpn",
+  modelnumber: "mpn",
+  partnumber: "mpn",
   variant: "variantName",
   variantname: "variantName",
   variant_name: "variantName",
@@ -339,7 +375,32 @@ function validateAndCollectProduct(
 
   const category = normalizeText(record.category);
   const description = normalizeText(record.description);
-  const product = productsByExternalId.get(externalId) ?? {
+
+  // ── Optional rich fields from the feed (present only when the source
+  //    declares them). Validation is soft: bad values silently drop to
+  //    undefined so a feed with a typo in compareAtPrice doesn't poison
+  //    the whole row. Data-honesty rule: nothing is inferred.
+  const compareAtPrice = parseNumber(record.compareAtPrice);
+  const currencyRaw = normalizeText(record.currency).toUpperCase();
+  const currency = /^[A-Z]{3}$/.test(currencyRaw) ? currencyRaw : null;
+  const brand = normalizeText(record.brand) || null;
+  const gtin = normalizeText(record.gtin) || null;
+  const mpn = normalizeText(record.mpn) || null;
+  const availabilityRaw = normalizeText(record.availability).toLowerCase();
+  let availability: SupplierAvailability | undefined;
+  if (/in.?stock|disponible|true|yes|1/.test(availabilityRaw)) availability = "in_stock";
+  else if (/out.?of.?stock|agotado|no.?disponible|false|no|0/.test(availabilityRaw))
+    availability = "out_of_stock";
+
+  const identifiers = (gtin || mpn || externalId)
+    ? {
+        ...(externalId ? { sku: externalId } : {}),
+        ...(gtin ? { gtin } : {}),
+        ...(mpn ? { mpn } : {}),
+      }
+    : undefined;
+
+  const defaultProduct: SupplierProductInput = {
     externalId,
     title,
     description: description || null,
@@ -360,7 +421,15 @@ function validateAndCollectProduct(
       suggestedPrice,
       stock,
     },
+    ...(brand ? { brand } : {}),
+    ...(compareAtPrice !== null && suggestedPrice !== null && compareAtPrice > suggestedPrice
+      ? { compareAtPrice }
+      : {}),
+    ...(currency ? { currency } : {}),
+    ...(identifiers ? { identifiers } : {}),
+    ...(availability ? { availability } : {}),
   };
+  const product = productsByExternalId.get(externalId) ?? defaultProduct;
 
   const variantTitle = normalizeText(record.variantName) || "Default";
   const variantSku = normalizeText(record.variantSku) || externalId;
@@ -369,6 +438,7 @@ function validateAndCollectProduct(
     sku: variantSku,
     price: variantPrice ?? suggestedPrice ?? cost,
     stock: variantStock ?? stock,
+    ...(availability ? { availability } : {}),
   };
 
   const duplicateVariant = product.variants.some((variant) => variant.sku === nextVariant.sku);
@@ -474,8 +544,24 @@ function objectToRecord(source: Record<string, unknown>): NormalizedRecord {
     category: valueFromObject(source, ["category", "categoria"]),
     cost: valueFromObject(source, ["cost", "costo", "unitCost", "priceCost"]),
     suggestedPrice: valueFromObject(source, ["suggestedPrice", "suggested_price", "price", "precio"]),
+    compareAtPrice: valueFromObject(source, [
+      "compareAtPrice",
+      "compare_at_price",
+      "compareAt",
+      "listPrice",
+      "list_price",
+      "oldPrice",
+      "old_price",
+      "wasPrice",
+      "was_price",
+    ]),
+    currency: valueFromObject(source, ["currency", "priceCurrency", "moneda"]),
     stock: valueFromObject(source, ["stock", "inventory", "inventario", "quantity"]),
+    availability: valueFromObject(source, ["availability", "disponibilidad", "inStock"]),
     imageUrl,
+    brand: valueFromObject(source, ["brand", "marca", "manufacturer"]),
+    gtin: valueFromObject(source, ["gtin", "gtin8", "gtin12", "gtin13", "gtin14", "ean", "upc", "barcode"]),
+    mpn: valueFromObject(source, ["mpn", "modelNumber", "partNumber"]),
     variantName: valueFromObject(source, ["variantName", "variant", "variantTitle"]),
     variantSku: valueFromObject(source, ["variantSku", "variant_sku"]),
     variantPrice: valueFromObject(source, ["variantPrice", "variant_price"]),
@@ -552,9 +638,26 @@ function parseXmlProducts(xmlText: string): SourcingImportPreview {
         description: tagValue(itemXml, ["description", "descripcion"]),
         category: tagValue(itemXml, ["category", "categoria"]),
         cost: tagValue(itemXml, ["cost", "costo", "unitCost"]),
-        suggestedPrice: tagValue(itemXml, ["suggestedPrice", "price", "precio"]),
-        stock: tagValue(itemXml, ["stock", "inventory", "inventario"]),
-        imageUrl: tagValue(itemXml, ["imageUrl", "image", "imagen"]),
+        suggestedPrice: tagValue(itemXml, ["suggestedPrice", "price", "precio", "g:price"]),
+        compareAtPrice: tagValue(itemXml, [
+          "compareAtPrice",
+          "compare_at_price",
+          "listPrice",
+          "list_price",
+          "oldPrice",
+          "old_price",
+          "wasPrice",
+          "was_price",
+          "g:list_price",
+          "g:sale_price",
+        ]),
+        currency: tagValue(itemXml, ["currency", "priceCurrency", "moneda"]),
+        stock: tagValue(itemXml, ["stock", "inventory", "inventario", "quantity"]),
+        availability: tagValue(itemXml, ["availability", "disponibilidad", "g:availability"]),
+        imageUrl: tagValue(itemXml, ["imageUrl", "image", "imagen", "g:image_link"]),
+        brand: tagValue(itemXml, ["brand", "marca", "manufacturer", "g:brand"]),
+        gtin: tagValue(itemXml, ["gtin", "gtin8", "gtin12", "gtin13", "gtin14", "ean", "upc", "barcode", "g:gtin"]),
+        mpn: tagValue(itemXml, ["mpn", "modelNumber", "partNumber", "g:mpn"]),
         variantName: tagValue(itemXml, ["variantName", "variant", "variantTitle"]),
         variantSku: tagValue(itemXml, ["variantSku", "variant_sku"]),
         variantPrice: tagValue(itemXml, ["variantPrice", "variant_price"]),

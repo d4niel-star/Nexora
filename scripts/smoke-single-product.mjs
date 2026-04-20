@@ -15,8 +15,11 @@
 // handles the .ts imports below. If the script is run with plain `node`
 // the imports will fail; that's fine, tsx is the intended runner.
 const { detectPageKind } = await import("../src/lib/sourcing/catalog-resolver/detect.ts");
-const { extractSingleProductFromHtml } = await import(
+const { extractSingleProductFromHtml, extractProductsFromHtmlPage } = await import(
   "../src/lib/sourcing/catalog-resolver/extractors/single-product.ts"
+);
+const { parseSupplierPayload } = await import(
+  "../src/lib/sourcing/import-parsers.ts"
 );
 
 const FIXTURES = [
@@ -221,4 +224,159 @@ for (const fixture of FIXTURES) {
   } else {
     console.log("  Extraction:", { failure: extraction.failure });
   }
+}
+
+// ─── Unified HTML-page helper ────────────────────────────────────────────
+// Confirms that PDP pages discovered via sitemap / html-catalog paths now
+// receive the full 5-layer rich treatment, and that multi-Product listing
+// pages keep the legacy one-product-per-JSON-LD-node behavior.
+console.log("\n════════════════════════════════════");
+console.log("extractProductsFromHtmlPage (sitemap/catalog entry point)");
+console.log("════════════════════════════════════");
+
+const HTML_PAGE_FIXTURES = [
+  {
+    name: "Single-PDP with embedded JSON (previously dropped by catalog path)",
+    url: "https://shop.example.com/products/auricular-bt",
+    // No JSON-LD, only __NEXT_DATA__ — the legacy extractor returned
+    // nothing for this; the unified helper must now yield a rich product.
+    html: `<!doctype html><html><body>
+      <script id="__NEXT_DATA__" type="application/json">
+      {"props":{"pageProps":{"product":{
+        "id":"AUR-BT-100","name":"Auricular Bluetooth 100",
+        "brand":{"name":"Acme"},"price":15999,"compareAtPrice":19999,"currency":"ARS",
+        "featuredImage":{"src":"https://shop.example.com/img/a.jpg"},
+        "variants":[
+          {"id":"v1","title":"Negro","sku":"AUR-BT-100-BK","price":"15999","available":true,"option1":"Negro"},
+          {"id":"v2","title":"Blanco","sku":"AUR-BT-100-WH","price":"15999","available":false,"option1":"Blanco"}
+        ]
+      }}}}
+      </script>
+    </body></html>`,
+  },
+  {
+    name: "Multi-product listing page (legacy behavior preserved)",
+    url: "https://shop.example.com/collections/ofertas",
+    html: `<!doctype html><html><head>
+      <script type="application/ld+json">
+      [
+        {"@context":"https://schema.org","@type":"Product","name":"A","sku":"A-1","image":"https://shop.example.com/a.jpg","offers":{"@type":"Offer","price":"100","priceCurrency":"ARS"}},
+        {"@context":"https://schema.org","@type":"Product","name":"B","sku":"B-1","image":"https://shop.example.com/b.jpg","offers":{"@type":"Offer","price":"200","priceCurrency":"ARS"}}
+      ]
+      </script>
+    </head><body></body></html>`,
+  },
+  {
+    name: "HTML-only PDP (previously dropped by catalog path)",
+    url: "https://shop.example.com/products/campera-roble",
+    // No JSON-LD, no embedded JSON — the legacy extractor returned nothing.
+    // The unified helper should yield a rich product via heuristic +
+    // microdata + OpenGraph merge.
+    html: `<!doctype html><html><head>
+      <meta property="og:type" content="product" />
+      <meta property="og:title" content="Campera Roble Impermeable" />
+      <meta property="og:image" content="https://shop.example.com/img/campera.jpg" />
+    </head><body>
+      <h1>Campera Roble Impermeable</h1>
+      <div class="price"><del>$89.999</del> <span>$59.999</span></div>
+      <select name="option[size]">
+        <option value="s">S</option>
+        <option value="m">M</option>
+        <option value="l">L</option>
+      </select>
+      <table class="spec-table">
+        <tr><th>Material</th><td>Poliéster laminado</td></tr>
+      </table>
+    </body></html>`,
+  },
+];
+
+for (const fixture of HTML_PAGE_FIXTURES) {
+  const products = extractProductsFromHtmlPage(fixture.html, fixture.url);
+  console.log("────────────────────────────────────");
+  console.log("Fixture:", fixture.name);
+  console.log("  URL:", fixture.url);
+  console.log("  Products:", products.length);
+  for (const [i, p] of products.entries()) {
+    console.log(`  [${i}]`, {
+      title: p.title,
+      price: p.suggestedPrice,
+      compareAtPrice: p.compareAtPrice,
+      brand: p.brand,
+      variants: p.variants.length,
+      attrs: p.attributes?.length ?? 0,
+      layers: p.extraction?.extractedFrom ?? [],
+      confidence: p.extraction?.confidence,
+    });
+  }
+}
+
+// ─── Feed enrichment smoke ───────────────────────────────────────────────
+// Confirms that feeds now preserve compareAtPrice, brand, gtin, mpn,
+// currency and availability when the payload provides them. Previously
+// these fields were silently dropped by HEADER_ALIASES / objectToRecord.
+console.log("\n════════════════════════════════════");
+console.log("parseSupplierPayload (feed enrichment)");
+console.log("════════════════════════════════════");
+
+const FEED_FIXTURES = [
+  {
+    name: "CSV with compareAtPrice + brand + gtin",
+    contentType: "text/csv",
+    body:
+      "externalId,title,cost,stock,price,compareAtPrice,brand,gtin,currency,availability\n" +
+      "SKU-1,Remera Basic,4200,10,8900,12900,Acme,7791234567890,ARS,in_stock\n" +
+      "SKU-2,Remera Oversize,5100,0,11900,,Acme,,ARS,out_of_stock\n",
+  },
+  {
+    name: "JSON feed with rich keys",
+    contentType: "application/json",
+    body: JSON.stringify({
+      products: [
+        {
+          sku: "SKU-J1",
+          title: "Zapatilla",
+          cost: 30000,
+          stock: 4,
+          price: 49999,
+          compareAtPrice: 69999,
+          currency: "ARS",
+          brand: "Acme",
+          gtin: "7791234567891",
+          availability: "InStock",
+        },
+      ],
+    }),
+  },
+  {
+    name: "XML feed with Google Merchant namespaced tags",
+    contentType: "application/xml",
+    body: `<?xml version="1.0"?><feed>
+      <item>
+        <sku>SKU-X1</sku><title>Campera</title><cost>20000</cost><stock>2</stock>
+        <g:price>35000</g:price><g:list_price>45000</g:list_price>
+        <g:brand>Acme</g:brand><g:gtin>7791234567892</g:gtin>
+        <g:availability>in stock</g:availability>
+      </item>
+    </feed>`,
+  },
+];
+
+for (const fixture of FEED_FIXTURES) {
+  const preview = parseSupplierPayload(fixture.body, { contentType: fixture.contentType });
+  console.log("────────────────────────────────────");
+  console.log("Fixture:", fixture.name);
+  console.log("  Rows:", preview.totalRows, "valid:", preview.validRows);
+  for (const [i, p] of preview.products.entries()) {
+    console.log(`  [${i}]`, {
+      title: p.title,
+      price: p.suggestedPrice,
+      compareAtPrice: p.compareAtPrice,
+      currency: p.currency,
+      brand: p.brand,
+      identifiers: p.identifiers,
+      availability: p.availability,
+    });
+  }
+  if (preview.errors.length > 0) console.log("  Errors:", preview.errors);
 }

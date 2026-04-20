@@ -19,6 +19,7 @@ import {
 import {
   extractRichFromJsonLd,
   extractRichFromOpenGraph,
+  extractStructuredDataFromHtml,
 } from "./structured-data";
 import { extractRichFromEmbeddedJson } from "./embedded-json";
 
@@ -549,4 +550,41 @@ function normalizeOptionKey(raw: string): string {
   if (/model/.test(raw)) return "model";
   // Fallback: strip non-alnum and keep a short key.
   return raw.replace(/[^a-z0-9]+/g, "").slice(0, 20) || "option";
+}
+
+// ─── Shared entry point for ANY HTML page that may be a PDP ──────────────
+// Before this helper existed, sitemap / html-catalog / direct-structured-
+// data paths all called extractStructuredDataFromHtml — which returns only
+// JSON-LD and OpenGraph fallback. Embedded JSON, microdata, heuristic
+// HTML, compare-at prices, option-select variants, spec tables,
+// breadcrumbs and identifiers were silently dropped for every product
+// discovered via sitemap / catalog crawl.
+//
+// This helper unifies the surface: if the page exposes a single Product
+// (the common case for a PDP linked from a listing), the full 5-layer
+// rich pipeline runs and the resulting SupplierProductInput carries the
+// same richness as a directly-pasted PDP URL. If the page exposes
+// multiple distinct JSON-LD Product nodes (actual listing page), the
+// legacy multi-product behavior is preserved — merging rich layers
+// across several products at once would be ambiguous.
+//
+// The function is intentionally domain-agnostic: zero hardcoded hosts,
+// all decisions come from schema.org / microdata / OpenGraph signals
+// present in the HTML.
+export function extractProductsFromHtmlPage(
+  html: string,
+  sourceUrl: string,
+): SupplierProductInput[] {
+  const legacyMulti = extractStructuredDataFromHtml(html, sourceUrl);
+
+  // Multi-product listing page → keep legacy behavior.
+  if (legacyMulti.length > 1) return legacyMulti;
+
+  // Single-product case (or no JSON-LD at all) → run the rich pipeline.
+  const rich = extractSingleProductFromHtml(html, sourceUrl);
+  if (rich.product) return [rich.product];
+
+  // Rich pipeline found no title — fall back to whatever legacy produced
+  // (which is either 0 or 1 item from OpenGraph product meta).
+  return legacyMulti;
 }
