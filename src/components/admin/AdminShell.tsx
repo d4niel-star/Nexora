@@ -16,6 +16,7 @@ import {
   Store,
   Truck,
   Users,
+  Wrench,
   X,
 } from "lucide-react";
 
@@ -39,6 +40,7 @@ const navigation = [
   { href: "/admin/growth", label: "Crecimiento", icon: LineChart },
   { href: "/admin/store-ai", label: "Tienda IA", icon: Store },
   { href: "/admin/apps", label: "Apps", icon: Puzzle },
+  { href: "/admin/market", label: "Herramientas", icon: Wrench },
 ];
 
 interface AdminShellProps {
