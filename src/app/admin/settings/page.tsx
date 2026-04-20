@@ -1,17 +1,11 @@
 import Link from "next/link";
 import {
-  Store,
-  Palette,
   FileText,
   CreditCard,
   Crown,
-  Users,
-  Megaphone,
-  BarChart3,
   Plug,
-  Activity,
-  LifeBuoy,
   ShieldCheck,
+  Store,
 } from "lucide-react";
 import { isCurrentUserOps } from "@/lib/auth/ops";
 
@@ -29,12 +23,19 @@ interface SettingsSection {
 }
 
 function buildSections(isOps: boolean): SettingsSection[] {
+  // Settings hub cleanup (sidebar IA v4):
+  //   · Removed "Mi Tienda" and "Branding y Dominio" — they live in
+  //     the new Tienda sidebar group; they are storefront management,
+  //     not settings.
+  //   · Removed "Clientes" — it lives in the Ventas sidebar group.
+  //   · Removed "Marketing", "Analíticas", "Sistema", "Soporte" —
+  //     they were placeholder comingSoon entries that added noise.
+  //   · Kept only real settings: legal/fiscal, plan, finance payouts,
+  //     third-party integrations.
   const sections: SettingsSection[] = [
     {
       title: "Negocio",
       items: [
-        { name: "Mi Tienda", href: "/admin/store", icon: Store, desc: "Configuración general, horarios y contacto" },
-        { name: "Branding y Dominio", href: "/admin/store", icon: Palette, desc: "Personalización visual y dominios personalizados" },
         { name: "Legal & ARCA", href: "/admin/fiscal/settings", icon: FileText, desc: "Facturación electrónica y políticas legales" },
       ],
     },
@@ -46,19 +47,9 @@ function buildSections(isOps: boolean): SettingsSection[] {
       ],
     },
     {
-      title: "Crecimiento",
-      items: [
-        { name: "Clientes", href: "/admin/customers", icon: Users, desc: "Gestor de usuarios, compras y audiencias" },
-        { name: "Marketing", href: "#", icon: Megaphone, desc: "Mailing, automatizaciones y descuentos", comingSoon: true },
-        { name: "Analíticas", href: "#", icon: BarChart3, desc: "Ventas, conversiones y tráfico", comingSoon: true },
-      ],
-    },
-    {
       title: "Plataforma",
       items: [
         { name: "Integraciones", href: "/admin/integrations", icon: Plug, desc: "Apps de terceros, APIs y Webhooks" },
-        { name: "Sistema", href: "#", icon: Activity, desc: "Team, roles, auditoría y seguridad", comingSoon: true },
-        { name: "Soporte", href: "#", icon: LifeBuoy, desc: "Centro de ayuda y tickets técnicos", comingSoon: true },
       ],
     },
   ];
