@@ -3,6 +3,7 @@ import { unstable_noStore as noStore } from "next/cache";
 import { UpgradePrompt } from "@/components/admin/billing/UpgradePrompt";
 import { StoreAIModule } from "@/components/admin/store-ai/StoreAIModule";
 import { checkAIBuilderAccess } from "@/lib/billing/service";
+import { getStoreReadinessSnapshot } from "@/lib/readiness/snapshot";
 import { getAdminStoreId } from "@/lib/store-engine/actions";
 import { getAIGenerationDraft } from "@/lib/store-engine/ai-builder/queries";
 
@@ -40,7 +41,10 @@ export default async function StoreAIPage() {
     );
   }
 
-  const draft = await getAIGenerationDraft(storeId);
+  const [draft, readiness] = await Promise.all([
+    getAIGenerationDraft(storeId),
+    getStoreReadinessSnapshot(storeId),
+  ]);
 
-  return <StoreAIModule initialDraft={draft} />;
+  return <StoreAIModule initialDraft={draft} readiness={readiness} />;
 }

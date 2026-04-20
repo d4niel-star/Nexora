@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 
 import { AIStoreBuilderPage } from "@/components/admin/ai-store-builder/AIStoreBuilderPage";
+import { ReadinessPanel } from "@/components/admin/readiness/ReadinessPanel";
+import type { ReadinessSnapshot } from "@/lib/readiness/snapshot";
 import { cn } from "@/lib/utils";
 
 // ─── Tienda IA — module landing ─────────────────────────────────────────
@@ -47,9 +49,16 @@ type BuilderTab =
 
 interface StoreAIModuleProps {
   initialDraft: any;
+  /**
+   * Store-wide readiness snapshot fetched on the server. When present, it
+   * replaces the AI-draft-specific StatusStrip + RecommendedActions with
+   * the unified ReadinessPanel, so the module landing reads as a real
+   * publication/sales readiness centre and not just an AI-builder recap.
+   */
+  readiness?: ReadinessSnapshot | null;
 }
 
-export function StoreAIModule({ initialDraft }: StoreAIModuleProps) {
+export function StoreAIModule({ initialDraft, readiness }: StoreAIModuleProps) {
   const [activeTab, setActiveTab] = useState<BuilderTab>("resumen");
 
   const snapshot = useMemo(() => deriveSnapshot(initialDraft), [initialDraft]);
@@ -66,8 +75,22 @@ export function StoreAIModule({ initialDraft }: StoreAIModuleProps) {
   return (
     <div className="space-y-8">
       <ModuleHeader snapshot={snapshot} onStart={() => goToTab(snapshot.primaryActionTab)} />
-      <StatusStrip snapshot={snapshot} />
-      <RecommendedActions snapshot={snapshot} onGoTo={goToTab} />
+
+      {/* ── Publication / sales readiness ──
+       *
+       * Real multi-signal readiness (payments, catalog, branding, etc.),
+       * not a decorative score. Replaces the previous draft-only status
+       * strip + recommended actions. Falls back to the AI-draft-derived
+       * sections when the snapshot is unavailable so transient failures
+       * don't leave the module empty. */}
+      {readiness ? (
+        <ReadinessPanel snapshot={readiness} />
+      ) : (
+        <>
+          <StatusStrip snapshot={snapshot} />
+          <RecommendedActions snapshot={snapshot} onGoTo={goToTab} />
+        </>
+      )}
 
       <section
         id="store-ai-workspace"
