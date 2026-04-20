@@ -1,10 +1,43 @@
 export type SourcingImportSource = "csv" | "feed" | "api";
 
+export type SupplierAvailability = "in_stock" | "out_of_stock" | "unknown";
+
 export interface SupplierVariantInput {
   title: string;
   sku: string | null;
   price: number;
   stock: number;
+  // ─── Optional rich fields (populated only by the URL / PDP extractor) ───
+  // All optional so legacy CSV/API importers keep compiling and no existing
+  // consumer changes behavior.
+  optionValues?: Record<string, string>;
+  compareAtPrice?: number | null;
+  image?: string | null;
+  availability?: SupplierAvailability;
+  externalId?: string | null;
+}
+
+export interface SupplierProductAttribute {
+  key: string;
+  value: string;
+}
+
+export interface SupplierProductIdentifiers {
+  sku?: string | null;
+  mpn?: string | null;
+  gtin?: string | null;
+  productID?: string | null;
+}
+
+export interface SupplierProductExtraction {
+  /** High-level quality signal for the preview UI. */
+  confidence: "complete" | "partial" | "minimal";
+  /** Which extraction layers contributed fields to the final product. */
+  extractedFrom: string[];
+  /** Critical fields we could not populate (e.g. "price", "images"). */
+  missingCriticalFields: string[];
+  /** Non-blocking diagnostics worth showing to the operator. */
+  warnings: string[];
 }
 
 export interface SupplierProductInput {
@@ -20,6 +53,17 @@ export interface SupplierProductInput {
   leadTimeMinDays: number | null;
   leadTimeMaxDays: number | null;
   raw: Record<string, string | number | null>;
+  // ─── Optional rich fields (populated only by the URL / PDP extractor) ───
+  brand?: string | null;
+  compareAtPrice?: number | null;
+  currency?: string | null;
+  sourceUrl?: string | null;
+  canonicalUrl?: string | null;
+  identifiers?: SupplierProductIdentifiers;
+  attributes?: SupplierProductAttribute[];
+  breadcrumbs?: string[];
+  availability?: SupplierAvailability;
+  extraction?: SupplierProductExtraction;
 }
 
 export interface ImportRowError {

@@ -586,20 +586,34 @@ function RealImportTab({ onImportComplete }: { onImportComplete: () => void }) {
                       />
                     </th>
                     <th className="px-4 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Producto</th>
+                    <th className="px-4 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Calidad</th>
                     <th className="px-4 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Categoría</th>
-                    <th className="px-4 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5 text-right">Costo</th>
                     <th className="px-4 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5 text-right">Precio</th>
-                    <th className="px-4 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5 text-right">Stock</th>
                     <th className="px-4 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5 text-right">Variantes</th>
+                    <th className="px-4 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5 text-right">Imgs</th>
+                    <th className="px-4 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5 text-right">Specs</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[color:var(--hairline)]">
                   {preview.products.map((product) => {
                     const selected = selectedIds.has(product.externalId);
                     const price = product.suggestedPrice ?? product.cost;
+                    const compareAt = product.compareAtPrice ?? null;
+                    const hasCompare = typeof compareAt === "number" && compareAt > price;
+                    const identifierBits = [
+                      product.identifiers?.sku && `SKU ${product.identifiers.sku}`,
+                      product.identifiers?.gtin && `GTIN ${product.identifiers.gtin}`,
+                      product.identifiers?.mpn && `MPN ${product.identifiers.mpn}`,
+                    ].filter(Boolean) as string[];
+                    const variantsCount = product.variants.length;
+                    const imagesCount = product.imageUrls.length;
+                    const attributesCount = product.attributes?.length ?? 0;
+                    const extraction = product.extraction;
+                    const isDefaultVariant = variantsCount === 1 && product.variants[0]?.title === "Default";
+                    const visibleVariants = isDefaultVariant ? 0 : variantsCount;
                     return (
                       <tr key={product.externalId} className={cn("transition-colors hover:bg-[var(--surface-1)]", selected && "bg-[var(--surface-2)]")}>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-4 align-top">
                           <input
                             type="checkbox"
                             checked={selected}
@@ -608,15 +622,76 @@ function RealImportTab({ onImportComplete }: { onImportComplete: () => void }) {
                             className="h-4 w-4 rounded-[var(--r-xs)] border-[color:var(--hairline-strong)] accent-ink-0 cursor-pointer"
                           />
                         </td>
-                        <td className="px-4 py-4">
+                        <td className="px-4 py-4 align-top">
                           <p className="max-w-[280px] truncate text-[13px] font-medium text-ink-0" title={product.title}>{product.title}</p>
-                          <p className="mt-0.5 max-w-[280px] truncate text-[11px] font-mono text-ink-5" title={product.externalId}>ID: {product.externalId}</p>
+                          <p className="mt-0.5 max-w-[280px] truncate text-[11px] text-ink-5" title={product.brand ?? undefined}>
+                            {product.brand ?? <span className="italic">Sin marca</span>}
+                          </p>
+                          {identifierBits.length > 0 && (
+                            <p className="mt-0.5 max-w-[280px] truncate text-[11px] font-mono text-ink-5" title={identifierBits.join(" · ")}>
+                              {identifierBits.join(" · ")}
+                            </p>
+                          )}
+                          <p className="mt-0.5 max-w-[280px] truncate text-[11px] font-mono text-ink-5" title={product.externalId}>
+                            ID: {product.externalId}
+                          </p>
                         </td>
-                        <td className="px-4 py-4 text-ink-5">{product.category || "-"}</td>
-                        <td className="px-4 py-4 text-right font-semibold tabular-nums text-ink-0">${product.cost.toLocaleString("es-AR")}</td>
-                        <td className="px-4 py-4 text-right font-semibold tabular-nums text-ink-0">${price.toLocaleString("es-AR")}</td>
-                        <td className="px-4 py-4 text-right tabular-nums text-ink-5">{product.stock}</td>
-                        <td className="px-4 py-4 text-right tabular-nums text-ink-5">{product.variants.length}</td>
+                        <td className="px-4 py-4 align-top">
+                          {extraction ? (
+                            <div className="space-y-1">
+                              <span className={cn(
+                                "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em]",
+                                extraction.confidence === "complete" && "bg-[color:var(--signal-success)]/15 text-[color:var(--signal-success)]",
+                                extraction.confidence === "partial" && "bg-[color:var(--signal-warning)]/15 text-[color:var(--signal-warning)]",
+                                extraction.confidence === "minimal" && "bg-[color:var(--signal-danger)]/15 text-[color:var(--signal-danger)]",
+                              )}>
+                                {extraction.confidence === "complete" && "Completa"}
+                                {extraction.confidence === "partial" && "Parcial"}
+                                {extraction.confidence === "minimal" && "Mínima"}
+                              </span>
+                              {extraction.missingCriticalFields.length > 0 && (
+                                <p className="max-w-[200px] text-[11px] text-[color:var(--signal-danger)]" title={extraction.missingCriticalFields.join(", ")}>
+                                  Faltan: {extraction.missingCriticalFields.join(", ")}
+                                </p>
+                              )}
+                              {extraction.extractedFrom.length > 0 && (
+                                <p className="max-w-[200px] truncate text-[10px] font-mono text-ink-5" title={extraction.extractedFrom.join(" + ")}>
+                                  {extraction.extractedFrom.join(" + ")}
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-[11px] text-ink-5">-</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-4 align-top text-ink-5">{product.category || "-"}</td>
+                        <td className="px-4 py-4 align-top text-right tabular-nums">
+                          {hasCompare && (
+                            <div className="text-[11px] text-ink-5 line-through">${compareAt!.toLocaleString("es-AR")}</div>
+                          )}
+                          <div className={cn("font-semibold text-ink-0", product.suggestedPrice == null && "text-[color:var(--signal-warning)]")}>
+                            ${price.toLocaleString("es-AR")}
+                            {product.currency && <span className="ml-1 text-[10px] font-normal text-ink-5">{product.currency}</span>}
+                          </div>
+                          {product.suggestedPrice == null && (
+                            <div className="text-[10px] text-[color:var(--signal-warning)]">precio estimado</div>
+                          )}
+                        </td>
+                        <td className="px-4 py-4 align-top text-right tabular-nums text-ink-5">
+                          {visibleVariants > 0 ? (
+                            <span title={product.variants.map((v) => v.title).join(", ")}>{visibleVariants}</span>
+                          ) : (
+                            <span className="text-ink-5">-</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-4 align-top text-right tabular-nums text-ink-5">{imagesCount}</td>
+                        <td className="px-4 py-4 align-top text-right tabular-nums text-ink-5">
+                          {attributesCount > 0 ? (
+                            <span title={product.attributes?.map((a) => `${a.key}: ${a.value}`).join("\n")}>{attributesCount}</span>
+                          ) : (
+                            <span>-</span>
+                          )}
+                        </td>
                       </tr>
                     );
                   })}

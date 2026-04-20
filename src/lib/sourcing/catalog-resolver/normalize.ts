@@ -29,10 +29,46 @@ export function parsePriceText(value: string | null | undefined): number | null 
   // Strip currency symbols / letters, keep digits, comma, dot, minus.
   const cleaned = String(value).replace(/[^\d.,-]/g, "").trim();
   if (!cleaned) return null;
-  // If it uses comma as decimal separator (e.g. "1.234,56"), swap.
-  const normalized = /,\d{1,2}$/.test(cleaned)
-    ? cleaned.replace(/\./g, "").replace(",", ".")
-    : cleaned.replace(/,/g, "");
+
+  const hasComma = cleaned.includes(",");
+  const hasDot = cleaned.includes(".");
+  let normalized: string;
+
+  if (hasComma && hasDot) {
+    // Mixed separators: the one that appears LAST is the decimal point.
+    // Examples:
+    //   "1.234,56"   → comma last  → "1234.56"
+    //   "1,234.56"   → dot   last  → "1234.56"
+    const lastComma = cleaned.lastIndexOf(",");
+    const lastDot = cleaned.lastIndexOf(".");
+    if (lastComma > lastDot) {
+      normalized = cleaned.replace(/\./g, "").replace(",", ".");
+    } else {
+      normalized = cleaned.replace(/,/g, "");
+    }
+  } else if (hasComma) {
+    // Comma only. Treat as decimal if exactly 1-2 trailing digits, else
+    // thousand separator ("1,234,567").
+    normalized = /,\d{1,2}$/.test(cleaned)
+      ? cleaned.replace(/,/g, ".")
+      : cleaned.replace(/,/g, "");
+  } else if (hasDot) {
+    // Dot only. Key disambiguation for locales like es-AR where "89.999"
+    // means 89 999 (thousand sep), not 89.999 (three-decimal).
+    const dotCount = (cleaned.match(/\./g) ?? []).length;
+    const afterLast = cleaned.split(".").pop() ?? "";
+    // Multiple dots → definitely thousand sep ("1.234.567").
+    // Single dot with 3 trailing digits AND integer-sized prefix → thousand.
+    // Everything else → decimal (e.g. "1.5", "12.99").
+    if (dotCount > 1 || afterLast.length === 3) {
+      normalized = cleaned.replace(/\./g, "");
+    } else {
+      normalized = cleaned;
+    }
+  } else {
+    normalized = cleaned;
+  }
+
   const num = Number(normalized);
   return Number.isFinite(num) && num >= 0 ? num : null;
 }
