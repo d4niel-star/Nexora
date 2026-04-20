@@ -338,7 +338,7 @@ export async function saveDraftAction() {
 export async function generateAIStoreDraft(input: AIStoreInput) {
   const store = await generateStoreDraftFromAIInput(input);
   revalidatePath("/admin/store");
-  revalidatePath("/admin/ai-store-builder");
+  revalidatePath("/admin/store-ai");
   revalidatePath(`/${store.slug}`);
   return { success: true, slug: store.slug, storeId: store.id };
 }

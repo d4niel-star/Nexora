@@ -40,7 +40,7 @@ export async function generateStudioDraftAction(brief: AIBrief) {
      throw new Error("Fallo la IA. Creditos reembolsados. Detalles: " + e.message);
   }
 
-  revalidatePath("/admin/ai-store-builder");
+  revalidatePath("/admin/store-ai");
   return result;
 }
 
@@ -65,7 +65,7 @@ export async function regenerateSectionAction(
 
     try {
       const result = await regenerateAISection(draftId, proposalId, section);
-      revalidatePath("/admin/ai-store-builder");
+      revalidatePath("/admin/store-ai");
       return result;
     } catch(e: any) {
       const { refundCredits } = await import("@/lib/billing/service");
@@ -75,18 +75,18 @@ export async function regenerateSectionAction(
   }
 
   const result = await regenerateAISection(draftId, proposalId, section);
-  revalidatePath("/admin/ai-store-builder");
+  revalidatePath("/admin/store-ai");
   return result;
 }
 
 export async function selectProposalAction(draftId: string, proposalId: string) {
   await selectAIProposal(draftId, proposalId);
-  revalidatePath("/admin/ai-store-builder");
+  revalidatePath("/admin/store-ai");
 }
 
 export async function applyProposalAction(draftId: string, proposalId: string) {
   const result = await applyAIProposalToStore(draftId, proposalId);
-  revalidatePath("/admin/ai-store-builder");
+  revalidatePath("/admin/store-ai");
   revalidatePath("/admin/store");
   return result;
 }
@@ -105,7 +105,7 @@ export async function applyAndPublishAction(draftId: string, proposalId: string)
     message: "Propuesta IA aplicada y tienda publicada",
   });
 
-  revalidatePath("/admin/ai-store-builder");
+  revalidatePath("/admin/store-ai");
   revalidatePath("/admin/store");
   return result;
 }

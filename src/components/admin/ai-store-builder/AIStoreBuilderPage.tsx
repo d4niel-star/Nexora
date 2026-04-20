@@ -44,7 +44,24 @@ type DrawerContent =
 
 interface ToastMessage { id: string; title: string; description: string; }
 
-export function AIStoreBuilderPage({ initialDraft }: { initialDraft: any }) {
+export function AIStoreBuilderPage({
+  initialDraft,
+  embedded = false,
+  initialTab,
+}: {
+  initialDraft: any;
+  /**
+   * When true, suppress the component's own hero/header (title + toolbar).
+   * The parent module provides its own module-level header so the builder
+   * reads as a workspace section, not a standalone page.
+   */
+  embedded?: boolean;
+  /**
+   * Optional tab to pre-select on mount. Used by the Tienda IA overview
+   * panel's recommended actions to deep-link into a specific step.
+   */
+  initialTab?: TabValue;
+}) {
   const [isPending, startTransition] = useTransition();
   const brief = initialDraft?.briefJson ? JSON.parse(initialDraft.briefJson) : { brandName: "", industry: "General", targetAudience: "", country: "AR", currency: "ARS" };
   const baseStyle = initialDraft?.style || "minimal_premium";
@@ -61,7 +78,7 @@ export function AIStoreBuilderPage({ initialDraft }: { initialDraft: any }) {
   });
 
   const isEmpty = !initialDraft && !project.config.brandName;
-  const [activeTab, setActiveTab] = useState<TabValue>("resumen");
+  const [activeTab, setActiveTab] = useState<TabValue>(initialTab ?? "resumen");
   const [visualScenario, setVisualScenario] = useState<VisualScenario>(isEmpty ? "empty" : "live");
   const [isLoading, setIsLoading] = useState(true);
   const [drawerContent, setDrawerContent] = useState<DrawerContent | null>(null);
@@ -126,24 +143,26 @@ export function AIStoreBuilderPage({ initialDraft }: { initialDraft: any }) {
             </div>
          </div>
       )}
-      <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-        <div>
-          <div className="mb-3 flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 h-6 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2 text-[10px] font-medium uppercase tracking-[0.18em] text-ink-5">
-              <Sparkles className="h-3 w-3" strokeWidth={1.75} />
-              Feature exclusiva
-            </span>
+      {!embedded && (
+        <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+          <div>
+            <div className="mb-3 flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 h-6 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2 text-[10px] font-medium uppercase tracking-[0.18em] text-ink-5">
+                <Sparkles className="h-3 w-3" strokeWidth={1.75} />
+                Feature exclusiva
+              </span>
+            </div>
+            <h1 className="text-[28px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0 lg:text-[32px]">Crear tienda con IA.</h1>
+            <p className="mt-2 text-[14px] leading-[1.55] text-ink-5">Un constructor guiado paso a paso para generar tu e-commerce con inteligencia artificial.</p>
           </div>
-          <h1 className="text-[28px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0 lg:text-[32px]">Crear tienda con IA.</h1>
-          <p className="mt-2 text-[14px] leading-[1.55] text-ink-5">Un constructor guiado paso a paso para generar tu e-commerce con inteligencia artificial.</p>
+          <div className="flex shrink-0 items-center gap-3">
+            <ToolbarSelect icon={<AlertTriangle className="h-4 w-4" />} label="Escenario" onChange={(v) => setVisualScenario(v as VisualScenario)} options={["live", "empty", "error"]} value={visualScenario} />
+            <button className="inline-flex items-center gap-2 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] h-9 px-3.5 text-[12px] font-medium text-ink-0 hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)] transition-colors" onClick={handleSaveDraft} type="button">
+              Guardar draft
+            </button>
+          </div>
         </div>
-        <div className="flex shrink-0 items-center gap-3">
-          <ToolbarSelect icon={<AlertTriangle className="h-4 w-4" />} label="Escenario" onChange={(v) => setVisualScenario(v as VisualScenario)} options={["live", "empty", "error"]} value={visualScenario} />
-          <button className="inline-flex items-center gap-2 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] h-9 px-3.5 text-[12px] font-medium text-ink-0 hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)] transition-colors" onClick={handleSaveDraft} type="button">
-            Guardar draft
-          </button>
-        </div>
-      </div>
+      )}
 
       <div className="relative overflow-hidden rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)]">
         <div aria-label="Pasos de IA Builder" className="flex items-center gap-7 overflow-x-auto border-b border-[color:var(--hairline)] bg-[var(--surface-1)] px-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden" role="tablist">

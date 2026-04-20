@@ -12,6 +12,7 @@ import {
   Puzzle,
   ShoppingCart,
   Sparkles,
+  Store,
   Truck,
   X,
 } from "lucide-react";
@@ -32,6 +33,7 @@ const navigation = [
   { href: "/admin/inventory", label: "Inventario", icon: Boxes },
   { href: "/admin/sourcing", label: "Abastecimiento", icon: Truck },
   { href: "/admin/operations", label: "Operaciones", icon: PackageSearch },
+  { href: "/admin/store-ai", label: "Tienda IA", icon: Store },
   { href: "/admin/apps", label: "Apps", icon: Puzzle },
 ];
 

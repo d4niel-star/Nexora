@@ -1,17 +1,19 @@
 "use client";
 
-import { Sparkles, Megaphone, TrendingUp, ChevronRight, PackageCheck, Package, LayoutTemplate } from "lucide-react";
+import { Sparkles, Megaphone, TrendingUp, ChevronRight, PackageCheck, Package } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
+// Tienda IA was promoted to a top-level module (sidebar entry + /admin/store-ai).
+// It deliberately no longer lives here as an AI context — the module has its own
+// shell, landing and navigation.
 const AI_CONTEXTS = [
   { key: "general", label: "General", href: "/admin/ai", icon: Sparkles },
   { key: "ads", label: "Ads", href: "/admin/ai/ads", icon: Megaphone },
   { key: "finances", label: "Finanzas", href: "/admin/ai/finances", icon: TrendingUp },
   { key: "operations", label: "Operación", href: "/admin/ai/operations", icon: PackageCheck },
   { key: "catalog", label: "Catálogo", href: "/admin/ai/catalog", icon: Package },
-  { key: "store-builder", label: "Tienda IA", href: "/admin/ai/store-builder", icon: LayoutTemplate },
 ] as const;
 
 interface NexoraAIShellProps {

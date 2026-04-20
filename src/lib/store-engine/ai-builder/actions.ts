@@ -32,7 +32,7 @@ export async function saveAIBuilderConfig(storeId: string, briefData: any, style
     });
   }
 
-  revalidatePath("/admin/ai/store-builder");
+  revalidatePath("/admin/store-ai");
   return { success: true };
 }
 
@@ -88,7 +88,7 @@ export async function generateAIProposalsAction(storeId: string) {
     data: { status: "generated" }
   });
 
-  revalidatePath("/admin/ai/store-builder");
+  revalidatePath("/admin/store-ai");
   return { success: true };
 }
 
@@ -104,7 +104,7 @@ export async function selectProposalAction(storeId: string, proposalId: string) 
     data: { selectedProposalId: proposalId },
   });
 
-  revalidatePath("/admin/ai/store-builder");
+  revalidatePath("/admin/store-ai");
   return { success: true };
 }
 
@@ -218,7 +218,7 @@ export async function applyAIProposalToStoreAction(storeId: string) {
 
   const storeInfo = await prisma.store.findUnique({ where: { id: storeId }, select: { slug: true }});
   
-  revalidatePath("/admin/ai/store-builder");
+  revalidatePath("/admin/store-ai");
   revalidatePath("/admin/store");
   
   if (storeInfo?.slug) {
