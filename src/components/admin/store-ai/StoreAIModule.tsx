@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import {
   ArrowRight,
   CheckCircle2,
@@ -147,7 +148,7 @@ function ModuleHeader({
           actual, ejecutá las acciones recomendadas y publicá cuando esté lista.
         </p>
       </div>
-      <div className="flex shrink-0 items-center gap-3">
+      <div className="flex shrink-0 flex-wrap items-center gap-3">
         <StatusPill label={snapshot.statusLabel} tone={snapshot.statusTone} />
         <button
           type="button"
@@ -157,6 +158,13 @@ function ModuleHeader({
           {snapshot.primaryActionLabel}
           <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
         </button>
+        <Link
+          href="/admin/store?tab=home"
+          className="inline-flex h-10 items-center gap-2 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-5 text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
+        >
+          Editar contenido
+          <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
+        </Link>
       </div>
     </header>
   );

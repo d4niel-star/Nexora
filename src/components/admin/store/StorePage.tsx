@@ -5,9 +5,12 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
+  ArrowDown,
+  ArrowUp,
   Check,
   CreditCard,
   Eye,
+  EyeOff,
   FileText,
   Globe,
   GripVertical,
@@ -18,14 +21,18 @@ import {
   Navigation,
   Paintbrush,
   Palette,
+  Pencil,
   Save,
   Search,
   Share2,
   Smartphone,
+  Sparkles,
   X,
 } from "lucide-react";
 
 import { StoreDrawer } from "@/components/admin/store/StoreDrawer";
+import { SectionEditorDrawer } from "@/components/admin/store/SectionEditorDrawer";
+import type { SectionBlock } from "@/components/admin/store/SectionEditorDrawer";
 import { StoreStatusBadge, SectionTypeBadge, PageTypeBadge, ColorDot } from "@/components/admin/store/StoreBadge";
 import { DomainSettingsView } from "@/components/admin/store/tabs/DomainSettingsView";
 import { TableSkeleton } from "@/components/admin/orders/TableSkeleton";
@@ -35,8 +42,10 @@ import {
   createFirstStoreProductAction,
   publishStoreAction,
   saveStoreProfileAction,
+  saveStoreBranding,
+  saveHomeBlocks,
 } from "@/lib/store-engine/actions";
-import type { AdminStoreInitialData } from "@/types/store-engine";
+import type { AdminStoreInitialData, BlockType } from "@/types/store-engine";
 import type { StoreTheme, StoreBranding, StoreSummary, HomeSection, NavItem, StorePage as StorePageType, StoreDomain, StoreStatus } from "@/types/store";
 import type { MercadoPagoPlatformReadiness } from "@/lib/payments/mercadopago/platform-readiness";
 
@@ -123,6 +132,18 @@ export function StorePage({
   const [isLoading, setIsLoading] = useState(true);
   const [drawerContent, setDrawerContent] = useState<DrawerContent | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [sectionEditorBlock, setSectionEditorBlock] = useState<SectionBlock | null>(null);
+
+  // ─── Section blocks for editor (preserves full settings for save) ───
+  const sectionBlocks: SectionBlock[] = initialData ? initialData.homeBlocks.map(b => ({
+    id: b.id,
+    blockType: b.blockType,
+    sortOrder: b.sortOrder,
+    isVisible: b.isVisible,
+    settings: b.settings,
+    source: b.source,
+    state: b.state,
+  })) : [];
 
   // ─── Map persisted data to view models (mock fallback) ───
   const storeSummary: StoreSummary = initialData ? {
@@ -320,11 +341,16 @@ export function StorePage({
               summary={storeSummary}
             />
           ) : activeTab === "tema" ? (
-            <ThemeView openDrawer={openDrawer} onAction={handleAction} />
+            <ThemeView initialData={initialData ?? null} onAction={handleAction} onNavigate={handleTabChange} />
           ) : activeTab === "branding" ? (
-            <BrandingView initialData={initialData ?? null} onAction={handleAction} onRefresh={refreshData} branding={brandingData} />
+            <BrandingView initialData={initialData ?? null} onAction={handleAction} onRefresh={refreshData} branding={brandingData} pushToast={pushToast} />
           ) : activeTab === "home" ? (
-            <HomeView openDrawer={openDrawer} onAction={handleAction} sections={homeSections} />
+            <HomeView
+              sectionBlocks={sectionBlocks}
+              onAction={handleAction}
+              onRefresh={refreshData}
+              onEditSection={(block) => setSectionEditorBlock(block)}
+            />
           ) : activeTab === "navegacion" ? (
             <NavView searchQuery={searchQuery} openDrawer={openDrawer} onAction={handleAction} items={navItems} />
           ) : activeTab === "paginas" ? (
@@ -347,6 +373,17 @@ export function StorePage({
       </div>
 
       <StoreDrawer content={drawerContent} isOpen={drawerContent !== null} onClose={closeDrawer} onAction={handleAction} />
+      <SectionEditorDrawer
+        block={sectionEditorBlock}
+        allBlocks={sectionBlocks}
+        isOpen={sectionEditorBlock !== null}
+        onClose={() => setSectionEditorBlock(null)}
+        onSaved={() => {
+          pushToast("Sección actualizada", "Los cambios se reflejan en el storefront.");
+          setSectionEditorBlock(null);
+          refreshData();
+        }}
+      />
       <ToastViewport onDismiss={(id) => setToasts((c) => c.filter((t) => t.id !== id))} toasts={toasts} />
     </div>
   );
@@ -549,19 +586,37 @@ function FirstProductPanel({ onAction, onRefresh }: { onAction: (a: string) => v
 
 /* ─── Theme ─── */
 
-function ThemeView({ openDrawer, onAction }: { openDrawer: (c: DrawerContent) => void; onAction: (a: string) => void }) {
+function ThemeView({ initialData, onAction, onNavigate }: { initialData: AdminStoreInitialData | null; onAction: (a: string) => void; onNavigate: (t: TabValue) => void }) {
+  const theme = initialData?.theme;
+  const themeName = theme?.activeTheme === "bold" ? "Bold Commerce" : theme?.activeTheme === "classic" ? "Classic Elegance" : "Minimal Pro";
+  const variant = theme?.themeVariant === "dark" ? "Oscuro" : "Claro";
+  const published = theme?.isPublished ? "Publicado" : "Borrador";
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Temas disponibles</h3>
+        <h3 className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Tema activo</h3>
       </div>
-      <div className="flex h-32 items-center justify-center rounded-[var(--r-md)] border border-dashed border-[color:var(--hairline)] bg-[var(--surface-1)] text-[12px] font-medium text-ink-5">
-        Gestión de temas en construcción
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <SummaryCard label="Tema" value={themeName} accent />
+        <SummaryCard label="Variante" value={variant} />
+        <SummaryCard label="Estado" value={published} />
       </div>
-      <div className="flex items-center gap-3">
-        <button disabled className="inline-flex items-center gap-2 h-10 px-5 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[13px] font-medium text-ink-0 opacity-50" type="button">
-          Gestión manual próximamente
-        </button>
+      <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5">
+        <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Personalización</p>
+        <p className="mt-2 max-w-xl text-[13px] leading-[1.55] text-ink-5">
+          La identidad visual de tu tienda se controla desde Branding (colores, tipografía, estilo de botones) y desde las secciones del Home (contenido de cada bloque).
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button className="inline-flex items-center gap-2 h-10 px-5 rounded-[var(--r-sm)] bg-ink-0 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" onClick={() => onNavigate("branding")} type="button">
+            <Paintbrush className="h-3.5 w-3.5" />
+            Editar branding
+          </button>
+          <button className="inline-flex items-center gap-2 h-10 px-5 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" onClick={() => onNavigate("home")} type="button">
+            <Home className="h-3.5 w-3.5" />
+            Editar secciones
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -574,19 +629,25 @@ function BrandingView({
   onAction,
   onRefresh,
   branding,
+  pushToast,
 }: {
   initialData: AdminStoreInitialData | null;
   onAction: (a: string) => void;
   onRefresh: () => void;
   branding: StoreBranding;
+  pushToast: (title: string, description: string) => void;
 }) {
   const b = branding;
   const [isPending, startTransition] = useTransition();
+  const [isBrandingSaving, startBrandingSave] = useTransition();
+  const [primaryColor, setPrimaryColor] = useState(b.primaryColor);
+  const [secondaryColor, setSecondaryColor] = useState(b.secondaryColor);
+  const [fontFamily, setFontFamily] = useState(b.fontFamily);
+  const [buttonStyle, setButtonStyle] = useState(b.buttonStyle);
 
   const handleProfileSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-
     startTransition(async () => {
       try {
         await saveStoreProfileAction(formData);
@@ -598,9 +659,32 @@ function BrandingView({
     });
   };
 
+  const handleBrandingSave = () => {
+    startBrandingSave(async () => {
+      try {
+        await saveStoreBranding({
+          primaryColor,
+          secondaryColor,
+          fontFamily,
+          buttonStyle: buttonStyle === "rounded" ? "rounded-sm" : buttonStyle,
+        });
+        pushToast("Branding actualizado", "Los cambios se reflejan en el storefront.");
+        onRefresh();
+      } catch (error) {
+        onAction(error instanceof Error ? error.message : "No se pudo guardar branding.");
+      }
+    });
+  };
+
   const inputCls = "w-full h-11 px-3.5 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] text-[13px] font-medium text-ink-0 outline-none transition-[box-shadow,border-color] focus:border-[var(--accent-500)] focus:shadow-[var(--shadow-focus)]";
   const labelCls = "text-[12px] font-medium text-ink-5";
   const sectionTitle = "text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5";
+  const fontOptions = ["Inter", "Roboto", "Outfit", "Poppins", "Manrope", "DM Sans", "Source Sans 3"];
+  const buttonOptions: Array<{ value: string; label: string }> = [
+    { value: "rounded", label: "Redondeado" },
+    { value: "square", label: "Cuadrado" },
+    { value: "pill", label: "Píldora" },
+  ];
 
   return (
     <div className="space-y-8 p-6">
@@ -637,11 +721,55 @@ function BrandingView({
         </div>
       </form>
 
-      <div className="space-y-4">
-        <h3 className={sectionTitle}>Identidad de marca</h3>
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <FormBlock label="Nombre de la tienda" value={b.storeName} />
-          <FormBlock label="Tipografía" value={b.fontFamily} />
+      {/* ─── Editable branding section ─── */}
+      <div className="space-y-4 rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div>
+            <h3 className={sectionTitle}>Identidad visual</h3>
+            <p className="mt-2 max-w-xl text-[13px] leading-[1.55] text-ink-5">
+              Colores, tipografía y estilo de botones. Se aplican en todo el storefront.
+            </p>
+          </div>
+          <button className="inline-flex shrink-0 items-center gap-2 h-10 px-5 rounded-[var(--r-sm)] bg-ink-0 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" disabled={isBrandingSaving} onClick={handleBrandingSave} type="button">
+            <Save className="h-3.5 w-3.5" />
+            {isBrandingSaving ? "Guardando..." : "Guardar branding"}
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <label className="space-y-1.5">
+            <span className={labelCls}>Color principal</span>
+            <div className="flex items-center gap-3">
+              <input type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="h-11 w-14 cursor-pointer rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-1" />
+              <input className={inputCls} value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} placeholder="#000000" maxLength={7} />
+            </div>
+          </label>
+          <label className="space-y-1.5">
+            <span className={labelCls}>Color secundario</span>
+            <div className="flex items-center gap-3">
+              <input type="color" value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} className="h-11 w-14 cursor-pointer rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-1" />
+              <input className={inputCls} value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} placeholder="#10B981" maxLength={7} />
+            </div>
+          </label>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <label className="space-y-1.5">
+            <span className={labelCls}>Tipografía</span>
+            <select className={cn(inputCls, "appearance-none")} value={fontFamily} onChange={(e) => setFontFamily(e.target.value)}>
+              {fontOptions.map((f) => <option key={f} value={f}>{f}</option>)}
+            </select>
+          </label>
+          <div className="space-y-1.5">
+            <span className={labelCls}>Estilo de botones</span>
+            <div className="flex gap-2">
+              {buttonOptions.map((opt) => (
+                <button key={opt.value} type="button" onClick={() => setButtonStyle(opt.value as any)} className={cn("flex-1 h-11 rounded-[var(--r-sm)] border text-[12px] font-medium transition-colors", buttonStyle === opt.value ? "border-ink-0 bg-ink-0 text-ink-12" : "border-[color:var(--hairline)] bg-[var(--surface-1)] text-ink-5 hover:bg-[var(--surface-2)]")}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -662,49 +790,109 @@ function BrandingView({
           </div>
         </div>
       </div>
-
-      <div className="space-y-4">
-        <h3 className={sectionTitle}>Colores</h3>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <ColorField label="Color principal" color={b.primaryColor} onAction={onAction} />
-          <ColorField label="Color secundario" color={b.secondaryColor} onAction={onAction} />
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        <h3 className={sectionTitle}>Estilo de botones</h3>
-        <p className="text-[12px] text-ink-5">Configuración gestionada desde Nexora AI Store Builder.</p>
-      </div>
     </div>
   );
 }
 
 /* ─── Home ─── */
 
-function HomeView({ openDrawer, onAction, sections }: { openDrawer: (c: DrawerContent) => void; onAction: (a: string) => void; sections: HomeSection[] }) {
+function HomeView({ sectionBlocks, onAction, onRefresh, onEditSection }: { sectionBlocks: SectionBlock[]; onAction: (a: string) => void; onRefresh: () => void; onEditSection: (block: SectionBlock) => void }) {
+  const [isReordering, startReorder] = useTransition();
+
+  const sorted = [...sectionBlocks].sort((a, b) => a.sortOrder - b.sortOrder);
+  const visibleCount = sorted.filter((s) => s.isVisible).length;
+
+  const handleToggle = (block: SectionBlock) => {
+    startReorder(async () => {
+      try {
+        const updated = sectionBlocks.map((b) => ({
+          blockType: b.blockType as BlockType,
+          sortOrder: b.sortOrder,
+          isVisible: b.id === block.id ? !b.isVisible : b.isVisible,
+          settingsJson: JSON.stringify(b.settings),
+          source: b.source,
+          state: "published",
+        }));
+        await saveHomeBlocks(updated);
+        onAction(block.isVisible ? "Sección ocultada." : "Sección activada.");
+        onRefresh();
+      } catch { /* handled */ }
+    });
+  };
+
+  const handleMove = (block: SectionBlock, direction: "up" | "down") => {
+    const idx = sorted.findIndex((s) => s.id === block.id);
+    const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= sorted.length) return;
+
+    startReorder(async () => {
+      try {
+        const reordered = sorted.map((s, i) => {
+          let newOrder = s.sortOrder;
+          if (i === idx) newOrder = sorted[swapIdx].sortOrder;
+          if (i === swapIdx) newOrder = sorted[idx].sortOrder;
+          return {
+            blockType: s.blockType as BlockType,
+            sortOrder: newOrder,
+            isVisible: s.isVisible,
+            settingsJson: JSON.stringify(s.settings),
+            source: s.source,
+            state: "published",
+          };
+        });
+        await saveHomeBlocks(reordered);
+        onAction("Orden actualizado.");
+        onRefresh();
+      } catch { /* handled */ }
+    });
+  };
+
   return (
     <div className="space-y-4 p-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Secciones del home</h3>
-        <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">{sections.length} secciones</span>
+        <div>
+          <h3 className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Secciones del home</h3>
+          <p className="mt-1 text-[12px] text-ink-5">{visibleCount} de {sorted.length} visibles en el storefront</p>
+        </div>
+        <span className={cn("inline-flex items-center rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5", isReordering && "opacity-50")}>{sorted.length} secciones</span>
       </div>
       <div className="space-y-2">
-        {sections.map((sec) => (
-          <button key={sec.id} className="group flex w-full items-center gap-4 rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-4 text-left transition-colors hover:bg-[var(--surface-1)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" onClick={() => openDrawer({ kind: "section", data: sec })} type="button">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--r-sm)] bg-[var(--surface-1)] border border-[color:var(--hairline)] text-ink-5 transition-colors group-hover:text-ink-0">
-              <GripVertical className="h-4 w-4" strokeWidth={1.75} />
+        {sorted.map((block, idx) => (
+          <div key={block.id} className={cn("group flex w-full items-center gap-3 rounded-[var(--r-md)] border p-4 transition-colors", block.isVisible ? "border-[color:var(--hairline)] bg-[var(--surface-0)]" : "border-dashed border-[color:var(--hairline)] bg-[var(--surface-1)] opacity-60")}>
+            {/* Reorder */}
+            <div className="flex shrink-0 flex-col gap-0.5">
+              <button type="button" disabled={idx === 0 || isReordering} onClick={() => handleMove(block, "up")} className="rounded p-0.5 text-ink-6 transition-colors hover:text-ink-0 disabled:opacity-30" aria-label="Mover arriba">
+                <ArrowUp className="h-3.5 w-3.5" strokeWidth={1.75} />
+              </button>
+              <button type="button" disabled={idx === sorted.length - 1 || isReordering} onClick={() => handleMove(block, "down")} className="rounded p-0.5 text-ink-6 transition-colors hover:text-ink-0 disabled:opacity-30" aria-label="Mover abajo">
+                <ArrowDown className="h-3.5 w-3.5" strokeWidth={1.75} />
+              </button>
             </div>
+            {/* Info */}
             <div className="flex flex-1 items-center justify-between gap-3 min-w-0">
               <div className="min-w-0">
-                <p className="truncate text-[13px] font-medium text-ink-0">{sec.label}</p>
-                <p className="mt-0.5 truncate text-[11px] font-medium text-ink-5">{sec.description}</p>
+                <p className="truncate text-[13px] font-medium text-ink-0">{blockLabel(block.blockType)}</p>
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-[0.1em] text-ink-5">
+                    {block.source === "ai" ? <><Sparkles className="h-2.5 w-2.5" />IA</> : "Manual"}
+                  </span>
+                  <span className={cn("inline-flex items-center rounded-[var(--r-xs)] px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-[0.1em]", block.isVisible ? "bg-[color:var(--signal-success)]/10 text-[color:var(--signal-success)]" : "bg-[var(--surface-2)] text-ink-5")}>
+                    {block.isVisible ? "Visible" : "Oculta"}
+                  </span>
+                </div>
               </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <SectionTypeBadge type={sec.type} />
-                <StoreStatusBadge status={sec.status} />
+              {/* Actions */}
+              <div className="flex shrink-0 items-center gap-1.5">
+                <button type="button" onClick={() => handleToggle(block)} disabled={isReordering} className="rounded-[var(--r-sm)] p-2 text-ink-5 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0" title={block.isVisible ? "Ocultar sección" : "Mostrar sección"}>
+                  {block.isVisible ? <Eye className="h-4 w-4" strokeWidth={1.75} /> : <EyeOff className="h-4 w-4" strokeWidth={1.75} />}
+                </button>
+                <button type="button" onClick={() => onEditSection(block)} className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3 py-2 text-[12px] font-medium text-ink-3 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0">
+                  <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  Editar
+                </button>
               </div>
             </div>
-          </button>
+          </div>
         ))}
       </div>
     </div>
