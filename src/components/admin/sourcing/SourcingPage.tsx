@@ -226,6 +226,7 @@ function detectionLabel(source: NonNullable<SourcingImportPreview["detectedSourc
   switch (source) {
     case "feed-csv": return "Feed CSV";
     case "feed-xml": return "Feed XML";
+    case "product": return "Producto individual";
     case "feed-json": return "Feed JSON";
     case "shopify": return "Shopify";
     case "structured-data": return "schema.org Product";
@@ -439,9 +440,9 @@ function RealImportTab({ onImportComplete }: { onImportComplete: () => void }) {
                 className={cn(inputCls, "mt-2")}
               />
               <span className="mt-2 block text-[12px] text-ink-5">
-                Nexora intenta detectar automáticamente el tipo de fuente (feed directo, Shopify, schema.org,
-                sitemap o catálogo HTML). No toda URL es soportable: si no se puede extraer un catálogo
-                utilizable, se reporta el diagnóstico completo.
+                Nexora intenta detectar automáticamente el tipo de fuente (producto individual, feed directo,
+                Shopify, schema.org, sitemap o catálogo HTML). No toda URL es soportable: si no se puede extraer
+                un resultado utilizable, se reporta el diagnóstico completo y no se importa nada.
               </span>
             </label>
             <button type="button" onClick={runPreview} disabled={isPending || feedUrl.trim().length === 0} className={primaryBtn}>

@@ -15,6 +15,7 @@ export type DetectedSource =
   | "structured-data"
   | "sitemap"
   | "html-catalog"
+  | "product"
   | "unknown";
 
 export type ExtractorId =
@@ -22,7 +23,19 @@ export type ExtractorId =
   | "shopify"
   | "structured-data"
   | "sitemap"
-  | "html-catalog";
+  | "html-catalog"
+  | "single-product";
+
+// High-level classification of a URL: what kind of page is it?
+// Derived from URL heuristics and body signals; used by the resolver to
+// pick the right extractor. "product" means the URL itself represents a
+// single product detail page (PDP), as opposed to a catalog/listing.
+export type PageKind =
+  | "feed"
+  | "sitemap"
+  | "catalog"
+  | "product"
+  | "unknown";
 
 export interface DiagnosticStep {
   step: string;

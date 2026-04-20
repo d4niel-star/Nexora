@@ -7,12 +7,13 @@ import {
 } from "./budget";
 import { budgetedFetch } from "./fetcher";
 import { ResolverLogger } from "./logger";
-import { detectSourceType } from "./detect";
+import { detectPageKind, detectSourceType } from "./detect";
 import { extractFromFeed } from "./extractors/feed";
 import { detectShopify, extractFromShopify } from "./extractors/shopify";
 import { extractStructuredDataFromHtml } from "./extractors/structured-data";
 import { extractFromSitemap } from "./extractors/sitemap";
 import { extractFromHtmlCatalog } from "./extractors/html-catalog";
+import { extractSingleProductFromHtml } from "./extractors/single-product";
 import { dedupeByExternalId } from "./normalize";
 import type {
   BudgetSnapshot,
@@ -137,8 +138,70 @@ export async function resolveCatalogFromUrl(input: ResolveInput): Promise<Catalo
   // HTML path — try extractors in order, return first non-empty.
   let finalDetected: DetectedSource = detectedSource === "unknown" ? "html-catalog" : detectedSource;
 
-  // 1. Structured data on the landing page itself (also catches
-  //    single-product detail pages).
+  // ─── Page-kind routing ────────────────────────────────────────────────
+  // Before treating the page as a catalog, ask "is this actually a single
+  // product page?". If yes, run the dedicated PDP extractor and, if it
+  // fails, emit a PDP-specific diagnostic — do NOT fall through to the
+  // html-catalog crawl, which would treat the PDP's related-links as
+  // candidate products and produce a misleading "0 products / catalog
+  // HTML" error.
+  const pageKind = detectPageKind({
+    url: rootResp.url,
+    contentType: rootResp.contentType,
+    body: rootResp.body,
+  });
+  logger.info(
+    "detect.page-kind",
+    `Page kind: ${pageKind.kind} (signal: ${pageKind.signal})`,
+  );
+
+  if (pageKind.kind === "product") {
+    const result = extractSingleProductFromHtml(rootResp.body, rootResp.url);
+    if (result.product) {
+      logger.ok(
+        "single-product",
+        `Producto individual extraído (capa: ${result.usedLayer ?? "?"})`,
+      );
+      return finalize(
+        url,
+        "product",
+        "single-product",
+        [result.product],
+        [],
+        budget,
+        logger,
+      );
+    }
+
+    // Strong signal (HTML advertised this is a PDP) → stop here with an
+    // honest PDP-specific diagnostic. Do NOT fall through to html-catalog
+    // which would try to crawl related-products links and produce a
+    // misleading "0 products / catalog HTML" error.
+    if (pageKind.signal === "html") {
+      const message = pdpFailureMessage(result.failure);
+      logger.error("single-product", message);
+      return buildResolution(
+        url,
+        "product",
+        null,
+        [],
+        [{ row: 1, field: "product", message }],
+        budget,
+        logger,
+      );
+    }
+
+    // Weak signal (only the URL looked product-like). The URL could be a
+    // category listing that happens to contain "/productos/". Fall through
+    // to the catalog pipeline instead of failing with a PDP error.
+    logger.warn(
+      "single-product",
+      "La URL parecía de producto individual, pero no se extrajo uno. Reintentando como catálogo.",
+    );
+  }
+
+  // 1. Structured data on the landing page itself (covers landing pages
+  //    that include featured-product schema even when they're not PDPs).
   const direct = extractStructuredDataFromHtml(rootResp.body, rootResp.url);
   if (direct.length > 0) {
     logger.ok("structured-data", `Root page exposed ${direct.length} Product node(s)`);
@@ -183,6 +246,19 @@ export async function resolveCatalogFromUrl(input: ResolveInput): Promise<Catalo
         "No se pudo extraer un catálogo utilizable desde esta URL. Probá una URL de categoría, de producto individual, un feed CSV/XML/JSON o un sitemap.",
     },
   ], budget, logger);
+}
+
+function pdpFailureMessage(failure: string | undefined): string {
+  switch (failure) {
+    case "probably_js_rendered":
+      return "La página parece ser un producto individual pero no expone datos estáticos. Probablemente se renderiza con JavaScript y Nexora no puede leerla sin un navegador real.";
+    case "no_price_no_image":
+      return "Se detectó una página de producto individual, pero no exponía precio ni imagen extraíble. Verificá la URL o intentá con una URL más específica.";
+    case "no_title":
+      return "La URL parece ser una página de producto individual, pero no expone título extraíble. Probá con otra URL del mismo sitio.";
+    default:
+      return "Se detectó una página de producto individual, pero no se pudo extraer información estructurada suficiente (título, precio o imagen).";
+  }
 }
 
 function finalize(

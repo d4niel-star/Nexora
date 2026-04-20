@@ -46,6 +46,7 @@ export interface SourcingImportPreview {
     | "structured-data"
     | "sitemap"
     | "html-catalog"
+    | "product"
     | "unknown";
   extractorUsed?:
     | "feed"
@@ -53,6 +54,7 @@ export interface SourcingImportPreview {
     | "structured-data"
     | "sitemap"
     | "html-catalog"
+    | "single-product"
     | null;
   diagnostics?: {
     step: string;
