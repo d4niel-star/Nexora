@@ -352,7 +352,18 @@ export function ThemeEditorShell({
         }}
       />
 
-      <NexoraEditorChat onActionApplied={refreshPreview} />
+      <NexoraEditorChat
+        onActionApplied={refreshPreview}
+        onDeviceChange={(d) => { setDevice(d); }}
+        onPreviewSurfaceChange={(s) => { setPreviewSurface(s); }}
+        currentBranding={initialData.branding ? {
+          primaryColor: initialData.branding.primaryColor,
+          secondaryColor: initialData.branding.secondaryColor,
+          fontFamily: initialData.branding.fontFamily,
+          tone: initialData.branding.tone,
+          buttonStyle: initialData.branding.buttonStyle,
+        } : null}
+      />
     </div>
   );
 }
