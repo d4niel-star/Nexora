@@ -16,8 +16,19 @@ import {
 
 import { AIStoreBuilderPage } from "@/components/admin/ai-store-builder/AIStoreBuilderPage";
 import { ReadinessPanel } from "@/components/admin/readiness/ReadinessPanel";
+import { ThemeLibrary } from "@/components/admin/themes/ThemeLibrary";
 import type { ReadinessSnapshot } from "@/lib/readiness/snapshot";
+import type { StoreTemplate } from "@/types/store-templates";
 import { cn } from "@/lib/utils";
+
+interface CurrentThemeView {
+  themeStyle: string | null;
+  appliedTemplate: { id: string; name: string; themeStyle: string } | null;
+  primaryColor: string | null;
+  secondaryColor: string | null;
+  fontFamily: string | null;
+  blocks: { total: number; bySource: Record<string, number> };
+}
 
 // ─── Tienda IA — module landing ─────────────────────────────────────────
 // A module-level surface that sits at the same hierarchy as Catálogo,
@@ -57,9 +68,22 @@ interface StoreAIModuleProps {
    * publication/sales readiness centre and not just an AI-builder recap.
    */
   readiness?: ReadinessSnapshot | null;
+  /**
+   * Current theme / template state derived from real DB rows (StoreTheme,
+   * StoreBranding, StoreBlock). When provided we render the theme library
+   * (gallery + importer + exporter) above the builder workspace.
+   */
+  themeState?: CurrentThemeView;
+  /** Built-in templates that ship with Nexora. Safe to be a readonly list. */
+  templates?: readonly StoreTemplate[];
 }
 
-export function StoreAIModule({ initialDraft, readiness }: StoreAIModuleProps) {
+export function StoreAIModule({
+  initialDraft,
+  readiness,
+  themeState,
+  templates,
+}: StoreAIModuleProps) {
   const [activeTab, setActiveTab] = useState<BuilderTab>("resumen");
 
   const snapshot = useMemo(() => deriveSnapshot(initialDraft), [initialDraft]);
@@ -92,6 +116,17 @@ export function StoreAIModule({ initialDraft, readiness }: StoreAIModuleProps) {
           <RecommendedActions snapshot={snapshot} onGoTo={goToTab} />
         </>
       )}
+
+      {/* ── Theme library ──
+       *
+       * Surface the curated templates + importer/exporter here, above
+       * the builder workspace, so the narrative is:
+       *   diagnose → pick a starting point → edit → ship.
+       * Only renders when the server provided state; older callers that
+       * don't opt in keep the previous layout. */}
+      {themeState && templates && templates.length > 0 ? (
+        <ThemeLibrary current={themeState} templates={templates} />
+      ) : null}
 
       <section
         id="store-ai-workspace"

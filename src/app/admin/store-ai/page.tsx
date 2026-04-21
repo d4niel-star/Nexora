@@ -41,10 +41,39 @@ export default async function StoreAIPage() {
     );
   }
 
-  const [draft, readiness] = await Promise.all([
+  const { getCurrentThemeState, listBuiltInTemplates } = await import("@/lib/themes/queries");
+
+  const [draft, readiness, themeState] = await Promise.all([
     getAIGenerationDraft(storeId),
     getStoreReadinessSnapshot(storeId),
+    getCurrentThemeState(storeId),
   ]);
 
-  return <StoreAIModule initialDraft={draft} readiness={readiness} />;
+  const templates = listBuiltInTemplates();
+
+  // Down-cast appliedTemplate to the shape the client component needs
+  // (avoids shipping the entire homeBlocks payload across the boundary).
+  const currentThemeView = {
+    themeStyle: themeState.themeStyle,
+    appliedTemplate: themeState.appliedTemplate
+      ? {
+          id: themeState.appliedTemplate.id,
+          name: themeState.appliedTemplate.name,
+          themeStyle: themeState.appliedTemplate.themeStyle,
+        }
+      : null,
+    primaryColor: themeState.primaryColor,
+    secondaryColor: themeState.secondaryColor,
+    fontFamily: themeState.fontFamily,
+    blocks: themeState.blocks,
+  };
+
+  return (
+    <StoreAIModule
+      initialDraft={draft}
+      readiness={readiness}
+      themeState={currentThemeView}
+      templates={templates}
+    />
+  );
 }
