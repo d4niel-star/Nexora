@@ -105,7 +105,7 @@ export async function saveStoreBranding(data: {
 
   await updateStoreBranding(store.id, data);
   revalidatePath("/admin/store");
-  revalidatePath(`/${store.slug}`);
+  revalidatePath(storePath(store.slug));
   return { success: true };
 }
 
@@ -255,7 +255,7 @@ export async function saveStoreNavigation(
 
   await updateStoreNavigation(store.id, items);
   revalidatePath("/admin/store");
-  revalidatePath(`/${store.slug}`);
+  revalidatePath(storePath(store.slug));
   return { success: true };
 }
 
@@ -276,7 +276,7 @@ export async function saveHomeBlocks(
 
   await updateHomeBlocks(store.id, blocks);
   revalidatePath("/admin/store");
-  revalidatePath(`/${store.slug}`);
+  revalidatePath(storePath(store.slug));
   return { success: true };
 }
 
@@ -339,6 +339,6 @@ export async function generateAIStoreDraft(input: AIStoreInput) {
   const store = await generateStoreDraftFromAIInput(input);
   revalidatePath("/admin/store");
   revalidatePath("/admin/store-ai");
-  revalidatePath(`/${store.slug}`);
+  revalidatePath(storePath(store.slug));
   return { success: true, slug: store.slug, storeId: store.id };
 }

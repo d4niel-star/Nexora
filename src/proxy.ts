@@ -79,10 +79,16 @@ export async function proxy(req: NextRequest) {
   }
 
   // ─── Direct filesystem route passthrough ───
-  // /home/*, /welcome/*, /admin/* are actual app routes in the filesystem.
+  // /home/*, /welcome/*, /admin/* and /store/* are actual app routes in the filesystem.
   // They must NEVER be rewritten by domain-based proxy logic to avoid double-rewriting
   // (e.g. /home/login → /home/home/login → 404).
-  if (url.pathname.startsWith('/home') || url.pathname.startsWith('/welcome') || url.pathname.startsWith('/admin')) {
+  if (
+    url.pathname.startsWith('/home') ||
+    url.pathname.startsWith('/welcome') ||
+    url.pathname.startsWith('/admin') ||
+    url.pathname === '/store' ||
+    url.pathname.startsWith('/store/')
+  ) {
     return NextResponse.next()
   }
 
