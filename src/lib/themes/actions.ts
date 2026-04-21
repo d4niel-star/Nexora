@@ -194,6 +194,7 @@ async function applyTemplateCore(
   });
 
   revalidatePath("/admin/store-ai");
+  revalidatePath("/admin/store-ai/themes");
   revalidatePath("/admin/store");
   if (slug) {
     revalidatePath(`/store/${slug}`);

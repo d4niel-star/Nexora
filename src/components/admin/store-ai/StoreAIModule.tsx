@@ -16,7 +16,7 @@ import {
 
 import { AIStoreBuilderPage } from "@/components/admin/ai-store-builder/AIStoreBuilderPage";
 import { ReadinessPanel } from "@/components/admin/readiness/ReadinessPanel";
-import { ThemeLibrary } from "@/components/admin/themes/ThemeLibrary";
+import { ThemeCurrentHero } from "@/components/admin/themes/ThemeCurrentHero";
 import type { ReadinessSnapshot } from "@/lib/readiness/snapshot";
 import type { StoreTemplate } from "@/types/store-templates";
 import { cn } from "@/lib/utils";
@@ -30,24 +30,24 @@ interface CurrentThemeView {
   blocks: { total: number; bySource: Record<string, number> };
 }
 
-// ─── Tienda IA — module landing ─────────────────────────────────────────
-// A module-level surface that sits at the same hierarchy as Catálogo,
-// Inventario, Abastecimiento. Not an "AI context" — a store-facing
-// workspace. The page composes four sober sections:
+// ─── Tienda IA — module landing (v2) ────────────────────────────────────
+//
+// Redesigned architecture:
 //
 //   1. Module header      — identity + status chip + primary CTA
-//   2. Status strip        — four KPI cards derived from REAL draft fields
-//                            (no invented scores, no fabricated metrics)
-//   3. Recommended actions — an ordered list of the next concrete step,
-//                            derived from real gaps; each item deep-links
-//                            into the right builder tab via initialTab.
-//   4. Workspace           — the existing AIStoreBuilderPage, embedded
-//                            without its own hero so the narrative reads
-//                            as: diagnose → decide → execute.
+//   2. Theme current hero — ONE dominant piece showing the active theme
+//                           with visual preview + "Editar" + "Ver más temas"
+//   3. Readiness panel    — publication/sales readiness (when available)
+//   4. Builder workspace  — the existing AIStoreBuilderPage, below fold
 //
-// Nothing here fabricates state. Every chip, count and recommendation
-// is either directly present in the draft payload or a deterministic
-// derivation of it.
+// What changed from v1:
+//   · ThemeLibrary (gallery + importer + exporter) was REMOVED from this
+//     landing — it lives at /admin/store-ai/themes now.
+//   · ThemeCurrentHero replaces the flat "current state strip" with a
+//     visual preview hero and clear CTAs.
+//   · StatusStrip + RecommendedActions remain as fallback when readiness
+//     is unavailable.
+//   · The overall surface is cleaner: one theme, one hero, one workspace.
 
 type BuilderTab =
   | "resumen"
@@ -61,18 +61,7 @@ type BuilderTab =
 
 interface StoreAIModuleProps {
   initialDraft: any;
-  /**
-   * Store-wide readiness snapshot fetched on the server. When present, it
-   * replaces the AI-draft-specific StatusStrip + RecommendedActions with
-   * the unified ReadinessPanel, so the module landing reads as a real
-   * publication/sales readiness centre and not just an AI-builder recap.
-   */
   readiness?: ReadinessSnapshot | null;
-  /**
-   * Current theme / template state derived from real DB rows (StoreTheme,
-   * StoreBranding, StoreBlock). When provided we render the theme library
-   * (gallery + importer + exporter) above the builder workspace.
-   */
   themeState?: CurrentThemeView;
   /** Built-in templates that ship with Nexora. Safe to be a readonly list. */
   templates?: readonly StoreTemplate[];
@@ -88,9 +77,14 @@ export function StoreAIModule({
 
   const snapshot = useMemo(() => deriveSnapshot(initialDraft), [initialDraft]);
 
+  // Resolve the full template object for the hero visual preview
+  const appliedTemplateFull = useMemo(() => {
+    if (!themeState?.appliedTemplate?.id || !templates) return null;
+    return templates.find((t) => t.id === themeState.appliedTemplate!.id) ?? null;
+  }, [themeState, templates]);
+
   const goToTab = (tab: BuilderTab) => {
     setActiveTab(tab);
-    // Smooth scroll to the workspace so the deep-link reads as an action.
     if (typeof window !== "undefined") {
       const target = document.getElementById("store-ai-workspace");
       if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -101,13 +95,24 @@ export function StoreAIModule({
     <div className="space-y-8">
       <ModuleHeader snapshot={snapshot} onStart={() => goToTab(snapshot.primaryActionTab)} />
 
+      {/* ── Theme current hero ──
+       *
+       * The single dominant piece on this landing. Shows the active
+       * theme with a visual preview and two CTAs:
+       *   · "Editar tema"   → /admin/store?tab=home
+       *   · "Ver más temas" → /admin/store-ai/themes */}
+      {themeState && (
+        <ThemeCurrentHero
+          current={themeState}
+          appliedTemplateFull={appliedTemplateFull}
+        />
+      )}
+
       {/* ── Publication / sales readiness ──
        *
-       * Real multi-signal readiness (payments, catalog, branding, etc.),
-       * not a decorative score. Replaces the previous draft-only status
-       * strip + recommended actions. Falls back to the AI-draft-derived
-       * sections when the snapshot is unavailable so transient failures
-       * don't leave the module empty. */}
+       * Real multi-signal readiness (payments, catalog, branding, etc.).
+       * Falls back to the AI-draft-derived sections when the snapshot
+       * is unavailable. */}
       {readiness ? (
         <ReadinessPanel snapshot={readiness} />
       ) : (
@@ -117,17 +122,7 @@ export function StoreAIModule({
         </>
       )}
 
-      {/* ── Theme library ──
-       *
-       * Surface the curated templates + importer/exporter here, above
-       * the builder workspace, so the narrative is:
-       *   diagnose → pick a starting point → edit → ship.
-       * Only renders when the server provided state; older callers that
-       * don't opt in keep the previous layout. */}
-      {themeState && templates && templates.length > 0 ? (
-        <ThemeLibrary current={themeState} templates={templates} />
-      ) : null}
-
+      {/* ── Builder workspace ── */}
       <section
         id="store-ai-workspace"
         className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)]"

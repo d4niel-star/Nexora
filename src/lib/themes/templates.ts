@@ -339,6 +339,334 @@ export const STORE_TEMPLATES: readonly StoreTemplate[] = [
     ],
     version: 1,
   },
+
+  // ───────────────────────────── 05 ────────────────────────────
+  {
+    id: "moda-urban",
+    name: "Urban Fashion",
+    description:
+      "Layout visual fuerte para marcas de indumentaria. Hero full-bleed, categorías de productos y social proof integrado.",
+    industry: "Moda y accesorios",
+    themeStyle: "bold",
+    branding: {
+      primaryColor: "#1A1A1A",
+      secondaryColor: "#F5F0EB",
+      fontFamily: "Inter",
+      tone: "Moderno, urbano",
+    },
+    homeBlocks: [
+      {
+        blockType: "hero",
+        settings: {
+          headline: "Nueva temporada. Nuevas reglas.",
+          subheadline:
+            "Descubrí la colección que redefine lo casual. Diseño argentino, calce real.",
+          primaryActionLabel: "Comprar colección",
+          primaryActionLink: "",
+          secondaryActionLabel: "Lo más vendido",
+          backgroundImageUrl:
+            "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=2000",
+        },
+      },
+      {
+        blockType: "featured_categories",
+        settings: {
+          title: "Categorías",
+          collectionHandles: [],
+        },
+      },
+      {
+        blockType: "featured_products",
+        settings: {
+          title: "Lo más pedido",
+          subtitle: "Los productos que se agotan primero cada semana.",
+          productHandles: [],
+        },
+      },
+      {
+        blockType: "testimonials",
+        settings: {
+          title: "Lo que dicen",
+          testimonials: [
+            { name: "Sol M.", text: "Compré dos remeras, el algodón es increíble. Ya pedí más.", rating: 5 },
+            { name: "Tomás R.", text: "El talle me salió perfecto, cosa rara comprando online.", rating: 5 },
+          ],
+        },
+      },
+      {
+        blockType: "newsletter",
+        settings: {
+          title: "Acceso temprano",
+          description: "Suscribite y enteráte de los drops antes que nadie.",
+          buttonLabel: "Quiero enterarme",
+        },
+      },
+    ],
+    footerNavigation: [
+      {
+        group: "footer_shop",
+        items: [
+          { label: "Hombre", href: "/collections/hombre" },
+          { label: "Mujer", href: "/collections/mujer" },
+          { label: "Accesorios", href: "/collections/accesorios" },
+        ],
+      },
+      {
+        group: "footer_support",
+        items: [
+          { label: "Guía de talles", href: "/pages/talles" },
+          { label: "Envíos", href: "/policies/shipping" },
+          { label: "Contacto", href: "/contact" },
+        ],
+      },
+    ],
+    version: 1,
+  },
+
+  // ───────────────────────────── 06 ────────────────────────────
+  {
+    id: "tech-showcase",
+    name: "Tech Showcase",
+    description:
+      "Diseñado para electrónica y gadgets. Especificaciones claras, beneficios técnicos y un layout que resalta cada producto.",
+    industry: "Tecnología y gadgets",
+    themeStyle: "minimal",
+    branding: {
+      primaryColor: "#0A0A0A",
+      secondaryColor: "#E8E8E8",
+      fontFamily: "Inter",
+      tone: "Técnico, preciso",
+    },
+    homeBlocks: [
+      {
+        blockType: "hero",
+        settings: {
+          headline: "Tecnología real. Sin humo.",
+          subheadline:
+            "Los productos que realmente usamos. Seleccionados, testeados y con garantía local.",
+          primaryActionLabel: "Ver catálogo",
+          primaryActionLink: "",
+          secondaryActionLabel: "",
+          backgroundImageUrl:
+            "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=2000",
+        },
+      },
+      {
+        blockType: "featured_products",
+        settings: {
+          title: "Productos destacados",
+          subtitle: "Selección curada de lo mejor del catálogo.",
+          productHandles: [],
+        },
+      },
+      {
+        blockType: "benefits",
+        settings: {
+          title: "Comprá tranquilo",
+          benefits: [
+            { title: "Garantía oficial", description: "12 meses de garantía en todos los productos.", icon: "Shield" },
+            { title: "Envío asegurado", description: "Todos los envíos con tracking y seguro.", icon: "Truck" },
+            { title: "Soporte técnico", description: "Ayuda real por WhatsApp y email.", icon: "Headphones" },
+          ],
+        },
+      },
+      {
+        blockType: "faq",
+        settings: {
+          title: "Preguntas frecuentes",
+          questions: [
+            { question: "¿Los productos son originales?", answer: "Sí. Trabajamos con importadores autorizados y distribuidores oficiales." },
+            { question: "¿Cuánto tarda el envío?", answer: "CABA 24h, GBA 48h, interior 3–5 días hábiles. Todos con tracking." },
+            { question: "¿Puedo devolver?", answer: "Sí. 30 días naturales desde la recepción para cambio o devolución." },
+          ],
+        },
+      },
+    ],
+    footerNavigation: [
+      {
+        group: "footer_shop",
+        items: [
+          { label: "Catálogo", href: "/collections" },
+          { label: "Ofertas", href: "/collections/ofertas" },
+        ],
+      },
+      {
+        group: "footer_support",
+        items: [
+          { label: "Garantía", href: "/pages/garantia" },
+          { label: "Soporte", href: "/contact" },
+        ],
+      },
+    ],
+    version: 1,
+  },
+
+  // ───────────────────────────── 07 ────────────────────────────
+  {
+    id: "belleza-ritual",
+    name: "Beauty Ritual",
+    description:
+      "Template cálido para marcas de cosmética y skincare. Tono editorial, paleta suave y secciones pensadas para contar historias.",
+    industry: "Belleza y cosmética",
+    themeStyle: "classic",
+    branding: {
+      primaryColor: "#4A3728",
+      secondaryColor: "#F9F3ED",
+      fontFamily: "Inter",
+      tone: "Cálido, sensorial",
+    },
+    homeBlocks: [
+      {
+        blockType: "hero",
+        settings: {
+          headline: "Tu piel merece ingredientes reales.",
+          subheadline:
+            "Fórmulas limpias con activos naturales. Sin parabenos, sin siliconas, sin promesas vacías.",
+          primaryActionLabel: "Ver productos",
+          primaryActionLink: "",
+          secondaryActionLabel: "Nuestra filosofía",
+          backgroundImageUrl:
+            "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&q=80&w=2000",
+        },
+      },
+      {
+        blockType: "featured_categories",
+        settings: {
+          title: "Líneas de productos",
+          collectionHandles: [],
+        },
+      },
+      {
+        blockType: "featured_products",
+        settings: {
+          title: "Favoritos de la comunidad",
+          subtitle: "Los productos con mejores reseñas y más recompras.",
+          productHandles: [],
+        },
+      },
+      {
+        blockType: "benefits",
+        settings: {
+          title: "Nuestro compromiso",
+          benefits: [
+            { title: "Fórmulas limpias", description: "Sin ingredientes cuestionables. Lista completa en cada producto.", icon: "Leaf" },
+            { title: "Cruelty free", description: "Ningún producto ni ingrediente testeado en animales.", icon: "Shield" },
+            { title: "Packaging sustentable", description: "Envases reciclables y recargas disponibles.", icon: "RefreshCw" },
+          ],
+        },
+      },
+      {
+        blockType: "testimonials",
+        settings: {
+          title: "Experiencias reales",
+          testimonials: [
+            { name: "Carolina G.", text: "Uso el sérum hace 3 meses. Mi dermatóloga notó la diferencia.", rating: 5 },
+            { name: "Valentina P.", text: "Los aromas son divinos y la textura se absorbe al toque.", rating: 5 },
+          ],
+        },
+      },
+      {
+        blockType: "newsletter",
+        settings: {
+          title: "Secretos de skincare",
+          description: "Tips, lanzamientos y un 10% en tu primera compra.",
+          buttonLabel: "Quiero saber más",
+        },
+      },
+    ],
+    footerNavigation: [
+      {
+        group: "footer_shop",
+        items: [
+          { label: "Todas las líneas", href: "/collections" },
+          { label: "Kits y regalos", href: "/collections/kits" },
+        ],
+      },
+      {
+        group: "footer_support",
+        items: [
+          { label: "Ingredientes", href: "/pages/ingredientes" },
+          { label: "Contacto", href: "/contact" },
+        ],
+      },
+    ],
+    version: 1,
+  },
+
+  // ───────────────────────────── 08 ────────────────────────────
+  {
+    id: "editorial-lifestyle",
+    name: "Lifestyle Editorial",
+    description:
+      "Diseño contemplativo para marcas con historia. Espacios amplios, tipografía protagonista y secciones que priorizan narrativa.",
+    industry: "Editorial · Lifestyle",
+    themeStyle: "classic",
+    branding: {
+      primaryColor: "#2C2C2C",
+      secondaryColor: "#FAFAF8",
+      fontFamily: "Inter",
+      tone: "Contemplativo, sofisticado",
+    },
+    homeBlocks: [
+      {
+        blockType: "hero",
+        settings: {
+          headline: "Menos es suficiente.",
+          subheadline:
+            "Objetos pensados para durar. Diseño funcional, materiales nobles, producción responsable.",
+          primaryActionLabel: "Explorar",
+          primaryActionLink: "",
+          secondaryActionLabel: "La marca",
+          backgroundImageUrl:
+            "https://images.unsplash.com/photo-1556228578-0d85b1a4d571?auto=format&fit=crop&q=80&w=2000",
+        },
+      },
+      {
+        blockType: "featured_products",
+        settings: {
+          title: "Selección del editor",
+          subtitle: "Piezas que definen la colección actual.",
+          productHandles: [],
+        },
+      },
+      {
+        blockType: "benefits",
+        settings: {
+          title: "Principios",
+          benefits: [
+            { title: "Producción local", description: "Hecho en Argentina con materiales de origen trazable.", icon: "Leaf" },
+            { title: "Diseño atemporal", description: "Piezas que no siguen tendencias — las trascienden.", icon: "Sparkles" },
+            { title: "Garantía de por vida", description: "Reparamos o reemplazamos cualquier pieza, siempre.", icon: "Shield" },
+          ],
+        },
+      },
+      {
+        blockType: "newsletter",
+        settings: {
+          title: "Diario de taller",
+          description: "Procesos, materiales y reflexiones. Un envío al mes.",
+          buttonLabel: "Suscribirme",
+        },
+      },
+    ],
+    footerNavigation: [
+      {
+        group: "footer_shop",
+        items: [
+          { label: "Colección", href: "/collections" },
+          { label: "Archivo", href: "/collections/archivo" },
+        ],
+      },
+      {
+        group: "footer_support",
+        items: [
+          { label: "Manifiesto", href: "/pages/manifiesto" },
+          { label: "Contacto", href: "/contact" },
+        ],
+      },
+    ],
+    version: 1,
+  },
 ];
 
 export function findTemplateById(id: string): StoreTemplate | null {
