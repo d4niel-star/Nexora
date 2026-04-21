@@ -1,241 +1,391 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import type { ComponentType, FormEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
+  ArrowDown,
   ArrowLeft,
-  ChevronDown,
+  ArrowUp,
   Eye,
   EyeOff,
-  ArrowUp,
-  ArrowDown,
+  Home,
   Layers,
+  Menu,
   Monitor,
   Paintbrush,
+  PanelBottom,
+  PanelTop,
   Pencil,
+  Save,
   Smartphone,
+  Store,
   Type,
+  X,
 } from "lucide-react";
 
-import { cn } from "@/lib/utils";
+import { SectionEditorDrawer } from "@/components/admin/store/SectionEditorDrawer";
+import type { SectionBlock } from "@/components/admin/store/SectionEditorDrawer";
 import { NexoraEditorChat } from "@/components/admin/store-ai/NexoraEditorChat";
-import { saveStoreBranding, saveHomeBlocks } from "@/lib/store-engine/actions";
+import { cn } from "@/lib/utils";
+import {
+  saveHomeBlocks,
+  saveStoreBranding,
+  saveStoreNavigation,
+  saveStoreProfileAction,
+} from "@/lib/store-engine/actions";
+import {
+  STORE_BUTTON_STYLES,
+  STORE_FONT_OPTIONS,
+  STORE_TONES,
+  resolveStoreFontOption,
+} from "@/lib/store-engine/theme-tokens";
 import type { AdminStoreInitialData, BlockType } from "@/types/store-engine";
 
-// ─── Theme Editor Shell ─────────────────────────────────────────────────
-// Full-screen editor: left sidebar + center preview + AI chat.
-// Replaces the scattered Tema/Branding/Home/Preview tabs from Mi tienda.
+type EditorPanel = "theme" | "colors" | "typography" | "identity" | "header" | "home" | "footer";
+type PreviewSurface = "home" | "listing" | "product" | "cart";
 
-type SidebarPanel = "identity" | "colors" | "typography" | "sections";
+type NavigationDraft = {
+  id: string;
+  group: string;
+  label: string;
+  href: string;
+  sortOrder: number;
+  isVisible: boolean;
+};
 
 const BLOCK_LABELS: Record<string, string> = {
   hero: "Hero principal",
   featured_products: "Productos destacados",
-  featured_categories: "Categorías",
+  featured_categories: "Categorias",
   benefits: "Beneficios",
   testimonials: "Testimonios",
   faq: "Preguntas frecuentes",
   newsletter: "Newsletter",
 };
 
+const PANEL_DEFS: Array<{
+  id: EditorPanel;
+  label: string;
+  caption: string;
+  icon: ComponentType<{ className?: string; strokeWidth?: number }>;
+}> = [
+  { id: "theme", label: "Tema global", caption: "Estilo y botones", icon: Layers },
+  { id: "colors", label: "Colores", caption: "Paleta real", icon: Paintbrush },
+  { id: "typography", label: "Tipografia", caption: "Fuente aplicada", icon: Type },
+  { id: "identity", label: "Identidad", caption: "Marca y slug", icon: Store },
+  { id: "header", label: "Encabezado", caption: "Menu principal", icon: PanelTop },
+  { id: "home", label: "Inicio", caption: "Bloques del home", icon: Home },
+  { id: "footer", label: "Pie de pagina", caption: "Grupos y links", icon: PanelBottom },
+];
+
+const inputCls =
+  "w-full h-10 px-3 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] text-[12px] font-medium text-ink-0 outline-none transition-[box-shadow,border-color] focus:border-[var(--accent-500)] focus:shadow-[var(--shadow-focus)] placeholder:text-ink-6";
+const textareaCls = cn(inputCls, "h-auto min-h-20 py-2.5 leading-[1.45]");
+const sectionTitle = "text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5";
+
+function toSectionBlocks(initialData: AdminStoreInitialData | null): SectionBlock[] {
+  return initialData
+    ? initialData.homeBlocks.map((block) => ({
+        id: block.id,
+        blockType: block.blockType,
+        sortOrder: block.sortOrder,
+        isVisible: block.isVisible,
+        settings: block.settings,
+        source: block.source,
+        state: block.state,
+      }))
+    : [];
+}
+
+function toNavigationDrafts(initialData: AdminStoreInitialData | null): NavigationDraft[] {
+  return initialData
+    ? initialData.navigation.map((item) => ({
+        id: item.id,
+        group: item.group,
+        label: item.label,
+        href: item.href,
+        sortOrder: item.sortOrder,
+        isVisible: item.isVisible,
+      }))
+    : [];
+}
+
+function serializeBlocks(blocks: SectionBlock[]) {
+  return blocks.map((block) => ({
+    blockType: block.blockType as BlockType,
+    sortOrder: block.sortOrder,
+    isVisible: block.isVisible,
+    settingsJson: JSON.stringify(block.settings),
+    source: block.source,
+    state: "published",
+  }));
+}
+
+function normalizeNavigationForSave(items: NavigationDraft[]) {
+  const counters: Record<string, number> = {};
+
+  return items
+    .filter((item) => item.label.trim() && item.href.trim())
+    .map((item) => {
+      const order = counters[item.group] ?? 0;
+      counters[item.group] = order + 1;
+      return {
+        group: item.group,
+        label: item.label.trim(),
+        href: item.href.trim(),
+        sortOrder: order,
+        isVisible: item.isVisible,
+      };
+    });
+}
+
+function createDraftId() {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `draft-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 export function ThemeEditorShell({
   initialData,
 }: {
   initialData: AdminStoreInitialData | null;
 }) {
+  const router = useRouter();
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
-  const [activePanel, setActivePanel] = useState<SidebarPanel>("colors");
+  const [activePanel, setActivePanel] = useState<EditorPanel>("theme");
+  const [previewSurface, setPreviewSurface] = useState<PreviewSurface>("home");
   const [previewKey, setPreviewKey] = useState(0);
   const [origin, setOrigin] = useState("");
+  const [sectionEditorBlock, setSectionEditorBlock] = useState<SectionBlock | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  const storeSlug = initialData?.store?.slug;
+  const initialBlocks = useMemo(() => toSectionBlocks(initialData), [initialData]);
+  const initialNavigation = useMemo(() => toNavigationDrafts(initialData), [initialData]);
+  const [homeBlocks, setHomeBlocks] = useState<SectionBlock[]>(initialBlocks);
+  const [navigation, setNavigation] = useState<NavigationDraft[]>(initialNavigation);
+
+  useEffect(() => setHomeBlocks(initialBlocks), [initialBlocks]);
+  useEffect(() => setNavigation(initialNavigation), [initialNavigation]);
+  useEffect(() => setOrigin(window.location.origin), []);
+
+  const storeSlug = initialData?.store.slug;
   const publicPath = storeSlug ? `/store/${storeSlug}` : "";
 
-  // Defer origin resolution to after hydration to avoid SSR mismatch
-  useEffect(() => {
-    setOrigin(window.location.origin);
-  }, []);
+  const previewSurfaces = useMemo(
+    () => [
+      { id: "home" as const, label: "Home", path: publicPath, enabled: !!publicPath },
+      { id: "listing" as const, label: "Listado", path: `${publicPath}/products`, enabled: !!publicPath },
+      {
+        id: "product" as const,
+        label: "Producto",
+        path: initialData?.preview.product
+          ? `${publicPath}/products/${initialData.preview.product.handle}`
+          : `${publicPath}/products`,
+        enabled: !!publicPath && !!initialData?.preview.product,
+      },
+      { id: "cart" as const, label: "Carrito", path: `${publicPath}/cart`, enabled: !!publicPath },
+    ],
+    [initialData?.preview.product, publicPath],
+  );
 
-  // Build absolute URL with cache-buster to avoid stale 404s
-  const previewSrc = origin && publicPath
-    ? `${origin}${publicPath}?_t=${previewKey}`
-    : "";
+  const currentSurface = previewSurfaces.find((surface) => surface.id === previewSurface && surface.enabled) ?? previewSurfaces[0];
+  const previewSrc =
+    origin && currentSurface?.enabled
+      ? `${origin}${currentSurface.path}?_t=${previewKey}`
+      : "";
 
   const refreshPreview = useCallback(() => {
-    setPreviewKey((k) => k + 1);
-  }, []);
+    setPreviewKey((key) => key + 1);
+    router.refresh();
+  }, [router]);
+
+  const changePanel = (panel: EditorPanel) => {
+    setActivePanel(panel);
+    if (panel === "home") setPreviewSurface("home");
+  };
+
+  if (!initialData) {
+    return (
+      <div className="flex h-[calc(100vh-56px)] items-center justify-center bg-[var(--surface-1)]">
+        <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6 text-center">
+          <p className="text-[13px] font-medium text-ink-0">Todavia no hay tienda para editar.</p>
+          <p className="mt-1 text-[12px] text-ink-5">Crea una tienda antes de abrir el editor.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex h-[calc(100vh-56px)] flex-col overflow-hidden">
-      {/* ── Top toolbar ─────────────────────────────────── */}
+    <div className="flex h-[calc(100vh-56px)] flex-col overflow-hidden bg-[var(--surface-1)]">
       <header className="flex h-12 shrink-0 items-center justify-between border-b border-[color:var(--hairline)] bg-[var(--surface-0)] px-4">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/admin/store-ai"
-            className="flex h-8 w-8 items-center justify-center rounded-[var(--r-sm)] text-ink-5 transition-colors hover:bg-[var(--surface-1)] hover:text-ink-0"
-          >
+        <div className="flex min-w-0 items-center gap-3">
+          <Link href="/admin/store-ai" className="flex h-8 w-8 items-center justify-center rounded-[var(--r-sm)] text-ink-5 transition-colors hover:bg-[var(--surface-1)] hover:text-ink-0 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]">
             <ArrowLeft className="h-4 w-4" strokeWidth={1.75} />
           </Link>
           <div className="h-4 w-px bg-[var(--hairline)]" />
-          <p className="text-[13px] font-semibold tracking-[-0.01em] text-ink-0">
-            Editor de tema
-          </p>
-          {initialData?.store.name && (
-            <span className="text-[11px] text-ink-5">
-              — {initialData.store.name}
-            </span>
-          )}
+          <div className="min-w-0">
+            <p className="truncate text-[13px] font-semibold tracking-[-0.01em] text-ink-0">Editor de tienda</p>
+            <p className="truncate text-[10px] font-medium text-ink-5">
+              {initialData.store.name} / {PANEL_DEFS.find((panel) => panel.id === activePanel)?.label}
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Device toggle */}
+          <div className="hidden items-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] p-0.5 lg:flex">
+            {previewSurfaces.map((surface) => (
+              <button
+                key={surface.id}
+                type="button"
+                disabled={!surface.enabled}
+                onClick={() => setPreviewSurface(surface.id)}
+                className={cn(
+                  "h-7 rounded-[var(--r-xs)] px-2.5 text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
+                  previewSurface === surface.id ? "bg-[var(--surface-0)] text-ink-0 shadow-sm" : "text-ink-5 hover:text-ink-0",
+                  !surface.enabled && "cursor-not-allowed opacity-40",
+                )}
+              >
+                {surface.label}
+              </button>
+            ))}
+          </div>
+
           <div className="flex rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] p-0.5">
-            <button
-              type="button"
-              onClick={() => setDevice("desktop")}
-              className={cn(
-                "rounded-[var(--r-xs)] px-2.5 py-1 transition-colors",
-                device === "desktop"
-                  ? "bg-[var(--surface-0)] text-ink-0 shadow-sm"
-                  : "text-ink-5 hover:text-ink-0",
-              )}
-              aria-label="Desktop"
-            >
+            <button type="button" onClick={() => setDevice("desktop")} className={cn("rounded-[var(--r-xs)] px-2.5 py-1 transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]", device === "desktop" ? "bg-[var(--surface-0)] text-ink-0 shadow-sm" : "text-ink-5 hover:text-ink-0")} aria-label="Preview desktop">
               <Monitor className="h-3.5 w-3.5" strokeWidth={1.75} />
             </button>
-            <button
-              type="button"
-              onClick={() => setDevice("mobile")}
-              className={cn(
-                "rounded-[var(--r-xs)] px-2.5 py-1 transition-colors",
-                device === "mobile"
-                  ? "bg-[var(--surface-0)] text-ink-0 shadow-sm"
-                  : "text-ink-5 hover:text-ink-0",
-              )}
-              aria-label="Mobile"
-            >
+            <button type="button" onClick={() => setDevice("mobile")} className={cn("rounded-[var(--r-xs)] px-2.5 py-1 transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]", device === "mobile" ? "bg-[var(--surface-0)] text-ink-0 shadow-sm" : "text-ink-5 hover:text-ink-0")} aria-label="Preview mobile">
               <Smartphone className="h-3.5 w-3.5" strokeWidth={1.75} />
             </button>
           </div>
 
-          {publicPath && (
-            <Link
-              href={publicPath}
-              target="_blank"
-              className="inline-flex h-8 items-center gap-1.5 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3 text-[11px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-1)]"
-            >
-              <Eye className="h-3 w-3" strokeWidth={1.75} />
-              Ver tienda
-            </Link>
-          )}
+          <Link href={currentSurface?.path ?? publicPath} target="_blank" className="inline-flex h-8 items-center gap-1.5 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3 text-[11px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-1)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]">
+            <Eye className="h-3 w-3" strokeWidth={1.75} />
+            Ver tienda
+          </Link>
         </div>
       </header>
 
-      {/* ── Main area: sidebar + preview ─────────────────── */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <aside className="flex w-[280px] shrink-0 flex-col border-r border-[color:var(--hairline)] bg-[var(--surface-0)] overflow-y-auto">
-          <SidebarNav active={activePanel} onChange={setActivePanel} />
+        <aside className="flex w-[320px] shrink-0 flex-col border-r border-[color:var(--hairline)] bg-[var(--surface-0)]">
+          <nav className="space-y-1 overflow-y-auto border-b border-[color:var(--hairline)] p-2" aria-label="Categorias del editor">
+            {PANEL_DEFS.map((panel) => {
+              const Icon = panel.icon;
+              const active = activePanel === panel.id;
+              return (
+                <button key={panel.id} type="button" onClick={() => changePanel(panel.id)} className={cn("flex w-full items-center gap-3 rounded-[var(--r-sm)] px-3 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]", active ? "bg-ink-0 text-ink-12" : "text-ink-0 hover:bg-[var(--surface-1)]")}>
+                  <Icon className={cn("h-4 w-4 shrink-0", active ? "text-ink-12" : "text-ink-5")} strokeWidth={1.75} />
+                  <span className="min-w-0">
+                    <span className="block truncate text-[12px] font-semibold">{panel.label}</span>
+                    <span className={cn("block truncate text-[10px]", active ? "text-ink-9" : "text-ink-5")}>{panel.caption}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
+
           <div className="flex-1 overflow-y-auto p-4">
-            {activePanel === "colors" && initialData && (
-              <ColorsPanel initialData={initialData} onSaved={refreshPreview} />
-            )}
-            {activePanel === "typography" && initialData && (
-              <TypographyPanel initialData={initialData} onSaved={refreshPreview} />
-            )}
-            {activePanel === "identity" && initialData && (
-              <IdentityPanel initialData={initialData} />
-            )}
-            {activePanel === "sections" && initialData && (
-              <SectionsPanel initialData={initialData} onSaved={refreshPreview} />
-            )}
+            {activePanel === "theme" && <ThemePanel initialData={initialData} onSaved={refreshPreview} />}
+            {activePanel === "colors" && <ColorsPanel initialData={initialData} onSaved={refreshPreview} />}
+            {activePanel === "typography" && <TypographyPanel initialData={initialData} onSaved={refreshPreview} />}
+            {activePanel === "identity" && <IdentityPanel initialData={initialData} onSaved={refreshPreview} />}
+            {activePanel === "header" && <NavigationPanel mode="header" navigation={navigation} onNavigationChange={setNavigation} onSaved={refreshPreview} />}
+            {activePanel === "home" && <HomePanel blocks={homeBlocks} onBlocksChange={setHomeBlocks} onEditBlock={setSectionEditorBlock} onSaved={refreshPreview} />}
+            {activePanel === "footer" && <NavigationPanel mode="footer" navigation={navigation} onNavigationChange={setNavigation} onSaved={refreshPreview} />}
           </div>
         </aside>
 
-        {/* Preview */}
-        <main className="relative flex flex-1 items-center justify-center bg-[var(--surface-1)] overflow-hidden">
-          <div
-            className={cn(
-              "relative rounded-lg border border-[color:var(--hairline)] bg-white shadow-[var(--shadow-overlay)] overflow-hidden transition-all duration-300",
-              device === "desktop"
-                ? "w-full max-w-[1200px] h-full max-h-full"
-                : "w-[375px] h-[700px]",
-            )}
-          >
-            {previewSrc ? (
-              <iframe
-                key={previewKey}
-                ref={iframeRef}
-                src={previewSrc}
-                className="h-full w-full border-0"
-                title="Store preview"
-                onError={() => setPreviewKey((k) => k + 1)}
-              />
-            ) : (
-              <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-                <p className="text-[13px] text-ink-5">Configurá tu tienda para ver el preview.</p>
-                {publicPath && (
-                  <button
-                    type="button"
-                    onClick={refreshPreview}
-                    className="text-[11px] font-medium text-ink-0 underline underline-offset-4"
-                  >
-                    Reintentar
-                  </button>
-                )}
-              </div>
-            )}
+        <main className="relative flex flex-1 flex-col overflow-hidden bg-[var(--surface-1)]">
+          <div className="flex h-10 shrink-0 items-center justify-between border-b border-[color:var(--hairline)] bg-[var(--surface-0)] px-4">
+            <div className="flex items-center gap-2 text-[11px] font-medium text-ink-5">
+              <span className="text-ink-0">{currentSurface?.label ?? "Preview"}</span>
+              <span>/</span>
+              <span className="font-mono">{currentSurface?.path ?? publicPath}</span>
+            </div>
+            {previewSurface === "product" && !initialData.preview.product ? (
+              <span className="text-[11px] text-ink-5">Agrega un producto publicado para previsualizar PDP.</span>
+            ) : null}
+          </div>
+
+          <div className="flex flex-1 items-center justify-center overflow-hidden p-4">
+            <div className={cn("relative overflow-hidden rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-white shadow-[var(--shadow-overlay)] transition-all duration-300", device === "desktop" ? "h-full w-full max-w-[1220px]" : "h-[720px] w-[390px] max-h-full max-w-full")}>
+              {previewSrc ? (
+                <iframe key={`${previewSurface}-${previewKey}`} ref={iframeRef} src={previewSrc} className="h-full w-full border-0" title={`Preview ${currentSurface?.label ?? "storefront"}`} />
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+                  <p className="text-[13px] text-ink-5">No hay una superficie disponible para previsualizar.</p>
+                  <button type="button" onClick={refreshPreview} className="text-[11px] font-medium text-ink-0 underline underline-offset-4">Reintentar</button>
+                </div>
+              )}
+            </div>
           </div>
         </main>
       </div>
 
-      {/* ── AI Chat (bottom-right, inside editor only) ──── */}
+      <SectionEditorDrawer
+        block={sectionEditorBlock}
+        allBlocks={homeBlocks}
+        isOpen={sectionEditorBlock !== null}
+        onClose={() => setSectionEditorBlock(null)}
+        onSaved={() => {
+          setSectionEditorBlock(null);
+          setPreviewSurface("home");
+          refreshPreview();
+        }}
+      />
+
       <NexoraEditorChat onActionApplied={refreshPreview} />
     </div>
   );
 }
 
-// ─── Sidebar nav ─────────────────────────────────────────────────────────
+function ThemePanel({ initialData, onSaved }: { initialData: AdminStoreInitialData; onSaved: () => void }) {
+  const initialTone = STORE_TONES.some((option) => option.value === initialData.branding?.tone)
+    ? initialData.branding?.tone
+    : "professional";
+  const [tone, setTone] = useState(initialTone ?? "professional");
+  const [buttonStyle, setButtonStyle] = useState(initialData.branding?.buttonStyle ?? "rounded-sm");
+  const [isPending, startTransition] = useTransition();
 
-const PANELS: { id: SidebarPanel; label: string; icon: React.ComponentType<any> }[] = [
-  { id: "colors", label: "Colores", icon: Paintbrush },
-  { id: "typography", label: "Tipografía", icon: Type },
-  { id: "identity", label: "Identidad", icon: Layers },
-  { id: "sections", label: "Secciones", icon: Pencil },
-];
+  const save = () => {
+    startTransition(async () => {
+      await saveStoreBranding({ tone, buttonStyle });
+      onSaved();
+    });
+  };
 
-function SidebarNav({ active, onChange }: { active: SidebarPanel; onChange: (p: SidebarPanel) => void }) {
   return (
-    <nav className="flex border-b border-[color:var(--hairline)] bg-[var(--surface-1)]">
-      {PANELS.map((p) => {
-        const Icon = p.icon;
-        return (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => onChange(p.id)}
-            className={cn(
-              "flex flex-1 flex-col items-center gap-1 py-3 text-[9px] font-medium uppercase tracking-[0.1em] transition-colors",
-              active === p.id
-                ? "text-ink-0 bg-[var(--surface-0)]"
-                : "text-ink-5 hover:text-ink-0 hover:bg-[var(--surface-0)]/50",
-            )}
-          >
-            <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
-            {p.label}
-          </button>
-        );
-      })}
-    </nav>
+    <div className="space-y-5">
+      <PanelHeading title="Tema global" description="Afecta toda la tienda: tono visual y forma real de CTAs." />
+      <Field label="Tono visual">
+        <div className="space-y-2">
+          {STORE_TONES.map((option) => (
+            <button key={option.value} type="button" onClick={() => setTone(option.value)} className={cn("w-full rounded-[var(--r-sm)] border p-3 text-left transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]", tone === option.value ? "border-ink-0 bg-ink-0 text-ink-12" : "border-[color:var(--hairline)] bg-[var(--surface-1)] text-ink-0 hover:bg-[var(--surface-2)]")}>
+              <span className="block text-[12px] font-semibold">{option.label}</span>
+              <span className={cn("mt-0.5 block text-[11px]", tone === option.value ? "text-ink-9" : "text-ink-5")}>{option.description}</span>
+            </button>
+          ))}
+        </div>
+      </Field>
+      <Field label="Botones">
+        <div className="grid grid-cols-3 gap-2">
+          {STORE_BUTTON_STYLES.map((style) => (
+            <button key={style.value} type="button" onClick={() => setButtonStyle(style.value)} className={cn("h-10 border text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]", buttonStyle === style.value ? "border-ink-0 bg-ink-0 text-ink-12" : "border-[color:var(--hairline)] bg-[var(--surface-1)] text-ink-5 hover:bg-[var(--surface-2)] hover:text-ink-0")} style={{ borderRadius: style.radius }}>
+              {style.label}
+            </button>
+          ))}
+        </div>
+      </Field>
+      <SaveButton isPending={isPending} onClick={save} />
+    </div>
   );
 }
 
-// ─── Colors panel ────────────────────────────────────────────────────────
-
 function ColorsPanel({ initialData, onSaved }: { initialData: AdminStoreInitialData; onSaved: () => void }) {
-  const [primary, setPrimary] = useState(initialData.branding?.primaryColor ?? "#111111");
-  const [secondary, setSecondary] = useState(initialData.branding?.secondaryColor ?? "#F4F4F5");
+  const [primary, setPrimary] = useState(initialData.branding?.primaryColor ?? "#07080d");
+  const [secondary, setSecondary] = useState(initialData.branding?.secondaryColor ?? "#e9ecf3");
   const [isPending, startTransition] = useTransition();
 
   const save = () => {
@@ -245,66 +395,16 @@ function ColorsPanel({ initialData, onSaved }: { initialData: AdminStoreInitialD
     });
   };
 
-  const inputCls = "w-full h-9 px-3 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] text-[12px] font-mono text-ink-0 outline-none focus:border-[var(--accent-500)] focus:shadow-[var(--shadow-focus)]";
-
   return (
     <div className="space-y-5">
-      <PanelHeading title="Colores" description="Se aplican en todo el storefront." />
-      <label className="block space-y-1.5">
-        <span className="text-[11px] font-medium text-ink-5">Color principal</span>
-        <div className="flex items-center gap-2">
-          <input type="color" value={primary} onChange={(e) => setPrimary(e.target.value)} className="h-9 w-10 shrink-0 cursor-pointer rounded-[var(--r-xs)] border border-[color:var(--hairline)] p-0.5" />
-          <input className={inputCls} value={primary} onChange={(e) => setPrimary(e.target.value)} />
-        </div>
-      </label>
-      <label className="block space-y-1.5">
-        <span className="text-[11px] font-medium text-ink-5">Color secundario</span>
-        <div className="flex items-center gap-2">
-          <input type="color" value={secondary} onChange={(e) => setSecondary(e.target.value)} className="h-9 w-10 shrink-0 cursor-pointer rounded-[var(--r-xs)] border border-[color:var(--hairline)] p-0.5" />
-          <input className={inputCls} value={secondary} onChange={(e) => setSecondary(e.target.value)} />
-        </div>
-      </label>
-      <SaveButton isPending={isPending} onClick={save} />
-    </div>
-  );
-}
-
-// ─── Typography panel ────────────────────────────────────────────────────
-
-const FONTS = ["Inter", "Roboto", "Outfit", "Montserrat", "Poppins", "DM Sans", "Space Grotesk", "Playfair Display", "Lora", "Source Sans 3"];
-const BTN_STYLES = [
-  { value: "rounded-sm", label: "Redondeado" },
-  { value: "square", label: "Cuadrado" },
-  { value: "pill", label: "Píldora" },
-];
-
-function TypographyPanel({ initialData, onSaved }: { initialData: AdminStoreInitialData; onSaved: () => void }) {
-  const [font, setFont] = useState(initialData.branding?.fontFamily ?? "Inter");
-  const [btnStyle, setBtnStyle] = useState(initialData.branding?.buttonStyle ?? "rounded-sm");
-  const [isPending, startTransition] = useTransition();
-
-  const save = () => {
-    startTransition(async () => {
-      await saveStoreBranding({ fontFamily: font, buttonStyle: btnStyle });
-      onSaved();
-    });
-  };
-
-  return (
-    <div className="space-y-5">
-      <PanelHeading title="Tipografía" description="Fuente y estilo de botones." />
-      <label className="block space-y-1.5">
-        <span className="text-[11px] font-medium text-ink-5">Fuente</span>
-        <select value={font} onChange={(e) => setFont(e.target.value)} className="w-full h-9 px-3 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] text-[12px] text-ink-0 outline-none">
-          {FONTS.map((f) => <option key={f} value={f}>{f}</option>)}
-        </select>
-      </label>
-      <div className="space-y-1.5">
-        <span className="text-[11px] font-medium text-ink-5">Botones</span>
-        <div className="flex gap-1.5">
-          {BTN_STYLES.map((s) => (
-            <button key={s.value} type="button" onClick={() => setBtnStyle(s.value)} className={cn("flex-1 h-8 rounded-[var(--r-sm)] border text-[10px] font-medium transition-colors", btnStyle === s.value ? "border-ink-0 bg-ink-0 text-ink-12" : "border-[color:var(--hairline)] text-ink-5 hover:bg-[var(--surface-1)]")}>{s.label}</button>
-          ))}
+      <PanelHeading title="Colores" description="Principal para CTAs y acentos; secundario para superficies suaves." />
+      <ColorField label="Color principal" value={primary} onChange={setPrimary} />
+      <ColorField label="Color secundario" value={secondary} onChange={setSecondary} />
+      <div className="overflow-hidden rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-1)]">
+        <div className="h-16" style={{ background: secondary }} />
+        <div className="space-y-3 bg-[var(--surface-0)] p-4">
+          <div className="h-8 rounded-[var(--r-sm)]" style={{ background: primary }} />
+          <p className="text-[11px] leading-[1.45] text-ink-5">El preview usa estos colores en botones, estados activos, logo textual y fondos de tienda.</p>
         </div>
       </div>
       <SaveButton isPending={isPending} onClick={save} />
@@ -312,95 +412,224 @@ function TypographyPanel({ initialData, onSaved }: { initialData: AdminStoreInit
   );
 }
 
-// ─── Identity panel ──────────────────────────────────────────────────────
+function TypographyPanel({ initialData, onSaved }: { initialData: AdminStoreInitialData; onSaved: () => void }) {
+  const [fontFamily, setFontFamily] = useState(initialData.branding?.fontFamily ?? "Inter");
+  const [isPending, startTransition] = useTransition();
+  const selected = resolveStoreFontOption(fontFamily);
 
-function IdentityPanel({ initialData }: { initialData: AdminStoreInitialData }) {
+  const save = () => {
+    startTransition(async () => {
+      await saveStoreBranding({ fontFamily });
+      onSaved();
+    });
+  };
+
   return (
     <div className="space-y-5">
-      <PanelHeading title="Identidad" description="Datos públicos de tu tienda." />
-      <InfoRow label="Nombre" value={initialData.store.name} />
-      <InfoRow label="Slug" value={initialData.store.slug} mono />
-      <InfoRow label="Descripción" value={initialData.store.description ?? "Sin descripción"} />
-      <InfoRow label="Logo" value={initialData.branding?.logoUrl ? "Configurado" : "Sin logo"} />
-      <p className="text-[10px] text-ink-6 leading-[1.4]">
-        Para editar estos datos, andá a Mi tienda → Branding.
-      </p>
+      <PanelHeading title="Tipografia" description="La fuente se guarda y se aplica al storefront real mediante variables CSS por tienda." />
+      <div className="space-y-2">
+        {STORE_FONT_OPTIONS.map((font) => (
+          <button key={font.value} type="button" onClick={() => setFontFamily(font.value)} className={cn("w-full rounded-[var(--r-sm)] border p-3 text-left transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]", selected.value === font.value ? "border-ink-0 bg-[var(--surface-0)] shadow-[var(--shadow-soft)]" : "border-[color:var(--hairline)] bg-[var(--surface-1)] hover:bg-[var(--surface-2)]")}>
+            <span className="block text-[18px] font-semibold tracking-[-0.03em] text-ink-0" style={{ fontFamily: font.displayStack }}>{font.label}</span>
+            <span className="mt-1 block text-[12px] leading-[1.45] text-ink-5" style={{ fontFamily: font.bodyStack }}>{font.description} Aa 123</span>
+          </button>
+        ))}
+      </div>
+      <SaveButton isPending={isPending} onClick={save} />
     </div>
   );
 }
 
-// ─── Sections panel ──────────────────────────────────────────────────────
-
-function SectionsPanel({ initialData, onSaved }: { initialData: AdminStoreInitialData; onSaved: () => void }) {
-  const blocks = initialData.homeBlocks.sort((a, b) => a.sortOrder - b.sortOrder);
+function IdentityPanel({ initialData, onSaved }: { initialData: AdminStoreInitialData; onSaved: () => void }) {
   const [isPending, startTransition] = useTransition();
 
-  const handleToggle = (blockId: string) => {
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
     startTransition(async () => {
-      const updated = blocks.map((b) => ({
-        blockType: b.blockType as BlockType,
-        sortOrder: b.sortOrder,
-        isVisible: b.id === blockId ? !b.isVisible : b.isVisible,
-        settingsJson: JSON.stringify(b.settings),
-        source: b.source,
-        state: "published",
-      }));
-      await saveHomeBlocks(updated);
-      onSaved();
-    });
-  };
-
-  const handleMove = (blockId: string, dir: "up" | "down") => {
-    const idx = blocks.findIndex((b) => b.id === blockId);
-    const swapIdx = dir === "up" ? idx - 1 : idx + 1;
-    if (swapIdx < 0 || swapIdx >= blocks.length) return;
-    startTransition(async () => {
-      const reordered = blocks.map((b, i) => {
-        let newOrder = b.sortOrder;
-        if (i === idx) newOrder = blocks[swapIdx].sortOrder;
-        if (i === swapIdx) newOrder = blocks[idx].sortOrder;
-        return {
-          blockType: b.blockType as BlockType,
-          sortOrder: newOrder,
-          isVisible: b.isVisible,
-          settingsJson: JSON.stringify(b.settings),
-          source: b.source,
-          state: "published",
-        };
-      });
-      await saveHomeBlocks(reordered);
+      await saveStoreProfileAction(formData);
       onSaved();
     });
   };
 
   return (
-    <div className="space-y-4">
-      <PanelHeading title="Secciones" description={`${blocks.length} bloques en el home.`} />
-      <div className="space-y-1.5">
-        {blocks.map((block, idx) => (
-          <div
-            key={block.id}
-            className={cn(
-              "flex items-center gap-2 rounded-[var(--r-sm)] border px-2.5 py-2 transition-colors",
-              block.isVisible
-                ? "border-[color:var(--hairline)] bg-[var(--surface-0)]"
-                : "border-dashed border-[color:var(--hairline)] bg-[var(--surface-1)] opacity-60",
-            )}
-          >
-            <div className="flex shrink-0 flex-col gap-0.5">
-              <button type="button" disabled={idx === 0 || isPending} onClick={() => handleMove(block.id, "up")} className="text-ink-6 hover:text-ink-0 disabled:opacity-20" aria-label="Up">
-                <ArrowUp className="h-2.5 w-2.5" strokeWidth={2} />
+    <form className="space-y-5" onSubmit={submit}>
+      <PanelHeading title="Identidad" description="Datos reales usados por header, footer, SEO basico y URL publica." />
+      <Field label="Nombre de tienda">
+        <input className={inputCls} name="name" defaultValue={initialData.store.name} required />
+      </Field>
+      <Field label="Slug publico">
+        <input className={cn(inputCls, "font-mono")} name="slug" defaultValue={initialData.store.slug} required pattern="[a-z0-9]+(-[a-z0-9]+)*" />
+      </Field>
+      <Field label="Descripcion">
+        <textarea className={textareaCls} name="description" defaultValue={initialData.store.description ?? ""} maxLength={280} />
+      </Field>
+      <Field label="Logo URL">
+        <input className={inputCls} name="logo" defaultValue={initialData.store.logo ?? initialData.branding?.logoUrl ?? ""} placeholder="https://..." type="url" />
+      </Field>
+      <SaveButton isPending={isPending} submit />
+    </form>
+  );
+}
+
+function NavigationPanel({
+  mode,
+  navigation,
+  onNavigationChange,
+  onSaved,
+}: {
+  mode: "header" | "footer";
+  navigation: NavigationDraft[];
+  onNavigationChange: (items: NavigationDraft[]) => void;
+  onSaved: () => void;
+}) {
+  const [isPending, startTransition] = useTransition();
+  const isFooter = mode === "footer";
+  const belongsToPanel = (item: NavigationDraft) =>
+    isFooter ? item.group.startsWith("footer") : item.group === "header";
+  const editedItems = navigation
+    .filter(belongsToPanel)
+    .sort((a, b) => a.group.localeCompare(b.group) || a.sortOrder - b.sortOrder);
+  const otherItems = navigation.filter((item) => !belongsToPanel(item));
+
+  const updateItem = (id: string, patch: Partial<NavigationDraft>) => {
+    onNavigationChange(navigation.map((item) => (item.id === id ? { ...item, ...patch } : item)));
+  };
+
+  const addItem = () => {
+    onNavigationChange([
+      ...navigation,
+      {
+        id: createDraftId(),
+        group: isFooter ? "footer_shop" : "header",
+        label: "",
+        href: isFooter ? "/legal" : "/store",
+        sortOrder: editedItems.length,
+        isVisible: true,
+      },
+    ]);
+  };
+
+  const removeItem = (id: string) => {
+    onNavigationChange(navigation.filter((item) => item.id !== id));
+  };
+
+  const save = () => {
+    startTransition(async () => {
+      await saveStoreNavigation(normalizeNavigationForSave([...otherItems, ...editedItems]));
+      onSaved();
+    });
+  };
+
+  return (
+    <div className="space-y-5">
+      <PanelHeading
+        title={isFooter ? "Pie de pagina" : "Encabezado"}
+        description={isFooter ? "Edita los grupos y links visibles del footer." : "Edita la navegacion principal del header."}
+      />
+      <div className="space-y-2">
+        {editedItems.map((item) => (
+          <div key={item.id} className="space-y-2 rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-1)] p-3">
+            <div className="flex items-center justify-between gap-2">
+              {isFooter ? (
+                <select className={cn(inputCls, "h-8 flex-1")} value={item.group} onChange={(event) => updateItem(item.id, { group: event.target.value })}>
+                  <option value="footer_shop">Footer shop</option>
+                  <option value="footer_support">Footer soporte</option>
+                  <option value="footer_brand">Footer marca</option>
+                </select>
+              ) : (
+                <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Menu principal</span>
+              )}
+              <div className="flex items-center gap-1">
+                <button type="button" onClick={() => updateItem(item.id, { isVisible: !item.isVisible })} className="rounded-[var(--r-sm)] p-1.5 text-ink-5 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0" aria-label={item.isVisible ? "Ocultar link" : "Mostrar link"}>
+                  {item.isVisible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                </button>
+                <button type="button" onClick={() => removeItem(item.id)} className="rounded-[var(--r-sm)] p-1.5 text-ink-5 transition-colors hover:bg-[var(--surface-2)] hover:text-[color:var(--signal-danger)]" aria-label="Eliminar link">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+            <input className={inputCls} value={item.label} onChange={(event) => updateItem(item.id, { label: event.target.value })} placeholder="Etiqueta" />
+            <input className={cn(inputCls, "font-mono")} value={item.href} onChange={(event) => updateItem(item.id, { href: event.target.value })} placeholder="/store/mi-tienda/products" />
+          </div>
+        ))}
+      </div>
+      <button type="button" onClick={addItem} className="flex h-10 w-full items-center justify-center gap-2 rounded-[var(--r-sm)] border border-dashed border-[color:var(--hairline-strong)] bg-[var(--surface-1)] text-[12px] font-medium text-ink-5 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0">
+        <Menu className="h-3.5 w-3.5" />
+        Agregar link
+      </button>
+      <SaveButton isPending={isPending} onClick={save} />
+    </div>
+  );
+}
+
+function HomePanel({
+  blocks,
+  onBlocksChange,
+  onEditBlock,
+  onSaved,
+}: {
+  blocks: SectionBlock[];
+  onBlocksChange: (blocks: SectionBlock[]) => void;
+  onEditBlock: (block: SectionBlock) => void;
+  onSaved: () => void;
+}) {
+  const [isPending, startTransition] = useTransition();
+  const sorted = [...blocks].sort((a, b) => a.sortOrder - b.sortOrder);
+  const visibleCount = sorted.filter((block) => block.isVisible).length;
+
+  const saveBlocks = (nextBlocks: SectionBlock[]) => {
+    onBlocksChange(nextBlocks);
+    startTransition(async () => {
+      await saveHomeBlocks(serializeBlocks(nextBlocks));
+      onSaved();
+    });
+  };
+
+  const toggle = (block: SectionBlock) => {
+    saveBlocks(blocks.map((item) => (item.id === block.id ? { ...item, isVisible: !item.isVisible } : item)));
+  };
+
+  const move = (block: SectionBlock, direction: "up" | "down") => {
+    const index = sorted.findIndex((item) => item.id === block.id);
+    const swapIndex = direction === "up" ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= sorted.length) return;
+
+    const reordered = sorted.map((item, itemIndex) => {
+      if (itemIndex === index) return { ...item, sortOrder: sorted[swapIndex].sortOrder };
+      if (itemIndex === swapIndex) return { ...item, sortOrder: sorted[index].sortOrder };
+      return item;
+    });
+    saveBlocks(reordered);
+  };
+
+  return (
+    <div className="space-y-5">
+      <PanelHeading title="Pagina de inicio" description={`${visibleCount} de ${sorted.length} bloques visibles. Edita contenido, orden y visibilidad.`} />
+      <div className="space-y-2">
+        {sorted.map((block, index) => (
+          <div key={block.id} className={cn("rounded-[var(--r-md)] border p-3 transition-colors", block.isVisible ? "border-[color:var(--hairline)] bg-[var(--surface-1)]" : "border-dashed border-[color:var(--hairline)] bg-[var(--surface-1)] opacity-60")}>
+            <div className="flex items-center gap-3">
+              <div className="flex shrink-0 flex-col gap-0.5">
+                <button type="button" disabled={index === 0 || isPending} onClick={() => move(block, "up")} className="rounded p-0.5 text-ink-6 hover:text-ink-0 disabled:opacity-30" aria-label="Mover arriba">
+                  <ArrowUp className="h-3 w-3" />
+                </button>
+                <button type="button" disabled={index === sorted.length - 1 || isPending} onClick={() => move(block, "down")} className="rounded p-0.5 text-ink-6 hover:text-ink-0 disabled:opacity-30" aria-label="Mover abajo">
+                  <ArrowDown className="h-3 w-3" />
+                </button>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[12px] font-semibold text-ink-0">{BLOCK_LABELS[block.blockType] ?? block.blockType}</p>
+                <p className="mt-0.5 text-[10px] text-ink-5">{block.source} / {block.state}</p>
+              </div>
+              <button type="button" disabled={isPending} onClick={() => toggle(block)} className="rounded-[var(--r-sm)] p-1.5 text-ink-5 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0" aria-label={block.isVisible ? "Ocultar bloque" : "Mostrar bloque"}>
+                {block.isVisible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
               </button>
-              <button type="button" disabled={idx === blocks.length - 1 || isPending} onClick={() => handleMove(block.id, "down")} className="text-ink-6 hover:text-ink-0 disabled:opacity-20" aria-label="Down">
-                <ArrowDown className="h-2.5 w-2.5" strokeWidth={2} />
+              <button type="button" onClick={() => onEditBlock(block)} className="inline-flex h-8 items-center gap-1.5 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-2.5 text-[11px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)]">
+                <Pencil className="h-3 w-3" />
+                Editar
               </button>
             </div>
-            <p className="flex-1 truncate text-[11px] font-medium text-ink-0">
-              {BLOCK_LABELS[block.blockType] ?? block.blockType}
-            </p>
-            <button type="button" onClick={() => handleToggle(block.id)} disabled={isPending} className="rounded p-1 text-ink-5 hover:text-ink-0">
-              {block.isVisible ? <Eye className="h-3 w-3" strokeWidth={1.75} /> : <EyeOff className="h-3 w-3" strokeWidth={1.75} />}
-            </button>
           </div>
         ))}
       </div>
@@ -408,35 +637,40 @@ function SectionsPanel({ initialData, onSaved }: { initialData: AdminStoreInitia
   );
 }
 
-// ─── Shared ──────────────────────────────────────────────────────────────
+function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  return (
+    <Field label={label}>
+      <div className="flex items-center gap-2">
+        <input type="color" value={value} onChange={(event) => onChange(event.target.value)} className="h-10 w-11 shrink-0 cursor-pointer rounded-[var(--r-xs)] border border-[color:var(--hairline)] p-0.5" />
+        <input className={cn(inputCls, "font-mono")} value={value} onChange={(event) => onChange(event.target.value)} maxLength={7} placeholder="#07080d" />
+      </div>
+    </Field>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block space-y-1.5">
+      <span className="text-[11px] font-medium text-ink-5">{label}</span>
+      {children}
+    </label>
+  );
+}
 
 function PanelHeading({ title, description }: { title: string; description: string }) {
   return (
     <div>
-      <h3 className="text-[13px] font-semibold tracking-[-0.01em] text-ink-0">{title}</h3>
-      <p className="mt-0.5 text-[10px] text-ink-5">{description}</p>
+      <p className={sectionTitle}>{title}</p>
+      <p className="mt-1 text-[12px] leading-[1.45] text-ink-5">{description}</p>
     </div>
   );
 }
 
-function InfoRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+function SaveButton({ isPending, onClick, submit = false }: { isPending: boolean; onClick?: () => void; submit?: boolean }) {
   return (
-    <div className="space-y-0.5">
-      <p className="text-[9px] font-medium uppercase tracking-[0.12em] text-ink-6">{label}</p>
-      <p className={cn("text-[12px] text-ink-0 truncate", mono && "font-mono")}>{value}</p>
-    </div>
-  );
-}
-
-function SaveButton({ isPending, onClick }: { isPending: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={isPending}
-      className="w-full h-9 rounded-[var(--r-sm)] bg-ink-0 text-[11px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:opacity-50"
-    >
-      {isPending ? "Guardando…" : "Guardar cambios"}
+    <button type={submit ? "submit" : "button"} onClick={onClick} disabled={isPending} className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-4 text-[12px] font-semibold text-ink-12 transition-colors hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]">
+      <Save className="h-3.5 w-3.5" />
+      {isPending ? "Guardando..." : "Guardar cambios"}
     </button>
   );
 }

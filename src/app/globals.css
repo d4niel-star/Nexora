@@ -307,6 +307,36 @@ body {
   color: var(--ink-5);
 }
 
+/* Storefront tenant theme bridge.
+   Values come from StoreBranding and are scoped to public stores only. */
+[data-storefront] {
+  --color-primary: var(--store-primary);
+  --color-accent: var(--store-primary);
+  font-family: var(--store-font-sans);
+}
+
+[data-storefront] h1,
+[data-storefront] h2,
+[data-storefront] h3,
+[data-storefront] .text-display {
+  font-family: var(--store-font-display);
+}
+
+[data-storefront] a[class*="bg-ink-0"],
+[data-storefront] button[class*="bg-ink-0"] {
+  background-color: var(--store-primary);
+  border-radius: var(--store-button-radius);
+}
+
+[data-storefront] a[class*="bg-ink-0"]:hover,
+[data-storefront] button[class*="bg-ink-0"]:hover {
+  filter: brightness(0.92);
+}
+
+[data-storefront] a[class*="border-ink-0"] {
+  border-color: var(--store-primary);
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    Legacy utilities kept for compatibility
    ═══════════════════════════════════════════════════════════════════════════ */

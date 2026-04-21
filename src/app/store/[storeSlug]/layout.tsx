@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import type { CSSProperties } from "react";
 import { StoreHeader } from "@/components/storefront/layout/StoreHeader";
 import { StoreFooter } from "@/components/storefront/layout/StoreFooter";
 import { getStorefrontData } from "@/lib/store-engine/queries";
@@ -6,6 +7,11 @@ import { getCart } from "@/lib/store-engine/cart/queries";
 import { normalizeStorefrontHref } from "@/lib/store-engine/urls";
 import type { StoreConfig } from "@/types/storefront";
 import { isTrackingWidgetActive } from "@/lib/apps/order-tracking-widget/queries";
+import {
+  getStoreButtonRadius,
+  normalizeThemeColor,
+  resolveStoreFontOption,
+} from "@/lib/store-engine/theme-tokens";
 
 export default async function StorefrontLayout({
   children,
@@ -21,14 +27,22 @@ export default async function StorefrontLayout({
     notFound();
   }
 
+  const primaryColor = normalizeThemeColor(storefrontData.branding.primaryColor, "#07080d");
+  const secondaryColor = normalizeThemeColor(storefrontData.branding.secondaryColor, "#e9ecf3");
+  const fontOption = resolveStoreFontOption(storefrontData.branding.fontFamily);
+  const buttonRadius = getStoreButtonRadius(storefrontData.branding.buttonStyle);
+
   const config: StoreConfig = {
     slug: storefrontData.store.slug,
     name: storefrontData.store.name,
     logoUrl: storefrontData.branding.logoUrl ?? storefrontData.store.logo ?? undefined,
     description: storefrontData.store.description ?? `${storefrontData.store.name} en Nexora`,
     currency: storefrontData.store.currency,
-    primaryColor: storefrontData.branding.primaryColor,
-    secondaryColor: storefrontData.branding.secondaryColor,
+    primaryColor,
+    secondaryColor,
+    fontFamily: storefrontData.branding.fontFamily,
+    tone: storefrontData.branding.tone,
+    buttonStyle: storefrontData.branding.buttonStyle,
     headerNavigation: storefrontData.headerNavigation.map((item) => ({
       label: item.label,
       href: normalizeStorefrontHref(item.href, storefrontData.store.slug),
@@ -49,9 +63,26 @@ export default async function StorefrontLayout({
   config.cartItemCount = cart?.totalQuantity ?? 0;
 
   const trackingEnabled = await isTrackingWidgetActive(storefrontData.store.id);
+  const storefrontStyle = {
+    "--store-primary": primaryColor,
+    "--store-secondary": secondaryColor,
+    "--store-button-radius": buttonRadius,
+    "--store-font-sans": fontOption.bodyStack,
+    "--store-font-display": fontOption.displayStack,
+    "--font-sans": "var(--store-font-sans)",
+    "--font-display": "var(--store-font-display)",
+    "--surface-1": `color-mix(in srgb, ${secondaryColor} 14%, #f7f8fb)`,
+    "--surface-2": `color-mix(in srgb, ${secondaryColor} 20%, #ffffff)`,
+  } as CSSProperties;
 
   return (
-    <div className="flex min-h-screen flex-col bg-[var(--surface-1)] font-sans text-ink-0 selection:bg-ink-0 selection:text-ink-12">
+    <div
+      className="flex min-h-screen flex-col bg-[var(--surface-1)] font-sans text-ink-0 selection:bg-ink-0 selection:text-ink-12"
+      data-button-style={storefrontData.branding.buttonStyle}
+      data-store-tone={storefrontData.branding.tone}
+      data-storefront=""
+      style={storefrontStyle}
+    >
       <StoreHeader config={config} />
       <main className="flex-1">{children}</main>
       <StoreFooter config={config} showTrackingLink={trackingEnabled} />

@@ -319,7 +319,7 @@ export async function getAdminStoreInitialData(): Promise<AdminStoreInitialData 
   if (!store) return null;
 
   const lastSnapshot = store.snapshots[0] ?? null;
-  const [publishedProducts, sellableProducts] = await Promise.all([
+  const [publishedProducts, sellableProducts, previewProduct, previewCollection] = await Promise.all([
     prisma.product.count({
       where: { storeId: store.id, isPublished: true, status: { not: "archived" } },
     }),
@@ -330,6 +330,21 @@ export async function getAdminStoreInitialData(): Promise<AdminStoreInitialData 
         status: { not: "archived" },
         variants: { some: { stock: { gt: 0 } } },
       },
+    }),
+    prisma.product.findFirst({
+      where: {
+        storeId: store.id,
+        isPublished: true,
+        status: { not: "archived" },
+        variants: { some: { stock: { gt: 0 } } },
+      },
+      orderBy: [{ isFeatured: "desc" }, { createdAt: "desc" }],
+      select: { handle: true, title: true },
+    }),
+    prisma.collection.findFirst({
+      where: { storeId: store.id, isPublished: true },
+      orderBy: [{ isFeatured: "desc" }, { sortOrder: "asc" }, { createdAt: "desc" }],
+      select: { handle: true, title: true },
     }),
   ]);
   const paymentProvider = store.paymentProviders[0] ?? null;
@@ -460,6 +475,10 @@ export async function getAdminStoreInitialData(): Promise<AdminStoreInitialData 
       isPrimary: d.isPrimary,
       createdAt: d.createdAt.toISOString()
     })),
+    preview: {
+      product: previewProduct,
+      collection: previewCollection,
+    },
     summary,
   };
 }

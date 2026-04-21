@@ -42,6 +42,12 @@ async function getAvailableProductHandle(storeId: string, title: string): Promis
   return handle;
 }
 
+function revalidateStorefrontShell(storeSlug: string) {
+  revalidatePath(storePath(storeSlug));
+  revalidatePath(storePath(storeSlug, "products"));
+  revalidatePath(storePath(storeSlug, "cart"));
+}
+
 // ─── Admin: Get store ID (returns default store for now) ───
 
 export async function getAdminStoreId(): Promise<string | null> {
@@ -105,7 +111,7 @@ export async function saveStoreBranding(data: {
 
   await updateStoreBranding(store.id, data);
   revalidatePath("/admin/store");
-  revalidatePath(storePath(store.slug));
+  revalidateStorefrontShell(store.slug);
   return { success: true };
 }
 
@@ -161,8 +167,8 @@ export async function saveStoreProfileAction(formData: FormData) {
 
   revalidatePath("/admin/store");
   revalidatePath("/admin/dashboard");
-  revalidatePath(storePath(previousSlug));
-  revalidatePath(storePath(slug));
+  revalidateStorefrontShell(previousSlug);
+  revalidateStorefrontShell(slug);
 
   return { success: true, slug };
 }
@@ -232,8 +238,7 @@ export async function createFirstStoreProductAction(formData: FormData) {
   revalidatePath("/admin/catalog");
   revalidatePath("/admin/dashboard");
   revalidatePath("/admin/store");
-  revalidatePath(storePath(store.slug));
-  revalidatePath(storePath(store.slug, "products"));
+  revalidateStorefrontShell(store.slug);
 
   return { success: true, product };
 }
@@ -255,7 +260,7 @@ export async function saveStoreNavigation(
 
   await updateStoreNavigation(store.id, items);
   revalidatePath("/admin/store");
-  revalidatePath(storePath(store.slug));
+  revalidateStorefrontShell(store.slug);
   return { success: true };
 }
 
@@ -276,7 +281,7 @@ export async function saveHomeBlocks(
 
   await updateHomeBlocks(store.id, blocks);
   revalidatePath("/admin/store");
-  revalidatePath(storePath(store.slug));
+  revalidateStorefrontShell(store.slug);
   return { success: true };
 }
 
@@ -318,7 +323,7 @@ export async function publishStoreAction() {
 
   revalidatePath("/admin/store");
   revalidatePath("/admin/dashboard");
-  revalidatePath(storePath(store.slug));
+  revalidateStorefrontShell(store.slug);
   return { success: true };
 }
 
@@ -339,6 +344,6 @@ export async function generateAIStoreDraft(input: AIStoreInput) {
   const store = await generateStoreDraftFromAIInput(input);
   revalidatePath("/admin/store");
   revalidatePath("/admin/store-ai");
-  revalidatePath(storePath(store.slug));
+  revalidateStorefrontShell(store.slug);
   return { success: true, slug: store.slug, storeId: store.id };
 }

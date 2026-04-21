@@ -6,6 +6,9 @@ export interface StoreConfig {
   currency: string;
   primaryColor: string;
   secondaryColor: string;
+  fontFamily: string;
+  tone: string;
+  buttonStyle: string;
   headerNavigation: NavItem[];
   footerNavigation: FooterNavGroup[];
   cartItemCount: number;

@@ -224,6 +224,16 @@ export interface AdminStoreInitialData {
     isPrimary: boolean;
     createdAt: string;
   }>;
+  preview: {
+    product: {
+      handle: string;
+      title: string;
+    } | null;
+    collection: {
+      handle: string;
+      title: string;
+    } | null;
+  };
   summary: AdminStoreSummary;
 }
 
