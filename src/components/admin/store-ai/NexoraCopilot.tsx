@@ -6,10 +6,14 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
+  Eye,
+  EyeOff,
+  Layers,
   Loader2,
   MessageSquare,
   Palette,
   Sparkles,
+  SwatchBook,
   Type,
   X,
 } from "lucide-react";
@@ -42,7 +46,7 @@ interface CopilotAction {
   label: string;
   description: string;
   icon: React.ComponentType<{ className?: string; strokeWidth?: number | string }>;
-  category: "branding" | "content" | "theme";
+  category: "branding" | "content" | "structure";
 }
 
 interface ActionLog {
@@ -98,12 +102,33 @@ const COPILOT_ACTIONS: CopilotAction[] = [
     icon: ArrowRight,
     category: "content",
   },
+  {
+    id: "toggle-section",
+    label: "Ocultar / mostrar sección",
+    description: "Activá o desactivá un bloque de tu landing.",
+    icon: EyeOff,
+    category: "structure",
+  },
+  {
+    id: "apply-theme",
+    label: "Aplicar tema base",
+    description: "Cambiá toda la base de diseño a un tema existente.",
+    icon: SwatchBook,
+    category: "structure",
+  },
+  {
+    id: "change-tone",
+    label: "Cambiar tono de copy",
+    description: "Ajustá el tono de comunicación de tu marca.",
+    icon: MessageSquare,
+    category: "branding",
+  },
 ];
 
 const CATEGORY_LABELS: Record<string, string> = {
   branding: "Identidad visual",
   content: "Contenido",
-  theme: "Tema",
+  structure: "Estructura y temas",
 };
 
 const FONT_OPTIONS = [
@@ -117,6 +142,37 @@ const FONT_OPTIONS = [
   "Playfair Display",
   "Lora",
   "Source Sans 3",
+];
+
+const TONE_OPTIONS = [
+  "Elegante",
+  "Casual",
+  "Profesional",
+  "Juvenil",
+  "Neutro",
+  "Premium",
+  "Amigable",
+];
+
+const SECTION_LABELS: Record<string, string> = {
+  hero: "Hero principal",
+  featured_products: "Productos destacados",
+  featured_categories: "Categorías",
+  benefits: "Beneficios",
+  testimonials: "Testimonios",
+  faq: "Preguntas frecuentes",
+  newsletter: "Newsletter",
+};
+
+const BUILT_IN_THEMES = [
+  { id: "minimal-essentials", label: "Minimal Essentials" },
+  { id: "bold-commerce", label: "Bold Commerce" },
+  { id: "classic-elegance", label: "Classic Elegance" },
+  { id: "fresh-catalog", label: "Fresh Catalog" },
+  { id: "moda-urban", label: "Urban Fashion" },
+  { id: "tech-showcase", label: "Tech Showcase" },
+  { id: "belleza-ritual", label: "Beauty Ritual" },
+  { id: "editorial-lifestyle", label: "Lifestyle Editorial" },
 ];
 
 // ─── Component ──────────────────────────────────────────────────────────
@@ -360,6 +416,12 @@ function ActionForm({
             onLog(action.label, value.trim(), "ok");
             break;
           }
+          case "change-tone": {
+            await saveStoreBranding({ tone: value.trim() });
+            setResult({ ok: true, detail: `Tono de copy → ${value.trim()}` });
+            onLog(action.label, value.trim(), "ok");
+            break;
+          }
           case "change-hero-headline":
           case "change-hero-subheadline":
           case "change-hero-cta": {
@@ -388,6 +450,43 @@ function ActionForm({
             onLog(action.label, `"${value.trim()}"`, "ok");
             break;
           }
+          case "toggle-section": {
+            const blocks = await fetchHomeBlocks();
+            if (!blocks || blocks.length === 0) {
+              setResult({ ok: false, detail: "No hay bloques." });
+              onLog(action.label, "sin bloques", "err");
+              return;
+            }
+            const target = blocks.find((b: any) => b.blockType === value.trim());
+            if (!target) {
+              setResult({ ok: false, detail: `Sección "${value.trim()}" no encontrada.` });
+              onLog(action.label, "sección no encontrada", "err");
+              return;
+            }
+            const updated = blocks.map((b: any) =>
+              b.blockType === value.trim()
+                ? { ...b, isVisible: !b.isVisible }
+                : b,
+            );
+            await saveHomeBlocks(updated);
+            const nowVisible = !target.isVisible;
+            setResult({ ok: true, detail: `${SECTION_LABELS[value.trim()] ?? value.trim()} → ${nowVisible ? "visible" : "oculto"}` });
+            onLog(action.label, `${value.trim()} → ${nowVisible ? "visible" : "oculto"}`, "ok");
+            break;
+          }
+          case "apply-theme": {
+            const { applyBuiltInTemplateAction } = await import("@/lib/themes/actions");
+            const result = await applyBuiltInTemplateAction(value.trim());
+            if (result.ok) {
+              const name = BUILT_IN_THEMES.find((t) => t.id === value.trim())?.label ?? value.trim();
+              setResult({ ok: true, detail: `Tema "${name}" aplicado (${result.blocksCreated} bloques).` });
+              onLog(action.label, name, "ok");
+            } else {
+              setResult({ ok: false, detail: result.errors?.[0] ?? "No se pudo aplicar." });
+              onLog(action.label, result.errors?.[0] ?? "error", "err");
+            }
+            break;
+          }
           default:
             setResult({ ok: false, detail: "Acción no implementada." });
         }
@@ -402,6 +501,10 @@ function ActionForm({
   const Icon = action.icon;
   const isColor = action.id.includes("color");
   const isFont = action.id === "change-font";
+  const isTone = action.id === "change-tone";
+  const isToggleSection = action.id === "toggle-section";
+  const isApplyTheme = action.id === "apply-theme";
+  const isSelectInput = isFont || isTone || isToggleSection || isApplyTheme;
 
   return (
     <div className="space-y-3">
@@ -423,17 +526,20 @@ function ActionForm({
       <p className="text-[11px] leading-[1.5] text-ink-5">{action.description}</p>
 
       {/* Input */}
-      {isFont ? (
+      {isSelectInput ? (
         <select
           ref={inputRef as any}
           value={value}
           onChange={(e) => setValue(e.target.value)}
           className="w-full rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 py-2 text-[12px] text-ink-0 outline-none focus:border-[var(--accent-500)] focus:shadow-[var(--shadow-focus)]"
         >
-          <option value="">Seleccioná una fuente…</option>
-          {FONT_OPTIONS.map((f) => (
-            <option key={f} value={f}>{f}</option>
-          ))}
+          <option value="">
+            {isFont ? "Seleccioná una fuente…" : isTone ? "Seleccioná un tono…" : isToggleSection ? "Seleccioná una sección…" : "Seleccioná un tema…"}
+          </option>
+          {isFont && FONT_OPTIONS.map((f) => <option key={f} value={f}>{f}</option>)}
+          {isTone && TONE_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+          {isToggleSection && Object.entries(SECTION_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          {isApplyTheme && BUILT_IN_THEMES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
         </select>
       ) : (
         <div className="flex items-center gap-2">
