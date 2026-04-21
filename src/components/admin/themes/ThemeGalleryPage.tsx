@@ -59,6 +59,11 @@ export function ThemeGalleryPage({ current, templates }: Props) {
   const [importText, setImportText] = useState("");
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const importSectionRef = useRef<HTMLElement | null>(null);
+
+  const scrollToImport = () => {
+    importSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const pushToast = (tone: "ok" | "warn" | "err", text: string) => {
     setToast({ tone, text });
@@ -167,6 +172,14 @@ export function ThemeGalleryPage({ current, templates }: Props) {
         <div className="flex shrink-0 items-center gap-3">
           <button
             type="button"
+            onClick={scrollToImport}
+            className="inline-flex h-10 items-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-5 text-[12px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
+          >
+            <Upload className="h-3.5 w-3.5" strokeWidth={1.75} />
+            Importar temas
+          </button>
+          <button
+            type="button"
             onClick={handleExport}
             disabled={isPending}
             className="inline-flex h-10 items-center gap-2 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-4 text-[12px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] disabled:opacity-50"
@@ -210,7 +223,11 @@ export function ThemeGalleryPage({ current, templates }: Props) {
       ))}
 
       {/* ── Import section ─────────────────────────────────── */}
-      <section className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6">
+      <section
+        ref={importSectionRef}
+        id="import-section"
+        className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6"
+      >
         <div className="flex items-start gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)]">
             <FileUp className="h-4 w-4 text-ink-0" strokeWidth={1.75} />
@@ -226,6 +243,28 @@ export function ThemeGalleryPage({ current, templates }: Props) {
               Aceptamos JSON con el schema de templates de Nexora. Si el archivo no valida,
               te mostramos exactamente qué campos fallan.
             </p>
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 max-w-lg">
+              <div className="rounded-[var(--r-xs)] border border-[color:var(--signal-success)]/20 bg-[color:var(--signal-success)]/5 px-2.5 py-1.5">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-[color:var(--signal-success)]">
+                  ✓ Soportado
+                </p>
+                <ul className="mt-1 space-y-0.5 text-[10px] leading-[1.4] text-ink-4">
+                  <li>JSON de template Nexora</li>
+                  <li>Export/import propio</li>
+                  <li>Templates validadas</li>
+                </ul>
+              </div>
+              <div className="rounded-[var(--r-xs)] border border-[color:var(--signal-danger)]/20 bg-[color:var(--signal-danger)]/5 px-2.5 py-1.5">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-[color:var(--signal-danger)]">
+                  ✗ No soportado
+                </p>
+                <ul className="mt-1 space-y-0.5 text-[10px] leading-[1.4] text-ink-4">
+                  <li>Themes de Shopify / Tiendanube</li>
+                  <li>HTML ajeno sin mapeo</li>
+                  <li>Formatos incompatibles</li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
 
