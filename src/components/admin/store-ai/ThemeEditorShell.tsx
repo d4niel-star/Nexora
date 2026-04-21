@@ -11,7 +11,7 @@ import {
   Eye,
   EyeOff,
   Home,
-  Layers,
+  Image as ImageIcon,
   Menu,
   Monitor,
   Paintbrush,
@@ -43,7 +43,7 @@ import {
 } from "@/lib/store-engine/theme-tokens";
 import type { AdminStoreInitialData, BlockType } from "@/types/store-engine";
 
-type EditorPanel = "theme" | "colors" | "typography" | "identity" | "header" | "home" | "footer";
+type EditorPanel = "colors" | "typography" | "buttons" | "identity" | "media" | "header" | "home" | "footer";
 type PreviewSurface = "home" | "listing" | "product" | "cart";
 
 type NavigationDraft = {
@@ -71,14 +71,26 @@ const PANEL_DEFS: Array<{
   caption: string;
   icon: ComponentType<{ className?: string; strokeWidth?: number }>;
 }> = [
-  { id: "theme", label: "Tema global", caption: "Estilo y botones", icon: Layers },
   { id: "colors", label: "Colores", caption: "Paleta real", icon: Paintbrush },
   { id: "typography", label: "Tipografia", caption: "Fuente aplicada", icon: Type },
-  { id: "identity", label: "Identidad", caption: "Marca y slug", icon: Store },
+  { id: "buttons", label: "Botones", caption: "CTAs reales", icon: Pencil },
+  { id: "identity", label: "Identidad", caption: "Marca, slug y tono", icon: Store },
+  { id: "media", label: "Media", caption: "Logo visible", icon: ImageIcon },
   { id: "header", label: "Encabezado", caption: "Menu principal", icon: PanelTop },
   { id: "home", label: "Inicio", caption: "Bloques del home", icon: Home },
   { id: "footer", label: "Pie de pagina", caption: "Grupos y links", icon: PanelBottom },
 ];
+
+const PANEL_META: Record<EditorPanel, { scope: string; model: string; preview: PreviewSurface }> = {
+  colors: { scope: "Global", model: "StoreBranding", preview: "home" },
+  typography: { scope: "Global", model: "StoreBranding", preview: "home" },
+  buttons: { scope: "Global", model: "StoreBranding", preview: "cart" },
+  identity: { scope: "Tienda", model: "Store + StoreBranding", preview: "home" },
+  media: { scope: "Tienda", model: "StoreBranding.logoUrl", preview: "home" },
+  header: { scope: "Navegacion", model: "StoreNavigation.header", preview: "home" },
+  home: { scope: "Pagina", model: "StoreBlock.home", preview: "home" },
+  footer: { scope: "Navegacion", model: "StoreNavigation.footer_*", preview: "home" },
+};
 
 const inputCls =
   "w-full h-10 px-3 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] text-[12px] font-medium text-ink-0 outline-none transition-[box-shadow,border-color] focus:border-[var(--accent-500)] focus:shadow-[var(--shadow-focus)] placeholder:text-ink-6";
@@ -154,7 +166,7 @@ export function ThemeEditorShell({
 }) {
   const router = useRouter();
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
-  const [activePanel, setActivePanel] = useState<EditorPanel>("theme");
+  const [activePanel, setActivePanel] = useState<EditorPanel>("colors");
   const [previewSurface, setPreviewSurface] = useState<PreviewSurface>("home");
   const [previewKey, setPreviewKey] = useState(0);
   const [origin, setOrigin] = useState("");
@@ -203,7 +215,7 @@ export function ThemeEditorShell({
 
   const changePanel = (panel: EditorPanel) => {
     setActivePanel(panel);
-    if (panel === "home") setPreviewSurface("home");
+    setPreviewSurface(PANEL_META[panel].preview);
   };
 
   if (!initialData) {
@@ -269,7 +281,7 @@ export function ThemeEditorShell({
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        <aside className="flex w-[320px] shrink-0 flex-col border-r border-[color:var(--hairline)] bg-[var(--surface-0)]">
+        <aside className="flex w-[380px] shrink-0 flex-col border-r border-[color:var(--hairline)] bg-[var(--surface-0)]">
           <nav className="space-y-1 overflow-y-auto border-b border-[color:var(--hairline)] p-2" aria-label="Categorias del editor">
             {PANEL_DEFS.map((panel) => {
               const Icon = panel.icon;
@@ -286,14 +298,18 @@ export function ThemeEditorShell({
             })}
           </nav>
 
-          <div className="flex-1 overflow-y-auto p-4">
-            {activePanel === "theme" && <ThemePanel initialData={initialData} onSaved={refreshPreview} />}
-            {activePanel === "colors" && <ColorsPanel initialData={initialData} onSaved={refreshPreview} />}
-            {activePanel === "typography" && <TypographyPanel initialData={initialData} onSaved={refreshPreview} />}
-            {activePanel === "identity" && <IdentityPanel initialData={initialData} onSaved={refreshPreview} />}
-            {activePanel === "header" && <NavigationPanel mode="header" navigation={navigation} onNavigationChange={setNavigation} onSaved={refreshPreview} />}
-            {activePanel === "home" && <HomePanel blocks={homeBlocks} onBlocksChange={setHomeBlocks} onEditBlock={setSectionEditorBlock} onSaved={refreshPreview} />}
-            {activePanel === "footer" && <NavigationPanel mode="footer" navigation={navigation} onNavigationChange={setNavigation} onSaved={refreshPreview} />}
+          <div className="flex-1 overflow-y-auto">
+            <div className="flex min-h-full flex-col gap-4 p-4">
+              {activePanel === "colors" && <ColorsPanel initialData={initialData} onSaved={refreshPreview} />}
+              {activePanel === "typography" && <TypographyPanel initialData={initialData} onSaved={refreshPreview} />}
+              {activePanel === "buttons" && <ButtonsPanel initialData={initialData} onSaved={refreshPreview} />}
+              {activePanel === "identity" && <IdentityPanel initialData={initialData} onSaved={refreshPreview} />}
+              {activePanel === "media" && <MediaPanel initialData={initialData} onSaved={refreshPreview} />}
+              {activePanel === "header" && <NavigationPanel mode="header" navigation={navigation} onNavigationChange={setNavigation} onSaved={refreshPreview} />}
+              {activePanel === "home" && <HomePanel blocks={homeBlocks} onBlocksChange={setHomeBlocks} onEditBlock={setSectionEditorBlock} onSaved={refreshPreview} />}
+              {activePanel === "footer" && <NavigationPanel mode="footer" navigation={navigation} onNavigationChange={setNavigation} onSaved={refreshPreview} />}
+              <PanelRealityMeta panel={activePanel} />
+            </div>
           </div>
         </aside>
 
@@ -309,8 +325,8 @@ export function ThemeEditorShell({
             ) : null}
           </div>
 
-          <div className="flex flex-1 items-center justify-center overflow-hidden p-4">
-            <div className={cn("relative overflow-hidden rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-white shadow-[var(--shadow-overlay)] transition-all duration-300", device === "desktop" ? "h-full w-full max-w-[1220px]" : "h-[720px] w-[390px] max-h-full max-w-full")}>
+          <div className={cn("flex flex-1 overflow-hidden", device === "desktop" ? "p-2" : "items-center justify-center p-4")}>
+            <div className={cn("relative overflow-hidden border border-[color:var(--hairline)] bg-white shadow-[var(--shadow-overlay)] transition-all duration-300", device === "desktop" ? "h-full w-full rounded-[var(--r-md)]" : "h-[720px] w-[390px] max-h-full max-w-full rounded-[var(--r-lg)]")}>
               {previewSrc ? (
                 <iframe key={`${previewSurface}-${previewKey}`} ref={iframeRef} src={previewSrc} className="h-full w-full border-0" title={`Preview ${currentSurface?.label ?? "storefront"}`} />
               ) : (
@@ -341,35 +357,21 @@ export function ThemeEditorShell({
   );
 }
 
-function ThemePanel({ initialData, onSaved }: { initialData: AdminStoreInitialData; onSaved: () => void }) {
-  const initialTone = STORE_TONES.some((option) => option.value === initialData.branding?.tone)
-    ? initialData.branding?.tone
-    : "professional";
-  const [tone, setTone] = useState(initialTone ?? "professional");
+function ButtonsPanel({ initialData, onSaved }: { initialData: AdminStoreInitialData; onSaved: () => void }) {
   const [buttonStyle, setButtonStyle] = useState(initialData.branding?.buttonStyle ?? "rounded-sm");
   const [isPending, startTransition] = useTransition();
 
   const save = () => {
     startTransition(async () => {
-      await saveStoreBranding({ tone, buttonStyle });
+      await saveStoreBranding({ buttonStyle });
       onSaved();
     });
   };
 
   return (
     <div className="space-y-5">
-      <PanelHeading title="Tema global" description="Afecta toda la tienda: tono visual y forma real de CTAs." />
-      <Field label="Tono visual">
-        <div className="space-y-2">
-          {STORE_TONES.map((option) => (
-            <button key={option.value} type="button" onClick={() => setTone(option.value)} className={cn("w-full rounded-[var(--r-sm)] border p-3 text-left transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]", tone === option.value ? "border-ink-0 bg-ink-0 text-ink-12" : "border-[color:var(--hairline)] bg-[var(--surface-1)] text-ink-0 hover:bg-[var(--surface-2)]")}>
-              <span className="block text-[12px] font-semibold">{option.label}</span>
-              <span className={cn("mt-0.5 block text-[11px]", tone === option.value ? "text-ink-9" : "text-ink-5")}>{option.description}</span>
-            </button>
-          ))}
-        </div>
-      </Field>
-      <Field label="Botones">
+      <PanelHeading title="Botones" description="Control real de la forma de CTAs en header, cart, home y checkout visual." />
+      <Field label="Estilo de CTA">
         <div className="grid grid-cols-3 gap-2">
           {STORE_BUTTON_STYLES.map((style) => (
             <button key={style.value} type="button" onClick={() => setButtonStyle(style.value)} className={cn("h-10 border text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]", buttonStyle === style.value ? "border-ink-0 bg-ink-0 text-ink-12" : "border-[color:var(--hairline)] bg-[var(--surface-1)] text-ink-5 hover:bg-[var(--surface-2)] hover:text-ink-0")} style={{ borderRadius: style.radius }}>
@@ -378,6 +380,13 @@ function ThemePanel({ initialData, onSaved }: { initialData: AdminStoreInitialDa
           ))}
         </div>
       </Field>
+      <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-1)] p-3">
+        <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Preview de boton</p>
+        <button type="button" className="mt-3 h-10 w-full bg-ink-0 px-4 text-[12px] font-semibold text-ink-12" style={{ borderRadius: STORE_BUTTON_STYLES.find((style) => style.value === buttonStyle)?.radius }}>
+          Agregar al carrito
+        </button>
+        <p className="mt-3 text-[11px] leading-[1.45] text-ink-5">Se guarda en StoreBranding.buttonStyle y se aplica por variable CSS en el storefront.</p>
+      </div>
       <SaveButton isPending={isPending} onClick={save} />
     </div>
   );
@@ -442,19 +451,24 @@ function TypographyPanel({ initialData, onSaved }: { initialData: AdminStoreInit
 
 function IdentityPanel({ initialData, onSaved }: { initialData: AdminStoreInitialData; onSaved: () => void }) {
   const [isPending, startTransition] = useTransition();
+  const initialTone = STORE_TONES.some((option) => option.value === initialData.branding?.tone)
+    ? initialData.branding?.tone
+    : "professional";
+  const [tone, setTone] = useState(initialTone ?? "professional");
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     startTransition(async () => {
       await saveStoreProfileAction(formData);
+      await saveStoreBranding({ tone });
       onSaved();
     });
   };
 
   return (
     <form className="space-y-5" onSubmit={submit}>
-      <PanelHeading title="Identidad" description="Datos reales usados por header, footer, SEO basico y URL publica." />
+      <PanelHeading title="Identidad" description="Datos reales usados por header, footer, SEO basico, URL publica y tono visual." />
       <Field label="Nombre de tienda">
         <input className={inputCls} name="name" defaultValue={initialData.store.name} required />
       </Field>
@@ -464,11 +478,53 @@ function IdentityPanel({ initialData, onSaved }: { initialData: AdminStoreInitia
       <Field label="Descripcion">
         <textarea className={textareaCls} name="description" defaultValue={initialData.store.description ?? ""} maxLength={280} />
       </Field>
-      <Field label="Logo URL">
-        <input className={inputCls} name="logo" defaultValue={initialData.store.logo ?? initialData.branding?.logoUrl ?? ""} placeholder="https://..." type="url" />
+      <input type="hidden" name="logo" defaultValue={initialData.branding?.logoUrl ?? initialData.store.logo ?? ""} />
+      <Field label="Tono visual">
+        <div className="space-y-2">
+          {STORE_TONES.map((option) => (
+            <button key={option.value} type="button" onClick={() => setTone(option.value)} className={cn("w-full rounded-[var(--r-sm)] border p-3 text-left transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]", tone === option.value ? "border-ink-0 bg-ink-0 text-ink-12" : "border-[color:var(--hairline)] bg-[var(--surface-1)] text-ink-0 hover:bg-[var(--surface-2)]")}>
+              <span className="block text-[12px] font-semibold">{option.label}</span>
+              <span className={cn("mt-0.5 block text-[11px]", tone === option.value ? "text-ink-9" : "text-ink-5")}>{option.description}</span>
+            </button>
+          ))}
+        </div>
       </Field>
       <SaveButton isPending={isPending} submit />
     </form>
+  );
+}
+
+function MediaPanel({ initialData, onSaved }: { initialData: AdminStoreInitialData; onSaved: () => void }) {
+  const [logoUrl, setLogoUrl] = useState(initialData.branding?.logoUrl ?? initialData.store.logo ?? "");
+  const [isPending, startTransition] = useTransition();
+
+  const save = () => {
+    startTransition(async () => {
+      const normalizedLogo = logoUrl.trim();
+      await saveStoreBranding({ logoUrl: normalizedLogo || null });
+      onSaved();
+    });
+  };
+
+  return (
+    <div className="space-y-5">
+      <PanelHeading title="Media" description="Logo visual usado por header y footer del storefront real." />
+      <Field label="Logo URL">
+        <input className={inputCls} value={logoUrl} onChange={(event) => setLogoUrl(event.target.value)} placeholder="https://..." type="url" />
+      </Field>
+      <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-1)] p-4">
+        <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Vista de marca</p>
+        <div className="mt-3 flex h-20 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)]">
+          {logoUrl.trim() ? (
+            <img src={logoUrl.trim()} alt="Logo de tienda" className="max-h-12 max-w-[220px] object-contain" />
+          ) : (
+            <span className="text-[18px] font-semibold tracking-[-0.03em] text-ink-0">{initialData.store.name}</span>
+          )}
+        </div>
+        <p className="mt-3 text-[11px] leading-[1.45] text-ink-5">No modifica SEO ni datos legales: solo el logo visible persistido en StoreBranding.logoUrl.</p>
+      </div>
+      <SaveButton isPending={isPending} onClick={save} />
+    </div>
   );
 }
 
@@ -662,6 +718,30 @@ function PanelHeading({ title, description }: { title: string; description: stri
     <div>
       <p className={sectionTitle}>{title}</p>
       <p className="mt-1 text-[12px] leading-[1.45] text-ink-5">{description}</p>
+    </div>
+  );
+}
+
+function PanelRealityMeta({ panel }: { panel: EditorPanel }) {
+  const meta = PANEL_META[panel];
+
+  return (
+    <div className="mt-auto rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-1)] p-3">
+      <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Wiring real</p>
+      <dl className="mt-3 grid grid-cols-1 gap-2 text-[11px]">
+        <div className="flex items-center justify-between gap-3">
+          <dt className="text-ink-5">Alcance</dt>
+          <dd className="font-medium text-ink-0">{meta.scope}</dd>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <dt className="text-ink-5">Modelo</dt>
+          <dd className="max-w-[190px] truncate font-mono text-ink-0">{meta.model}</dd>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <dt className="text-ink-5">Preview</dt>
+          <dd className="font-medium capitalize text-ink-0">{meta.preview}</dd>
+        </div>
+      </dl>
     </div>
   );
 }

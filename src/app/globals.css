@@ -337,6 +337,28 @@ body {
   border-color: var(--store-primary);
 }
 
+[data-storefront][data-store-tone="premium"] h1,
+[data-storefront][data-store-tone="premium"] h2,
+[data-storefront][data-store-tone="premium"] .text-display {
+  font-weight: 650;
+  letter-spacing: -0.055em;
+}
+
+[data-storefront][data-store-tone="technical"] {
+  --store-button-radius: 2px;
+}
+
+[data-storefront][data-store-tone="technical"] a[class*="bg-ink-0"],
+[data-storefront][data-store-tone="technical"] button[class*="bg-ink-0"] {
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+[data-storefront][data-store-tone="warm"] {
+  --surface-1: color-mix(in srgb, var(--store-secondary) 18%, #fbfaf7);
+  --surface-2: color-mix(in srgb, var(--store-secondary) 24%, #ffffff);
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    Legacy utilities kept for compatibility
    ═══════════════════════════════════════════════════════════════════════════ */
