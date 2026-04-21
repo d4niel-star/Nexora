@@ -22,7 +22,6 @@ import {
   type UndoSnapshot,
 } from "@/lib/copilot/context";
 import {
-  okResponse,
   errResponse,
   partialResponse,
   clarifyResponse,
@@ -32,21 +31,10 @@ import {
   type CopilotResponse,
 } from "@/lib/copilot/feedback";
 
-// ─── Nexora Editor Chat v2 ────────────────────────────────────────────────
+// ─── Nexora Editor Chat v2.1 ──────────────────────────────────────────────
 //
-// Premium conversational copilot for the Tienda IA editor.
-//
-// Architecture:
-//   Input → NLU Engine → PlannedAction[] → Executor → Feedback
-//
-// The copilot:
-//   - Understands natural Spanish (rioplatense tolerant)
-//   - Handles compound instructions
-//   - Tracks conversational context
-//   - Supports undo via snapshots
-//   - Gives structured feedback on every action
-//   - Controls preview device/surface
-//   - Never gives false success
+// Premium conversational copilot — hardened edition.
+// Fixes: stale closure in transitions, better feedback, honest no-op reporting.
 
 interface ChatMessage {
   id: string;
@@ -90,9 +78,21 @@ export function NexoraEditorChat({
   const [input, setInput] = useState("");
   const [isPending, startTransition] = useTransition();
   const [ctx, setCtx] = useState<ConversationContext>(createEmptyContext());
+
+  // Refs to avoid stale closures inside startTransition
+  const ctxRef = useRef(ctx);
+  ctxRef.current = ctx;
+  const onActionAppliedRef = useRef(onActionApplied);
+  onActionAppliedRef.current = onActionApplied;
+  const onDeviceChangeRef = useRef(onDeviceChange);
+  onDeviceChangeRef.current = onDeviceChange;
+  const onPreviewSurfaceChangeRef = useRef(onPreviewSurfaceChange);
+  onPreviewSurfaceChangeRef.current = onPreviewSurfaceChange;
+  const currentBrandingRef = useRef(currentBranding);
+  currentBrandingRef.current = currentBranding;
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -117,10 +117,11 @@ export function NexoraEditorChat({
 
     startTransition(async () => {
       try {
-        const result = processInput(text, ctx);
+        const currentCtx = ctxRef.current;
+        const result = processInput(text, currentCtx);
         const responses: ChatMessage[] = [];
 
-        // Handle special intents first
+        // Handle special intents
         if (result.actions.length === 1) {
           const action = result.actions[0];
           if (action.intent === "greeting") {
@@ -141,7 +142,6 @@ export function NexoraEditorChat({
           }
         }
 
-        // Execute all ready actions
         const readyActions = result.actions.filter((a) => a.status === "ready");
         const unsupported = result.actions.filter((a) => a.status === "unsupported");
         const needClarification = result.actions.filter((a) => a.status === "needs-clarification");
@@ -152,7 +152,7 @@ export function NexoraEditorChat({
             unsupported.map((a) => a.rawText),
             [
               "Probá algo como: \"poné tonos más premium\", \"ocultá testimonios\", \"cambiá la fuente\".",
-              "Si querés ver todo lo que puedo hacer, escribí \"ayuda\".",
+              "Escribí \"ayuda\" para ver todo lo que puedo hacer.",
             ],
           );
           responses.push(makeAssistantMessage(formatResponse(resp), resp, "err"));
@@ -160,14 +160,20 @@ export function NexoraEditorChat({
           return;
         }
 
-        // Execute each ready action
+        // Execute ready actions
         const changed: string[] = [];
         const notChanged: string[] = [];
-        let newCtx = ctx;
+        let newCtx = currentCtx;
 
         for (const action of readyActions) {
-          // Take snapshot before action for undo
-          if (action.intent !== "undo" && action.intent !== "switch-desktop" && action.intent !== "switch-mobile" && action.intent !== "switch-preview-surface" && action.intent !== "greeting" && action.intent !== "help") {
+          const isDestructive = action.intent !== "undo" &&
+            action.intent !== "switch-desktop" &&
+            action.intent !== "switch-mobile" &&
+            action.intent !== "switch-preview-surface" &&
+            action.intent !== "greeting" &&
+            action.intent !== "help";
+
+          if (isDestructive) {
             const snapshot = await buildSnapshot(action.intent);
             newCtx = pushUndoSnapshot(newCtx, describeAction(action), snapshot?.branding ?? null, snapshot?.blocks ?? null);
           }
@@ -176,27 +182,23 @@ export function NexoraEditorChat({
           if (execResult.ok) {
             changed.push(execResult.detail);
             newCtx = updateContextFromAction(newCtx, action);
-            // Fire device/surface callbacks
             if (action.intent === "switch-mobile") {
-              onDeviceChange?.("mobile");
+              onDeviceChangeRef.current?.("mobile");
               newCtx = updateContext(newCtx, { currentDevice: "mobile" });
             } else if (action.intent === "switch-desktop") {
-              onDeviceChange?.("desktop");
+              onDeviceChangeRef.current?.("desktop");
               newCtx = updateContext(newCtx, { currentDevice: "desktop" });
             } else if (action.intent === "switch-preview-surface" && action.entities.surface) {
-              onPreviewSurfaceChange?.(action.entities.surface as "home" | "listing" | "product" | "cart");
+              onPreviewSurfaceChangeRef.current?.(action.entities.surface as "home" | "listing" | "product" | "cart");
             }
           } else {
             notChanged.push(execResult.detail);
           }
         }
 
-        // Handle clarification requests
         for (const action of needClarification) {
-          notChanged.push(`⚠️ ${action.rawText}: ${action.clarification}`);
+          notChanged.push(`Necesito más datos: ${action.clarification}`);
         }
-
-        // Handle unsupported
         for (const action of unsupported) {
           notChanged.push(`No pude procesar: "${action.rawText}"`);
         }
@@ -206,9 +208,7 @@ export function NexoraEditorChat({
         let status: "ok" | "err" | "partial";
 
         if (notChanged.length === 0 && changed.length > 0) {
-          summary = changed.length === 1
-            ? changed[0]
-            : `${changed.length} cambios aplicados correctamente.`;
+          summary = changed.length === 1 ? changed[0] : `${changed.length} cambios aplicados correctamente.`;
           status = "ok";
         } else if (changed.length > 0 && notChanged.length > 0) {
           summary = `${changed.length} de ${changed.length + notChanged.length} acciones completadas.`;
@@ -219,31 +219,26 @@ export function NexoraEditorChat({
         }
 
         const resp = partialResponse(summary, changed, notChanged, []);
-        const nextSteps = buildNextSteps(readyActions);
-        resp.nextSteps = nextSteps;
+        resp.nextSteps = buildNextSteps(readyActions);
 
         responses.push(makeAssistantMessage(formatResponse(resp), resp, status));
         setMessages((prev) => [...prev, ...responses]);
         setCtx(newCtx);
 
-        if (changed.length > 0) onActionApplied();
+        if (changed.length > 0) onActionAppliedRef.current();
       } catch (e) {
         const msg = (e as Error).message ?? "Error desconocido";
         const resp = errResponse(`Error: ${msg}`, [], []);
-        setMessages((prev) => [
-          ...prev,
-          makeAssistantMessage(formatResponse(resp), resp, "err"),
-        ]);
+        setMessages((prev) => [...prev, makeAssistantMessage(formatResponse(resp), resp, "err")]);
       }
     });
-  }, [input, ctx, onActionApplied]);
+  }, [input]);
 
   return (
     <>
-      {/* FAB */}
       <button
         type="button"
-        onClick={() => { setIsOpen((o) => !o); }}
+        onClick={() => setIsOpen((o) => !o)}
         className={cn(
           "fixed bottom-6 right-6 z-[70] flex h-12 w-12 items-center justify-center rounded-full shadow-[var(--shadow-overlay)] transition-all duration-300 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
           isOpen
@@ -255,10 +250,8 @@ export function NexoraEditorChat({
         {isOpen ? <X className="h-5 w-5" strokeWidth={1.75} /> : <Sparkles className="h-5 w-5" strokeWidth={1.75} />}
       </button>
 
-      {/* Panel */}
       {isOpen && (
         <div className="fixed bottom-20 right-6 z-[70] flex w-[400px] max-h-[min(600px,calc(100vh-120px))] flex-col rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] shadow-[var(--shadow-overlay)] animate-in slide-in-from-bottom-4 fade-in duration-300">
-          {/* Header */}
           <header className="flex items-center justify-between border-b border-[color:var(--hairline)] px-4 py-3">
             <div className="flex items-center gap-2.5">
               <div className="flex h-8 w-8 items-center justify-center rounded-[var(--r-sm)] bg-ink-0 text-ink-12">
@@ -287,8 +280,7 @@ export function NexoraEditorChat({
             </div>
           </header>
 
-          {/* Messages */}
-          <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-3">
+          <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-3">
             {messages.map((msg) => (
               <MessageBubble key={msg.id} msg={msg} />
             ))}
@@ -303,32 +295,24 @@ export function NexoraEditorChat({
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Quick suggestions */}
           {messages.length <= 2 && (
             <div className="border-t border-[color:var(--hairline)] px-4 py-2.5">
               <p className="mb-2 text-[9px] font-medium uppercase tracking-[0.12em] text-ink-6">Probá algo</p>
               <div className="flex flex-wrap gap-1.5">
-                {[
-                  "Algo más premium",
-                  "Ocultá testimonios",
-                  "Poné tonos beige",
-                  "Fuente más editorial",
-                  "Mostrame en celu",
-                ].map((suggestion) => (
+                {["Algo más premium", "Ocultá testimonios", "Poné tonos beige", "Fuente más editorial", "Mostrame en celu"].map((s) => (
                   <button
-                    key={suggestion}
+                    key={s}
                     type="button"
-                    onClick={() => { setInput(suggestion); inputRef.current?.focus(); }}
+                    onClick={() => { setInput(s); inputRef.current?.focus(); }}
                     className="rounded-[var(--r-full)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2.5 py-1 text-[10px] font-medium text-ink-5 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0"
                   >
-                    {suggestion}
+                    {s}
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Input */}
           <div className="border-t border-[color:var(--hairline)] px-4 py-3">
             <div className="flex items-center gap-2">
               <input
@@ -357,11 +341,8 @@ export function NexoraEditorChat({
   );
 }
 
-// ─── Message bubble ───────────────────────────────────────────────────────
-
 function MessageBubble({ msg }: { msg: ChatMessage }) {
   const isUser = msg.role === "user";
-
   return (
     <div className={cn("flex", isUser ? "justify-end" : "justify-start")}>
       <div
@@ -375,7 +356,6 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
           !isUser && !msg.status && "bg-[var(--surface-1)] text-ink-0 border border-[color:var(--hairline)]",
         )}
       >
-        {/* Status indicator */}
         {!isUser && msg.status === "ok" && (
           <div className="mb-1.5 flex items-center gap-1.5">
             <CheckCircle2 className="h-3 w-3 text-[color:var(--signal-success)]" strokeWidth={2} />
@@ -385,7 +365,7 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
         {!isUser && msg.status === "err" && (
           <div className="mb-1.5 flex items-center gap-1.5">
             <AlertTriangle className="h-3 w-3 text-[color:var(--signal-danger)]" strokeWidth={2} />
-            <span className="text-[10px] font-medium text-[color:var(--signal-danger)]">Error</span>
+            <span className="text-[10px] font-medium text-[color:var(--signal-danger)]">No se pudo</span>
           </div>
         )}
         {!isUser && msg.status === "partial" && (
@@ -400,96 +380,49 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
             <span className="text-[10px] font-medium text-[var(--accent-500)]">Necesito más info</span>
           </div>
         )}
-
         <div className="whitespace-pre-wrap">{msg.content}</div>
       </div>
     </div>
   );
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────
-
 function makeAssistantMessage(content: string, structured: CopilotResponse, status: ChatMessage["status"]): ChatMessage {
-  return {
-    id: `a-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    role: "assistant",
-    content,
-    structured,
-    timestamp: Date.now(),
-    status,
-  };
+  return { id: `a-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, role: "assistant", content, structured, timestamp: Date.now(), status };
 }
 
 function describeAction(action: PlannedAction): string {
   const labels: Record<ActionType, string> = {
-    "change-primary-color": "Cambio de color principal",
-    "change-secondary-color": "Cambio de color secundario",
-    "change-color": "Cambio de color",
-    "change-font": "Cambio de tipografía",
-    "change-font-by-style": "Cambio de tipografía por estilo",
-    "change-tone": "Cambio de tono",
-    "change-tone-by-mood": "Cambio de tono por mood",
-    "apply-visual-tone": "Aplicación de tono visual",
-    "change-button-style": "Cambio de estilo de botón",
-    "change-hero-headline": "Cambio de headline",
-    "change-hero-subheadline": "Cambio de subheadline",
-    "change-hero-cta": "Cambio de CTA",
-    "change-hero-image": "Cambio de imagen",
-    "hide-section": "Ocultar sección",
-    "show-section": "Mostrar sección",
-    "move-section": "Mover sección",
-    "apply-theme": "Aplicar tema",
-    "switch-desktop": "Switch desktop",
-    "switch-mobile": "Switch mobile",
-    "switch-preview-surface": "Cambio de preview",
-    "undo": "Deshacer",
-    "greeting": "Saludo",
-    "help": "Ayuda",
-    "unknown": "Desconocido",
+    "change-primary-color": "Cambio de color principal", "change-secondary-color": "Cambio de color secundario",
+    "change-color": "Cambio de color", "change-font": "Cambio de tipografía", "change-font-by-style": "Cambio de tipografía por estilo",
+    "change-tone": "Cambio de tono", "change-tone-by-mood": "Cambio de tono", "apply-visual-tone": "Tono visual aplicado",
+    "change-button-style": "Cambio de estilo de botón", "change-hero-headline": "Cambio de headline", "change-hero-subheadline": "Cambio de subheadline",
+    "change-hero-cta": "Cambio de CTA", "change-hero-image": "Cambio de imagen", "hide-section": "Sección ocultada",
+    "show-section": "Sección mostrada", "move-section": "Sección movida", "apply-theme": "Tema aplicado",
+    "switch-desktop": "Vista desktop", "switch-mobile": "Vista mobile", "switch-preview-surface": "Cambio de preview",
+    "undo": "Deshacer", "greeting": "Saludo", "help": "Ayuda", "unknown": "Desconocido",
   };
   return labels[action.intent] ?? action.intent;
 }
 
-async function buildSnapshot(intent: ActionType): Promise<{ branding: UndoSnapshot["branding"]; blocks: UndoSnapshot["blocks"] } | null> {
+async function buildSnapshot(_intent: ActionType): Promise<{ branding: UndoSnapshot["branding"]; blocks: UndoSnapshot["blocks"] } | null> {
   try {
     const { fetchHomeBlocks, fetchStoreBranding } = await import("@/lib/store-engine/actions");
     const [blocks, branding] = await Promise.all([fetchHomeBlocks(), fetchStoreBranding()]);
     return {
-      branding: branding ? {
-        primaryColor: branding.primaryColor,
-        secondaryColor: branding.secondaryColor,
-        fontFamily: branding.fontFamily,
-        tone: branding.tone,
-        buttonStyle: branding.buttonStyle,
-        logoUrl: branding.logoUrl,
-      } : null,
-      blocks: blocks ? blocks.map((b: any) => ({
-        blockType: b.blockType,
-        sortOrder: b.sortOrder,
-        isVisible: b.isVisible,
-        settingsJson: typeof b.settingsJson === "string" ? b.settingsJson : JSON.stringify(b.settingsJson ?? {}),
-        source: b.source ?? "template",
-        state: b.state ?? "draft",
-      })) : null,
+      branding: branding ? { primaryColor: branding.primaryColor, secondaryColor: branding.secondaryColor, fontFamily: branding.fontFamily, tone: branding.tone, buttonStyle: branding.buttonStyle, logoUrl: branding.logoUrl } : null,
+      blocks: blocks ? blocks.map((b: any) => ({ blockType: b.blockType, sortOrder: b.sortOrder, isVisible: b.isVisible, settingsJson: typeof b.settingsJson === "string" ? b.settingsJson : JSON.stringify(b.settingsJson ?? {}), source: b.source ?? "template", state: b.state ?? "draft" })) : null,
     };
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
 function updateContextFromAction(ctx: ConversationContext, action: PlannedAction): ConversationContext {
   const e = action.entities;
   switch (action.intent) {
-    case "change-primary-color":
-    case "change-secondary-color":
-    case "change-color":
+    case "change-primary-color": case "change-secondary-color": case "change-color":
       return updateContext(ctx, { lastAction: action.intent, lastColorChanged: e.colorHex ?? e.colorName ?? "" });
-    case "change-font":
-    case "change-font-by-style":
+    case "change-font": case "change-font-by-style":
       return updateContext(ctx, { lastAction: action.intent, lastFontChanged: e.fontValue ?? "" });
-    case "hide-section":
-    case "show-section":
-    case "move-section":
+    case "hide-section": case "show-section": case "move-section":
       return updateContext(ctx, { lastAction: action.intent, lastBlockType: e.sectionKey ?? "" });
     case "apply-visual-tone":
       return updateContext(ctx, { lastAction: action.intent, lastThemeApplied: e.toneLabel ?? "" });
@@ -504,258 +437,146 @@ function buildNextSteps(actions: PlannedAction[]): string[] {
   if (actions.length === 0) return [];
   const steps: string[] = [];
   const intents = actions.map((a) => a.intent);
-
-  if (intents.includes("apply-visual-tone") || intents.includes("change-color")) {
-    steps.push("Podés ajustar colores específicos con \"cambiar el color principal a azul\".");
-  }
-  if (intents.includes("change-font") || intents.includes("change-font-by-style")) {
-    steps.push("Probá \"ver en celu\" para ver cómo queda la nueva tipografía en mobile.");
-  }
-  if (intents.includes("hide-section") || intents.includes("move-section")) {
-    steps.push("Escribí \"deshacé eso\" si querés revertir el cambio.");
-  }
-
+  if (intents.includes("apply-visual-tone") || intents.includes("change-color")) steps.push("Podés ajustar colores específicos con \"cambiar el color principal a azul\".");
+  if (intents.includes("change-font") || intents.includes("change-font-by-style")) steps.push("Probá \"ver en celu\" para ver cómo queda la nueva tipografía en mobile.");
+  if (intents.includes("hide-section") || intents.includes("move-section")) steps.push("Escribí \"deshacé eso\" si querés revertir el cambio.");
   return steps.slice(0, 2);
 }
 
-// ─── Action executor ──────────────────────────────────────────────────────
-
-async function executeAction(
-  action: PlannedAction,
-  ctx: ConversationContext,
-): Promise<{ ok: boolean; detail: string }> {
+async function executeAction(action: PlannedAction, ctx: ConversationContext): Promise<{ ok: boolean; detail: string }> {
   const e = action.entities;
-
   switch (action.intent) {
-    // ── Colors ───────────────────────────────────────────────────────────
-    case "change-primary-color":
-    case "change-color": {
-      if (!e.colorHex) return { ok: false, detail: "Color no reconocido." };
+    case "change-primary-color": case "change-color": {
+      if (!e.colorHex) return { ok: false, detail: "Color no reconocido. Probá \"azul\", \"dorado\" o un HEX como #1A1A2E." };
       const { saveStoreBranding } = await import("@/lib/store-engine/actions");
       await saveStoreBranding({ primaryColor: e.colorHex });
-      return { ok: true, detail: `Color principal → ${e.colorName ?? e.colorHex}` };
+      return { ok: true, detail: `Color principal cambiado a ${e.colorName ?? e.colorHex}` };
     }
-
     case "change-secondary-color": {
-      if (!e.colorHex) return { ok: false, detail: "Color no reconocido." };
+      if (!e.colorHex) return { ok: false, detail: "Color no reconocido. Probá \"beige\", \"gris\" o un HEX." };
       const { saveStoreBranding } = await import("@/lib/store-engine/actions");
       await saveStoreBranding({ secondaryColor: e.colorHex });
-      return { ok: true, detail: `Color secundario → ${e.colorName ?? e.colorHex}` };
+      return { ok: true, detail: `Color secundario cambiado a ${e.colorName ?? e.colorHex}` };
     }
-
-    // ── Typography ───────────────────────────────────────────────────────
-    case "change-font":
-    case "change-font-by-style": {
-      if (!e.fontValue) return { ok: false, detail: "Tipografía no reconocida." };
+    case "change-font": case "change-font-by-style": {
+      if (!e.fontValue) return { ok: false, detail: "Tipografía no reconocida. Probá \"más editorial\" o \"más moderna\"." };
       const { saveStoreBranding } = await import("@/lib/store-engine/actions");
       await saveStoreBranding({ fontFamily: e.fontValue });
-      return { ok: true, detail: `Tipografía → ${e.fontLabel ?? e.fontValue}` };
+      return { ok: true, detail: `Tipografía cambiada a ${e.fontLabel ?? e.fontValue}` };
     }
-
-    // ── Tone ─────────────────────────────────────────────────────────────
-    case "change-tone":
-    case "change-tone-by-mood": {
-      if (!e.toneValue) return { ok: false, detail: "Tono no reconocido." };
+    case "change-tone": case "change-tone-by-mood": {
+      if (!e.toneValue) return { ok: false, detail: "Tono no reconocido. Opciones: Profesional, Premium, Técnico, Cercano." };
       const { saveStoreBranding } = await import("@/lib/store-engine/actions");
       await saveStoreBranding({ tone: e.toneValue });
-      return { ok: true, detail: `Tono de copy → ${e.toneLabel ?? e.toneValue}` };
+      return { ok: true, detail: `Tono de copy cambiado a ${e.toneLabel ?? e.toneValue}` };
     }
-
-    // ── Visual tone preset ───────────────────────────────────────────────
     case "apply-visual-tone": {
-      if (!e.primaryColor) return { ok: false, detail: "No se pudo resolver el estilo visual." };
+      if (!e.primaryColor) return { ok: false, detail: "No se pudo resolver el estilo. Probá \"más premium\" o \"negro y beige\"." };
       const { saveStoreBranding } = await import("@/lib/store-engine/actions");
-      await saveStoreBranding({
-        primaryColor: e.primaryColor,
-        secondaryColor: e.secondaryColor,
-        fontFamily: e.fontFamily,
-        tone: e.tone,
-      });
-      return { ok: true, detail: `Estilo "${e.toneLabel}" aplicado: ${e.toneDescription}` };
+      await saveStoreBranding({ primaryColor: e.primaryColor, secondaryColor: e.secondaryColor, fontFamily: e.fontFamily, tone: e.tone });
+      return { ok: true, detail: `Estilo "${e.toneLabel}" aplicado — ${e.toneDescription}` };
     }
-
-    // ── Button style ─────────────────────────────────────────────────────
     case "change-button-style": {
-      if (!e.buttonStyle) return { ok: false, detail: "Estilo de botón no reconocido." };
+      if (!e.buttonStyle) return { ok: false, detail: "Estilo no reconocido. Probá \"redondeado\", \"cuadrado\" o \"pill\"." };
       const { saveStoreBranding } = await import("@/lib/store-engine/actions");
       await saveStoreBranding({ buttonStyle: e.buttonStyle });
-      return { ok: true, detail: `Botón → ${e.buttonStyleLabel ?? e.buttonStyle}` };
+      return { ok: true, detail: `Botón cambiado a estilo ${e.buttonStyleLabel ?? e.buttonStyle}` };
     }
-
-    // ── Hero content ─────────────────────────────────────────────────────
     case "change-hero-headline": {
-      if (!e.textValue) return { ok: false, detail: "No se pudo extraer el texto para el titular." };
+      if (!e.textValue) return { ok: false, detail: "No se pudo extraer el texto. Usá comillas: cambiá el headline a \"Mi título\"." };
       const { fetchHomeBlocks, saveHomeBlocks } = await import("@/lib/store-engine/actions");
       const blocks = await fetchHomeBlocks();
       if (!blocks?.length) return { ok: false, detail: "No hay bloques. Aplicá un tema primero." };
-      const updated = blocks.map((b: any) => {
-        if (b.blockType !== "hero") return b;
-        const s = typeof b.settingsJson === "string" ? JSON.parse(b.settingsJson) : b.settingsJson ?? {};
-        s.headline = e.textValue;
-        return { ...b, settingsJson: JSON.stringify(s) };
-      });
-      await saveHomeBlocks(updated);
-      return { ok: true, detail: `Headline → "${e.textValue}"` };
+      await saveHomeBlocks(blocks.map((b: any) => b.blockType !== "hero" ? b : { ...b, settingsJson: JSON.stringify({ ...(typeof b.settingsJson === "string" ? JSON.parse(b.settingsJson) : b.settingsJson ?? {}), headline: e.textValue }) }));
+      return { ok: true, detail: `Headline del hero → "${e.textValue}"` };
     }
-
     case "change-hero-subheadline": {
-      if (!e.textValue) return { ok: false, detail: "No se pudo extraer el texto para el subtitular." };
+      if (!e.textValue) return { ok: false, detail: "No se pudo extraer el texto. Usá comillas: cambiá el subtitulo a \"Mi sub\"." };
       const { fetchHomeBlocks, saveHomeBlocks } = await import("@/lib/store-engine/actions");
       const blocks = await fetchHomeBlocks();
       if (!blocks?.length) return { ok: false, detail: "No hay bloques. Aplicá un tema primero." };
-      const updated = blocks.map((b: any) => {
-        if (b.blockType !== "hero") return b;
-        const s = typeof b.settingsJson === "string" ? JSON.parse(b.settingsJson) : b.settingsJson ?? {};
-        s.subheadline = e.textValue;
-        return { ...b, settingsJson: JSON.stringify(s) };
-      });
-      await saveHomeBlocks(updated);
-      return { ok: true, detail: `Subheadline → "${e.textValue}"` };
+      await saveHomeBlocks(blocks.map((b: any) => b.blockType !== "hero" ? b : { ...b, settingsJson: JSON.stringify({ ...(typeof b.settingsJson === "string" ? JSON.parse(b.settingsJson) : b.settingsJson ?? {}), subheadline: e.textValue }) }));
+      return { ok: true, detail: `Subheadline del hero → "${e.textValue}"` };
     }
-
     case "change-hero-cta": {
-      if (!e.textValue) return { ok: false, detail: "No se pudo extraer el texto para el CTA." };
+      if (!e.textValue) return { ok: false, detail: "No se pudo extraer el texto. Usá comillas: cambiá el CTA a \"Comprar ahora\"." };
       const { fetchHomeBlocks, saveHomeBlocks } = await import("@/lib/store-engine/actions");
       const blocks = await fetchHomeBlocks();
       if (!blocks?.length) return { ok: false, detail: "No hay bloques. Aplicá un tema primero." };
-      const updated = blocks.map((b: any) => {
-        if (b.blockType !== "hero") return b;
-        const s = typeof b.settingsJson === "string" ? JSON.parse(b.settingsJson) : b.settingsJson ?? {};
-        s.primaryActionLabel = e.textValue;
-        return { ...b, settingsJson: JSON.stringify(s) };
-      });
-      await saveHomeBlocks(updated);
+      await saveHomeBlocks(blocks.map((b: any) => b.blockType !== "hero" ? b : { ...b, settingsJson: JSON.stringify({ ...(typeof b.settingsJson === "string" ? JSON.parse(b.settingsJson) : b.settingsJson ?? {}), primaryActionLabel: e.textValue }) }));
       return { ok: true, detail: `CTA del hero → "${e.textValue}"` };
     }
-
-    // ── Hero image (limited - honest response) ───────────────────────────
     case "change-hero-image": {
       return { ok: false, detail: "No puedo generar o reemplazar imágenes por ahora. Podés cambiar la imagen del hero manualmente desde el editor de secciones." };
     }
-
-    // ── Section visibility ───────────────────────────────────────────────
     case "hide-section": {
-      if (!e.sectionKey) return { ok: false, detail: "Sección no reconocida." };
+      if (!e.sectionKey) return { ok: false, detail: "Sección no reconocida. Opciones: Hero, Productos, Categorías, Beneficios, Testimonios, FAQ, Newsletter." };
       const { fetchHomeBlocks, saveHomeBlocks } = await import("@/lib/store-engine/actions");
       const blocks = await fetchHomeBlocks();
       if (!blocks?.length) return { ok: false, detail: "No hay bloques." };
       const target = blocks.find((b: any) => b.blockType === e.sectionKey);
       if (!target) return { ok: false, detail: `Sección "${e.sectionLabel ?? e.sectionKey}" no encontrada.` };
-      if (!target.isVisible) return { ok: false, detail: `${e.sectionLabel ?? e.sectionKey} ya estaba oculta.` };
-      const updated = blocks.map((b: any) => b.blockType === e.sectionKey ? { ...b, isVisible: false } : b);
-      await saveHomeBlocks(updated);
+      if (!target.isVisible) return { ok: false, detail: `${e.sectionLabel ?? e.sectionKey} ya estaba oculta. Sin cambios.` };
+      await saveHomeBlocks(blocks.map((b: any) => b.blockType === e.sectionKey ? { ...b, isVisible: false } : b));
       return { ok: true, detail: `${e.sectionLabel ?? e.sectionKey} → oculta` };
     }
-
     case "show-section": {
-      if (!e.sectionKey) return { ok: false, detail: "Sección no reconocida." };
+      if (!e.sectionKey) return { ok: false, detail: "Sección no reconocida. Opciones: Hero, Productos, Categorías, Beneficios, Testimonios, FAQ, Newsletter." };
       const { fetchHomeBlocks, saveHomeBlocks } = await import("@/lib/store-engine/actions");
       const blocks = await fetchHomeBlocks();
       if (!blocks?.length) return { ok: false, detail: "No hay bloques." };
       const target = blocks.find((b: any) => b.blockType === e.sectionKey);
       if (!target) return { ok: false, detail: `Sección "${e.sectionLabel ?? e.sectionKey}" no encontrada.` };
-      if (target.isVisible) return { ok: false, detail: `${e.sectionLabel ?? e.sectionKey} ya estaba visible.` };
-      const updated = blocks.map((b: any) => b.blockType === e.sectionKey ? { ...b, isVisible: true } : b);
-      await saveHomeBlocks(updated);
+      if (target.isVisible) return { ok: false, detail: `${e.sectionLabel ?? e.sectionKey} ya estaba visible. Sin cambios.` };
+      await saveHomeBlocks(blocks.map((b: any) => b.blockType === e.sectionKey ? { ...b, isVisible: true } : b));
       return { ok: true, detail: `${e.sectionLabel ?? e.sectionKey} → visible` };
     }
-
-    // ── Move section ─────────────────────────────────────────────────────
     case "move-section": {
-      if (!e.sectionKey || !e.direction) return { ok: false, detail: "No se pudo determinar la sección o dirección." };
+      if (!e.sectionKey || !e.direction) return { ok: false, detail: "No se pudo determinar qué sección mover o hacia dónde." };
       const { fetchHomeBlocks, saveHomeBlocks } = await import("@/lib/store-engine/actions");
       const blocks = await fetchHomeBlocks();
       if (!blocks?.length) return { ok: false, detail: "No hay bloques." };
-
       const sorted = [...blocks].sort((a: any, b: any) => a.sortOrder - b.sortOrder);
       const idx = sorted.findIndex((b: any) => b.blockType === e.sectionKey);
       if (idx === -1) return { ok: false, detail: `Sección "${e.sectionLabel}" no encontrada.` };
-
       const dir = e.direction as "up" | "down" | "top" | "bottom";
       let newOrder: any[];
-      if (dir === "up" && idx > 0) {
-        newOrder = [...sorted];
-        [newOrder[idx], newOrder[idx - 1]] = [newOrder[idx - 1], newOrder[idx]];
-      } else if (dir === "down" && idx < sorted.length - 1) {
-        newOrder = [...sorted];
-        [newOrder[idx], newOrder[idx + 1]] = [newOrder[idx + 1], newOrder[idx]];
-      } else if (dir === "top" && idx > 0) {
-        const item = sorted.splice(idx, 1)[0];
-        sorted.unshift(item);
-        newOrder = sorted;
-      } else if (dir === "bottom" && idx < sorted.length - 1) {
-        const item = sorted.splice(idx, 1)[0];
-        sorted.push(item);
-        newOrder = sorted;
-      } else {
-        return { ok: false, detail: `No se puede mover "${e.sectionLabel}" en esa dirección.` };
-      }
-
+      if (dir === "up" && idx > 0) { newOrder = [...sorted]; [newOrder[idx], newOrder[idx - 1]] = [newOrder[idx - 1], newOrder[idx]]; }
+      else if (dir === "down" && idx < sorted.length - 1) { newOrder = [...sorted]; [newOrder[idx], newOrder[idx + 1]] = [newOrder[idx + 1], newOrder[idx]]; }
+      else if (dir === "top" && idx > 0) { const item = sorted.splice(idx, 1)[0]; sorted.unshift(item); newOrder = sorted; }
+      else if (dir === "bottom" && idx < sorted.length - 1) { const item = sorted.splice(idx, 1)[0]; sorted.push(item); newOrder = sorted; }
+      else return { ok: false, detail: `No se puede mover "${e.sectionLabel}" en esa dirección.` };
       const updated = newOrder.map((b: any, i: number) => ({ ...b, sortOrder: i }));
       await saveHomeBlocks(updated);
-      return { ok: true, detail: `${e.sectionLabel} movida ${dir === "up" ? "arriba" : dir === "down" ? "abajo" : dir === "top" ? "al principio" : "al final"}` };
+      const dirLabel = dir === "up" ? "arriba" : dir === "down" ? "abajo" : dir === "top" ? "al principio" : "al final";
+      return { ok: true, detail: `${e.sectionLabel} movida ${dirLabel}` };
     }
-
-    // ── Apply theme ──────────────────────────────────────────────────────
     case "apply-theme": {
       if (!e.themeId) return { ok: false, detail: "Tema no reconocido." };
       const { applyBuiltInTemplateAction } = await import("@/lib/themes/actions");
       const result = await applyBuiltInTemplateAction(e.themeId);
-      if (result.ok) {
-        return { ok: true, detail: `Tema "${e.themeLabel ?? e.themeId}" aplicado (${result.blocksCreated} bloques creados)` };
-      }
+      if (result.ok) return { ok: true, detail: `Tema "${e.themeLabel ?? e.themeId}" aplicado — ${result.blocksCreated} bloques creados` };
       return { ok: false, detail: result.errors?.[0] ?? "No se pudo aplicar el tema." };
     }
-
-    // ── Device switch ────────────────────────────────────────────────────
-    case "switch-mobile": {
-      // Triggered via onDeviceChange callback - actual switch happens at ThemeEditorShell level
-      return { ok: true, detail: "Vista mobile activada. El preview cambió a celular." };
-    }
-
-    case "switch-desktop": {
-      return { ok: true, detail: "Vista desktop activada. El preview cambió a escritorio." };
-    }
-
-    // ── Preview surface ──────────────────────────────────────────────────
+    case "switch-mobile": return { ok: true, detail: "Vista mobile activada." };
+    case "switch-desktop": return { ok: true, detail: "Vista desktop activada." };
     case "switch-preview-surface": {
-      return { ok: true, detail: `Preview cambiado a: ${e.surface}` };
+      const labels: Record<string, string> = { home: "Home", listing: "Listado", product: "Producto", cart: "Carrito" };
+      return { ok: true, detail: `Preview cambiado a: ${labels[e.surface] ?? e.surface}` };
     }
-
-    // ── Undo ─────────────────────────────────────────────────────────────
     case "undo": {
       const { ctx: newCtx, snapshot } = popUndoSnapshot(ctx);
       if (!snapshot) return { ok: false, detail: "No hay cambios previos para deshacer." };
-
-      // Restore branding
       if (snapshot.branding) {
         const { saveStoreBranding } = await import("@/lib/store-engine/actions");
-        await saveStoreBranding({
-          primaryColor: snapshot.branding.primaryColor,
-          secondaryColor: snapshot.branding.secondaryColor,
-          fontFamily: snapshot.branding.fontFamily,
-          tone: snapshot.branding.tone,
-          buttonStyle: snapshot.branding.buttonStyle,
-        });
+        await saveStoreBranding({ primaryColor: snapshot.branding.primaryColor, secondaryColor: snapshot.branding.secondaryColor, fontFamily: snapshot.branding.fontFamily, tone: snapshot.branding.tone, buttonStyle: snapshot.branding.buttonStyle });
       }
-
-      // Restore blocks
       if (snapshot.blocks) {
         const { saveHomeBlocks } = await import("@/lib/store-engine/actions");
-        await saveHomeBlocks(snapshot.blocks.map((b) => ({
-          blockType: b.blockType as any,
-          sortOrder: b.sortOrder,
-          isVisible: b.isVisible,
-          settingsJson: b.settingsJson,
-          source: b.source,
-          state: b.state,
-        })));
+        await saveHomeBlocks(snapshot.blocks.map((b) => ({ blockType: b.blockType as any, sortOrder: b.sortOrder, isVisible: b.isVisible, settingsJson: b.settingsJson, source: b.source, state: b.state })));
       }
-
-      return { ok: true, detail: `Revertido: "${snapshot.label}"` };
+      return { ok: true, detail: `Revertido: "${snapshot.label}". Tienda restaurada al estado anterior.` };
     }
-
-    default:
-      return { ok: false, detail: `Acción "${action.intent}" no implementada.` };
+    default: return { ok: false, detail: `Acción "${action.intent}" no implementada.` };
   }
 }
