@@ -1,6 +1,7 @@
 import { unstable_noStore as noStore } from "next/cache";
 
 import { UpgradePrompt } from "@/components/admin/billing/UpgradePrompt";
+import { ThemeEditorShell } from "@/components/admin/store-ai/ThemeEditorShell";
 import { checkAIBuilderAccess } from "@/lib/billing/service";
 import { getAdminStoreId } from "@/lib/store-engine/actions";
 import { getAdminStoreInitialData } from "@/lib/store-engine/queries";
@@ -40,10 +41,6 @@ export default async function ThemeEditorPage() {
       </div>
     );
   }
-
-  const { ThemeEditorShell } = await import(
-    "@/components/admin/store-ai/ThemeEditorShell"
-  );
 
   const initialData = await getAdminStoreInitialData();
 
