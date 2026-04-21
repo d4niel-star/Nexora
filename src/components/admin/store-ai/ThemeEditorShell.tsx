@@ -48,7 +48,13 @@ export function ThemeEditorShell({
   const [previewKey, setPreviewKey] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  const publicPath = initialData?.publicUrl ?? (initialData ? `/store/${initialData.store.slug}` : "");
+  const storeSlug = initialData?.store?.slug;
+  const publicPath = storeSlug ? `/store/${storeSlug}` : "";
+
+  // Build absolute URL with cache-buster to avoid stale 404s
+  const previewSrc = typeof window !== "undefined" && publicPath
+    ? `${window.location.origin}${publicPath}?_t=${previewKey}`
+    : "";
 
   const refreshPreview = useCallback(() => {
     setPreviewKey((k) => k + 1);
@@ -151,17 +157,27 @@ export function ThemeEditorShell({
                 : "w-[375px] h-[700px]",
             )}
           >
-            {publicPath ? (
+            {previewSrc ? (
               <iframe
                 key={previewKey}
                 ref={iframeRef}
-                src={publicPath}
+                src={previewSrc}
                 className="h-full w-full border-0"
                 title="Store preview"
+                onError={() => setPreviewKey((k) => k + 1)}
               />
             ) : (
-              <div className="flex h-full items-center justify-center text-[13px] text-ink-5">
-                Configurá tu tienda para ver el preview.
+              <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+                <p className="text-[13px] text-ink-5">Configurá tu tienda para ver el preview.</p>
+                {publicPath && (
+                  <button
+                    type="button"
+                    onClick={refreshPreview}
+                    className="text-[11px] font-medium text-ink-0 underline underline-offset-4"
+                  >
+                    Reintentar
+                  </button>
+                )}
               </div>
             )}
           </div>
