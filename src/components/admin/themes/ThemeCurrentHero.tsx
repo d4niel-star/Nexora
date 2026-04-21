@@ -18,7 +18,7 @@ import type { StoreTemplate } from "@/types/store-templates";
 // ─── Theme Current Hero ─────────────────────────────────────────────────
 // The single dominant piece on the Tienda IA landing. Shows the active
 // theme with a visual preview, branding facts, and two clear CTAs:
-//   · Editar tema  → /admin/store?tab=home
+//   · Editar tema  → /admin/store-ai/editor
 //   · Ver más temas → /admin/store-ai/themes
 
 interface CurrentThemeView {
@@ -215,7 +215,7 @@ export function ThemeCurrentHero({ current, appliedTemplateFull }: Props) {
           {/* CTAs */}
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link
-              href="/admin/store?tab=home"
+              href="/admin/store-ai/editor"
               className="inline-flex h-11 items-center justify-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-6 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
             >
               <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} />
