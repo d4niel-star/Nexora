@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -46,14 +46,20 @@ export function ThemeEditorShell({
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [activePanel, setActivePanel] = useState<SidebarPanel>("colors");
   const [previewKey, setPreviewKey] = useState(0);
+  const [origin, setOrigin] = useState("");
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const storeSlug = initialData?.store?.slug;
   const publicPath = storeSlug ? `/store/${storeSlug}` : "";
 
+  // Defer origin resolution to after hydration to avoid SSR mismatch
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
+
   // Build absolute URL with cache-buster to avoid stale 404s
-  const previewSrc = typeof window !== "undefined" && publicPath
-    ? `${window.location.origin}${publicPath}?_t=${previewKey}`
+  const previewSrc = origin && publicPath
+    ? `${origin}${publicPath}?_t=${previewKey}`
     : "";
 
   const refreshPreview = useCallback(() => {
