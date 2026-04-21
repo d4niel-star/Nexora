@@ -5,7 +5,15 @@ import { isCurrentUserOps } from "@/lib/auth/ops";
 import { getCurrentStore } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
 import { getMercadoPagoPlatformReadiness } from "@/lib/payments/mercadopago/platform-readiness";
-import { SETTINGS_CATEGORIES } from "@/components/admin/settings/SettingsShell";
+
+// NOTE: we intentionally do NOT import SETTINGS_CATEGORIES from
+// SettingsShell here. SettingsShell is a "use client" module whose
+// categories reference Lucide icon components; importing that value
+// into a server component forces the runtime to cross the client
+// boundary for non-serialisable references, which crashes some
+// deployment targets (Render with the current Next runtime returns a
+// generic 500 when this happens). The overview already has its own
+// categoryStatus array — we reuse its length instead.
 
 // ─── Settings overview ──────────────────────────────────────────────────
 //
@@ -187,8 +195,7 @@ export default async function SettingsHubPage() {
           from the SettingsShell literal, so adding a dead card here is
           impossible without also registering a real page. */}
       <p className="text-[11px] text-ink-6">
-        {SETTINGS_CATEGORIES.flatMap((g) => g.items).length} categorías · Todas apuntan a una página real dentro de
-        Configuración.
+        {categoryStatus.length} categorías · Todas apuntan a una página real dentro de Configuración.
       </p>
     </div>
   );

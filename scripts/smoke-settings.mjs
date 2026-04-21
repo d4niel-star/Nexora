@@ -247,16 +247,44 @@ if (bannedHits === 0) {
   ok(`no-invention scan (${filesUnderTenant.length} settings files clean)`);
 }
 
-// ─── 6. Overview page uses the real SettingsCategoryPanel-aware shape ─
+// ─── 6. Overview ↔ SettingsShell category sync ────────────────────────
+//
+// The overview page must NOT import SETTINGS_CATEGORIES from the
+// "use client" SettingsShell — crossing the client→server boundary
+// with a value that carries Lucide component references crashes the
+// production runtime (generic 500 on Render). Instead we source-check
+// that every /admin/settings/<slug> href present in the shell also
+// appears in the overview, so the two can't drift silently.
 
 const overviewSrc = stripComments(readFileSync(overviewPath, "utf8"));
-if (!overviewSrc.includes("SETTINGS_CATEGORIES")) {
+
+if (overviewSrc.includes("SETTINGS_CATEGORIES")) {
   fail(
-    "overview imports SETTINGS_CATEGORIES from SettingsShell",
-    "not imported — categories cannot stay in sync with the shell",
+    "overview must NOT import SETTINGS_CATEGORIES (client→server)",
+    "crossing the boundary breaks the Render runtime; use the local array",
   );
 } else {
-  ok("overview imports SETTINGS_CATEGORIES from SettingsShell");
+  ok("overview does not cross the client→server boundary for categories");
+}
+
+// Extract every "/admin/settings/<slug>" literal from each file and
+// assert the overview covers every category the shell advertises.
+const shellSlugs = Array.from(
+  shellSrc.matchAll(/"\/admin\/settings\/([a-z0-9-]+)"/g),
+  (m) => m[1],
+);
+const overviewSlugs = Array.from(
+  overviewSrc.matchAll(/"\/admin\/settings\/([a-z0-9-]+)"/g),
+  (m) => m[1],
+);
+const missingInOverview = shellSlugs.filter((slug) => !overviewSlugs.includes(slug));
+if (missingInOverview.length === 0) {
+  ok(`overview covers every shell category slug (${shellSlugs.length})`);
+} else {
+  fail(
+    "overview covers every shell category slug",
+    `missing: ${missingInOverview.join(", ")}`,
+  );
 }
 
 const total = passed + failed;
