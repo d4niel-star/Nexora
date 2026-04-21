@@ -784,25 +784,27 @@ function processPart(part: string, originalRaw: string, ctx: ConversationContext
   const refResolved = tryResolveReference(norm, ctx);
   if (refResolved) return refResolved;
 
-  // Step 4b: Score all intents
-  let bestIntent: ActionType = "unknown";
-  let bestScore = 0;
-  let bestEntities: Record<string, string> = {};
+  // Step 4b: Score all intents, collecting all scores
+  const scores: Array<{ intent: ActionType; score: number; entities: Record<string, string> }> = [];
 
   for (const signal of SIGNALS) {
     const score = scoreIntent(norm, signal);
-    if (score > bestScore) {
-      bestScore = score;
-      bestIntent = signal.type;
-      bestEntities = signal.extractEntities(norm, part);
+    if (score > 0) {
+      scores.push({
+        intent: signal.type,
+        score,
+        entities: signal.extractEntities(norm, part),
+      });
     }
   }
 
-  // Step 4c: Compute confidence
-  const confidence = Math.min(bestScore / 12, 1);
+  // Sort by score descending
+  scores.sort((a, b) => b.score - a.score);
 
-  // Step 4d: Determine status
-  if (bestIntent === "unknown" || bestScore < 3) {
+  // Step 4c: Resolve intent conflicts
+  const resolved = resolveConflict(scores, norm);
+
+  if (!resolved || resolved.score < 3) {
     return {
       id,
       intent: "unknown",
@@ -813,7 +815,12 @@ function processPart(part: string, originalRaw: string, ctx: ConversationContext
     };
   }
 
-  // Step 4e: Validate and check for clarification needs
+  const bestIntent = resolved.intent;
+  const bestScore = resolved.score;
+  const bestEntities = resolved.entities;
+  const confidence = Math.min(bestScore / 12, 1);
+
+  // Step 4d: Validate and check for clarification needs
   const validation = validateAction(bestIntent, bestEntities, norm);
   if (validation.needsClarification) {
     return {
@@ -835,6 +842,63 @@ function processPart(part: string, originalRaw: string, ctx: ConversationContext
     confidence,
     status: "ready",
   };
+}
+
+// ─── Intent conflict resolution ──────────────────────────────────────────
+//
+// When multiple intents score similarly, use heuristics to pick the right one.
+// Critical cases:
+//   - "poné tonos beige" → apply-visual-tone vs change-color → should be change-color (specific color named)
+//   - "algo más premium" → apply-visual-tone vs change-tone-by-mood → apply-visual-tone (visual)
+//   - "mostrame en celu" → switch-mobile vs switch-preview-surface → switch-mobile
+
+function resolveConflict(
+  scores: Array<{ intent: ActionType; score: number; entities: Record<string, string> }>,
+  norm: string,
+): { intent: ActionType; score: number; entities: Record<string, string> } | null {
+  if (scores.length === 0) return null;
+
+  const top = scores[0];
+  if (scores.length === 1) return top;
+
+  const second = scores[1];
+
+  // If top score is clearly dominant (>40% higher), use it
+  if (top.score > second.score * 1.4) return top;
+
+  // ── Specific conflict rules ─────────────────────────────────────────
+
+  // If change-color and apply-visual-tone both score high, but a specific color is named → change-color
+  const colorIdx = scores.findIndex(s => s.intent === "change-color" || s.intent === "change-primary-color" || s.intent === "change-secondary-color");
+  const vtoneIdx = scores.findIndex(s => s.intent === "apply-visual-tone");
+  if (colorIdx !== -1 && vtoneIdx !== -1) {
+    const color = resolveColorFromText(norm);
+    // If a specific color was found AND it's not part of a preset phrase, prefer change-color
+    if (color && !norm.includes("negro y beige") && !norm.includes("beige y negro") && !norm.includes("dark mode") && !norm.includes("modo oscuro")) {
+      const colorScore = scores[colorIdx];
+      return { ...colorScore, score: Math.max(colorScore.score, scores[vtoneIdx].score) + 2 };
+    }
+    // Otherwise prefer apply-visual-tone
+    return scores[vtoneIdx];
+  }
+
+  // If change-tone-by-mood and apply-visual-tone both score high:
+  // - "visual", "estilo", "tonos", "paleta" in text → apply-visual-tone
+  // - "tono de voz", "tono de copy" → change-tone-by-mood
+  if (scores.some(s => s.intent === "change-tone-by-mood") && scores.some(s => s.intent === "apply-visual-tone")) {
+    if (norm.includes("visual") || norm.includes("estilo") || norm.includes("tonos") || norm.includes("paleta") || norm.includes("look")) {
+      return scores.find(s => s.intent === "apply-visual-tone") ?? top;
+    }
+  }
+
+  // switch-mobile vs switch-preview-surface: mobile/desktop terms win
+  if (scores.some(s => s.intent === "switch-mobile") && scores.some(s => s.intent === "switch-preview-surface")) {
+    if (norm.includes("celu") || norm.includes("celular") || norm.includes("mobile") || norm.includes("movil")) {
+      return scores.find(s => s.intent === "switch-mobile") ?? top;
+    }
+  }
+
+  return top;
 }
 
 // ─── Context reference resolution ────────────────────────────────────────
