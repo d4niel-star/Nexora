@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 
 import { ThemeCurrentHero } from "@/components/admin/themes/ThemeCurrentHero";
-import { NexoraCopilot } from "@/components/admin/store-ai/NexoraCopilot";
+// NexoraCopilot moved to /admin/store-ai/editor
 import { ReadinessPanel } from "@/components/admin/readiness/ReadinessPanel";
 import type { ReadinessSnapshot } from "@/lib/readiness/snapshot";
 import type { StoreTemplate } from "@/types/store-templates";
@@ -112,34 +112,28 @@ export function StoreAIModule({
       )}
 
       {/* ── 3. Quick editor shortcuts ────────────────────── */}
-      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <ShortcutCard
-          icon={Edit3}
-          label="Secciones"
-          value={`${themeState?.blocks.total ?? 0} bloques`}
-          href="/admin/store?tab=home"
-          hint="Editá hero, productos, testimonios y más"
-        />
-        <ShortcutCard
-          icon={Palette}
-          label="Branding"
-          value={themeState?.fontFamily ?? "Personalizado"}
-          href="/admin/store?tab=branding"
-          hint="Colores, tipografía, tono y logo"
+          icon={Pencil}
+          label="Editor de tema"
+          value="Abrir editor"
+          href="/admin/store-ai/editor"
+          hint="Editá colores, tipografía, secciones y más"
+          sparkle
         />
         <ShortcutCard
           icon={Layers}
-          label="Temas"
+          label="Galería de temas"
           value={`${templates?.length ?? 0} disponibles`}
           href="/admin/store-ai/themes"
           hint="Explorá y aplicá bases de diseño"
         />
         <ShortcutCard
-          icon={Sparkles}
-          label="Copiloto IA"
-          value="Activo"
-          hint="Usá el botón flotante para editar con IA"
-          sparkle
+          icon={Edit3}
+          label="Mi tienda"
+          value="Configuración"
+          href="/admin/store"
+          hint="Dominio, pagos, navegación y páginas"
         />
       </section>
 
@@ -179,8 +173,7 @@ export function StoreAIModule({
         )}
       </section>
 
-      {/* ── 6. Copiloto flotante ─────────────────────────── */}
-      <NexoraCopilot />
+      {/* Copiloto IA now lives inside /admin/store-ai/editor */}
     </div>
   );
 }

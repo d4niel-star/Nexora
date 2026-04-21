@@ -49,7 +49,7 @@ import type { AdminStoreInitialData, BlockType } from "@/types/store-engine";
 import type { StoreTheme, StoreBranding, StoreSummary, HomeSection, NavItem, StorePage as StorePageType, StoreDomain, StoreStatus } from "@/types/store";
 import type { MercadoPagoPlatformReadiness } from "@/lib/payments/mercadopago/platform-readiness";
 
-type TabValue = "resumen" | "tema" | "branding" | "home" | "navegacion" | "paginas" | "dominio" | "pagos" | "preview";
+type TabValue = "resumen" | "branding" | "navegacion" | "paginas" | "dominio" | "pagos";
 
 type DrawerContent =
   | { kind: "theme"; data: StoreTheme }
@@ -126,7 +126,7 @@ export function StorePage({
   const searchParams = useSearchParams();
   const router = useRouter();
   const tabParam = searchParams.get("tab");
-  const initialTab: TabValue = tabParam === "tema" || tabParam === "branding" || tabParam === "home" || tabParam === "navegacion" || tabParam === "paginas" || tabParam === "dominio" || tabParam === "pagos" || tabParam === "preview" ? tabParam : "resumen";
+  const initialTab: TabValue = tabParam === "branding" || tabParam === "navegacion" || tabParam === "paginas" || tabParam === "dominio" || tabParam === "pagos" ? tabParam : "resumen";
   const [activeTab, setActiveTab] = useState<TabValue>(initialTab);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -225,14 +225,11 @@ export function StorePage({
 
   const tabs: Array<{ label: string; value: TabValue; icon: React.ReactNode }> = [
     { label: "Resumen", value: "resumen", icon: <Layers className="h-3.5 w-3.5" /> },
-    { label: "Tema", value: "tema", icon: <Palette className="h-3.5 w-3.5" /> },
     { label: "Branding", value: "branding", icon: <Paintbrush className="h-3.5 w-3.5" /> },
-    { label: "Home", value: "home", icon: <Home className="h-3.5 w-3.5" /> },
     { label: "Navegacion", value: "navegacion", icon: <Navigation className="h-3.5 w-3.5" /> },
     { label: "Paginas", value: "paginas", icon: <FileText className="h-3.5 w-3.5" /> },
     { label: "Dominio", value: "dominio", icon: <Globe className="h-3.5 w-3.5" /> },
     { label: "Pagos", value: "pagos", icon: <CreditCard className="h-3.5 w-3.5" /> },
-    { label: "Vista previa", value: "preview", icon: <Monitor className="h-3.5 w-3.5" /> },
   ];
 
   const handleTabChange = (v: TabValue) => { if (v === activeTab) return; setActiveTab(v); setSearchQuery(""); setIsLoading(true); };
@@ -300,7 +297,7 @@ export function StorePage({
       <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
         <div>
           <h1 className="text-[28px] lg:text-[32px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0">Mi tienda.</h1>
-          <p className="mt-2 text-[14px] leading-[1.55] text-ink-5">Apariencia, contenido y configuración de tu tienda online.</p>
+          <p className="mt-2 text-[14px] leading-[1.55] text-ink-5">Navegación, páginas, dominio, pagos y perfil de tu tienda.</p>
         </div>
       </div>
 
@@ -340,24 +337,15 @@ export function StorePage({
               publicUrl={publicUrl}
               summary={storeSummary}
             />
-          ) : activeTab === "tema" ? (
-            <ThemeView initialData={initialData ?? null} onAction={handleAction} onNavigate={handleTabChange} />
           ) : activeTab === "branding" ? (
             <BrandingView initialData={initialData ?? null} onAction={handleAction} onRefresh={refreshData} branding={brandingData} pushToast={pushToast} />
-          ) : activeTab === "home" ? (
-            <HomeView
-              sectionBlocks={sectionBlocks}
-              onAction={handleAction}
-              onRefresh={refreshData}
-              onEditSection={(block) => setSectionEditorBlock(block)}
-            />
           ) : activeTab === "navegacion" ? (
             <NavView searchQuery={searchQuery} openDrawer={openDrawer} onAction={handleAction} items={navItems} />
           ) : activeTab === "paginas" ? (
             <PagesView searchQuery={searchQuery} openDrawer={openDrawer} onAction={handleAction} pages={storePages} />
           ) : activeTab === "dominio" ? (
             <DomainSettingsView initialData={initialData!} onAction={handleAction} storeId={initialData?.store.id} />
-          ) : activeTab === "pagos" ? (
+          ) : (
             <PaymentsView
               initialData={initialData ?? null}
               isConnected={isMercadoPagoConnected}
@@ -366,8 +354,6 @@ export function StorePage({
               platformReadiness={mercadoPagoPlatformReadiness}
               isOps={isOps}
             />
-          ) : (
-            <PreviewView onAction={handleAction} />
           )}
         </div>
       </div>
@@ -513,11 +499,10 @@ function SummaryView({
         <FirstProductPanel onAction={onAction} onRefresh={onRefresh} />
       ) : null}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <NavCard icon={<Palette className="h-5 w-5 text-ink-4" strokeWidth={1.75} />} title="Tema" description={s.themeName} onClick={() => onNavigate("tema")} />
-        <NavCard icon={<Paintbrush className="h-5 w-5 text-ink-4" strokeWidth={1.75} />} title="Branding" description="Logo, colores, fuentes" onClick={() => onNavigate("branding")} />
-        <NavCard icon={<Home className="h-5 w-5 text-ink-4" strokeWidth={1.75} />} title="Home" description={`${s.homeSectionsCount} secciones`} onClick={() => onNavigate("home")} />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <NavCard icon={<Paintbrush className="h-5 w-5 text-ink-4" strokeWidth={1.75} />} title="Branding" description="Logo, nombre, perfil" onClick={() => onNavigate("branding")} />
         <NavCard icon={<Globe className="h-5 w-5 text-ink-4" strokeWidth={1.75} />} title="Dominio" description={s.domain} onClick={() => onNavigate("dominio")} />
+        <NavCard icon={<CreditCard className="h-5 w-5 text-ink-4" strokeWidth={1.75} />} title="Pagos" description={isMercadoPagoConnected ? "Conectado" : "Pendiente"} onClick={() => onNavigate("pagos")} />
       </div>
 
       <div className="flex items-center gap-3">
@@ -525,9 +510,9 @@ function SummaryView({
           <Eye className="h-3.5 w-3.5" />
           {isPublishing ? "Publicando..." : "Publicar tienda"}
         </button>
-        <button className="inline-flex items-center gap-2 h-10 px-5 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" onClick={() => onNavigate("preview")} type="button">
-          Ver vista previa
-        </button>
+        <a href="/admin/store-ai/editor" className="inline-flex items-center gap-2 h-10 px-5 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]">
+          Editor de tema
+        </a>
       </div>
     </div>
   );
@@ -612,10 +597,10 @@ function ThemeView({ initialData, onAction, onNavigate }: { initialData: AdminSt
             <Paintbrush className="h-3.5 w-3.5" />
             Editar branding
           </button>
-          <button className="inline-flex items-center gap-2 h-10 px-5 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" onClick={() => onNavigate("home")} type="button">
-            <Home className="h-3.5 w-3.5" />
-            Editar secciones
-          </button>
+          <a href="/admin/store-ai/editor" className="inline-flex items-center gap-2 h-10 px-5 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]">
+            <Pencil className="h-3.5 w-3.5" />
+            Abrir editor de tema
+          </a>
         </div>
       </div>
     </div>
