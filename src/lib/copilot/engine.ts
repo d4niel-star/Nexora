@@ -1,23 +1,26 @@
-// ─── Copilot NLU Engine ──────────────────────────────────────────────────
+// ─── Copilot NLU Engine v3 ───────────────────────────────────────────────
 //
-// Architecture:
-//   1. Normalization (accents, case, whitespace, typos)
-//   2. Compound input splitting (y, commas, semicolons, también)
-//   3. For each sub-input:
-//      a. Context resolution (references: "eso", "esa sección", "el anterior")
-//      b. Multi-signal intent detection (verbs + objects + modifiers + patterns)
-//      c. Entity extraction (colors, sections, fonts, tones, directions, etc.)
-//      d. Validation against real capabilities
-//   4. Return structured action plan
+// Architecture (v3 — conversational copilot):
+//   NEW PIPELINE (interpreter.ts → planner.ts):
+//     1. Interpreter: semantic concept-space matching (no rigid phrases)
+//     2. Planner: maps interpreted intent → concrete actions with confidence
+//     3. Falls back to v2 signal-based scoring when v3 can't resolve
+//
+//   LEGACY PIPELINE (kept for compatibility and fallback):
+//     1. Normalization (accents, case, whitespace, typos)
+//     2. Compound input splitting
+//     3. Multi-signal intent detection (verbs + objects + modifiers + patterns)
+//     4. Entity extraction and validation
 //
 // Design principles:
-//   - Much more flexible than pure regex
+//   - Conversational, not command-based
 //   - Tolerant of natural language variation
 //   - Supports compound actions
 //   - Tracks conversational context
 //   - Validates before execution
 //   - Never gives false success
 
+import { planFromInput, type PlannedAction as V3PlannedAction } from "./planner";
 import { normalize, fixTypos, splitCompoundInput } from "./normalizer";
 import {
   COLOR_MAP,
@@ -903,16 +906,49 @@ export function extractTextValue(text: string): string | null {
 // ─── Main NLU pipeline ───────────────────────────────────────────────────
 
 export function processInput(raw: string, ctx: ConversationContext): NLUResult {
-  // Step 1: Normalize
+  // ── V3 PIPELINE: Try conversational interpreter → planner first ──────
+  // This handles abstract/ambiguous inputs that v2 can't match.
+  try {
+    const v3Result = planFromInput(raw, ctx);
+    const v3Actions = v3Result.actions
+      .filter(a => a.status === "ready")
+      .map(convertV3Action);
+
+    // If v3 resolved anything concrete, use it
+    if (v3Actions.length > 0) {
+      return {
+        actions: v3Actions,
+        rawInput: raw,
+        understood: true,
+      };
+    }
+
+    // If v3 produced a clarification, return it instead of falling through
+    const clarification = v3Result.actions.find(a => a.status === "needs-clarification" && a.clarification);
+    if (clarification && clarification.clarification) {
+      return {
+        actions: [{
+          id: `act-${Date.now()}-v3clarify`,
+          intent: "unknown",
+          entities: {},
+          rawText: raw,
+          confidence: 0.5,
+          status: "needs-clarification",
+          clarification: clarification.clarification,
+        }],
+        rawInput: raw,
+        understood: false,
+      };
+    }
+  } catch {
+    // V3 failed — fall through to v2
+  }
+
+  // ── V2 PIPELINE: Legacy signal-based scoring (fallback) ──────────────
   const normalized = normalize(raw);
-
-  // Step 2: Fix common typos
   const fixed = fixTypos(normalized);
-
-  // Step 3: Split compound inputs
   const parts = splitCompoundInput(fixed);
 
-  // Step 4: Process each part
   const actions: PlannedAction[] = [];
   for (const part of parts) {
     actions.push(processPart(part, raw, ctx));
@@ -922,6 +958,19 @@ export function processInput(raw: string, ctx: ConversationContext): NLUResult {
     actions,
     rawInput: raw,
     understood: actions.some((a) => a.status !== "unsupported" && a.intent !== "unknown"),
+  };
+}
+
+/** Convert a v3 PlannedAction into the v2 PlannedAction shape */
+function convertV3Action(a: V3PlannedAction): PlannedAction {
+  return {
+    id: `act-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    intent: a.intent,
+    entities: a.entities,
+    rawText: a.rawText,
+    confidence: 0.8,
+    status: a.status === "no-op" ? "unsupported" : a.status,
+    clarification: a.clarification,
   };
 }
 
