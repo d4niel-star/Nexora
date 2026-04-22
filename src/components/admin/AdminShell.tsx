@@ -320,9 +320,19 @@ export function AdminShell({ children, storeName, storeInitials, dunningBanner }
 
         {/* Content */}
         <div className="flex-1 overflow-auto">
-          <div className="mx-auto max-w-6xl px-4 py-8 md:px-10 md:py-12">
-            {children}
-          </div>
+          {pathname.startsWith("/admin/store-ai/editor") ? (
+            <div className="h-full">
+              {children}
+            </div>
+          ) : pathname.startsWith("/admin/store-ai/themes") ? (
+            <div className="mx-auto max-w-[1440px] px-4 py-8 md:px-10 md:py-12">
+              {children}
+            </div>
+          ) : (
+            <div className="mx-auto max-w-[1400px] px-4 py-8 md:px-10 md:py-12">
+              {children}
+            </div>
+          )}
         </div>
       </main>
     </div>

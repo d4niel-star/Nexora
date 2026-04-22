@@ -219,6 +219,138 @@ export function ThemeEditorShell({
     setPreviewSurface(PANEL_META[panel].preview);
   };
 
+  // ─── Inline edit overlay: inject script into iframe + listen for messages ───
+  const SECTION_LABEL_MAP: Record<string, string> = {
+    hero: "Hero",
+    benefits: "Beneficios",
+    featured_products: "Productos destacados",
+    featured_categories: "Categorías",
+    testimonials: "Testimonios",
+    faq: "Preguntas frecuentes",
+    newsletter: "Newsletter",
+  };
+
+  const handleIframeLoad = useCallback(() => {
+    const iframe = iframeRef.current;
+    if (!iframe?.contentDocument) return;
+
+    const doc = iframe.contentDocument;
+
+    // Inject overlay styles
+    const style = doc.createElement("style");
+    style.textContent = `
+      [data-section-type] { position: relative; }
+      .nexora-edit-overlay {
+        position: absolute;
+        inset: 0;
+        border: 2px solid rgba(59, 130, 246, 0.5);
+        background: rgba(59, 130, 246, 0.04);
+        z-index: 9999;
+        pointer-events: none;
+        transition: opacity 120ms ease;
+        display: flex;
+        align-items: flex-start;
+        justify-content: flex-end;
+        padding: 8px;
+      }
+      .nexora-edit-label {
+        pointer-events: auto;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 8px;
+        border-radius: 4px;
+        background: rgba(15, 23, 42, 0.85);
+        color: #fff;
+        font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        line-height: 1;
+        white-space: nowrap;
+        backdrop-filter: blur(4px);
+      }
+      .nexora-edit-label svg {
+        width: 12px;
+        height: 12px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+    `;
+    doc.head.appendChild(style);
+
+    const sections = doc.querySelectorAll("[data-section-type]");
+    sections.forEach((section) => {
+      const el = section as HTMLElement;
+      const sectionType = el.getAttribute("data-section-type") ?? "";
+      const sectionId = el.getAttribute("data-section-id") ?? "";
+
+      const overlay = doc.createElement("div");
+      overlay.className = "nexora-edit-overlay";
+      overlay.style.opacity = "0";
+
+      const label = doc.createElement("button");
+      label.className = "nexora-edit-label";
+      label.innerHTML = `<svg viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>${SECTION_LABEL_MAP[sectionType] ?? sectionType}`;
+
+      label.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        iframe.contentWindow?.parent.postMessage(
+          { type: "nexora-edit-section", sectionType, sectionId },
+          "*"
+        );
+      });
+
+      overlay.appendChild(label);
+      el.style.position = "relative";
+      el.appendChild(overlay);
+
+      el.addEventListener("mouseenter", () => {
+        overlay.style.opacity = "1";
+      });
+      el.addEventListener("mouseleave", () => {
+        overlay.style.opacity = "0";
+      });
+    });
+  }, [SECTION_LABEL_MAP]);
+
+  // Listen for edit-section messages from iframe
+  useEffect(() => {
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type !== "nexora-edit-section") return;
+      const { sectionType, sectionId } = event.data as { sectionType: string; sectionId: string };
+
+      // Map section type to the correct editor panel
+      const panelMap: Record<string, EditorPanel> = {
+        hero: "home",
+        benefits: "home",
+        featured_products: "home",
+        featured_categories: "home",
+        testimonials: "home",
+        faq: "home",
+        newsletter: "home",
+      };
+      const targetPanel = panelMap[sectionType];
+      if (targetPanel) {
+        setActivePanel(targetPanel);
+        setPreviewSurface("home");
+
+        // Find the matching block and open its section editor
+        const block = homeBlocks.find((b) => b.id === sectionId);
+        if (block) {
+          setSectionEditorBlock(block);
+        }
+      }
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, [homeBlocks]);
+
   if (!initialData) {
     return (
       <div className="flex h-[calc(100vh-56px)] items-center justify-center bg-[var(--surface-1)]">
@@ -329,7 +461,7 @@ export function ThemeEditorShell({
           <div className={cn("flex flex-1 overflow-hidden", device === "desktop" ? "p-2" : "items-center justify-center p-4")}>
             <div className={cn("relative overflow-hidden border border-[color:var(--hairline)] bg-white shadow-[var(--shadow-overlay)] transition-all duration-300", device === "desktop" ? "h-full w-full rounded-[var(--r-md)]" : "h-[720px] w-[390px] max-h-full max-w-full rounded-[var(--r-lg)]")}>
               {previewSrc ? (
-                <iframe key={`${previewSurface}-${previewKey}`} ref={iframeRef} src={previewSrc} className="h-full w-full border-0" title={`Preview ${currentSurface?.label ?? "storefront"}`} />
+                <iframe key={`${previewSurface}-${previewKey}`} ref={iframeRef} src={previewSrc} onLoad={handleIframeLoad} className="h-full w-full border-0" title={`Preview ${currentSurface?.label ?? "storefront"}`} />
               ) : (
                 <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
                   <p className="text-[13px] text-ink-5">No hay una superficie disponible para previsualizar.</p>

@@ -31,19 +31,28 @@ export async function StoreSectionRenderer({ blocks, storeSlug, storeId }: Store
   return (
     <div className="flex flex-col">
       {blocks.map((block) => {
+        const sectionWrapper = (content: React.ReactNode) => (
+          <div
+            key={block.id}
+            data-section-type={block.blockType}
+            data-section-id={block.id}
+          >
+            {content}
+          </div>
+        );
+
         switch (block.blockType) {
           case "hero":
-            return <HeroSection key={block.id} settings={block.settings} storeSlug={storeSlug} />;
+            return sectionWrapper(<HeroSection settings={block.settings} storeSlug={storeSlug} />);
           case "benefits":
-            return <BenefitsSection key={block.id} settings={block.settings} />;
+            return sectionWrapper(<BenefitsSection settings={block.settings} />);
           case "featured_products": {
             const handles = (block.settings.productHandles as string[]) ?? [];
             const featured = products.filter((p) =>
               handles.includes(p.handle)
             );
-            return (
+            return sectionWrapper(
               <FeaturedProductsSection
-                key={block.id}
                 settings={block.settings}
                 products={featured}
                 storeSlug={storeSlug}
@@ -54,9 +63,8 @@ export async function StoreSectionRenderer({ blocks, storeSlug, storeId }: Store
             const collectionHandles = (block.settings.collectionHandles as string[]) ?? [];
             const featuredCols = collections.filter((c) => collectionHandles.includes(c.handle));
             
-            return (
+            return sectionWrapper(
               <FeaturedCategoriesSection
-                key={block.id}
                 settings={block.settings}
                 storeSlug={storeSlug}
                 collections={featuredCols}
@@ -64,11 +72,11 @@ export async function StoreSectionRenderer({ blocks, storeSlug, storeId }: Store
             );
           }
           case "testimonials":
-            return <TestimonialsSection key={block.id} settings={block.settings} />;
+            return sectionWrapper(<TestimonialsSection settings={block.settings} />);
           case "faq":
-            return <FaqSection key={block.id} settings={block.settings} />;
+            return sectionWrapper(<FaqSection settings={block.settings} />);
           case "newsletter":
-            return <NewsletterSection key={block.id} settings={block.settings} />;
+            return sectionWrapper(<NewsletterSection settings={block.settings} />);
           default:
             return null;
         }

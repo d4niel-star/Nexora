@@ -373,17 +373,18 @@ function GalleryCard({
 
   const heroBlock = template.homeBlocks.find((b) => b.blockType === "hero");
   const heroHeadline = (heroBlock?.settings?.headline as string) ?? template.name;
+  const heroSubheadline = (heroBlock?.settings?.subheadline as string) ?? "";
   const primaryColor = template.branding.primaryColor;
   const secondaryColor = template.branding.secondaryColor;
 
-  const sectionTypes = useMemo(
-    () =>
-      template.homeBlocks
-        .map((b) => SECTION_LABEL[b.blockType] ?? b.blockType)
-        .filter((v, i, a) => a.indexOf(v) === i)
-        .join(" · "),
-    [template],
-  );
+  // Resolve font for preview
+  const fontStack = getPreviewFontStack(template.branding.fontFamily);
+
+  // Build block indicators for the structural preview
+  const blockIndicators = template.homeBlocks.map((b, i) => {
+    const type = b.blockType;
+    return { type, index: i };
+  });
 
   return (
     <article
@@ -394,39 +395,64 @@ function GalleryCard({
           : "border-[color:var(--hairline)] hover:border-[color:var(--hairline-strong)] hover:shadow-[var(--shadow-card)]",
       )}
     >
-      {/* Visual preview — mini storefront mockup */}
+      {/* Visual preview — rich storefront mockup */}
       <div className="relative overflow-hidden" style={{ backgroundColor: secondaryColor }}>
-        <div className="px-5 pt-5 pb-4">
+        <div className="px-4 pt-4 pb-3">
           {/* Mini nav bar */}
           <div
-            className="flex items-center justify-between rounded-t-[var(--r-xs)] px-3 py-1.5"
+            className="flex items-center justify-between rounded-t-[3px] px-3 py-1.5"
             style={{ backgroundColor: primaryColor }}
           >
             <div className="flex items-center gap-1.5">
               <div className="h-1.5 w-1.5 rounded-full bg-white/40" />
-              <div className="h-1 w-10 rounded-full bg-white/25" />
+              <div className="h-1 w-8 rounded-full bg-white/25" />
             </div>
-            <div className="flex gap-2">
-              <div className="h-1 w-5 rounded-full bg-white/15" />
-              <div className="h-1 w-5 rounded-full bg-white/15" />
+            <div className="flex gap-1.5">
+              <div className="h-1 w-4 rounded-full bg-white/15" />
+              <div className="h-1 w-4 rounded-full bg-white/15" />
+              <div className="h-1 w-4 rounded-full bg-white/15" />
             </div>
           </div>
-          {/* Hero mockup */}
-          <div className="rounded-b-[var(--r-xs)] border-x border-b border-black/5 bg-white/80 px-4 py-5">
-            <p
-              className="text-[13px] font-semibold leading-[1.2] tracking-[-0.01em] line-clamp-2"
-              style={{ color: primaryColor }}
-            >
-              {heroHeadline}
-            </p>
-            <div className="mt-3 flex items-center gap-1.5">
-              <span
-                className="h-5 rounded-[var(--r-xs)] px-2.5 text-[8px] font-medium leading-5"
-                style={{ backgroundColor: primaryColor, color: secondaryColor }}
+
+          {/* Content area — shows hero + block structure */}
+          <div className="rounded-b-[3px] border-x border-b border-black/5 bg-white/90">
+            {/* Hero section */}
+            <div className="px-3 pt-3 pb-2">
+              <p
+                className="text-[11px] font-bold leading-[1.25] tracking-[-0.01em] line-clamp-2"
+                style={{ color: primaryColor, fontFamily: fontStack }}
               >
-                CTA
-              </span>
-              <span className="h-5 w-10 rounded-[var(--r-xs)] border border-black/10" />
+                {heroHeadline}
+              </p>
+              {heroSubheadline && (
+                <p className="mt-1 text-[7px] leading-[1.3] text-black/40 line-clamp-1">
+                  {heroSubheadline}
+                </p>
+              )}
+              <div className="mt-2 flex items-center gap-1">
+                <span
+                  className="h-3.5 rounded-[2px] px-1.5 text-[6px] font-semibold leading-[14px]"
+                  style={{ backgroundColor: primaryColor, color: secondaryColor }}
+                >
+                  {(heroBlock?.settings?.primaryActionLabel as string) ?? "CTA"}
+                </span>
+                {(heroBlock?.settings?.secondaryActionLabel as string) && (
+                  <span className="h-3.5 w-6 rounded-[2px] border border-black/10" />
+                )}
+              </div>
+            </div>
+
+            {/* Block structure indicators */}
+            <div className="border-t border-black/5 px-3 py-2 space-y-1.5">
+              {blockIndicators.map(({ type, index }) => (
+                <BlockPreviewIndicator
+                  key={index}
+                  blockType={type}
+                  primaryColor={primaryColor}
+                  secondaryColor={secondaryColor}
+                  settings={template.homeBlocks[index]?.settings}
+                />
+              ))}
             </div>
           </div>
         </div>
@@ -443,35 +469,54 @@ function GalleryCard({
       </div>
 
       {/* Info */}
-      <div className="flex flex-1 flex-col px-5 py-4">
+      <div className="flex flex-1 flex-col px-4 py-3.5">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <h3 className="text-[15px] font-semibold tracking-[-0.01em] text-ink-0">
+            <h3 className="text-[14px] font-semibold tracking-[-0.01em] text-ink-0">
               {template.name}
             </h3>
             <p className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-ink-6">
               {category?.label ?? template.industry} · {THEME_STYLE_LABEL[template.themeStyle]}
             </p>
           </div>
+          {/* Color palette mini swatches */}
+          <div className="flex items-center gap-1 shrink-0">
+            <div className="h-3.5 w-3.5 rounded-[2px] border border-black/10" style={{ backgroundColor: primaryColor }} />
+            <div className="h-3.5 w-3.5 rounded-[2px] border border-black/10" style={{ backgroundColor: secondaryColor }} />
+          </div>
         </div>
-        <p className="mt-2 text-[12px] leading-[1.55] text-ink-5 line-clamp-2">
+        <p className="mt-1.5 text-[11px] leading-[1.5] text-ink-5 line-clamp-2">
           {template.description}
         </p>
 
-        {/* Section count */}
-        <div className="mt-3 flex items-center gap-1.5 text-[11px] text-ink-5">
-          <Layers className="h-3 w-3" strokeWidth={1.75} />
-          {template.homeBlocks.length} bloques · {sectionTypes}
+        {/* Font + section info */}
+        <div className="mt-2 flex items-center gap-2 text-[10px] text-ink-5">
+          <span className="shrink-0">Tipografía: <strong className="font-medium text-ink-3">{template.branding.fontFamily}</strong></span>
+          <span className="text-ink-6">·</span>
+          <Layers className="h-3 w-3 shrink-0" strokeWidth={1.75} />
+          <span>{template.homeBlocks.length} secciones</span>
+        </div>
+
+        {/* Section chips */}
+        <div className="mt-2 flex flex-wrap gap-1">
+          {template.homeBlocks.map((b, i) => (
+            <span
+              key={i}
+              className="inline-flex h-4 items-center rounded-[2px] bg-[var(--surface-1)] px-1.5 text-[8px] font-medium text-ink-5"
+            >
+              {SECTION_LABEL[b.blockType] ?? b.blockType}
+            </span>
+          ))}
         </div>
 
         {/* Apply CTA */}
-        <div className="mt-auto pt-4">
+        <div className="mt-auto pt-3">
           <button
             type="button"
             onClick={onApply}
             disabled={isBusy}
             className={cn(
-              "inline-flex h-9 w-full items-center justify-center gap-2 rounded-[var(--r-sm)] text-[12px] font-medium transition-colors disabled:opacity-50",
+              "inline-flex h-8 w-full items-center justify-center gap-2 rounded-[var(--r-sm)] text-[11px] font-medium transition-colors disabled:opacity-50",
               isCurrent
                 ? "border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-ink-0 hover:bg-[var(--surface-2)]"
                 : "bg-ink-0 text-ink-12 hover:bg-ink-2",
@@ -489,6 +534,101 @@ function GalleryCard({
       </div>
     </article>
   );
+}
+
+/** Renders a tiny structural indicator for each block type in the preview. */
+function BlockPreviewIndicator({
+  blockType,
+  primaryColor,
+  secondaryColor,
+  settings,
+}: {
+  blockType: string;
+  primaryColor: string;
+  secondaryColor: string;
+  settings?: Record<string, unknown>;
+}) {
+  switch (blockType) {
+    case "featured_products":
+      return (
+        <div className="space-y-1">
+          <div className="h-1 w-12 rounded-full" style={{ backgroundColor: primaryColor, opacity: 0.25 }} />
+          <div className="flex gap-1">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="flex-1 space-y-0.5">
+                <div className="h-4 rounded-[1px]" style={{ backgroundColor: secondaryColor }} />
+                <div className="h-0.5 w-full rounded-full bg-black/8" />
+                <div className="h-0.5 w-2/3 rounded-full bg-black/5" />
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    case "featured_categories":
+      return (
+        <div className="flex gap-1">
+          {[0, 1].map((i) => (
+            <div key={i} className="flex-1 h-5 rounded-[1px]" style={{ backgroundColor: primaryColor, opacity: 0.12 }} />
+          ))}
+        </div>
+      );
+    case "benefits":
+      return (
+        <div className="flex gap-1">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="flex-1 space-y-0.5">
+              <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: primaryColor, opacity: 0.35 }} />
+              <div className="h-0.5 w-full rounded-full bg-black/10" />
+            </div>
+          ))}
+        </div>
+      );
+    case "testimonials":
+      return (
+        <div className="space-y-0.5">
+          <div className="h-0.5 w-3/4 rounded-full bg-black/8" />
+          <div className="h-0.5 w-1/2 rounded-full bg-black/5" />
+        </div>
+      );
+    case "faq":
+      return (
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-1">
+            <div className="h-0.5 w-1 rounded-full" style={{ backgroundColor: primaryColor, opacity: 0.4 }} />
+            <div className="h-0.5 w-2/3 rounded-full bg-black/8" />
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="h-0.5 w-1 rounded-full" style={{ backgroundColor: primaryColor, opacity: 0.4 }} />
+            <div className="h-0.5 w-1/2 rounded-full bg-black/8" />
+          </div>
+        </div>
+      );
+    case "newsletter":
+      return (
+        <div className="flex items-center gap-1">
+          <div className="h-2 flex-1 rounded-[1px] border border-black/8" />
+          <div className="h-2 w-5 rounded-[1px]" style={{ backgroundColor: primaryColor }} />
+        </div>
+      );
+    case "hero":
+      return null; // hero is rendered separately above
+    default:
+      return (
+        <div className="h-0.5 w-full rounded-full bg-black/5" />
+      );
+  }
+}
+
+/** Resolve a preview font stack from the template branding fontFamily. */
+function getPreviewFontStack(fontFamily: string): string {
+  const map: Record<string, string> = {
+    "Inter": "Inter, system-ui, sans-serif",
+    "System": "system-ui, -apple-system, sans-serif",
+    "Editorial Serif": "Georgia, 'Times New Roman', serif",
+    "Rounded Commerce": "'Trebuchet MS', Avenir, Verdana, sans-serif",
+    "Technical Mono": "Consolas, 'Courier New', monospace",
+  };
+  return map[fontFamily] ?? "system-ui, sans-serif";
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────

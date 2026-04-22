@@ -365,14 +365,11 @@ function TemplateCard({
   isBusy: boolean;
   onApply: () => void;
 }) {
-  const blockTypesSummary = useMemo(
-    () =>
-      template.homeBlocks
-        .map((b) => SECTION_LABEL[b.blockType] ?? b.blockType)
-        .filter((v, i, a) => a.indexOf(v) === i)
-        .join(" · "),
-    [template],
-  );
+  const heroBlock = template.homeBlocks.find((b) => b.blockType === "hero");
+  const heroHeadline = (heroBlock?.settings?.headline as string) ?? template.name;
+  const primaryColor = template.branding.primaryColor;
+  const secondaryColor = template.branding.secondaryColor;
+  const fontStack = getPreviewFontStack(template.branding.fontFamily);
 
   return (
     <article
@@ -381,55 +378,99 @@ function TemplateCard({
         isCurrent ? "border-ink-0" : "border-[color:var(--hairline)] hover:border-[color:var(--hairline-strong)]",
       )}
     >
-      {/* Sober preview strip — just colour swatches + theme style. No
-           faux mockups. Minimal, honest, consistent with admin tokens. */}
-      <div
-        className="flex items-center gap-3 px-5 py-4"
-        style={{ backgroundColor: template.branding.secondaryColor }}
-      >
-        <div className="flex items-center gap-1.5">
-          <span
-            aria-hidden
-            className="h-6 w-6 rounded-[var(--r-xs)] border border-black/10"
-            style={{ backgroundColor: template.branding.primaryColor }}
-          />
-          <span
-            aria-hidden
-            className="h-6 w-6 rounded-[var(--r-xs)] border border-black/10"
-            style={{ backgroundColor: template.branding.secondaryColor }}
-          />
+      {/* Structural preview — mini storefront mockup */}
+      <div className="relative overflow-hidden" style={{ backgroundColor: secondaryColor }}>
+        <div className="px-4 pt-3 pb-2.5">
+          {/* Mini nav bar */}
+          <div
+            className="flex items-center justify-between rounded-t-[2px] px-2.5 py-1"
+            style={{ backgroundColor: primaryColor }}
+          >
+            <div className="flex items-center gap-1">
+              <div className="h-1 w-1 rounded-full bg-white/40" />
+              <div className="h-0.5 w-6 rounded-full bg-white/20" />
+            </div>
+            <div className="flex gap-1">
+              <div className="h-0.5 w-3 rounded-full bg-white/10" />
+              <div className="h-0.5 w-3 rounded-full bg-white/10" />
+            </div>
+          </div>
+          {/* Hero mockup */}
+          <div className="rounded-b-[2px] border-x border-b border-black/5 bg-white/85 px-3 py-2.5">
+            <p
+              className="text-[10px] font-bold leading-[1.2] line-clamp-1"
+              style={{ color: primaryColor, fontFamily: fontStack }}
+            >
+              {heroHeadline}
+            </p>
+            <div className="mt-1.5 flex items-center gap-1">
+              <span
+                className="h-2.5 rounded-[1px] px-1 text-[5px] font-semibold leading-[10px]"
+                style={{ backgroundColor: primaryColor, color: secondaryColor }}
+              >
+                {(heroBlock?.settings?.primaryActionLabel as string) ?? "CTA"}
+              </span>
+            </div>
+          </div>
+          {/* Block structure dots */}
+          <div className="mt-1.5 flex flex-wrap gap-0.5">
+            {template.homeBlocks.map((b, i) => (
+              <div
+                key={i}
+                className="h-1 rounded-full"
+                style={{
+                  width: b.blockType === "hero" ? 12 : b.blockType === "featured_products" ? 10 : 7,
+                  backgroundColor: primaryColor,
+                  opacity: b.blockType === "hero" ? 0.15 : 0.25,
+                }}
+              />
+            ))}
+          </div>
         </div>
-        <span className="rounded-[var(--r-xs)] border border-black/10 bg-white/80 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-4">
-          {THEME_STYLE_LABEL[template.themeStyle]}
-        </span>
         {isCurrent && (
-          <span className="ml-auto inline-flex items-center gap-1 rounded-[var(--r-xs)] bg-ink-0 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-12">
-            <CheckCircle2 className="h-3 w-3" strokeWidth={2} />
-            Aplicado
-          </span>
+          <div className="absolute right-2 top-2">
+            <span className="inline-flex items-center gap-0.5 rounded-[var(--r-xs)] bg-ink-0 px-1.5 py-0.5 text-[8px] font-medium uppercase tracking-[0.12em] text-ink-12">
+              <CheckCircle2 className="h-2.5 w-2.5" strokeWidth={2} />
+              Aplicado
+            </span>
+          </div>
         )}
       </div>
 
-      <div className="flex flex-1 flex-col px-5 py-4">
-        <h4 className="text-[15px] font-semibold tracking-[-0.01em] text-ink-0">{template.name}</h4>
-        <p className="mt-1 text-[11px] uppercase tracking-[0.14em] text-ink-6">{template.industry}</p>
-        <p className="mt-3 text-[12px] leading-[1.55] text-ink-5">{template.description}</p>
+      <div className="flex flex-1 flex-col px-4 py-3.5">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <h4 className="text-[14px] font-semibold tracking-[-0.01em] text-ink-0">{template.name}</h4>
+            <p className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-ink-6">
+              {template.industry} · {THEME_STYLE_LABEL[template.themeStyle]} · <span className="font-medium text-ink-4">{template.branding.fontFamily}</span>
+            </p>
+          </div>
+          <div className="flex items-center gap-0.5 shrink-0">
+            <div className="h-3 w-3 rounded-[1px] border border-black/10" style={{ backgroundColor: primaryColor }} />
+            <div className="h-3 w-3 rounded-[1px] border border-black/10" style={{ backgroundColor: secondaryColor }} />
+          </div>
+        </div>
+        <p className="mt-1.5 text-[11px] leading-[1.5] text-ink-5 line-clamp-2">{template.description}</p>
 
-        <div className="mt-4 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 py-2">
-          <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-6">Secciones</p>
-          <p className="mt-1 text-[11px] text-ink-3">
-            <Layers className="mr-1 inline h-3 w-3 text-ink-5" strokeWidth={1.75} />
-            {template.homeBlocks.length} bloques · {blockTypesSummary}
-          </p>
+        {/* Section chips */}
+        <div className="mt-2 flex flex-wrap gap-0.5">
+          {template.homeBlocks.map((b, i) => (
+            <span
+              key={i}
+              className="inline-flex h-3.5 items-center rounded-[1px] bg-[var(--surface-1)] px-1 text-[7px] font-medium text-ink-5"
+            >
+              {SECTION_LABEL[b.blockType] ?? b.blockType}
+            </span>
+          ))}
         </div>
 
-        <div className="mt-auto flex items-center gap-2 pt-4">
+        <div className="mt-auto flex items-center gap-2 pt-3">
           <button
             type="button"
             onClick={onApply}
             disabled={isBusy}
             className={cn(
-              "inline-flex h-10 items-center justify-center gap-2 rounded-[var(--r-sm)] px-4 text-[12px] font-medium transition-colors disabled:opacity-50",
+              "inline-flex h-8 w-full items-center justify-center gap-2 rounded-[var(--r-sm)] text-[11px] font-medium transition-colors disabled:opacity-50",
               isCurrent
                 ? "border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-ink-0 hover:bg-[var(--surface-2)]"
                 : "bg-ink-0 text-ink-12 hover:bg-ink-2",
@@ -447,6 +488,17 @@ function TemplateCard({
       </div>
     </article>
   );
+}
+
+function getPreviewFontStack(fontFamily: string): string {
+  const map: Record<string, string> = {
+    "Inter": "Inter, system-ui, sans-serif",
+    "System": "system-ui, -apple-system, sans-serif",
+    "Editorial Serif": "Georgia, 'Times New Roman', serif",
+    "Rounded Commerce": "'Trebuchet MS', Avenir, Verdana, sans-serif",
+    "Technical Mono": "Consolas, 'Courier New', monospace",
+  };
+  return map[fontFamily] ?? "system-ui, sans-serif";
 }
 
 // ─── Small helpers ──────────────────────────────────────────────────────

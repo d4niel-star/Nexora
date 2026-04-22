@@ -109,7 +109,7 @@ export const STORE_TEMPLATES: readonly StoreTemplate[] = [
     branding: {
       primaryColor: "#1D1D1F",
       secondaryColor: "#FFCC00",
-      fontFamily: "Inter",
+      fontFamily: "System",
       tone: "Directo, enérgico",
     },
     homeBlocks: [
@@ -204,7 +204,7 @@ export const STORE_TEMPLATES: readonly StoreTemplate[] = [
     branding: {
       primaryColor: "#3A2E29",
       secondaryColor: "#F5EEE6",
-      fontFamily: "Inter",
+      fontFamily: "Editorial Serif",
       tone: "Cálido, cuidadoso",
     },
     homeBlocks: [
@@ -351,7 +351,7 @@ export const STORE_TEMPLATES: readonly StoreTemplate[] = [
     branding: {
       primaryColor: "#1A1A1A",
       secondaryColor: "#F5F0EB",
-      fontFamily: "Inter",
+      fontFamily: "Rounded Commerce",
       tone: "Moderno, urbano",
     },
     homeBlocks: [
@@ -434,7 +434,7 @@ export const STORE_TEMPLATES: readonly StoreTemplate[] = [
     branding: {
       primaryColor: "#0A0A0A",
       secondaryColor: "#E8E8E8",
-      fontFamily: "Inter",
+      fontFamily: "Technical Mono",
       tone: "Técnico, preciso",
     },
     homeBlocks: [
@@ -512,7 +512,7 @@ export const STORE_TEMPLATES: readonly StoreTemplate[] = [
     branding: {
       primaryColor: "#4A3728",
       secondaryColor: "#F9F3ED",
-      fontFamily: "Inter",
+      fontFamily: "Editorial Serif",
       tone: "Cálido, sensorial",
     },
     homeBlocks: [
@@ -604,7 +604,7 @@ export const STORE_TEMPLATES: readonly StoreTemplate[] = [
     branding: {
       primaryColor: "#2C2C2C",
       secondaryColor: "#FAFAF8",
-      fontFamily: "Inter",
+      fontFamily: "Editorial Serif",
       tone: "Contemplativo, sofisticado",
     },
     homeBlocks: [
