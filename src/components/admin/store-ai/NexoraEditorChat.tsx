@@ -513,7 +513,10 @@ async function executeAction(action: PlannedAction, ctx: ConversationContext): P
       return { ok: true, detail: `CTA del hero → "${e.textValue}"` };
     }
     case "change-hero-image": {
-      return { ok: false, detail: "No puedo generar o reemplazar imágenes por ahora. Podés cambiar la imagen del hero manualmente desde el editor de secciones." };
+      return {
+        ok: false,
+        detail: "No puedo generar imágenes por ahora, pero podés cambiar la imagen del hero desde el panel \"Inicio\" → hacé clic en \"Editar\" en el bloque Hero → campo de imagen. También podés cambiar el estilo visual general con \"algo más premium\" o \"más oscuro\".",
+      };
     }
     case "hide-section": {
       if (!e.sectionKey) return { ok: false, detail: "Sección no reconocida. Opciones: Hero, Productos, Categorías, Beneficios, Testimonios, FAQ, Newsletter." };

@@ -24,6 +24,7 @@ export function StoreFooter({
 
   return (
     <footer
+      data-section-type="footer"
       className="border-t border-[color:var(--hairline-strong)] bg-[var(--surface-1)]"
       aria-labelledby="footer-heading"
     >

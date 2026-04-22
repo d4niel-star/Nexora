@@ -378,18 +378,26 @@ const SIGNALS: IntentSignal[] = [
   // ── Change button style ────────────────────────────────────────────
   {
     type: "change-button-style",
-    verbs: ["hace", "hacelo", "pon", "pone", "cambia", "modifica"],
-    objects: ["boton", "button", "cta", "borde del boton", "estilo de boton", "forma del boton", "botones"],
+    verbs: ["hace", "hacelo", "pon", "pone", "cambia", "modifica", "quiero", "busco"],
+    objects: ["boton", "button", "cta", "borde del boton", "estilo de boton", "forma del boton", "botones", "botones del hero", "boton del hero"],
     modifiers: [
       "redondeado", "cuadrado", "pill", "pastilla", "capsula", "mas redondo",
       "mas visible", "mas grande", "redondo total", "completamente redondeado",
+      "circular", "mas circular", "algo mas circular", "redondo",
+      "muy redondeado", "totalmente redondeado", "bordes redondos",
+      "forma de pastilla",
     ],
     patterns: [
-      /(?:hac|pon|cambi|modific)[a-z]*\s+(?:el\s+)?(?:boton|button|cta)\s+(?:mas\s+)?(?:redondeado|cuadrado|pill|pastilla|capsula|redondo|visible|grande)/,
-      /(?:boton|cta)\s+(?:redondeado|cuadrado|pill|pastilla|capsula)/,
-      /(?:estilo|forma)\s+(?:del|de)\s+(?:boton|cta)/,
-      /(?:mas\s+)?(?:visible|redondo|grande)\s*(?:boton|cta)/,
-      /(?:hac|pon)[a-z]*\s+(?:el\s+)?(?:boton|cta)\s+mas/,
+      /(?:hac|pon|cambi|modific|quiero|busco)[a-z]*\s+(?:el\s+)?(?:boton|button|cta|botones)\s+(?:mas\s+)?(?:redondeado|cuadrado|pill|pastilla|capsula|redondo|visible|grande|circular)/,
+      /(?:boton|cta|botones)\s+(?:redondeado|cuadrado|pill|pastilla|capsula|circular|redondo)/,
+      /(?:estilo|forma)\s+(?:del|de)\s+(?:boton|cta|los?\s*botones)/,
+      /(?:mas\s+)?(?:visible|redondo|grande|circular)\s*(?:boton|cta|botones)/,
+      /(?:hac|pon|quiero|busco)[a-z]*\s+(?:el\s+)?(?:boton|cta|botones)\s+mas/,
+      /(?:quiero|busco|hace|hacelo|pon)[a-z]*\s+(?:los?\s+)?(?:boton|cta|botones)\s+(?:a\s+)?(?:algo\s+)?(?:mas\s+)?(?:circular|redondo|redondeado|pill)/,
+      /(?:quiero|hace|pon)[a-z]*\s+(?:un\s+)?(?:boton|cta)\s+(?:mas\s+)?(?:circular|redondo|redondeado)/,
+      /(?:algo|un\s+poco)\s+mas\s+(?:circular|redondo|redondeado)\s*(?:boton|cta)?/,
+      /(?:circular|redondo|pill)\s*(?:boton|cta)/,
+      /(?:bordes|border)\s+(?:redondos|circulares)/,
     ],
     antiSignals: ["color", "fuente", "seccion", "titulo"],
     verbWeight: 3,
@@ -972,6 +980,57 @@ function tryResolveReference(norm: string, ctx: ConversationContext): PlannedAct
       rawText: norm,
       confidence: 0.9,
       status: "ready",
+    };
+  }
+
+  // ── "la imagen anterior no me gusta" / "esa imagen" ────────────────
+  if (
+    (norm.includes("imagen anterior") || norm.includes("esa imagen") || norm.includes("la imagen no")) &&
+    !norm.includes("genera") && !norm.includes("crea")
+  ) {
+    return {
+      id,
+      intent: "undo",
+      entities: {},
+      rawText: norm,
+      confidence: 0.85,
+      status: "ready",
+    };
+  }
+
+  // ── "esa sección arriba/abajo" — section reference + move direction ─
+  if (
+    (norm.includes("esa seccion") || norm.includes("ese bloque") || norm.includes("esa parte")) &&
+    ctx.lastBlockType &&
+    (norm.includes("arriba") || norm.includes("abajo") || norm.includes("principio") || norm.includes("final"))
+  ) {
+    const direction = resolveMoveDirection(norm);
+    const sectionLabel = SECTION_LABELS[ctx.lastBlockType] ?? ctx.lastBlockType;
+    return {
+      id,
+      intent: "move-section",
+      entities: {
+        sectionKey: ctx.lastBlockType,
+        sectionLabel,
+        direction: direction?.direction ?? "up",
+      },
+      rawText: norm,
+      confidence: 0.9,
+      status: "ready",
+    };
+  }
+
+  // ── Short follow-up with last context ──────────────────────────────
+  // "eso" alone when there's a last action — re-trigger last action type
+  if ((norm === "eso" || norm === "dale" || norm === "si" || norm === "ok") && ctx.lastAction) {
+    // These are confirmations, not new actions. Return unknown to let the chat handle naturally.
+    return {
+      id,
+      intent: "unknown",
+      entities: {},
+      rawText: norm,
+      confidence: 0,
+      status: "unsupported",
     };
   }
 

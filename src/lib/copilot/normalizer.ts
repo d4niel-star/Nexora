@@ -108,6 +108,28 @@ const PHRASE_NORMALIZATIONS: Array<[RegExp, string]> = [
   [/necesito\s+que\s+/g, ""],
   // "te pido que X" → "X"
   [/te\s+pido\s+que\s+/g, ""],
+  // "lo que quiero es X" → "X"
+  [/lo\s+que\s+quiero\s+(?:es\s+)?/g, ""],
+  // "estoy buscando X" → "busco X"
+  [/estoy\s+buscando\s+/g, "busco "],
+  // "se puede X?" → "X"
+  [/se\s+puede\s+/g, ""],
+  // "hay forma de X" → "X"
+  [/hay\s+forma\s+de\s+/g, ""],
+  // "como hago para X" → "X"
+  [/como\s+hago\s+para\s+/g, ""],
+  // "quisiera X" → "quiero X"
+  [/quisiera\s+/g, "quiero "],
+  // "darle X" → "hace X" (e.g. "darle un look mas premium")
+  [/darle\s+/g, "hace "],
+  // "hacer que X sea" → "hace X"
+  [/hacer\s+que\s+(?:la\s+|el\s+|los?\s+)?(?:.*)\s+sea\s+/g, "hace "],
+  // "cambiame X" → "cambia X"
+  [/\bcambiame\b/g, "cambia"],
+  // "poneme X" → "pon X"
+  [/\bponeme\b/g, "pon"],
+  // "sacame X" → "saca X"
+  [/\bsacame\b/g, "saca"],
 ];
 
 // ─── Main normalize function ──────────────────────────────────────────────

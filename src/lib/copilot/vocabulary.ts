@@ -250,6 +250,15 @@ export const BUTTON_STYLE_MAP: Record<string, string> = {
   capsula: "pill",
   "redondo total": "pill",
   "completamente redondeado": "pill",
+  circular: "pill",
+  "mas circular": "pill",
+  "algo mas circular": "pill",
+  "mas redondo": "pill",
+  "forma de pastilla": "pill",
+  "bordes redondos": "pill",
+  "totalmente redondeado": "pill",
+  "muy redondeado": "pill",
+  redondo: "pill",
 };
 
 export const MOVE_POSITION_MAP: Record<string, "up" | "down" | "top" | "bottom"> = {

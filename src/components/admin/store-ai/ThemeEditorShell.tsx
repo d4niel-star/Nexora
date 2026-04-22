@@ -221,6 +221,8 @@ export function ThemeEditorShell({
 
   // ─── Inline edit overlay: inject script into iframe + listen for messages ───
   const SECTION_LABEL_MAP: Record<string, string> = {
+    header: "Encabezado",
+    footer: "Pie de página",
     hero: "Hero",
     benefits: "Beneficios",
     featured_products: "Productos destacados",
@@ -327,6 +329,8 @@ export function ThemeEditorShell({
 
       // Map section type to the correct editor panel
       const panelMap: Record<string, EditorPanel> = {
+        header: "header",
+        footer: "footer",
         hero: "home",
         benefits: "home",
         featured_products: "home",
@@ -338,12 +342,14 @@ export function ThemeEditorShell({
       const targetPanel = panelMap[sectionType];
       if (targetPanel) {
         setActivePanel(targetPanel);
-        setPreviewSurface("home");
+        setPreviewSurface(PANEL_META[targetPanel].preview);
 
-        // Find the matching block and open its section editor
-        const block = homeBlocks.find((b) => b.id === sectionId);
-        if (block) {
-          setSectionEditorBlock(block);
+        // Find the matching block and open its section editor (only for home blocks)
+        if (targetPanel === "home") {
+          const block = homeBlocks.find((b) => b.id === sectionId);
+          if (block) {
+            setSectionEditorBlock(block);
+          }
         }
       }
     };
