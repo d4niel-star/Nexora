@@ -77,14 +77,21 @@ export function ReadinessPanel({ snapshot }: { snapshot: ReadinessSnapshot }) {
 
       {/* ── Two-column grid ─────────────────────────────────── */}
       {hasContent && (
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          {/* Left: Blockers */}
-          {blockers.length > 0 && (
+        <div className={cn(
+          "grid gap-3",
+          blockers.length > 0 && (risks.length > 0 || improvements.length > 0)
+            ? "grid-cols-1 md:grid-cols-2"
+            : "grid-cols-1",
+        )}>
+          {/* Left: Blockers (or solo risks if no blockers) */}
+          {blockers.length > 0 ? (
             <CheckColumn title="Bloqueantes" tone="critical" checks={blockers} />
-          )}
+          ) : risks.length > 0 ? (
+            <CheckColumn title="Riesgos" tone="warning" checks={risks} />
+          ) : null}
 
-          {/* Right: Risks + Improvements */}
-          {(risks.length > 0 || improvements.length > 0) && (
+          {/* Right: Risks + Improvements (only when blockers exist) */}
+          {blockers.length > 0 && (risks.length > 0 || improvements.length > 0) && (
             <div className="flex flex-col gap-3">
               {risks.length > 0 && (
                 <CheckColumn title="Riesgos" tone="warning" checks={risks} />
@@ -95,9 +102,9 @@ export function ReadinessPanel({ snapshot }: { snapshot: ReadinessSnapshot }) {
             </div>
           )}
 
-          {/* If only right-side content exists (no blockers), put it left */}
-          {blockers.length === 0 && risks.length > 0 && (
-            <CheckColumn title="Riesgos" tone="warning" checks={risks} />
+          {/* Solo improvements (no blockers, no risks) */}
+          {blockers.length === 0 && risks.length === 0 && improvements.length > 0 && (
+            <CheckColumn title="Mejoras" tone="neutral" checks={improvements} />
           )}
         </div>
       )}
