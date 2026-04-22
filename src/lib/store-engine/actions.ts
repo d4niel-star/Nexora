@@ -19,6 +19,7 @@ import {
 import type { BlockType, AIStoreInput } from "@/types/store-engine";
 import { revalidatePath } from "next/cache";
 import { logSystemEvent } from "../observability/audit";
+import { generateOrSelectImage } from "@/lib/ai/image-generator";
 import { prisma } from "@/lib/db/prisma";
 import { isValidProductHandle, isValidStoreSlug, normalizeSlug } from "@/lib/store-engine/slug";
 import { storePath } from "@/lib/store-engine/urls";
@@ -346,4 +347,56 @@ export async function generateAIStoreDraft(input: AIStoreInput) {
   revalidatePath("/admin/store-ai");
   revalidateStorefrontShell(store.slug);
   return { success: true, slug: store.slug, storeId: store.id };
+}
+
+// ─── Copilot: Generate or select hero image ────────────────────────────
+// Server action that wraps the image generation pipeline.
+// Returns { ok, url, source, alt, mood, category, error? } where:
+//   source = "generated" (Imagen 3) or "curated" (Unsplash fallback)
+//   error  = reason for fallback, if applicable
+
+export async function generateHeroImageAction(params: {
+  mood: string;
+  category: string;
+  styleHints: string;
+  originalText: string;
+  targetBlock: string;
+}): Promise<{
+  ok: boolean;
+  url: string;
+  source: "generated" | "curated";
+  alt: string;
+  mood: string;
+  category: string;
+  error?: string;
+}> {
+  const store = await getDefaultStore();
+  const storeId = store?.id ?? null;
+
+  try {
+    const result = await generateOrSelectImage(
+      {
+        mood: params.mood,
+        category: params.category,
+        styleHints: params.styleHints ? params.styleHints.split(",") : [],
+        targetBlock: params.targetBlock,
+        originalText: params.originalText,
+      },
+      storeId,
+    );
+
+    return { ok: true, ...result };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Error desconocido";
+    console.error("[generateHeroImageAction] Failed:", msg);
+    return {
+      ok: false,
+      url: "",
+      source: "curated",
+      alt: "",
+      mood: params.mood,
+      category: params.category,
+      error: msg,
+    };
+  }
 }

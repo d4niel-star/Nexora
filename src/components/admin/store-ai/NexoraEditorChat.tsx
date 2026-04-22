@@ -513,12 +513,38 @@ async function executeAction(action: PlannedAction, ctx: ConversationContext): P
       return { ok: true, detail: `CTA del hero → "${e.textValue}"` };
     }
     case "change-hero-image": {
-      if (!e.imageUrl) return { ok: false, detail: "No encontré una imagen adecuada. Probá: \"imagen premium\", \"algo para moda\", \"foto de skincare\"." };
-      const { fetchHomeBlocks, saveHomeBlocks } = await import("@/lib/store-engine/actions");
+      // Resolve image via generation pipeline (Imagen 3) or curated fallback
+      const { generateHeroImageAction, fetchHomeBlocks, saveHomeBlocks } = await import("@/lib/store-engine/actions");
+
+      const imgResult = await generateHeroImageAction({
+        mood: e.imageMood || "premium",
+        category: e.imageCategory || "lifestyle",
+        styleHints: e.imageStyleHints || "",
+        originalText: action.rawText,
+        targetBlock: e.targetBlock || "hero",
+      });
+
+      if (!imgResult.ok || !imgResult.url) {
+        return { ok: false, detail: `No pude resolver una imagen. Probá: "imagen premium", "algo para moda", "foto de skincare".${imgResult.error ? ` (${imgResult.error})` : ""}` };
+      }
+
       const blocks = await fetchHomeBlocks();
       if (!blocks?.length) return { ok: false, detail: "No hay bloques. Aplicá un tema primero." };
-      await saveHomeBlocks(blocks.map((b: any) => b.blockType !== "hero" ? b : { ...b, settingsJson: JSON.stringify({ ...(typeof b.settingsJson === "string" ? JSON.parse(b.settingsJson) : b.settingsJson ?? {}), backgroundImageUrl: e.imageUrl }) })); // eslint-disable-line @typescript-eslint/no-explicit-any
-      return { ok: true, detail: `Imagen del hero actualizada — "${e.imageAlt ?? "foto premium"}" (${e.imageMood ?? "estilo"}${e.imageCategory ? ` / ${e.imageCategory}` : ""}). La imagen se aplica como fondo del hero y se ve reflejada en el preview.` };
+
+      await saveHomeBlocks(blocks.map((b: any) => b.blockType !== "hero" ? b : { ...b, settingsJson: JSON.stringify({ ...(typeof b.settingsJson === "string" ? JSON.parse(b.settingsJson) : b.settingsJson ?? {}), backgroundImageUrl: imgResult.url }) })); // eslint-disable-line @typescript-eslint/no-explicit-any
+
+      // Honest feedback — always distinguish generated vs curated
+      const sourceLabel = imgResult.source === "generated"
+        ? "🖼️ Imagen generada con IA (Imagen 3)"
+        : "📷 Imagen curada (Unsplash)";
+      const fallbackNote = imgResult.error
+        ? `\nNota: se usó imagen curada porque: ${imgResult.error}.`
+        : "";
+
+      return {
+        ok: true,
+        detail: `${sourceLabel} aplicada al hero — "${imgResult.alt}" (${imgResult.mood}${imgResult.category ? ` / ${imgResult.category}` : ""}). La imagen se ve reflejada en el preview.${fallbackNote}`,
+      };
     }
     case "hide-section": {
       if (!e.sectionKey) return { ok: false, detail: "Sección no reconocida. Opciones: Hero, Productos, Categorías, Beneficios, Testimonios, FAQ, Newsletter." };

@@ -39,6 +39,7 @@ import {
   type HeroImageOption,
 } from "./vocabulary";
 import type { ConversationContext } from "./context";
+import { resolveImageParams } from "@/lib/ai/image-generator";
 
 // ─── Types ──────────────────────────────────────────────────────────────
 
@@ -1298,18 +1299,13 @@ function validateAction(
     }
 
     case "change-hero-image": {
-      const image = resolveHeroImage(norm);
-      if (image) {
-        enriched.imageUrl = image.url;
-        enriched.imageAlt = image.alt;
-        enriched.imageMood = image.mood;
-        enriched.imageCategory = image.category;
-      } else {
-        return {
-          needsClarification: true,
-          clarification: `No encontré una imagen para ese pedido. Probá: "imagen premium", "algo para moda", "imagen de skincare", "algo más oscuro", "foto de comida".`,
-        };
-      }
+      // Resolve mood/category/style — actual image resolution happens async
+      // in the executor (generateOrSelectImage) which can call Imagen 3
+      const { mood, category, styleHints } = resolveImageParams(norm);
+      enriched.imageMood = mood;
+      enriched.imageCategory = category;
+      enriched.imageStyleHints = styleHints.join(",");
+      enriched.targetBlock = "hero";
       return { needsClarification: false, enrichedEntities: enriched };
     }
 
