@@ -3,7 +3,6 @@ import {
   AlertTriangle,
   ArrowRight,
   CheckCircle2,
-  Circle,
   ShieldAlert,
   Sparkles,
 } from "lucide-react";
@@ -15,168 +14,169 @@ import type {
   ReadinessSnapshot,
 } from "@/lib/readiness/snapshot";
 
-// ─── Readiness panel ─────────────────────────────────────────────────────
-// Sober, executive surface that turns a ReadinessSnapshot into a three-
-// section decision tree:
+// ─── Readiness panel v2 ──────────────────────────────────────────────────
+// Compact "control center" surface. Architecture:
 //
-//   1. Header      → module-level status chip + primary CTA (first blocker)
-//   2. Bloqueantes → blocks_publication + blocks_sales (shown first)
-//   3. Riesgos     → blocks_conversion
-//   4. Mejoras     → recommendation
+//   ┌──────────────────────────────────────────────────────┐
+//   │ [status chip]  Headline           [CTA button]       │  ← single bar
+//   │ bloqueantes:2  riesgos:1  mejoras:0  resueltos:4     │
+//   └──────────────────────────────────────────────────────┘
+//   ┌─────────────────────────┬────────────────────────────┐
+//   │ BLOQUEANTES (2)         │ RIESGOS (1)                │  ← 2-col grid
+//   │  ○ Item 1        [→]   │  ○ Item 1          [→]    │
+//   │  ○ Item 2        [→]   │                            │
+//   │                         │ MEJORAS (0)                │
+//   │                         │  — Sin mejoras pendientes  │
+//   └─────────────────────────┴────────────────────────────┘
 //
-// Resolved checks don't get their own section; they collapse into a
-// compact "X checks OK" footer so the surface stays focused on what's
-// left to do. No invented scores, no fabricated progress bars.
+// Mobile: stacks vertically but remains compact.
+// - ~50% less vertical space than v1
+// - Better horizontal usage on desktop
+// - Same information density, better scannability
 
 export function ReadinessPanel({ snapshot }: { snapshot: ReadinessSnapshot }) {
   const unresolved = snapshot.checks.filter((c) => !c.resolved);
   const resolved = snapshot.checks.filter((c) => c.resolved);
 
-  const publicationAndSalesBlockers = unresolved.filter(
+  const blockers = unresolved.filter(
     (c) =>
       c.severity === "blocks_publication" || c.severity === "blocks_sales",
   );
-  const conversionWarnings = unresolved.filter(
+  const risks = unresolved.filter(
     (c) => c.severity === "blocks_conversion",
   );
-  const recommendations = unresolved.filter(
+  const improvements = unresolved.filter(
     (c) => c.severity === "recommendation",
   );
 
+  const hasContent = blockers.length > 0 || risks.length > 0 || improvements.length > 0;
+
   return (
-    <section className="space-y-6">
-      <ReadinessHeader snapshot={snapshot} />
+    <section className="space-y-3">
+      {/* ── Compact header bar ──────────────────────────────── */}
+      <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)]">
+        <div className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-2">
+              <StatusChip status={snapshot.status} />
+              <h2 className="text-[14px] font-semibold tracking-[-0.01em] text-ink-0">
+                {describeHeadline(snapshot)}
+              </h2>
+            </div>
+            <MetricStrip snapshot={snapshot} resolvedCount={resolved.length} />
+          </div>
+          <Link
+            href={snapshot.primaryAction.href}
+            className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-[var(--r-sm)] bg-ink-0 px-4 text-[12px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
+          >
+            {snapshot.primaryAction.label}
+            <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
+          </Link>
+        </div>
+      </div>
 
-      {publicationAndSalesBlockers.length > 0 && (
-        <ChecksSection
-          title="Bloqueantes"
-          description={
-            snapshot.publicationBlockers > 0 && snapshot.salesBlockers > 0
-              ? "Impiden publicar y cobrar. Resolvé primero estos."
-              : snapshot.publicationBlockers > 0
-                ? "Impiden que la tienda salga al aire."
-                : "La tienda puede estar pública pero no puede cobrar."
-          }
-          tone="critical"
-          checks={publicationAndSalesBlockers}
-        />
+      {/* ── Two-column grid ─────────────────────────────────── */}
+      {hasContent && (
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          {/* Left: Blockers */}
+          {blockers.length > 0 && (
+            <CheckColumn title="Bloqueantes" tone="critical" checks={blockers} />
+          )}
+
+          {/* Right: Risks + Improvements */}
+          {(risks.length > 0 || improvements.length > 0) && (
+            <div className="flex flex-col gap-3">
+              {risks.length > 0 && (
+                <CheckColumn title="Riesgos" tone="warning" checks={risks} />
+              )}
+              {improvements.length > 0 && (
+                <CheckColumn title="Mejoras" tone="neutral" checks={improvements} />
+              )}
+            </div>
+          )}
+
+          {/* If only right-side content exists (no blockers), put it left */}
+          {blockers.length === 0 && risks.length > 0 && (
+            <CheckColumn title="Riesgos" tone="warning" checks={risks} />
+          )}
+        </div>
       )}
 
-      {conversionWarnings.length > 0 && (
-        <ChecksSection
-          title="Riesgos operativos"
-          description="La tienda puede vender, pero la conversión va a sufrir."
-          tone="warning"
-          checks={conversionWarnings}
-        />
-      )}
-
-      {recommendations.length > 0 && (
-        <ChecksSection
-          title="Recomendaciones"
-          description="Útiles pero no bloquean ventas."
-          tone="neutral"
-          checks={recommendations}
-        />
-      )}
-
-      {resolved.length > 0 && (
-        <ResolvedFooter count={resolved.length} />
+      {/* ── All resolved (no unresolved checks) ─────────────── */}
+      {!hasContent && resolved.length > 0 && (
+        <div className="flex items-center gap-2 rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-4 py-2.5">
+          <CheckCircle2 className="h-4 w-4 text-[color:var(--signal-success)]" strokeWidth={1.75} />
+          <span className="text-[12px] text-ink-3">
+            Todos los checks resueltos — tu tienda está lista para operar.
+          </span>
+        </div>
       )}
     </section>
   );
 }
 
-// ─── Header ──────────────────────────────────────────────────────────────
+// ─── Status chip (inline) ──────────────────────────────────────────────
 
-function ReadinessHeader({ snapshot }: { snapshot: ReadinessSnapshot }) {
-  const statusMeta = describeStatus(snapshot);
-
+function StatusChip({ status }: { status: ReadinessSnapshot["status"] }) {
+  const meta: Record<string, { label: string; icon: React.ReactNode; cls: string }> = {
+    blocked: {
+      label: "Bloqueada",
+      icon: <ShieldAlert className="h-3 w-3" strokeWidth={2} />,
+      cls: "border-[color:var(--signal-danger)]/30 bg-[color:var(--signal-danger)]/10 text-[color:var(--signal-danger)]",
+    },
+    ready_with_warnings: {
+      label: "Con advertencias",
+      icon: <AlertTriangle className="h-3 w-3" strokeWidth={2} />,
+      cls: "border-[color:var(--signal-warning)]/30 bg-[color:var(--signal-warning)]/10 text-[color:var(--signal-warning)]",
+    },
+    ready: {
+      label: "Lista",
+      icon: <CheckCircle2 className="h-3 w-3" strokeWidth={2} />,
+      cls: "border-[color:var(--signal-success)]/30 bg-[color:var(--signal-success)]/10 text-[color:var(--signal-success)]",
+    },
+  };
+  const m = meta[status];
   return (
-    <header className="flex flex-col gap-5 rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6 md:flex-row md:items-start md:justify-between">
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-2">
-          <span
-            className={cn(
-              "inline-flex h-6 items-center gap-1.5 rounded-[var(--r-full)] border px-2.5 text-[10px] font-medium uppercase tracking-[0.18em]",
-              statusMeta.chipClass,
-            )}
-          >
-            {statusMeta.icon}
-            {statusMeta.label}
-          </span>
-        </div>
-        <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-ink-0">
-          {statusMeta.headline}
-        </h2>
-        <p className="max-w-xl text-[13px] leading-[1.55] text-ink-5">
-          {statusMeta.description}
-        </p>
-        <CountStrip snapshot={snapshot} />
-      </div>
-      <div className="flex shrink-0 items-center gap-2">
-        <Link
-          href={snapshot.primaryAction.href}
-          className="inline-flex h-10 items-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-5 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
-        >
-          {snapshot.primaryAction.label}
-          <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
-        </Link>
-      </div>
-    </header>
+    <span
+      className={cn(
+        "inline-flex h-5 items-center gap-1 rounded-[var(--r-full)] border px-2 text-[9px] font-semibold uppercase tracking-[0.14em]",
+        m.cls,
+      )}
+    >
+      {m.icon}
+      {m.label}
+    </span>
   );
 }
 
-function describeStatus(snapshot: ReadinessSnapshot): {
-  label: string;
-  headline: string;
-  description: string;
-  icon: React.ReactNode;
-  chipClass: string;
-} {
+// ─── Headline text ─────────────────────────────────────────────────────
+
+function describeHeadline(snapshot: ReadinessSnapshot): string {
   if (snapshot.status === "blocked") {
-    return {
-      label:
-        snapshot.publicationBlockers > 0
-          ? "Bloqueada para publicar"
-          : "Bloqueada para cobrar",
-      headline:
-        snapshot.publicationBlockers > 0
-          ? "Tu tienda todavía no puede salir al aire."
-          : "Tu tienda no puede recibir pagos.",
-      description:
-        snapshot.publicationBlockers + snapshot.salesBlockers === 1
-          ? "Hay un bloqueante por resolver antes de operar."
-          : `Hay ${snapshot.publicationBlockers + snapshot.salesBlockers} bloqueantes por resolver antes de operar.`,
-      icon: <ShieldAlert className="h-3 w-3" strokeWidth={2} />,
-      chipClass:
-        "border-[color:var(--signal-danger)]/30 bg-[color:var(--signal-danger)]/10 text-[color:var(--signal-danger)]",
-    };
+    return snapshot.publicationBlockers > 0
+      ? "Tu tienda no puede salir al aire."
+      : "Tu tienda no puede recibir pagos.";
   }
   if (snapshot.status === "ready_with_warnings") {
-    return {
-      label: "Lista con advertencias",
-      headline: "Tu tienda puede publicarse y cobrar.",
-      description:
-        "Resolvé los riesgos operativos para mejorar la conversión antes de traer tráfico pago.",
-      icon: <AlertTriangle className="h-3 w-3" strokeWidth={2} />,
-      chipClass:
-        "border-[color:var(--signal-warning)]/30 bg-[color:var(--signal-warning)]/10 text-[color:var(--signal-warning)]",
-    };
+    return "Puede publicarse y cobrar, con riesgos operativos.";
   }
-  return {
-    label: "Lista",
-    headline: "Tu tienda está lista para operar.",
-    description:
-      "Sin bloqueantes ni riesgos detectados. Podés enfocar energía en crecimiento.",
-    icon: <CheckCircle2 className="h-3 w-3" strokeWidth={2} />,
-    chipClass:
-      "border-[color:var(--signal-success)]/30 bg-[color:var(--signal-success)]/10 text-[color:var(--signal-success)]",
-  };
+  return "Tu tienda está lista para operar.";
 }
 
-function CountStrip({ snapshot }: { snapshot: ReadinessSnapshot }) {
-  const items: Array<{ label: string; count: number; tone: "critical" | "warning" | "neutral" }> = [
+// ─── Metric strip (inline badges) ──────────────────────────────────────
+
+function MetricStrip({
+  snapshot,
+  resolvedCount,
+}: {
+  snapshot: ReadinessSnapshot;
+  resolvedCount: number;
+}) {
+  const items: Array<{
+    label: string;
+    count: number;
+    tone: "critical" | "warning" | "neutral" | "success";
+  }> = [
     {
       label: "Bloqueantes",
       count: snapshot.publicationBlockers + snapshot.salesBlockers,
@@ -184,25 +184,29 @@ function CountStrip({ snapshot }: { snapshot: ReadinessSnapshot }) {
     },
     { label: "Riesgos", count: snapshot.conversionWarnings, tone: "warning" },
     { label: "Mejoras", count: snapshot.recommendations, tone: "neutral" },
+    { label: "Resueltos", count: resolvedCount, tone: "success" },
   ];
+
   return (
-    <div className="mt-1 flex flex-wrap items-center gap-4">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
       {items.map((item) => (
-        <div key={item.label} className="flex items-center gap-1.5">
+        <div key={item.label} className="flex items-center gap-1">
           <span
             className={cn(
-              "inline-flex h-5 min-w-[20px] items-center justify-center rounded-[var(--r-xs)] px-1.5 text-[11px] font-semibold tabular-nums",
+              "inline-flex h-4 min-w-[16px] items-center justify-center rounded-[3px] px-1 text-[10px] font-semibold tabular-nums",
               item.tone === "critical" &&
                 "bg-[color:var(--signal-danger)]/10 text-[color:var(--signal-danger)]",
               item.tone === "warning" &&
                 "bg-[color:var(--signal-warning)]/10 text-[color:var(--signal-warning)]",
               item.tone === "neutral" && "bg-[var(--surface-2)] text-ink-3",
+              item.tone === "success" &&
+                "bg-[color:var(--signal-success)]/10 text-[color:var(--signal-success)]",
               item.count === 0 && "opacity-50",
             )}
           >
             {item.count}
           </span>
-          <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">
+          <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-ink-5">
             {item.label}
           </span>
         </div>
@@ -211,56 +215,62 @@ function CountStrip({ snapshot }: { snapshot: ReadinessSnapshot }) {
   );
 }
 
-// ─── Sections ────────────────────────────────────────────────────────────
+// ─── Check column (compact card) ───────────────────────────────────────
 
-function ChecksSection({
+function CheckColumn({
   title,
-  description,
   tone,
   checks,
 }: {
   title: string;
-  description: string;
   tone: "critical" | "warning" | "neutral";
   checks: ReadinessCheck[];
 }) {
   return (
     <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)]">
-      <header className="flex items-start justify-between border-b border-[color:var(--hairline)] px-6 py-4">
-        <div>
-          <p
+      {/* Section label — ultra compact */}
+      <div className="flex items-center justify-between border-b border-[color:var(--hairline)] px-3.5 py-2">
+        <div className="flex items-center gap-2">
+          <span
             className={cn(
-              "text-[10px] font-medium uppercase tracking-[0.18em]",
+              "text-[9px] font-semibold uppercase tracking-[0.16em]",
               tone === "critical" && "text-[color:var(--signal-danger)]",
               tone === "warning" && "text-[color:var(--signal-warning)]",
-              tone === "neutral" && "text-ink-5",
+              tone === "neutral" && "text-ink-4",
             )}
           >
             {title}
-          </p>
-          <h3 className="mt-1 text-[15px] font-semibold tracking-[-0.01em] text-ink-0">
-            {description}
-          </h3>
+          </span>
+          <span
+            className={cn(
+              "inline-flex h-4 min-w-[16px] items-center justify-center rounded-[3px] px-1 text-[10px] font-semibold tabular-nums",
+              tone === "critical" &&
+                "bg-[color:var(--signal-danger)]/10 text-[color:var(--signal-danger)]",
+              tone === "warning" &&
+                "bg-[color:var(--signal-warning)]/10 text-[color:var(--signal-warning)]",
+              tone === "neutral" && "bg-[var(--surface-2)] text-ink-3",
+            )}
+          >
+            {checks.length}
+          </span>
         </div>
-        <span className="mt-1 inline-flex items-center rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">
-          {checks.length}
-        </span>
-      </header>
+      </div>
+      {/* Check rows — compact */}
       <ul className="divide-y divide-[color:var(--hairline)]">
-        {checks.map((check, index) => (
-          <CheckRow key={check.id} index={index} check={check} tone={tone} />
+        {checks.map((check) => (
+          <CheckRow key={check.id} check={check} tone={tone} />
         ))}
       </ul>
     </div>
   );
 }
 
+// ─── Check row (dense) ─────────────────────────────────────────────────
+
 function CheckRow({
-  index,
   check,
   tone,
 }: {
-  index: number;
   check: ReadinessCheck;
   tone: "critical" | "warning" | "neutral";
 }) {
@@ -268,100 +278,86 @@ function CheckRow({
     <li className="group">
       <Link
         href={check.href}
-        className="flex items-start gap-4 px-6 py-4 transition-colors hover:bg-[var(--surface-1)] focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
+        className="flex items-center gap-3 px-3.5 py-2.5 transition-colors hover:bg-[var(--surface-1)] focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
       >
+        {/* Compact icon */}
         <span
           className={cn(
-            "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--r-sm)] border",
+            "flex h-6 w-6 shrink-0 items-center justify-center rounded-[var(--r-xs)] border",
             tone === "critical" &&
-              "border-[color:var(--signal-danger)]/30 bg-[color:var(--signal-danger)]/10 text-[color:var(--signal-danger)]",
+              "border-[color:var(--signal-danger)]/25 bg-[color:var(--signal-danger)]/8 text-[color:var(--signal-danger)]",
             tone === "warning" &&
-              "border-[color:var(--signal-warning)]/30 bg-[color:var(--signal-warning)]/10 text-[color:var(--signal-warning)]",
+              "border-[color:var(--signal-warning)]/25 bg-[color:var(--signal-warning)]/8 text-[color:var(--signal-warning)]",
             tone === "neutral" &&
-              "border-[color:var(--hairline)] bg-[var(--surface-1)] text-ink-3",
+              "border-[color:var(--hairline)] bg-[var(--surface-1)] text-ink-4",
           )}
         >
           {severityIcon(check.severity)}
         </span>
+        {/* Text */}
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-mono text-ink-6 tabular-nums">
-              {String(index + 1).padStart(2, "0")}
-            </span>
-            <p className="truncate text-[13px] font-medium text-ink-0">
+          <div className="flex items-center gap-1.5">
+            <p className="truncate text-[12px] font-medium text-ink-0">
               {check.title}
             </p>
             <SeverityChip severity={check.severity} />
           </div>
-          <p className="mt-0.5 text-[12px] leading-[1.5] text-ink-5">
-            {check.description}
-          </p>
           {check.detail && (
-            <p className="mt-1 text-[11px] font-mono text-ink-3">
+            <p className="mt-0.5 text-[10px] font-mono text-ink-4">
               {check.detail}
             </p>
           )}
         </div>
-        <span className="hidden shrink-0 items-center gap-1 text-[12px] text-ink-3 group-hover:text-ink-0 md:inline-flex">
+        {/* CTA */}
+        <span className="hidden shrink-0 items-center gap-0.5 text-[11px] text-ink-4 group-hover:text-ink-0 md:inline-flex">
           {check.ctaLabel}
-          <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
+          <ArrowRight className="h-3 w-3" strokeWidth={1.75} />
         </span>
       </Link>
     </li>
   );
 }
 
+// ─── Helpers ───────────────────────────────────────────────────────────
+
 function severityIcon(severity: ReadinessSeverity): React.ReactNode {
   if (severity === "blocks_publication" || severity === "blocks_sales") {
-    return <ShieldAlert className="h-4 w-4" strokeWidth={1.75} />;
+    return <ShieldAlert className="h-3 w-3" strokeWidth={1.75} />;
   }
   if (severity === "blocks_conversion") {
-    return <AlertTriangle className="h-4 w-4" strokeWidth={1.75} />;
+    return <AlertTriangle className="h-3 w-3" strokeWidth={1.75} />;
   }
-  return <Sparkles className="h-4 w-4" strokeWidth={1.75} />;
+  return <Sparkles className="h-3 w-3" strokeWidth={1.75} />;
 }
 
 function SeverityChip({ severity }: { severity: ReadinessSeverity }) {
   const map: Record<ReadinessSeverity, { label: string; cls: string }> = {
     blocks_publication: {
       label: "Publicar",
-      cls: "bg-[color:var(--signal-danger)]/15 text-[color:var(--signal-danger)]",
+      cls: "bg-[color:var(--signal-danger)]/12 text-[color:var(--signal-danger)]",
     },
     blocks_sales: {
       label: "Cobrar",
-      cls: "bg-[color:var(--signal-danger)]/15 text-[color:var(--signal-danger)]",
+      cls: "bg-[color:var(--signal-danger)]/12 text-[color:var(--signal-danger)]",
     },
     blocks_conversion: {
       label: "Conversión",
-      cls: "bg-[color:var(--signal-warning)]/15 text-[color:var(--signal-warning)]",
+      cls: "bg-[color:var(--signal-warning)]/12 text-[color:var(--signal-warning)]",
     },
     recommendation: {
       label: "Mejora",
-      cls: "bg-[var(--surface-2)] text-ink-3",
+      cls: "bg-[var(--surface-2)] text-ink-4",
     },
   };
   const meta = map[severity];
   return (
     <span
       className={cn(
-        "inline-flex h-4 items-center rounded-[var(--r-xs)] px-1.5 text-[9px] font-semibold uppercase tracking-[0.1em]",
+        "inline-flex h-3.5 items-center rounded-[3px] px-1 text-[8px] font-semibold uppercase tracking-[0.08em]",
         meta.cls,
       )}
     >
       {meta.label}
     </span>
-  );
-}
-
-// ─── Resolved footer ─────────────────────────────────────────────────────
-
-function ResolvedFooter({ count }: { count: number }) {
-  return (
-    <div className="flex items-center gap-2 rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-4 py-3 text-[12px] text-ink-5">
-      <Circle className="h-3.5 w-3.5 text-[color:var(--signal-success)]" strokeWidth={2} />
-      <span>
-        {count} {count === 1 ? "check resuelto" : "checks resueltos"}
-      </span>
-    </div>
   );
 }

@@ -39,7 +39,6 @@ import {
   type HeroImageOption,
 } from "./vocabulary";
 import type { ConversationContext } from "./context";
-import { resolveImageParams } from "@/lib/ai/image-generator";
 
 // ─── Types ──────────────────────────────────────────────────────────────
 
@@ -744,6 +743,51 @@ export function resolveButtonStyle(text: string): string | null {
   // "mas visible" → pill (most prominent)
   if (normalized.includes("mas visible") || normalized.includes("mas grande") || normalized.includes("mas notorio")) return "pill";
   return null;
+}
+
+// ─── Image params resolver (pure, client-safe) ───────────────────────────
+// Moved here from image-generator.ts to avoid pulling fs/promises into the
+// client bundle. The actual generation/persistence stays server-only.
+
+export function resolveImageParams(text: string): {
+  mood: string;
+  category: string;
+  styleHints: string[];
+} {
+  const normalized = text.toLowerCase().trim();
+
+  let mood = "premium";
+  const sortedMoods = Object.entries(IMAGE_MOOD_MAP).sort(
+    (a, b) => b[0].length - a[0].length,
+  );
+  for (const [keyword, m] of sortedMoods) {
+    if (normalized.includes(keyword)) {
+      mood = m;
+      break;
+    }
+  }
+
+  let category = "lifestyle";
+  const sortedCats = Object.entries(IMAGE_CATEGORY_MAP).sort(
+    (a, b) => b[0].length - a[0].length,
+  );
+  for (const [keyword, c] of sortedCats) {
+    if (normalized.includes(keyword)) {
+      category = c;
+      break;
+    }
+  }
+
+  const styleHints: string[] = [];
+  const hintKeywords = [
+    "beige", "negro", "oscuro", "claro", "dorado", "elegante",
+    "aspiracional", "editorial", "rustico", "minimalista",
+  ];
+  for (const hint of hintKeywords) {
+    if (normalized.includes(hint)) styleHints.push(hint);
+  }
+
+  return { mood, category, styleHints };
 }
 
 // ─── Hero image resolver ──────────────────────────────────────────────────

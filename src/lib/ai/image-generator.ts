@@ -20,8 +20,6 @@ import { join } from "path";
 import { randomBytes } from "crypto";
 import {
   HERO_IMAGE_LIBRARY,
-  IMAGE_MOOD_MAP,
-  IMAGE_CATEGORY_MAP,
   type HeroImageOption,
 } from "@/lib/copilot/vocabulary";
 
@@ -204,51 +202,9 @@ function pickCuratedImage(
   return candidates[randomIdx];
 }
 
-// ─── Resolve mood/category from text ────────────────────────────────────
-
-export function resolveImageParams(text: string): {
-  mood: string;
-  category: string;
-  styleHints: string[];
-} {
-  const normalized = text.toLowerCase().trim();
-
-  // Resolve mood
-  let mood = "premium";
-  const sortedMoods = Object.entries(IMAGE_MOOD_MAP).sort(
-    (a, b) => b[0].length - a[0].length,
-  );
-  for (const [keyword, m] of sortedMoods) {
-    if (normalized.includes(keyword)) {
-      mood = m;
-      break;
-    }
-  }
-
-  // Resolve category
-  let category = "lifestyle";
-  const sortedCats = Object.entries(IMAGE_CATEGORY_MAP).sort(
-    (a, b) => b[0].length - a[0].length,
-  );
-  for (const [keyword, c] of sortedCats) {
-    if (normalized.includes(keyword)) {
-      category = c;
-      break;
-    }
-  }
-
-  // Extract style hints
-  const styleHints: string[] = [];
-  const hintKeywords = [
-    "beige", "negro", "oscuro", "claro", "dorado", "elegante",
-    "aspiracional", "editorial", "rustico", "minimalista",
-  ];
-  for (const hint of hintKeywords) {
-    if (normalized.includes(hint)) styleHints.push(hint);
-  }
-
-  return { mood, category, styleHints };
-}
+// resolveImageParams moved to engine.ts (client-safe, no fs/promises dependency).
+// Re-exported here for backward compatibility with server consumers.
+export { resolveImageParams } from "@/lib/copilot/engine";
 
 // ─── Main entry point ──────────────────────────────────────────────────
 
