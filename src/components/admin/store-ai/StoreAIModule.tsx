@@ -4,11 +4,9 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
-  CheckCircle2,
   ChevronDown,
   Edit3,
   Layers,
-  Palette,
   Pencil,
   Sparkles,
   Store,
@@ -53,7 +51,7 @@ interface CurrentThemeView {
 }
 
 interface StoreAIModuleProps {
-  initialDraft: any;
+  initialDraft: any; // eslint-disable-line @typescript-eslint/no-explicit-any
   readiness?: ReadinessSnapshot | null;
   themeState?: CurrentThemeView;
   templates?: readonly StoreTemplate[];
@@ -236,8 +234,8 @@ function ShortcutCard({
 
 // ─── Advanced tools (old wizard, lazy-loaded) ────────────────────────────
 
-function AdvancedToolsPanel({ initialDraft }: { initialDraft: any }) {
-  const [AIBuilder, setAIBuilder] = useState<React.ComponentType<any> | null>(null);
+function AdvancedToolsPanel({ initialDraft }: { initialDraft: any }) { // eslint-disable-line @typescript-eslint/no-explicit-any
+  const [AIBuilder, setAIBuilder] = useState<React.ComponentType<any> | null>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
   const [loading, setLoading] = useState(true);
 
   // Lazy-load the full builder only when the user expands

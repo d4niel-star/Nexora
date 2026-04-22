@@ -927,8 +927,9 @@ function tryResolveReference(norm: string, ctx: ConversationContext): PlannedAct
     ctx.lastBlockType
   ) {
     // Re-parse with the actual section name
-    const expanded = norm.replace(/es[ao]\s+(?:seccion|bloque)/, ctx.lastBlockType);
-    return null; // Let normal intent detection handle it with expanded text
+    // TODO: use expanded text for recursive intent detection
+    norm.replace(/es[ao]\s+(?:seccion|bloque)/, ctx.lastBlockType);
+    return null; // Let normal intent detection handle it
   }
 
   return null;

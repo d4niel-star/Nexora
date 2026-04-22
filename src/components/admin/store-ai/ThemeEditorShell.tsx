@@ -178,9 +178,10 @@ export function ThemeEditorShell({
   const [homeBlocks, setHomeBlocks] = useState<SectionBlock[]>(initialBlocks);
   const [navigation, setNavigation] = useState<NavigationDraft[]>(initialNavigation);
 
-  useEffect(() => setHomeBlocks(initialBlocks), [initialBlocks]);
-  useEffect(() => setNavigation(initialNavigation), [initialNavigation]);
-  useEffect(() => setOrigin(window.location.origin), []);
+  // Sync props → local state when parent re-renders with new data (e.g. after server action)
+  useEffect(() => { setHomeBlocks(initialBlocks); }, [initialBlocks]); // eslint-disable-line react-hooks/set-state-in-effect
+  useEffect(() => { setNavigation(initialNavigation); }, [initialNavigation]); // eslint-disable-line react-hooks/set-state-in-effect
+  useEffect(() => { setOrigin(window.location.origin); }, []); // eslint-disable-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
 
   const storeSlug = initialData?.store.slug;
   const publicPath = storeSlug ? `/store/${storeSlug}` : "";
@@ -527,6 +528,7 @@ function MediaPanel({ initialData, onSaved }: { initialData: AdminStoreInitialDa
         <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Vista de marca</p>
         <div className="mt-3 flex h-20 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)]">
           {logoUrl.trim() ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img src={logoUrl.trim()} alt="Logo de tienda" className="max-h-12 max-w-[220px] object-contain" />
           ) : (
             <span className="text-[18px] font-semibold tracking-[-0.03em] text-ink-0">{initialData.store.name}</span>

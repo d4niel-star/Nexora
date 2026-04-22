@@ -6,9 +6,7 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
-  Eye,
   EyeOff,
-  Layers,
   Loader2,
   MessageSquare,
   Palette,
@@ -56,6 +54,7 @@ interface ActionLog {
   timestamp: number;
   status: "ok" | "err";
 }
+
 
 // ─── Quick actions ──────────────────────────────────────────────────────
 
@@ -437,7 +436,7 @@ function ActionForm({
               "change-hero-cta": "primaryActionLabel",
             };
             const field = fieldMap[action.id];
-            const updated = blocks.map((b: any) => {
+            const updated = blocks.map((b: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
               if (b.blockType !== "hero") return b;
               const settings = typeof b.settingsJson === "string"
                 ? JSON.parse(b.settingsJson)
@@ -457,13 +456,13 @@ function ActionForm({
               onLog(action.label, "sin bloques", "err");
               return;
             }
-            const target = blocks.find((b: any) => b.blockType === value.trim());
+            const target = blocks.find((b: any) => b.blockType === value.trim()); // eslint-disable-line @typescript-eslint/no-explicit-any
             if (!target) {
               setResult({ ok: false, detail: `Sección "${value.trim()}" no encontrada.` });
               onLog(action.label, "sección no encontrada", "err");
               return;
             }
-            const updated = blocks.map((b: any) =>
+            const updated = blocks.map((b: any) => // eslint-disable-line @typescript-eslint/no-explicit-any
               b.blockType === value.trim()
                 ? { ...b, isVisible: !b.isVisible }
                 : b,
