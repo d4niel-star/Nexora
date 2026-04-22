@@ -261,6 +261,112 @@ export const BUTTON_STYLE_MAP: Record<string, string> = {
   redondo: "pill",
 };
 
+// ─── Hero Image Library ────────────────────────────────────────────────────
+// Curated Unsplash images organized by mood/category for real hero image
+// generation. When the user asks for "una imagen premium" or "algo más
+// aspiracional", we pick from here and apply to the hero block.
+
+export interface HeroImageOption {
+  url: string;
+  alt: string;
+  mood: string;
+  category: string;
+}
+
+export const HERO_IMAGE_LIBRARY: HeroImageOption[] = [
+  // ── Premium / Luxury ──────────────────────────────────────────────────
+  { url: "https://images.unsplash.com/photo-1556228578-0d85b1a4d571?auto=format&fit=crop&q=80&w=2000", alt: "Interior elegante con luz natural", mood: "premium", category: "lifestyle" },
+  { url: "https://images.unsplash.com/photo-1600585152220-90363fe7e115?auto=format&fit=crop&q=80&w=2000", alt: "Espacio de diseño minimalista premium", mood: "premium", category: "interior" },
+  { url: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=2000", alt: "Oficina corporativa moderna", mood: "premium", category: "corporate" },
+  { url: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=2000", alt: "Hotel lujo lobby elegante", mood: "luxury", category: "hospitality" },
+  { url: "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&q=80&w=2000", alt: "Interior sofisticado con tonos cálidos", mood: "luxury", category: "interior" },
+
+  // ── Fashion / Moda ────────────────────────────────────────────────────
+  { url: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=2000", alt: "Tienda de moda con ropa colgada", mood: "comercial", category: "fashion" },
+  { url: "https://images.unsplash.com/photo-1558171813-4c088753af8f?auto=format&fit=crop&q=80&w=2000", alt: "Accesorios de moda elegantes", mood: "premium", category: "fashion" },
+  { url: "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=2000", alt: "Shopping fashion lifestyle", mood: "comercial", category: "fashion" },
+  { url: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&q=80&w=2000", alt: "Moda urbana contemporánea", mood: "moderno", category: "fashion" },
+
+  // ── Beauty / Skincare ──────────────────────────────────────────────────
+  { url: "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&q=80&w=2000", alt: "Productos de belleza minimalistas", mood: "premium", category: "beauty" },
+  { url: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&q=80&w=2000", alt: "Skincare ritual elegante", mood: "luxury", category: "beauty" },
+  { url: "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?auto=format&fit=crop&q=80&w=2000", alt: "Productos beauty organizados", mood: "minimalista", category: "beauty" },
+
+  // ── Technology / Tech ──────────────────────────────────────────────────
+  { url: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=2000", alt: "Circuito tecnológico abstracto", mood: "tecnico", category: "tech" },
+  { url: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=2000", alt: "Red de datos tecnológicos", mood: "tecnico", category: "tech" },
+  { url: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&q=80&w=2000", alt: "Workspace tecnológico moderno", mood: "moderno", category: "tech" },
+
+  // ── Food / Restaurant ──────────────────────────────────────────────────
+  { url: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=2000", alt: "Plato gourmet premium", mood: "premium", category: "food" },
+  { url: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&q=80&w=2000", alt: "Cena elegante restaurant", mood: "luxury", category: "food" },
+  { url: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=2000", alt: "Café artesanal", mood: "calido", category: "food" },
+
+  // ── Nature / Lifestyle ─────────────────────────────────────────────────
+  { url: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&q=80&w=2000", alt: "Paisaje montañoso aspiracional", mood: "aspiracional", category: "nature" },
+  { url: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=2000", alt: "Playa paradisiaca", mood: "calido", category: "nature" },
+  { url: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&q=80&w=2000", alt: "Bosque con luz natural", mood: "natural", category: "nature" },
+
+  // ── Minimal / Clean ────────────────────────────────────────────────────
+  { url: "https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?auto=format&fit=crop&q=80&w=2000", alt: "Fondo blanco minimalista", mood: "minimalista", category: "minimal" },
+  { url: "https://images.unsplash.com/photo-1553356084-58ef4a67b2a7?auto=format&fit=crop&q=80&w=2000", alt: "Textura beige suave", mood: "calido", category: "minimal" },
+  { url: "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?auto=format&fit=crop&q=80&w=2000", alt: "Geometría abstracta limpia", mood: "sobrio", category: "minimal" },
+
+  // ── Dark / Noir ────────────────────────────────────────────────────────
+  { url: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?auto=format&fit=crop&q=80&w=2000", alt: "Gradiente oscuro abstracto", mood: "oscuro", category: "dark" },
+  { url: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&q=80&w=2000", alt: "Gradiente negro profundo", mood: "oscuro", category: "dark" },
+];
+
+export const IMAGE_MOOD_MAP: Record<string, string> = {
+  premium: "premium",
+  luxury: "luxury",
+  lujo: "luxury",
+  lujoso: "luxury",
+  elegante: "premium",
+  sofisticado: "premium",
+  aspiracional: "aspiracional",
+  comercial: "comercial",
+  moderno: "moderno",
+  calido: "calido",
+  cálido: "calido",
+  tecnico: "tecnico",
+  técnico: "tecnico",
+  minimalista: "minimalista",
+  minimal: "minimalista",
+  sobrio: "sobrio",
+  oscuro: "oscuro",
+  natural: "natural",
+  rustico: "natural",
+  rústico: "natural",
+};
+
+export const IMAGE_CATEGORY_MAP: Record<string, string> = {
+  skincare: "beauty",
+  belleza: "beauty",
+  cosmetics: "beauty",
+  cosmeticos: "beauty",
+  maquillaje: "beauty",
+  moda: "fashion",
+  fashion: "fashion",
+  ropa: "fashion",
+  indumentaria: "fashion",
+  accesorios: "fashion",
+  tech: "tech",
+  tecnologia: "tech",
+  software: "tech",
+  comida: "food",
+  restaurant: "food",
+  restaurante: "food",
+  gastronomia: "food",
+  gastronomía: "food",
+  cafe: "food",
+  naturaleza: "nature",
+  lifestyle: "lifestyle",
+  hogar: "interior",
+  decoracion: "interior",
+  interior: "interior",
+};
+
 export const MOVE_POSITION_MAP: Record<string, "up" | "down" | "top" | "bottom"> = {
   arriba: "up",
   "arriba de todo": "top",

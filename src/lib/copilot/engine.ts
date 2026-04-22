@@ -33,6 +33,10 @@ import {
   VISUAL_TONE_PRESETS,
   BUTTON_STYLE_MAP,
   MOVE_POSITION_MAP,
+  HERO_IMAGE_LIBRARY,
+  IMAGE_MOOD_MAP,
+  IMAGE_CATEGORY_MAP,
+  type HeroImageOption,
 } from "./vocabulary";
 import type { ConversationContext } from "./context";
 
@@ -465,13 +469,20 @@ const SIGNALS: IntentSignal[] = [
   // ── Change hero image ──────────────────────────────────────────────
   {
     type: "change-hero-image",
-    verbs: ["cambia", "pon", "pone", "reemplaza", "actualiza", "usa", "genera", "crea"],
-    objects: ["imagen del hero", "fondo del hero", "hero imagen", "hero fondo", "imagen de fondo", "banner imagen", "imagen", "foto", "foto del hero"],
-    modifiers: ["mas aspiracional", "mas comercial", "mas moderna", "otra imagen"],
+    verbs: ["cambia", "pon", "pone", "reemplaza", "actualiza", "usa", "genera", "crea", "generame", "creame", "haceme"],
+    objects: ["imagen del hero", "fondo del hero", "hero imagen", "hero fondo", "imagen de fondo", "banner imagen", "imagen", "foto", "foto del hero", "portada", "imagen premium", "imagen para el hero", "imagen para esta parte", "una imagen", "una foto", "imagen mejor", "imagen mas", "banner"],
+    modifiers: ["mas aspiracional", "mas comercial", "mas moderna", "otra imagen", "premium", "lifestyle", "aspiracional", "luxury", "minimalista", "oscuro", "calido", "elegante", "sofisticado", "mejor imagen", "otra imagen", "reemplaza la imagen", "imagen para skincare", "imagen para moda", "imagen para beauty", "imagen para tech", "imagen para food"],
     patterns: [
-      /(?:cambi|pon|reemplaz|actualiz|us|gener|cre)[a-z]*\s+(?:la\s+)?(?:imagen|foto)\s+(?:del\s+)?(?:hero|fondo|banner)/,
+      /(?:cambi|pon|reemplaz|actualiz|us|gener|cre|hac)[a-z]*\s+(?:la\s+)?(?:imagen|foto)\s+(?:del\s+)?(?:hero|fondo|banner)/,
       /(?:cambi|pon|reemplaz)[a-z]*\s+(?:el\s+)?fondo\s+del\s+hero/,
       /(?:esa|esta|la)\s+(?:imagen|foto)\s+(?:no|no me)/,
+      /(?:gener|cre)[a-z]*\s+(?:una\s+)?(?:imagen|foto|banner|portada)/,
+      /(?:pon|poné|pone)[a-z]*\s+(?:una\s+)?(?:imagen|foto)\s+(?:mas\s+)?(?:premium|aspiracional|elegante|mejor|lifestyle|luxury|minimalista)/,
+      /(?:quiero|busco|necesito)\s+(?:una\s+)?(?:imagen|foto|banner|portada)/,
+      /(?:imagen|foto|banner)\s+(?:mas\s+)?(?:premium|aspiracional|mejor|lifestyle|luxury|elegante|sofisticada)/,
+      /(?:mejor|otra|nueva)\s+(?:imagen|foto|banner)/,
+      /(?:pon|cambi|reemplaz)[a-z]*\s+(?:(?:la|una)\s+)?(?:imagen|foto)\s+(?:por\s+)?(?:algo|una)\s+mas/,
+      /(?:haceme|creame|generame)\s+(?:una\s+)?(?:imagen|foto|banner|portada)/,
     ],
     antiSignals: ["titulo", "titular", "texto", "headline", "subtitulo"],
     verbWeight: 3,
@@ -732,6 +743,74 @@ export function resolveButtonStyle(text: string): string | null {
   // "mas visible" → pill (most prominent)
   if (normalized.includes("mas visible") || normalized.includes("mas grande") || normalized.includes("mas notorio")) return "pill";
   return null;
+}
+
+// ─── Hero image resolver ──────────────────────────────────────────────────
+
+export function resolveHeroImage(text: string, ctx?: ConversationContext): HeroImageOption | null {
+  const normalized = text.toLowerCase().trim();
+
+  // 1. Try to resolve mood from text
+  let resolvedMood: string | null = null;
+  const sortedMoods = Object.entries(IMAGE_MOOD_MAP).sort((a, b) => b[0].length - a[0].length);
+  for (const [keyword, mood] of sortedMoods) {
+    if (normalized.includes(keyword)) {
+      resolvedMood = mood;
+      break;
+    }
+  }
+
+  // 2. Try to resolve category from text
+  let resolvedCategory: string | null = null;
+  const sortedCats = Object.entries(IMAGE_CATEGORY_MAP).sort((a, b) => b[0].length - a[0].length);
+  for (const [keyword, cat] of sortedCats) {
+    if (normalized.includes(keyword)) {
+      resolvedCategory = cat;
+      break;
+    }
+  }
+
+  // 3. If user said "otra" or "reemplaza" and last action was hero-image, pick a different one
+  const isRepeat = normalized.includes("otra") || normalized.includes("reemplaza") || normalized.includes("mejor");
+
+  // 4. Filter library
+  let candidates = HERO_IMAGE_LIBRARY;
+
+  if (resolvedMood) {
+    const moodMatches = candidates.filter((img) => img.mood === resolvedMood);
+    if (moodMatches.length > 0) candidates = moodMatches;
+  }
+
+  if (resolvedCategory) {
+    const catMatches = candidates.filter((img) => img.category === resolvedCategory);
+    if (catMatches.length > 0) candidates = catMatches;
+  }
+
+  // If no mood/category was resolved and no visual tone, default to premium
+  if (!resolvedMood && !resolvedCategory) {
+    // Check if there's a visual tone in context or text
+    const preset = resolveVisualTonePreset(normalized);
+    if (preset) {
+      // Map tone to mood
+      if (normalized.includes("premium") || normalized.includes("elegante") || normalized.includes("aspiracional")) {
+        candidates = candidates.filter((img) => img.mood === "premium" || img.mood === "luxury");
+      } else if (normalized.includes("oscuro") || normalized.includes("dark")) {
+        candidates = candidates.filter((img) => img.mood === "oscuro");
+      } else if (normalized.includes("minimalista") || normalized.includes("minimal") || normalized.includes("limpio")) {
+        candidates = candidates.filter((img) => img.mood === "minimalista" || img.mood === "sobrio");
+      }
+    }
+
+    // If still no filter, use all images
+    if (candidates.length === 0) candidates = HERO_IMAGE_LIBRARY;
+  }
+
+  // 5. Pick a random image from candidates (avoid same if repeat)
+  if (candidates.length === 0) return null;
+  
+  const randomIdx = Math.floor(Math.random() * candidates.length);
+  const pick = candidates[randomIdx];
+  return pick;
 }
 
 export function resolvePreviewSurface(text: string): "home" | "listing" | "product" | "cart" | null {
@@ -1219,7 +1298,18 @@ function validateAction(
     }
 
     case "change-hero-image": {
-      // Image changes are limited - we can note the request but can't generate images
+      const image = resolveHeroImage(norm);
+      if (image) {
+        enriched.imageUrl = image.url;
+        enriched.imageAlt = image.alt;
+        enriched.imageMood = image.mood;
+        enriched.imageCategory = image.category;
+      } else {
+        return {
+          needsClarification: true,
+          clarification: `No encontré una imagen para ese pedido. Probá: "imagen premium", "algo para moda", "imagen de skincare", "algo más oscuro", "foto de comida".`,
+        };
+      }
       return { needsClarification: false, enrichedEntities: enriched };
     }
 

@@ -304,7 +304,7 @@ export function NexoraEditorChat({
             <div className="border-t border-[color:var(--hairline)] px-4 py-2.5">
               <p className="mb-2 text-[9px] font-medium uppercase tracking-[0.12em] text-ink-6">Probá algo</p>
               <div className="flex flex-wrap gap-1.5">
-                {["Algo más premium", "Ocultá testimonios", "Poné tonos beige", "Fuente más editorial", "Mostrame en celu"].map((s) => (
+                {["Algo más premium", "Poné una imagen premium", "Botones más circulares", "Fuente más editorial", "Mostrame en celu"].map((s) => (
                   <button
                     key={s}
                     type="button"
@@ -513,10 +513,12 @@ async function executeAction(action: PlannedAction, ctx: ConversationContext): P
       return { ok: true, detail: `CTA del hero → "${e.textValue}"` };
     }
     case "change-hero-image": {
-      return {
-        ok: false,
-        detail: "No puedo generar imágenes por ahora, pero podés cambiar la imagen del hero desde el panel \"Inicio\" → hacé clic en \"Editar\" en el bloque Hero → campo de imagen. También podés cambiar el estilo visual general con \"algo más premium\" o \"más oscuro\".",
-      };
+      if (!e.imageUrl) return { ok: false, detail: "No encontré una imagen adecuada. Probá: \"imagen premium\", \"algo para moda\", \"foto de skincare\"." };
+      const { fetchHomeBlocks, saveHomeBlocks } = await import("@/lib/store-engine/actions");
+      const blocks = await fetchHomeBlocks();
+      if (!blocks?.length) return { ok: false, detail: "No hay bloques. Aplicá un tema primero." };
+      await saveHomeBlocks(blocks.map((b: any) => b.blockType !== "hero" ? b : { ...b, settingsJson: JSON.stringify({ ...(typeof b.settingsJson === "string" ? JSON.parse(b.settingsJson) : b.settingsJson ?? {}), backgroundImageUrl: e.imageUrl }) })); // eslint-disable-line @typescript-eslint/no-explicit-any
+      return { ok: true, detail: `Imagen del hero actualizada — "${e.imageAlt ?? "foto premium"}" (${e.imageMood ?? "estilo"}${e.imageCategory ? ` / ${e.imageCategory}` : ""}). La imagen se aplica como fondo del hero y se ve reflejada en el preview.` };
     }
     case "hide-section": {
       if (!e.sectionKey) return { ok: false, detail: "Sección no reconocida. Opciones: Hero, Productos, Categorías, Beneficios, Testimonios, FAQ, Newsletter." };
