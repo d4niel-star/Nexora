@@ -21,6 +21,8 @@
 import { normalize, fixTypos, splitCompoundInput } from "./normalizer";
 import {
   COLOR_MAP,
+  COMPOUND_COLOR_PALETTES,
+  type CompoundPalette,
   SECTION_MAP,
   SECTION_LABELS,
   THEME_MAP,
@@ -563,7 +565,7 @@ const SIGNALS: IntentSignal[] = [
     extractEntities: (norm) => ({ raw: norm }),
   },
 
-  // ── Greeting ───────────────────────────────────────────────────────
+  // ── Greeting / Smalltalk ───────────────────────────────────────────
   {
     type: "greeting",
     verbs: [],
@@ -571,8 +573,11 @@ const SIGNALS: IntentSignal[] = [
     modifiers: [],
     patterns: [
       /^(?:hola|buenas|que tal|hey|hi|hello|buen dia|buenos dias|buenas tardes|buenas noches)[\s!.?]*$/i,
+      /^(?:hola|buenas|hey|hi|hello)\s+(?:como\s+(?:te\s+)?va|que\s+(?:tal|haces|onda)|todo\s+bien|estas)/i,
+      /^(?:como\s+(?:te\s+)?va|que\s+haces|que\s+onda|todo\s+bien)[\s!.?]*$/i,
+      /^(?:buenas|buen dia)[\s!.?]*$/i,
     ],
-    antiSignals: ["cambia", "pon", "saca", "mueve", "oculta", "mostra"],
+    antiSignals: ["cambia", "pon", "saca", "mueve", "oculta", "mostra", "color", "fuente", "seccion", "boton"],
     verbWeight: 0,
     objectWeight: 0,
     modifierWeight: 0,
@@ -642,6 +647,18 @@ export function resolveColorFromText(text: string): { hex: string; name: string 
   const sorted = Object.entries(COLOR_MAP).sort((a, b) => b[0].length - a[0].length);
   for (const [name, hex] of sorted) {
     if (normalized.includes(name)) return { hex, name };
+  }
+  return null;
+}
+
+// ─── Compound color palette resolver ──────────────────────────────────────
+
+export function resolveCompoundPalette(text: string): CompoundPalette | null {
+  const normalized = text.toLowerCase().trim();
+  // Sort by key length descending for best match
+  const sorted = Object.entries(COMPOUND_COLOR_PALETTES).sort((a, b) => b[0].length - a[0].length);
+  for (const [phrase, palette] of sorted) {
+    if (normalized.includes(phrase)) return palette;
   }
   return null;
 }
@@ -1006,7 +1023,8 @@ function resolveConflict(
   if (colorIdx !== -1 && vtoneIdx !== -1) {
     const color = resolveColorFromText(norm);
     // If a specific color was found AND it's not part of a preset phrase, prefer change-color
-    if (color && !norm.includes("negro y beige") && !norm.includes("beige y negro") && !norm.includes("dark mode") && !norm.includes("modo oscuro")) {
+    const compound = resolveCompoundPalette(norm);
+    if ((color || compound) && !norm.includes("dark mode") && !norm.includes("modo oscuro")) {
       const colorScore = scores[colorIdx];
       return { ...colorScore, score: Math.max(colorScore.score, scores[vtoneIdx].score) + 2 };
     }
@@ -1174,6 +1192,20 @@ function validateAction(
     case "change-color":
     case "change-primary-color":
     case "change-secondary-color": {
+      // ── Check compound color palettes first ────────────────────────
+      const compound = resolveCompoundPalette(norm);
+      if (compound) {
+        // Return BOTH primary and secondary in one action
+        enriched.colorHex = compound.primary;
+        enriched.colorName = compound.primaryName;
+        enriched.secondaryColorHex = compound.secondary;
+        enriched.secondaryColorName = compound.secondaryName;
+        enriched.isCompoundPalette = "true";
+        if (intent === "change-color") enriched.target = "primary";
+        return { needsClarification: false, enrichedEntities: enriched };
+      }
+
+      // ── Single color fallback ───────────────────────────────────────
       const color = resolveColorFromText(norm);
       if (color) {
         enriched.colorHex = color.hex;
@@ -1181,7 +1213,7 @@ function validateAction(
       } else {
         return {
           needsClarification: true,
-          clarification: `No reconocí el color. Podés usar nombres como "negro", "beige", "dorado", "azul" o un HEX como #1A1A2E.`,
+          clarification: `No reconocí el color. Podés usar nombres como "negro", "beige", "dorado", "azul", "marrón", "oliva" o un HEX como #1A1A2E.`,
         };
       }
       // If generic "change-color", default to primary

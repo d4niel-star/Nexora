@@ -91,6 +91,8 @@ export function NexoraEditorChat({
   const currentBrandingRef = useRef(currentBranding);
   currentBrandingRef.current = currentBranding;
 
+  const messagesLenRef = useRef(messages.length);
+  messagesLenRef.current = messages.length;
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -125,7 +127,12 @@ export function NexoraEditorChat({
         if (result.actions.length === 1) {
           const action = result.actions[0];
           if (action.intent === "greeting") {
-            responses.push(makeAssistantMessage(GREETING_RESPONSE.summary, GREETING_RESPONSE, "ok"));
+            // Contextual greeting: brief if chat already active, full if early
+            const greetMsg = messagesLenRef.current > 3
+              ? "¡Hola! Estoy acá. Decime qué querés cambiar y lo ajusto al toque."
+              : GREETING_RESPONSE.summary;
+            const greetResp = { ...GREETING_RESPONSE, summary: greetMsg };
+            responses.push(makeAssistantMessage(greetMsg, greetResp, "ok"));
             setMessages((prev) => [...prev, ...responses]);
             return;
           }
@@ -453,14 +460,24 @@ async function executeAction(action: PlannedAction, ctx: ConversationContext): P
   const e = action.entities;
   switch (action.intent) {
     case "change-primary-color": case "change-color": {
-      if (!e.colorHex) return { ok: false, detail: "Color no reconocido. Probá \"azul\", \"dorado\" o un HEX como #1A1A2E." };
+      if (!e.colorHex) return { ok: false, detail: "Color no reconocido. Probá \"azul\", \"dorado\", \"marrón\" o un HEX como #1A1A2E." };
       const { saveStoreBranding } = await import("@/lib/store-engine/actions");
+      // ── Compound palette: apply BOTH primary + secondary ────────────
+      if (e.isCompoundPalette === "true" && e.secondaryColorHex) {
+        await saveStoreBranding({ primaryColor: e.colorHex, secondaryColor: e.secondaryColorHex });
+        return { ok: true, detail: `Paleta aplicada: principal ${e.colorName ?? e.colorHex} + secundario ${e.secondaryColorName ?? e.secondaryColorHex}` };
+      }
       await saveStoreBranding({ primaryColor: e.colorHex });
       return { ok: true, detail: `Color principal cambiado a ${e.colorName ?? e.colorHex}` };
     }
     case "change-secondary-color": {
       if (!e.colorHex) return { ok: false, detail: "Color no reconocido. Probá \"beige\", \"gris\" o un HEX." };
       const { saveStoreBranding } = await import("@/lib/store-engine/actions");
+      // ── Compound palette on secondary: also apply both ──────────────
+      if (e.isCompoundPalette === "true" && e.secondaryColorHex) {
+        await saveStoreBranding({ primaryColor: e.colorHex, secondaryColor: e.secondaryColorHex });
+        return { ok: true, detail: `Paleta aplicada: principal ${e.colorName ?? e.colorHex} + secundario ${e.secondaryColorName ?? e.secondaryColorHex}` };
+      }
       await saveStoreBranding({ secondaryColor: e.colorHex });
       return { ok: true, detail: `Color secundario cambiado a ${e.colorName ?? e.colorHex}` };
     }

@@ -26,6 +26,56 @@ export const COLOR_MAP: Record<string, string> = {
   "gris oscuro": "#374151",
   "gris claro": "#F3F4F6",
   plata: "#C0C0C0", silver: "#C0C0C0",
+  // ── Previously missing colors ──────────────────────────────────────
+  marron: "#6B4423", brown: "#6B4423",
+  cafe: "#6B4423", chocolate: "#3E2723",
+  oliva: "#6B8E23", "verde oliva": "#6B8E23", "olive": "#6B8E23",
+  nude: "#E8C9A0", "rosa nude": "#E8C9A0",
+  tierra: "#8B6914", "tono tierra": "#8B6914",
+  bronce: "#CD7F32", bronze: "#CD7F32",
+  cobre: "#B87333", copper: "#B87333",
+  marfil: "#FFFFF0", ivory: "#FFFFF0",
+  lino: "#FAF0E6", linen: "#FAF0E6",
+  carbon: "#36454F",
+  "gris medio": "#9CA3AF",
+  lavanda: "#B57EDC",
+  vino: "#722F37",
+  esmeralda: "#046307",
+  coral: "#FF7F50",
+  arena2: "#C2B280",
+};
+
+// ─── Compound color palettes ──────────────────────────────────────────────
+// Maps multi-color requests to a resolved primary + secondary pair.
+// Key = normalized phrase (accent-free, lowercase), value = {primary, secondary}.
+
+export interface CompoundPalette {
+  primary: string;
+  primaryName: string;
+  secondary: string;
+  secondaryName: string;
+}
+
+export const COMPOUND_COLOR_PALETTES: Record<string, CompoundPalette> = {
+  "marron beige": { primary: "#6B4423", primaryName: "marrón", secondary: "#F5F0E8", secondaryName: "beige" },
+  "beige marron": { primary: "#6B4423", primaryName: "marrón", secondary: "#F5F0E8", secondaryName: "beige" },
+  "beige y negro": { primary: "#111111", primaryName: "negro", secondary: "#F5F0E8", secondaryName: "beige" },
+  "negro y beige": { primary: "#111111", primaryName: "negro", secondary: "#F5F0E8", secondaryName: "beige" },
+  "beige y dorado": { primary: "#B8860B", primaryName: "dorado", secondary: "#F5F0E8", secondaryName: "beige" },
+  "dorado y beige": { primary: "#B8860B", primaryName: "dorado", secondary: "#F5F0E8", secondaryName: "beige" },
+  "negro y dorado": { primary: "#111111", primaryName: "negro", secondary: "#B8860B", secondaryName: "dorado" },
+  "dorado y negro": { primary: "#B8860B", primaryName: "dorado", secondary: "#111111", secondaryName: "negro" },
+  "blanco y negro": { primary: "#111111", primaryName: "negro", secondary: "#FFFFFF", secondaryName: "blanco" },
+  "negro y blanco": { primary: "#111111", primaryName: "negro", secondary: "#FFFFFF", secondaryName: "blanco" },
+  "tonos tierra": { primary: "#8B6914", primaryName: "tierra", secondary: "#F5F0E8", secondaryName: "beige" },
+  "tierra": { primary: "#8B6914", primaryName: "tierra", secondary: "#F5F0E8", secondaryName: "beige" },
+  "luxury beige": { primary: "#B8860B", primaryName: "dorado", secondary: "#F5F0E8", secondaryName: "beige" },
+  "mas neutro": { primary: "#374151", primaryName: "gris oscuro", secondary: "#F3F4F6", secondaryName: "gris claro" },
+  "neutro": { primary: "#374151", primaryName: "gris oscuro", secondary: "#F3F4F6", secondaryName: "gris claro" },
+  "mas calido": { primary: "#B8860B", primaryName: "dorado", secondary: "#FFFBEB", secondaryName: "crema cálida" },
+  "mas oscuro": { primary: "#0A0A0A", primaryName: "negro profundo", secondary: "#1A1A1A", secondaryName: "oscuro" },
+  "mas suave": { primary: "#6B7280", primaryName: "gris", secondary: "#F9FAFB", secondaryName: "gris muy claro" },
+  "menos saturado": { primary: "#6B7280", primaryName: "gris", secondary: "#F3F4F6", secondaryName: "gris claro" },
 };
 
 export const SECTION_MAP: Record<string, string> = {
