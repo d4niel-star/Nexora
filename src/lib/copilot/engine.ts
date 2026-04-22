@@ -906,11 +906,22 @@ function resolveConflict(
 function tryResolveReference(norm: string, ctx: ConversationContext): PlannedAction | null {
   const id = `act-${Date.now()}-ref`;
 
-  // "eso no me gustó" / "no me gustó ese cambio" → undo
-  if (
-    (norm.includes("no me gusto") || norm.includes("no me convence")) &&
-    (norm.includes("eso") || norm.includes("ese") || norm.includes("esa") || norm.includes("cambio"))
-  ) {
+  // ── Undo via negative feedback ─────────────────────────────────────
+  // "eso no me gustó", "no me convence", "el anterior me gustaba más", etc.
+  const isNegativeFeedback =
+    (norm.includes("no me gusto") || norm.includes("no me convence") ||
+     norm.includes("no me gusta") || norm.includes("eso no") ||
+     norm.includes("me gustaba mas el anterior") || norm.includes("el anterior me gustaba") ||
+     norm.includes("volamos atras") || norm.includes("volvamos atras") ||
+     norm.includes("volve atras") || norm.includes("reverti") ||
+     norm.includes("deshace") || norm.includes("cancela el ultimo") ||
+     norm.includes("no estaba asi") || norm.includes("dejalo como estaba") ||
+     norm.includes("como estaba antes") || norm.includes("dejalo como antes") ||
+     (norm.includes("anterior") && (norm.includes("gustaba") || norm.includes("mejor"))) ||
+     (norm === "deshace") || (norm === "deshacer") || (norm === "undo") ||
+     (norm === "reverti") || (norm === "volve atras"));
+
+  if (isNegativeFeedback) {
     return {
       id,
       intent: "undo",
@@ -921,15 +932,47 @@ function tryResolveReference(norm: string, ctx: ConversationContext): PlannedAct
     };
   }
 
-  // "esa sección" referring to last section touched
+  // ── Section references ─────────────────────────────────────────────
+  // "esa sección" / "ese bloque" referring to last section touched
   if (
-    (norm.includes("esa seccion") || norm.includes("ese bloque") || norm.includes("esa seccion")) &&
+    (norm.includes("esa seccion") || norm.includes("ese bloque") || norm.includes("esa seccion") ||
+     norm.includes("esa parte") || norm === "esa") &&
     ctx.lastBlockType
   ) {
-    // Re-parse with the actual section name
-    // TODO: use expanded text for recursive intent detection
-    norm.replace(/es[ao]\s+(?:seccion|bloque)/, ctx.lastBlockType);
-    return null; // Let normal intent detection handle it
+    // Expand the reference into a concrete section name and re-process
+    const expanded = norm
+      .replace(/es[ao]\s+(?:seccion|bloque|parte)/, ctx.lastBlockType)
+      .replace(/^esa$/, ctx.lastBlockType);
+    // Re-process with expanded text (recursive but with null ctx.lastBlockType to avoid loops)
+    const expandedCtx = { ...ctx, lastBlockType: null };
+    return processPart(expanded, norm, expandedCtx);
+  }
+
+  // ── Color references ───────────────────────────────────────────────
+  // "ese color" / "ese mismo color" / "el color de antes" — no-op or repeat
+  if (
+    (norm.includes("ese color") || norm.includes("el mismo color") || norm.includes("ese mismo")) &&
+    ctx.lastColorChanged
+  ) {
+    // User is referring to the last color — if they say "poné ese color de nuevo" etc,
+    // expand to the actual color
+    if (norm.includes("otra vez") || norm.includes("de nuevo") || norm.includes("tambien")) {
+      const expanded = norm.replace(/(?:ese|el mismo)\s+(?:color\s+)?(?:de nuevo|otra vez|tambien)?/, ctx.lastColorChanged);
+      const expandedCtx = { ...ctx, lastColorChanged: null };
+      return processPart(expanded, norm, expandedCtx);
+    }
+  }
+
+  // ── "eso no" / "eso sí" patterns ───────────────────────────────────
+  if (norm === "eso no" || norm === "no eso") {
+    return {
+      id,
+      intent: "undo",
+      entities: {},
+      rawText: norm,
+      confidence: 0.9,
+      status: "ready",
+    };
   }
 
   return null;

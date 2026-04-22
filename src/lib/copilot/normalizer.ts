@@ -83,9 +83,8 @@ const TYPO_MAP: Array<[RegExp, string]> = [
   [/\bmodifiquemos\b/g, "modifica"],
   [/\bcambiemos\b/g, "cambia"],
 
-  // Common informal contractions
+  // Informal "pone" → imperative
   [/\bpone\b/g, "pon"],
-  [/\bhace\b/g, "pon"],  // context-dependent but safe default
 
   // "hará" → imperative
   [/\bhara\b/g, "hace"],

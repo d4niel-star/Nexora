@@ -181,7 +181,12 @@ export function NexoraEditorChat({
           const execResult = await executeAction(action, newCtx);
           if (execResult.ok) {
             changed.push(execResult.detail);
-            newCtx = updateContextFromAction(newCtx, action);
+            // If action returned an updated context (e.g. undo pops stack), use it
+            if (execResult.updatedCtx) {
+              newCtx = execResult.updatedCtx;
+            } else {
+              newCtx = updateContextFromAction(newCtx, action);
+            }
             if (action.intent === "switch-mobile") {
               onDeviceChangeRef.current?.("mobile");
               newCtx = updateContext(newCtx, { currentDevice: "mobile" });
@@ -444,7 +449,7 @@ function buildNextSteps(actions: PlannedAction[]): string[] {
   return steps.slice(0, 2);
 }
 
-async function executeAction(action: PlannedAction, ctx: ConversationContext): Promise<{ ok: boolean; detail: string }> {
+async function executeAction(action: PlannedAction, ctx: ConversationContext): Promise<{ ok: boolean; detail: string; updatedCtx?: ConversationContext }> {
   const e = action.entities;
   switch (action.intent) {
     case "change-primary-color": case "change-color": {
@@ -566,7 +571,7 @@ async function executeAction(action: PlannedAction, ctx: ConversationContext): P
       return { ok: true, detail: `Preview cambiado a: ${labels[e.surface] ?? e.surface}` };
     }
     case "undo": {
-      const { snapshot } = popUndoSnapshot(ctx);
+      const { ctx: poppedCtx, snapshot } = popUndoSnapshot(ctx);
       if (!snapshot) return { ok: false, detail: "No hay cambios previos para deshacer." };
       if (snapshot.branding) {
         const { saveStoreBranding } = await import("@/lib/store-engine/actions");
@@ -576,7 +581,7 @@ async function executeAction(action: PlannedAction, ctx: ConversationContext): P
         const { saveHomeBlocks } = await import("@/lib/store-engine/actions");
         await saveHomeBlocks(snapshot.blocks.map((b) => ({ blockType: b.blockType as any, sortOrder: b.sortOrder, isVisible: b.isVisible, settingsJson: b.settingsJson, source: b.source, state: b.state }))); // eslint-disable-line @typescript-eslint/no-explicit-any
       }
-      return { ok: true, detail: `Revertido: "${snapshot.label}". Tienda restaurada al estado anterior.` };
+      return { ok: true, detail: `Revertido: "${snapshot.label}". Tienda restaurada al estado anterior.`, updatedCtx: poppedCtx };
     }
     default: return { ok: false, detail: `Acción "${action.intent}" no implementada.` };
   }
