@@ -179,9 +179,9 @@ const COMPOUND_SPLITTERS = /\s*,\s*|\s*;\s*/;
 
 // Phrases where "y" should NOT cause a split (single-intent connectors)
 const Y_PRESERVE_PATTERNS = [
-  /y\s+(?:beige|negro|blanco|dorado|gris|rojo|azul|verde|rosa)/,  // color combos
-  /(?:sobrio|premium|elegante|editorial|minimalista|tecnico|moderno|comercial|calido)\s+y\s/,  // tone combos
-  /(?:mas\s+)?(?:\w+)\s+y\s+(?:\w+)/,  // modifier combos
+  /y\s+(?:beige|negro|blanco|dorado|gris|rojo|azul|verde|rosa|marron|oliva|terracota|arena|celeste|turquesa|naranja|amarillo|violeta)/,  // color combos
+  /(?:sobrio|premium|elegante|editorial|minimalista|tecnico|moderno|comercial|calido|oscuro|luxury|luxe|limpio|suave|rustico)\s+y\s+(?:sobrio|premium|elegante|editorial|minimalista|tecnico|moderno|comercial|calido|oscuro|luxury|limpio|suave|rustico)/,  // tone combos only
+  /(?:mas\s+)?(?:limpio|elegante|claro|oscuro|calido|suave|premium)\s*,\s*(?:mas\s+)?(?:limpio|elegante|claro|oscuro|calido|suave|premium)/,  // comma-separated modifier combos
 ];
 
 export function splitCompoundInput(text: string): string[] {
@@ -217,8 +217,9 @@ function smartSplitOnY(text: string): string[] {
     const trimmed = part.trim();
     if (trimmed.length < 3) continue;
 
-    // If a part is just an adjective/modifier without a verb, it might belong to the previous part
-    if (result.length > 0 && !hasVerb(trimmed)) {
+    // If a part is just an adjective/modifier without a verb or domain noun,
+    // it might belong to the previous part
+    if (result.length > 0 && !hasVerb(trimmed) && !hasDomainNoun(trimmed)) {
       // Merge with previous
       result[result.length - 1] = result[result.length - 1] + " y " + trimmed;
     } else {
@@ -242,4 +243,21 @@ const COMMON_VERBS = [
 function hasVerb(text: string): boolean {
   const lower = text.toLowerCase();
   return COMMON_VERBS.some(v => lower.includes(v));
+}
+
+// Domain nouns indicate a separate intent even without a verb
+const DOMAIN_NOUNS = [
+  "boton", "button", "botones", "cta",
+  "fuente", "tipografia", "font", "letra",
+  "imagen", "foto", "portada", "banner",
+  "color", "colores", "paleta", "tonos",
+  "seccion", "testimonios", "beneficios", "faq", "newsletter",
+  "titulo", "titular", "headline", "subtitulo",
+  "tema", "theme", "template", "plantilla",
+  "celu", "celular", "mobile", "desktop",
+];
+
+function hasDomainNoun(text: string): boolean {
+  const lower = text.toLowerCase();
+  return DOMAIN_NOUNS.some(n => lower.includes(n));
 }

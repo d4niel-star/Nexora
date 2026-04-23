@@ -828,6 +828,24 @@ function detectFollowUp(text: string, words: string[], ctx: ConversationContext)
     }
   }
 
+  // ── Context-dependent short inputs ──────────────────────────────────
+  // "mas asi" → more of the same (refinement of last tone)
+  if (text.includes("mas asi") || text.includes("asi mismo") || text.includes("mas de lo mismo")) {
+    if (ctx.lastAction) {
+      return {
+        domain: "visual",
+        direction: "change",
+        target: "full-style",
+        qualifiers: ["more"],
+        specificValues: {},
+        isFollowUp: true,
+        followUpType: "refinement",
+        rawText: text,
+        confidence: 0.6,
+      };
+    }
+  }
+
   // ── Short refinement follow-ups ─────────────────────────────────────
   // "mas premium", "mas claro", "mas suave", "mas beige", etc.
   if (short && ctx.lastAction) {
