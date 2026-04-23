@@ -125,7 +125,7 @@ export function MarketToolsHub({ snapshot }: Props) {
           title="Contenido del storefront"
           description="Secciones del home y elementos de conversión faltantes."
           issueCount={contentIssues}
-          href="/admin/store?tab=home"
+          href="/admin/store-ai/editor"
           ctaLabel="Editar secciones"
         >
           <div className="space-y-2">

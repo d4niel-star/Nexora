@@ -1,6 +1,14 @@
 import type { StoreStatus } from "@/types/store";
 import { cn } from "@/lib/utils";
 
+// ─── Store status/color primitives ───────────────────────────────────────
+// After the Mi-tienda simplification only two consumers remain:
+//   · StoreStatusBadge → used by DomainSettingsView
+//   · ColorDot         → used by StorePage SummaryView
+// Section/Page/Nav badges were only used by the old StoreDrawer that
+// backed the Branding/Navegación/Páginas tabs and were removed along
+// with those surfaces.
+
 const statusLabels: Record<StoreStatus, string> = {
   published: "Publicado",
   draft: "Borrador",
@@ -33,31 +41,6 @@ export function StoreStatusBadge({ status, className }: { status: StoreStatus; c
   return (
     <span className={cn(chipBase, statusTone[status], className)}>
       {statusLabels[status]}
-    </span>
-  );
-}
-
-export function SectionTypeBadge({ type, className }: { type: string; className?: string }) {
-  return (
-    <span className={cn(chipBase, "text-ink-5", className)}>
-      {type}
-    </span>
-  );
-}
-
-export function PageTypeBadge({ type, className }: { type: "system" | "custom"; className?: string }) {
-  return (
-    <span className={cn(chipBase, "text-ink-5", className)}>
-      {type === "system" ? "Sistema" : "Personalizada"}
-    </span>
-  );
-}
-
-export function NavGroupBadge({ group, className }: { group: string; className?: string }) {
-  const labels: Record<string, string> = { main: "Menu principal", footer: "Footer", "quick-links": "Links rapidos" };
-  return (
-    <span className={cn(chipBase, "text-ink-5", className)}>
-      {labels[group] || group}
     </span>
   );
 }

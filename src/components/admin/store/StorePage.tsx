@@ -1,39 +1,23 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
-  ArrowDown,
-  ArrowUp,
   Check,
   CreditCard,
   Eye,
-  EyeOff,
-  FileText,
   Globe,
-  GripVertical,
-  Home,
   Layers,
-  Link2,
-  Monitor,
-  Navigation,
-  Paintbrush,
-  Palette,
   Pencil,
   Save,
-  Search,
   Share2,
-  Smartphone,
   Sparkles,
   X,
 } from "lucide-react";
 
-import { StoreDrawer } from "@/components/admin/store/StoreDrawer";
-import { SectionEditorDrawer } from "@/components/admin/store/SectionEditorDrawer";
-import type { SectionBlock } from "@/components/admin/store/SectionEditorDrawer";
-import { StoreStatusBadge, SectionTypeBadge, PageTypeBadge, ColorDot } from "@/components/admin/store/StoreBadge";
+import { ColorDot } from "@/components/admin/store/StoreBadge";
 import { DomainSettingsView } from "@/components/admin/store/tabs/DomainSettingsView";
 import { TableSkeleton } from "@/components/admin/orders/TableSkeleton";
 import { cn } from "@/lib/utils";
@@ -41,22 +25,23 @@ import { cn } from "@/lib/utils";
 import {
   createFirstStoreProductAction,
   publishStoreAction,
-  saveStoreProfileAction,
-  saveStoreBranding,
-  saveHomeBlocks,
 } from "@/lib/store-engine/actions";
-import type { AdminStoreInitialData, BlockType } from "@/types/store-engine";
-import type { StoreTheme, StoreBranding, StoreSummary, HomeSection, NavItem, StorePage as StorePageType, StoreDomain, StoreStatus } from "@/types/store";
+import type { AdminStoreInitialData } from "@/types/store-engine";
+import type { StoreSummary, StoreStatus } from "@/types/store";
 import type { MercadoPagoPlatformReadiness } from "@/lib/payments/mercadopago/platform-readiness";
 
-type TabValue = "resumen" | "branding" | "navegacion" | "paginas" | "dominio" | "pagos";
+// ─── Mi tienda — superficie operativa ───────────────────────────────────
+//
+// Responsabilidad única: mostrar el estado operativo de la tienda y
+// resolver dominio y pagos. TODO lo que sea edición de diseño —
+// branding, navegación, páginas, secciones del home, tema — vive en
+// `Tienda IA` (/admin/store-ai y /admin/store-ai/editor). Mantener
+// esas tabs aquí significaba duplicar fuentes de verdad sobre el mismo
+// StoreBranding / StoreNavItem / StorePage, ofrecer ediciones parciales
+// (Navegación y Páginas estaban solo en modo lectura) y diluir el foco
+// de esta pantalla.
 
-type DrawerContent =
-  | { kind: "theme"; data: StoreTheme }
-  | { kind: "section"; data: HomeSection }
-  | { kind: "nav"; data: NavItem }
-  | { kind: "page"; data: StorePageType }
-  | { kind: "domain"; data: StoreDomain };
+type TabValue = "resumen" | "dominio" | "pagos";
 
 interface ToastMessage { id: string; title: string; description: string; }
 
@@ -126,24 +111,14 @@ export function StorePage({
   const searchParams = useSearchParams();
   const router = useRouter();
   const tabParam = searchParams.get("tab");
-  const initialTab: TabValue = tabParam === "branding" || tabParam === "navegacion" || tabParam === "paginas" || tabParam === "dominio" || tabParam === "pagos" ? tabParam : "resumen";
+  // Back-compat: old deep links pointing at branding / navegacion / paginas
+  // (and the never-implemented `home`) fall back to "resumen" so nothing
+  // crashes when external readiness/onboarding links are stale.
+  const initialTab: TabValue =
+    tabParam === "dominio" || tabParam === "pagos" ? tabParam : "resumen";
   const [activeTab, setActiveTab] = useState<TabValue>(initialTab);
-  const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [drawerContent, setDrawerContent] = useState<DrawerContent | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
-  const [sectionEditorBlock, setSectionEditorBlock] = useState<SectionBlock | null>(null);
-
-  // ─── Section blocks for editor (preserves full settings for save) ───
-  const sectionBlocks: SectionBlock[] = initialData ? initialData.homeBlocks.map(b => ({
-    id: b.id,
-    blockType: b.blockType,
-    sortOrder: b.sortOrder,
-    isVisible: b.isVisible,
-    settings: b.settings,
-    source: b.source,
-    state: b.state,
-  })) : [];
 
   // ─── Map persisted data to view models (mock fallback) ───
   const storeSummary: StoreSummary = initialData ? {
@@ -170,51 +145,6 @@ export function StorePage({
     homeSectionsCount: 0,
   };
 
-  const brandingData: StoreBranding = initialData?.branding ? {
-    storeName: initialData.store.name,
-    logoUrl: initialData.branding.logoUrl ?? "",
-    faviconUrl: initialData.branding.faviconUrl ?? "",
-    primaryColor: initialData.branding.primaryColor,
-    secondaryColor: initialData.branding.secondaryColor,
-    fontFamily: initialData.branding.fontFamily,
-    buttonStyle: (initialData.branding.buttonStyle === "rounded-sm" ? "rounded" : initialData.branding.buttonStyle) as "rounded" | "square" | "pill",
-  } : {
-    storeName: "Nueva Tienda",
-    logoUrl: "",
-    faviconUrl: "",
-    primaryColor: "#111111",
-    secondaryColor: "#10B981",
-    fontFamily: "Inter",
-    buttonStyle: "rounded",
-  };
-
-  const homeSections: HomeSection[] = initialData ? initialData.homeBlocks.map(b => ({
-    id: b.id,
-    type: (b.blockType === "featured_products" ? "featured-products" : b.blockType === "featured_categories" ? "categories" : b.blockType) as HomeSection["type"],
-    label: blockLabel(b.blockType),
-    status: (b.isVisible ? "active" : "hidden") as StoreStatus,
-    order: b.sortOrder,
-    description: `Bloque ${b.source} \u2013 ${b.state}`,
-  })) : [];
-
-  const navItems: NavItem[] = initialData ? initialData.navigation.map(n => ({
-    id: n.id,
-    label: n.label,
-    destination: n.href,
-    group: (n.group === "header" ? "main" : n.group.startsWith("footer") ? "footer" : "quick-links") as NavItem["group"],
-    status: (n.isVisible ? "active" : "hidden") as StoreStatus,
-    order: n.sortOrder,
-  })) : [];
-
-  const storePages: StorePageType[] = initialData ? initialData.pages.map(p => ({
-    id: p.id,
-    name: p.title,
-    slug: `/${p.slug}`,
-    status: (p.status === "active" ? "published" : p.status) as StoreStatus,
-    lastModified: p.updatedAt,
-    type: p.type as "system" | "custom",
-  })) : [];
-
   const publicPath = initialData?.publicUrl ?? (initialData ? `/store/${initialData.store.slug}` : "#");
   const publicUrl = typeof window === "undefined" || publicPath === "#" ? publicPath : `${window.location.origin}${publicPath}`;
   const paymentStatus = initialData?.paymentProvider?.status ?? "disconnected";
@@ -225,14 +155,11 @@ export function StorePage({
 
   const tabs: Array<{ label: string; value: TabValue; icon: React.ReactNode }> = [
     { label: "Resumen", value: "resumen", icon: <Layers className="h-3.5 w-3.5" /> },
-    { label: "Branding", value: "branding", icon: <Paintbrush className="h-3.5 w-3.5" /> },
-    { label: "Navegacion", value: "navegacion", icon: <Navigation className="h-3.5 w-3.5" /> },
-    { label: "Paginas", value: "paginas", icon: <FileText className="h-3.5 w-3.5" /> },
     { label: "Dominio", value: "dominio", icon: <Globe className="h-3.5 w-3.5" /> },
     { label: "Pagos", value: "pagos", icon: <CreditCard className="h-3.5 w-3.5" /> },
   ];
 
-  const handleTabChange = (v: TabValue) => { if (v === activeTab) return; setActiveTab(v); setSearchQuery(""); setIsLoading(true); };
+  const handleTabChange = (v: TabValue) => { if (v === activeTab) return; setActiveTab(v); setIsLoading(true); };
 
   const pushToast = (title: string, description: string) => {
     const id = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
@@ -285,19 +212,15 @@ export function StorePage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  const openDrawer = (c: DrawerContent) => setDrawerContent(c);
-  const closeDrawer = () => setDrawerContent(null);
   const refreshData = () => router.refresh();
   const handleAction = (action: string) => { pushToast("Información", action); };
-
-  const showToolbar = activeTab === "paginas" || activeTab === "navegacion";
 
   return (
     <div className="animate-in fade-in space-y-8 pb-32 duration-700">
       <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
         <div>
           <h1 className="text-[28px] lg:text-[32px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0">Mi tienda.</h1>
-          <p className="mt-2 text-[14px] leading-[1.55] text-ink-5">Navegación, páginas, dominio, pagos y perfil de tu tienda.</p>
+          <p className="mt-2 text-[14px] leading-[1.55] text-ink-5">Estado general, dominio y pagos. El diseño visual se edita en Tienda IA.</p>
         </div>
       </div>
 
@@ -310,17 +233,6 @@ export function StorePage({
             </button>
           ))}
         </div>
-
-        {showToolbar ? (
-          <div className="flex flex-col gap-4 border-b border-[color:var(--hairline)] bg-[var(--surface-0)] p-4 xl:flex-row xl:items-center xl:justify-between">
-            <div className="flex w-full flex-col gap-3 lg:flex-row lg:items-center">
-              <div className="group relative w-full lg:max-w-sm">
-                <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-6 transition-colors group-focus-within:text-ink-0" strokeWidth={1.75} />
-                <input aria-label="Buscar en la vista" className="w-full h-10 pl-10 pr-4 text-[13px] font-medium bg-[var(--surface-1)] border border-[color:var(--hairline)] rounded-[var(--r-sm)] outline-none transition-[box-shadow,border-color] focus:bg-[var(--surface-0)] focus:border-[var(--accent-500)] focus:shadow-[var(--shadow-focus)] text-ink-0 placeholder:text-ink-6" onChange={(e) => setSearchQuery(e.target.value)} placeholder="Buscar..." type="text" value={searchQuery} />
-              </div>
-            </div>
-          </div>
-        ) : null}
 
         <div className="min-h-[420px] bg-[var(--surface-0)]" role="tabpanel">
           {isLoading ? (
@@ -337,12 +249,6 @@ export function StorePage({
               publicUrl={publicUrl}
               summary={storeSummary}
             />
-          ) : activeTab === "branding" ? (
-            <BrandingView initialData={initialData ?? null} onAction={handleAction} onRefresh={refreshData} branding={brandingData} pushToast={pushToast} />
-          ) : activeTab === "navegacion" ? (
-            <NavView searchQuery={searchQuery} openDrawer={openDrawer} onAction={handleAction} items={navItems} />
-          ) : activeTab === "paginas" ? (
-            <PagesView searchQuery={searchQuery} openDrawer={openDrawer} onAction={handleAction} pages={storePages} />
           ) : activeTab === "dominio" ? (
             <DomainSettingsView initialData={initialData!} onAction={handleAction} storeId={initialData?.store.id} />
           ) : (
@@ -358,18 +264,6 @@ export function StorePage({
         </div>
       </div>
 
-      <StoreDrawer content={drawerContent} isOpen={drawerContent !== null} onClose={closeDrawer} onAction={handleAction} />
-      <SectionEditorDrawer
-        block={sectionEditorBlock}
-        allBlocks={sectionBlocks}
-        isOpen={sectionEditorBlock !== null}
-        onClose={() => setSectionEditorBlock(null)}
-        onSaved={() => {
-          pushToast("Sección actualizada", "Los cambios se reflejan en el storefront.");
-          setSectionEditorBlock(null);
-          refreshData();
-        }}
-      />
       <ToastViewport onDismiss={(id) => setToasts((c) => c.filter((t) => t.id !== id))} toasts={toasts} />
     </div>
   );
@@ -500,9 +394,24 @@ function SummaryView({
       ) : null}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <NavCard icon={<Paintbrush className="h-5 w-5 text-ink-4" strokeWidth={1.75} />} title="Branding" description="Logo, nombre, perfil" onClick={() => onNavigate("branding")} />
-        <NavCard icon={<Globe className="h-5 w-5 text-ink-4" strokeWidth={1.75} />} title="Dominio" description={s.domain} onClick={() => onNavigate("dominio")} />
-        <NavCard icon={<CreditCard className="h-5 w-5 text-ink-4" strokeWidth={1.75} />} title="Pagos" description={isMercadoPagoConnected ? "Conectado" : "Pendiente"} onClick={() => onNavigate("pagos")} />
+        <NavCard
+          icon={<Sparkles className="h-5 w-5 text-ink-4" strokeWidth={1.75} />}
+          title="Tienda IA"
+          description="Diseño, branding, navegación y páginas"
+          href="/admin/store-ai"
+        />
+        <NavCard
+          icon={<Globe className="h-5 w-5 text-ink-4" strokeWidth={1.75} />}
+          title="Dominio"
+          description={s.domain}
+          onClick={() => onNavigate("dominio")}
+        />
+        <NavCard
+          icon={<CreditCard className="h-5 w-5 text-ink-4" strokeWidth={1.75} />}
+          title="Pagos"
+          description={isMercadoPagoConnected ? "Conectado" : "Pendiente"}
+          onClick={() => onNavigate("pagos")}
+        />
       </div>
 
       <div className="flex items-center gap-3">
@@ -510,9 +419,10 @@ function SummaryView({
           <Eye className="h-3.5 w-3.5" />
           {isPublishing ? "Publicando..." : "Publicar tienda"}
         </button>
-        <a href="/admin/store-ai/editor" className="inline-flex items-center gap-2 h-10 px-5 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]">
+        <Link href="/admin/store-ai/editor" className="inline-flex items-center gap-2 h-10 px-5 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]">
+          <Pencil className="h-3.5 w-3.5" />
           Editor de tema
-        </a>
+        </Link>
       </div>
     </div>
   );
@@ -569,408 +479,7 @@ function FirstProductPanel({ onAction, onRefresh }: { onAction: (a: string) => v
   );
 }
 
-/* ─── Theme ─── */
-
-function ThemeView({ initialData, onAction, onNavigate }: { initialData: AdminStoreInitialData | null; onAction: (a: string) => void; onNavigate: (t: TabValue) => void }) {
-  const theme = initialData?.theme;
-  const themeName = theme?.activeTheme === "bold" ? "Bold Commerce" : theme?.activeTheme === "classic" ? "Classic Elegance" : "Minimal Pro";
-  const variant = theme?.themeVariant === "dark" ? "Oscuro" : "Claro";
-  const published = theme?.isPublished ? "Publicado" : "Borrador";
-
-  return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Tema activo</h3>
-      </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <SummaryCard label="Tema" value={themeName} accent />
-        <SummaryCard label="Variante" value={variant} />
-        <SummaryCard label="Estado" value={published} />
-      </div>
-      <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5">
-        <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Personalización</p>
-        <p className="mt-2 max-w-xl text-[13px] leading-[1.55] text-ink-5">
-          La identidad visual de tu tienda se controla desde Branding (colores, tipografía, estilo de botones) y desde las secciones del Home (contenido de cada bloque).
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <button className="inline-flex items-center gap-2 h-10 px-5 rounded-[var(--r-sm)] bg-ink-0 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" onClick={() => onNavigate("branding")} type="button">
-            <Paintbrush className="h-3.5 w-3.5" />
-            Editar branding
-          </button>
-          <a href="/admin/store-ai/editor" className="inline-flex items-center gap-2 h-10 px-5 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]">
-            <Pencil className="h-3.5 w-3.5" />
-            Abrir editor de tema
-          </a>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Branding ─── */
-
-function BrandingView({
-  initialData,
-  onAction,
-  onRefresh,
-  branding,
-  pushToast,
-}: {
-  initialData: AdminStoreInitialData | null;
-  onAction: (a: string) => void;
-  onRefresh: () => void;
-  branding: StoreBranding;
-  pushToast: (title: string, description: string) => void;
-}) {
-  const b = branding;
-  const [isPending, startTransition] = useTransition();
-  const [isBrandingSaving, startBrandingSave] = useTransition();
-  const [primaryColor, setPrimaryColor] = useState(b.primaryColor);
-  const [secondaryColor, setSecondaryColor] = useState(b.secondaryColor);
-  const [fontFamily, setFontFamily] = useState(b.fontFamily);
-  const [buttonStyle, setButtonStyle] = useState(b.buttonStyle);
-
-  const handleProfileSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    startTransition(async () => {
-      try {
-        await saveStoreProfileAction(formData);
-        onAction("Perfil publico actualizado.");
-        onRefresh();
-      } catch (error) {
-        onAction(error instanceof Error ? error.message : "No se pudo guardar la tienda.");
-      }
-    });
-  };
-
-  const handleBrandingSave = () => {
-    startBrandingSave(async () => {
-      try {
-        await saveStoreBranding({
-          primaryColor,
-          secondaryColor,
-          fontFamily,
-          buttonStyle: buttonStyle === "rounded" ? "rounded-sm" : buttonStyle,
-        });
-        pushToast("Branding actualizado", "Los cambios se reflejan en el storefront.");
-        onRefresh();
-      } catch (error) {
-        onAction(error instanceof Error ? error.message : "No se pudo guardar branding.");
-      }
-    });
-  };
-
-  const inputCls = "w-full h-11 px-3.5 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] text-[13px] font-medium text-ink-0 outline-none transition-[box-shadow,border-color] focus:border-[var(--accent-500)] focus:shadow-[var(--shadow-focus)]";
-  const labelCls = "text-[12px] font-medium text-ink-5";
-  const sectionTitle = "text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5";
-  const fontOptions = ["Inter", "Roboto", "Outfit", "Poppins", "Manrope", "DM Sans", "Source Sans 3"];
-  const buttonOptions: Array<{ value: string; label: string }> = [
-    { value: "rounded", label: "Redondeado" },
-    { value: "square", label: "Cuadrado" },
-    { value: "pill", label: "Píldora" },
-  ];
-
-  return (
-    <div className="space-y-8 p-6">
-      <form className="space-y-4 rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5" onSubmit={handleProfileSubmit}>
-        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-          <div>
-            <h3 className={sectionTitle}>Datos públicos de tienda</h3>
-            <p className="mt-2 max-w-xl text-[13px] leading-[1.55] text-ink-5">
-              Estos datos alimentan el storefront real y validan slug único antes de publicar.
-            </p>
-          </div>
-          <button className="inline-flex shrink-0 items-center gap-2 h-10 px-5 rounded-[var(--r-sm)] bg-ink-0 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" disabled={isPending} type="submit">
-            <Save className="h-3.5 w-3.5" />
-            {isPending ? "Guardando..." : "Guardar tienda"}
-          </button>
-        </div>
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <label className="space-y-1.5">
-            <span className={labelCls}>Nombre</span>
-            <input className={inputCls} defaultValue={initialData?.store.name ?? b.storeName} name="name" required />
-          </label>
-          <label className="space-y-1.5">
-            <span className={labelCls}>Slug público</span>
-            <input className={cn(inputCls, "font-mono")} defaultValue={initialData?.store.slug ?? ""} name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" required />
-          </label>
-          <label className="space-y-1.5 lg:col-span-2">
-            <span className={labelCls}>Descripción</span>
-            <textarea className={cn(inputCls, "min-h-24 py-2.5")} defaultValue={initialData?.store.description ?? ""} maxLength={280} name="description" />
-          </label>
-          <label className="space-y-1.5 lg:col-span-2">
-            <span className={labelCls}>Logo URL</span>
-            <input className={inputCls} defaultValue={initialData?.store.logo ?? b.logoUrl} name="logo" placeholder="https://..." type="url" />
-          </label>
-        </div>
-      </form>
-
-      {/* ─── Editable branding section ─── */}
-      <div className="space-y-4 rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5">
-        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-          <div>
-            <h3 className={sectionTitle}>Identidad visual</h3>
-            <p className="mt-2 max-w-xl text-[13px] leading-[1.55] text-ink-5">
-              Colores, tipografía y estilo de botones. Se aplican en todo el storefront.
-            </p>
-          </div>
-          <button className="inline-flex shrink-0 items-center gap-2 h-10 px-5 rounded-[var(--r-sm)] bg-ink-0 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" disabled={isBrandingSaving} onClick={handleBrandingSave} type="button">
-            <Save className="h-3.5 w-3.5" />
-            {isBrandingSaving ? "Guardando..." : "Guardar branding"}
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <label className="space-y-1.5">
-            <span className={labelCls}>Color principal</span>
-            <div className="flex items-center gap-3">
-              <input type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="h-11 w-14 cursor-pointer rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-1" />
-              <input className={inputCls} value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} placeholder="#000000" maxLength={7} />
-            </div>
-          </label>
-          <label className="space-y-1.5">
-            <span className={labelCls}>Color secundario</span>
-            <div className="flex items-center gap-3">
-              <input type="color" value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} className="h-11 w-14 cursor-pointer rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-1" />
-              <input className={inputCls} value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} placeholder="#10B981" maxLength={7} />
-            </div>
-          </label>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <label className="space-y-1.5">
-            <span className={labelCls}>Tipografía</span>
-            <select className={cn(inputCls, "appearance-none")} value={fontFamily} onChange={(e) => setFontFamily(e.target.value)}>
-              {fontOptions.map((f) => <option key={f} value={f}>{f}</option>)}
-            </select>
-          </label>
-          <div className="space-y-1.5">
-            <span className={labelCls}>Estilo de botones</span>
-            <div className="flex gap-2">
-              {buttonOptions.map((opt) => (
-                <button key={opt.value} type="button" onClick={() => setButtonStyle(opt.value as any)} className={cn("flex-1 h-11 rounded-[var(--r-sm)] border text-[12px] font-medium transition-colors", buttonStyle === opt.value ? "border-ink-0 bg-ink-0 text-ink-12" : "border-[color:var(--hairline)] bg-[var(--surface-1)] text-ink-5 hover:bg-[var(--surface-2)]")}>
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        <h3 className={sectionTitle}>Imágenes</h3>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5">
-            <p className="text-[12px] font-medium text-ink-0">Logo</p>
-            <div className="mt-3 flex h-20 w-full items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)]">
-              {b.logoUrl ? <img src={b.logoUrl} alt="Logo" className="max-h-full max-w-full object-contain p-2" /> : <span className="text-[12px] text-ink-6">Sin logo</span>}
-            </div>
-          </div>
-          <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5">
-            <p className="text-[12px] font-medium text-ink-0">Favicon</p>
-            <div className="mt-3 flex h-20 w-full items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)]">
-              {b.faviconUrl ? <img src={b.faviconUrl} alt="Favicon" className="max-h-full max-w-full object-contain p-2" /> : <span className="text-[12px] text-ink-6">Sin favicon</span>}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Home ─── */
-
-function HomeView({ sectionBlocks, onAction, onRefresh, onEditSection }: { sectionBlocks: SectionBlock[]; onAction: (a: string) => void; onRefresh: () => void; onEditSection: (block: SectionBlock) => void }) {
-  const [isReordering, startReorder] = useTransition();
-
-  const sorted = [...sectionBlocks].sort((a, b) => a.sortOrder - b.sortOrder);
-  const visibleCount = sorted.filter((s) => s.isVisible).length;
-
-  const handleToggle = (block: SectionBlock) => {
-    startReorder(async () => {
-      try {
-        const updated = sectionBlocks.map((b) => ({
-          blockType: b.blockType as BlockType,
-          sortOrder: b.sortOrder,
-          isVisible: b.id === block.id ? !b.isVisible : b.isVisible,
-          settingsJson: JSON.stringify(b.settings),
-          source: b.source,
-          state: "published",
-        }));
-        await saveHomeBlocks(updated);
-        onAction(block.isVisible ? "Sección ocultada." : "Sección activada.");
-        onRefresh();
-      } catch { /* handled */ }
-    });
-  };
-
-  const handleMove = (block: SectionBlock, direction: "up" | "down") => {
-    const idx = sorted.findIndex((s) => s.id === block.id);
-    const swapIdx = direction === "up" ? idx - 1 : idx + 1;
-    if (swapIdx < 0 || swapIdx >= sorted.length) return;
-
-    startReorder(async () => {
-      try {
-        const reordered = sorted.map((s, i) => {
-          let newOrder = s.sortOrder;
-          if (i === idx) newOrder = sorted[swapIdx].sortOrder;
-          if (i === swapIdx) newOrder = sorted[idx].sortOrder;
-          return {
-            blockType: s.blockType as BlockType,
-            sortOrder: newOrder,
-            isVisible: s.isVisible,
-            settingsJson: JSON.stringify(s.settings),
-            source: s.source,
-            state: "published",
-          };
-        });
-        await saveHomeBlocks(reordered);
-        onAction("Orden actualizado.");
-        onRefresh();
-      } catch { /* handled */ }
-    });
-  };
-
-  return (
-    <div className="space-y-4 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Secciones del home</h3>
-          <p className="mt-1 text-[12px] text-ink-5">{visibleCount} de {sorted.length} visibles en el storefront</p>
-        </div>
-        <span className={cn("inline-flex items-center rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5", isReordering && "opacity-50")}>{sorted.length} secciones</span>
-      </div>
-      <div className="space-y-2">
-        {sorted.map((block, idx) => (
-          <div key={block.id} className={cn("group flex w-full items-center gap-3 rounded-[var(--r-md)] border p-4 transition-colors", block.isVisible ? "border-[color:var(--hairline)] bg-[var(--surface-0)]" : "border-dashed border-[color:var(--hairline)] bg-[var(--surface-1)] opacity-60")}>
-            {/* Reorder */}
-            <div className="flex shrink-0 flex-col gap-0.5">
-              <button type="button" disabled={idx === 0 || isReordering} onClick={() => handleMove(block, "up")} className="rounded p-0.5 text-ink-6 transition-colors hover:text-ink-0 disabled:opacity-30" aria-label="Mover arriba">
-                <ArrowUp className="h-3.5 w-3.5" strokeWidth={1.75} />
-              </button>
-              <button type="button" disabled={idx === sorted.length - 1 || isReordering} onClick={() => handleMove(block, "down")} className="rounded p-0.5 text-ink-6 transition-colors hover:text-ink-0 disabled:opacity-30" aria-label="Mover abajo">
-                <ArrowDown className="h-3.5 w-3.5" strokeWidth={1.75} />
-              </button>
-            </div>
-            {/* Info */}
-            <div className="flex flex-1 items-center justify-between gap-3 min-w-0">
-              <div className="min-w-0">
-                <p className="truncate text-[13px] font-medium text-ink-0">{blockLabel(block.blockType)}</p>
-                <div className="mt-1 flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-[0.1em] text-ink-5">
-                    {block.source === "ai" ? <><Sparkles className="h-2.5 w-2.5" />IA</> : "Manual"}
-                  </span>
-                  <span className={cn("inline-flex items-center rounded-[var(--r-xs)] px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-[0.1em]", block.isVisible ? "bg-[color:var(--signal-success)]/10 text-[color:var(--signal-success)]" : "bg-[var(--surface-2)] text-ink-5")}>
-                    {block.isVisible ? "Visible" : "Oculta"}
-                  </span>
-                </div>
-              </div>
-              {/* Actions */}
-              <div className="flex shrink-0 items-center gap-1.5">
-                <button type="button" onClick={() => handleToggle(block)} disabled={isReordering} className="rounded-[var(--r-sm)] p-2 text-ink-5 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0" title={block.isVisible ? "Ocultar sección" : "Mostrar sección"}>
-                  {block.isVisible ? <Eye className="h-4 w-4" strokeWidth={1.75} /> : <EyeOff className="h-4 w-4" strokeWidth={1.75} />}
-                </button>
-                <button type="button" onClick={() => onEditSection(block)} className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3 py-2 text-[12px] font-medium text-ink-3 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0">
-                  <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} />
-                  Editar
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ─── Navigation ─── */
-
-function NavView({ searchQuery, openDrawer, onAction, items }: { searchQuery: string; openDrawer: (c: DrawerContent) => void; onAction: (a: string) => void; items: NavItem[] }) {
-  const filtered = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    return items.filter((n) => !q || n.label.toLowerCase().includes(q) || n.destination.toLowerCase().includes(q));
-  }, [searchQuery, items]);
-
-  if (filtered.length === 0) return <NoResultsState onReset={() => {}} />;
-
-  const groups: Array<{ key: string; label: string; items: NavItem[] }> = [
-    { key: "main", label: "Menu principal", items: filtered.filter((n) => n.group === "main") },
-    { key: "footer", label: "Footer", items: filtered.filter((n) => n.group === "footer") },
-    { key: "quick-links", label: "Links rapidos", items: filtered.filter((n) => n.group === "quick-links") },
-  ].filter((g) => g.items.length > 0);
-
-  return (
-    <div className="space-y-6 p-6">
-      {groups.map((group) => (
-        <div key={group.key} className="space-y-2">
-          <h3 className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">{group.label}</h3>
-          {group.items.map((item) => (
-            <button key={item.id} className="group flex w-full items-center gap-4 rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-4 text-left transition-colors hover:bg-[var(--surface-1)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" onClick={() => openDrawer({ kind: "nav", data: item })} type="button">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--r-sm)] bg-[var(--surface-1)] border border-[color:var(--hairline)] text-ink-5 transition-colors group-hover:text-ink-0">
-                <Link2 className="h-4 w-4" strokeWidth={1.75} />
-              </div>
-              <div className="flex flex-1 items-center justify-between gap-3 min-w-0">
-                <div className="min-w-0">
-                  <p className="truncate text-[13px] font-medium text-ink-0">{item.label}</p>
-                  <p className="mt-0.5 truncate text-[11px] font-mono font-medium text-ink-5">{item.destination}</p>
-                </div>
-                <StoreStatusBadge status={item.status} />
-              </div>
-            </button>
-          ))}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* ─── Pages ─── */
-
-function PagesView({ searchQuery, openDrawer, onAction, pages }: { searchQuery: string; openDrawer: (c: DrawerContent) => void; onAction: (a: string) => void; pages: StorePageType[] }) {
-  const filtered = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    return pages.filter((p) => !q || p.name.toLowerCase().includes(q) || p.slug.toLowerCase().includes(q));
-  }, [searchQuery, pages]);
-
-  if (filtered.length === 0) return <NoResultsState onReset={() => {}} />;
-
-  return (
-    <div className="overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[700px] text-left">
-          <thead>
-            <tr className="border-b border-[color:var(--hairline)] bg-[var(--surface-1)]">
-              <TableHead label="Nombre" />
-              <TableHead label="Slug" />
-              <TableHead label="Tipo" />
-              <TableHead label="Modificada" />
-              <TableHead label="Estado" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[color:var(--hairline)]">
-            {filtered.map((p) => (
-              <tr key={p.id} className="group cursor-pointer bg-[var(--surface-0)] transition-colors hover:bg-[var(--surface-1)] focus-within:bg-[var(--surface-2)]" onClick={() => openDrawer({ kind: "page", data: p })} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDrawer({ kind: "page", data: p }); } }}>
-                <td className="px-6 py-4 text-[13px] font-medium text-ink-0">{p.name}</td>
-                <td className="px-6 py-4 text-[11px] font-mono font-medium text-ink-5">{p.slug}</td>
-                <td className="px-6 py-4"><PageTypeBadge type={p.type} /></td>
-                <td className="px-6 py-4 text-[11px] font-medium tabular-nums text-ink-5">{timeFormatter.format(new Date(p.lastModified))}</td>
-                <td className="px-6 py-4"><StoreStatusBadge status={p.status} /></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className="flex items-center justify-between border-t border-[color:var(--hairline)] bg-[var(--surface-1)] px-6 py-3">
-        <span className="block text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Mostrando <b className="text-ink-0 px-1 font-semibold">{filtered.length}</b> de {pages.length}</span>
-      </div>
-    </div>
-  );
-}
-
-
-
-/* ─── Preview ─── */
+/* ─── Payments ─── */
 
 function PaymentsView({
   initialData,
@@ -1130,55 +639,6 @@ function PaymentsView({
   );
 }
 
-function PreviewView({ onAction }: { onAction: (a: string) => void }) {
-  const p = { status: "draft", publishedAt: new Date().toISOString() };
-
-  return (
-    <div className="space-y-6 p-6">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <SummaryCard label="Estado" value={p.status === "published" ? "Publicado" : "Borrador"} accent />
-        <SummaryCard label="Publicado" value={timeFormatter.format(new Date(p.publishedAt))} />
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] overflow-hidden">
-          <div className="flex items-center gap-2 border-b border-[color:var(--hairline)] bg-[var(--surface-1)] px-5 py-3">
-            <Monitor className="h-4 w-4 text-ink-5" strokeWidth={1.75} />
-            <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Desktop</span>
-          </div>
-          <div className="flex h-48 items-center justify-center bg-[var(--surface-1)]">
-            <div className="space-y-2 text-center">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-[var(--r-sm)] bg-[var(--surface-0)] border border-[color:var(--hairline)]"><Monitor className="h-5 w-5 text-ink-5" strokeWidth={1.75} /></div>
-              <p className="text-[12px] font-medium text-ink-5">Vista desktop</p>
-              <p className="text-[11px] font-medium text-ink-6">1440 × 900</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] overflow-hidden">
-          <div className="flex items-center gap-2 border-b border-[color:var(--hairline)] bg-[var(--surface-1)] px-5 py-3">
-            <Smartphone className="h-4 w-4 text-ink-5" strokeWidth={1.75} />
-            <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Mobile</span>
-          </div>
-          <div className="flex h-48 items-center justify-center bg-[var(--surface-1)]">
-            <div className="space-y-2 text-center">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-[var(--r-sm)] bg-[var(--surface-0)] border border-[color:var(--hairline)]"><Smartphone className="h-5 w-5 text-ink-5" strokeWidth={1.75} /></div>
-              <p className="text-[12px] font-medium text-ink-5">Vista mobile</p>
-              <p className="text-[11px] font-medium text-ink-6">375 × 812</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3">
-        <button disabled className="inline-flex items-center gap-2 h-10 px-5 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[13px] font-medium text-ink-0 opacity-50" type="button">
-          Previsualizar en vivo próximamente
-        </button>
-      </div>
-    </div>
-  );
-}
-
 /* ─── Shared ─── */
 
 function SummaryCard({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
@@ -1190,15 +650,40 @@ function SummaryCard({ label, value, accent = false }: { label: string; value: s
   );
 }
 
-function NavCard({ icon, title, description, onClick }: { icon: React.ReactNode; title: string; description: string; onClick: () => void }) {
-  return (
-    <button className="group flex items-start gap-4 rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 text-left transition-colors hover:bg-[var(--surface-1)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" onClick={onClick} type="button">
+function NavCard({
+  icon,
+  title,
+  description,
+  onClick,
+  href,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  onClick?: () => void;
+  href?: string;
+}) {
+  const inner = (
+    <>
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--r-sm)] bg-[var(--surface-1)] border border-[color:var(--hairline)] transition-colors group-hover:bg-[var(--surface-2)]">{icon}</div>
       <div className="min-w-0">
         <p className="text-[13px] font-medium text-ink-0">{title}</p>
         <p className="mt-1 truncate text-[11px] font-medium text-ink-5">{description}</p>
       </div>
       <span className="ml-auto shrink-0 text-ink-6 transition-colors group-hover:text-ink-0">→</span>
+    </>
+  );
+  const cls = "group flex items-start gap-4 rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 text-left transition-colors hover:bg-[var(--surface-1)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]";
+  if (href) {
+    return (
+      <Link className={cls} href={href}>
+        {inner}
+      </Link>
+    );
+  }
+  return (
+    <button className={cls} onClick={onClick} type="button">
+      {inner}
     </button>
   );
 }
@@ -1208,34 +693,6 @@ function FormBlock({ label, value }: { label: string; value: string }) {
     <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5">
       <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">{label}</p>
       <p className="mt-2 text-[13px] font-medium text-ink-0">{value}</p>
-    </div>
-  );
-}
-
-function ColorField({ label, color, onAction }: { label: string; color: string; onAction: (a: string) => void }) {
-  return (
-    <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5">
-      <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">{label}</p>
-      <div className="mt-3 flex items-center gap-3">
-        <ColorDot color={color} />
-        <span className="font-mono text-[11px] font-semibold text-ink-0">{color}</span>
-      </div>
-    </div>
-  );
-}
-
-function TableHead({ label }: { label: string }) {
-  return <th className="px-6 py-3 text-left text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">{label}</th>;
-}
-
-function NoResultsState({ onReset }: { onReset: () => void }) {
-  return (
-    <div className="flex min-h-[420px] flex-col items-center justify-center px-6 py-20 text-center">
-      <div className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)]">
-        <Search className="h-5 w-5 text-ink-5" strokeWidth={1.5} />
-      </div>
-      <h3 className="text-[18px] font-semibold tracking-[-0.02em] text-ink-0">No encontramos resultados</h3>
-      <p className="mt-2 max-w-md text-[13px] leading-[1.55] text-ink-5">Ajustá la búsqueda y volvé a intentarlo.</p>
     </div>
   );
 }
@@ -1254,17 +711,4 @@ function ToastViewport({ toasts, onDismiss }: { toasts: ToastMessage[]; onDismis
       ))}
     </div>
   );
-}
-
-function blockLabel(blockType: string): string {
-  const labels: Record<string, string> = {
-    hero: "Hero principal",
-    featured_products: "Productos destacados",
-    featured_categories: "Categorias",
-    benefits: "Beneficios",
-    testimonials: "Testimonios",
-    faq: "Preguntas frecuentes",
-    newsletter: "Newsletter",
-  };
-  return labels[blockType] ?? blockType;
 }

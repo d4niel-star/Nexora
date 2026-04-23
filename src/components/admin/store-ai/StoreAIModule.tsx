@@ -131,7 +131,7 @@ export function StoreAIModule({
           label="Mi tienda"
           value="Configuración"
           href="/admin/store"
-          hint="Dominio, pagos, navegación y páginas"
+          hint="Estado, dominio y pagos"
         />
       </section>
 

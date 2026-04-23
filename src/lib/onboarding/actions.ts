@@ -86,7 +86,7 @@ export async function getActivationState(): Promise<ActivationState | null> {
     title: "Configura tu tienda",
     description: "Nombre, slug unico, descripcion y marca publica.",
     status: hasStoreProfile ? "completed" : (!hasPlan ? "blocked" : "pending"),
-    href: "/admin/store?tab=branding",
+    href: "/admin/store-ai/editor",
     actionLabel: hasStoreProfile ? "Tienda creada" : "Configurar tienda",
     detail: hasStoreProfile ? `/store/${store.slug}` : "Falta descripcion publica",
   });

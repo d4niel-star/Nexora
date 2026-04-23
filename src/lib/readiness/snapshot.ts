@@ -188,7 +188,7 @@ export async function getStoreReadinessSnapshot(
     description:
       "Nombre, slug público y descripción visible para los compradores.",
     resolved: hasStoreProfile,
-    href: "/admin/store?tab=branding",
+    href: "/admin/store-ai/editor",
     ctaLabel: hasStoreProfile ? "Revisar perfil" : "Completar perfil",
     detail: hasStoreProfile
       ? `/${store.slug}`
@@ -333,7 +333,7 @@ export async function getStoreReadinessSnapshot(
     description:
       "Un logo propio da credibilidad al storefront y al email de post-compra.",
     resolved: hasBrandingLogo,
-    href: "/admin/store?tab=branding",
+    href: "/admin/store-ai/editor",
     ctaLabel: hasBrandingLogo ? "Revisar branding" : "Subir logo",
   });
 
@@ -352,7 +352,7 @@ export async function getStoreReadinessSnapshot(
     description:
       "Cambiá colores, tipografía y tono para que el storefront no parezca una plantilla.",
     resolved: brandingCustomized,
-    href: "/admin/store?tab=branding",
+    href: "/admin/store-ai/editor",
     ctaLabel: brandingCustomized ? "Ajustar branding" : "Personalizar",
   });
 
