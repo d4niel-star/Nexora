@@ -29,6 +29,8 @@ export interface ConnectCarrierActionInput {
   username: string;
   password: string;
   clientNumber?: string;
+  /** Andreani-only: contract number used for quotes/labels. */
+  contractNumber?: string;
 }
 
 export type CarrierActionResult =
@@ -77,6 +79,7 @@ export async function connectCarrierAction(
   const username = trimOrEmpty(input.username);
   const password = trimOrEmpty(input.password);
   const clientNumber = trimOrNull(input.clientNumber);
+  const contractNumber = trimOrNull(input.contractNumber);
   const environment = normalizeEnvironment(input.environment);
 
   if (username.length === 0 || password.length === 0) {
@@ -121,6 +124,7 @@ export async function connectCarrierAction(
     password,
     externalAccountId: result.metadata.externalAccountId ?? clientNumber,
     accountDisplayName: result.metadata.displayName ?? null,
+    configPatch: contractNumber ? { contractNumber } : undefined,
   });
 
   revalidatePath(pathToRevalidate(carrier.id));
@@ -129,6 +133,45 @@ export async function connectCarrierAction(
   return {
     ok: true,
     message: `Tu cuenta de ${carrier.name} quedó vinculada correctamente.`,
+  };
+}
+
+/**
+ * Updates non-secret carrier extras (e.g. Andreani contractNumber) for an
+ * already-connected carrier without re-issuing credentials. Bails out if
+ * the carrier is not connected for the current store.
+ */
+export async function patchCarrierConfigAction(
+  carrierId: CarrierId,
+  patch: Record<string, string | null>,
+): Promise<CarrierActionResult> {
+  const store = await getCurrentStore();
+  if (!store) return { ok: false, message: "No hay una tienda activa." };
+
+  const carrier = getCarrierById(carrierId);
+  if (!carrier) return { ok: false, message: "Proveedor no soportado." };
+
+  // Reject empty values so we don't store empty strings as if they were
+  // valid configuration.
+  const cleanPatch: Record<string, string> = {};
+  for (const [k, v] of Object.entries(patch)) {
+    if (typeof v === "string" && v.trim().length > 0) {
+      cleanPatch[k] = v.trim();
+    }
+  }
+  if (Object.keys(cleanPatch).length === 0) {
+    return { ok: false, message: "No hay cambios para guardar." };
+  }
+
+  const { patchCarrierConfig } = await import("./store-connection");
+  await patchCarrierConfig(store.id, carrier.id, cleanPatch);
+
+  revalidatePath(pathToRevalidate(carrier.id));
+  revalidatePath("/admin/shipping");
+
+  return {
+    ok: true,
+    message: "Configuración del carrier actualizada.",
   };
 }
 

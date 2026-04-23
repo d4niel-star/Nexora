@@ -58,6 +58,8 @@ model Store {
   billingTransactions BillingTransaction[]
   paymentProviders StorePaymentProvider[]
   carrierConnections StoreCarrierConnection[]
+  shippingSettings   StoreShippingSettings?
+  carrierShipments   CarrierShipment[]
   
   users          User[]
   adConnections      AdPlatformConnection[]
@@ -590,6 +592,86 @@ model StoreCarrierConnection {
   @@unique([storeId, carrier])
   @@index([storeId])
   @@index([carrier])
+}
+
+// ─── Per-store shipping rules / settings ───────────────────────────────────
+// Single row per store. Persists the inputs every carrier operation needs:
+// the warehouse origin (postal code + address), the merchant's defaults
+// (preferred carrier, handling time, default package envelope) and the
+// optional free-shipping threshold. Centralised here so every quote/label
+// call has the same source of truth.
+model StoreShippingSettings {
+  id                       String   @id @default(uuid())
+  storeId                  String   @unique
+  store                    Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  defaultCarrier           String?  // CarrierId — null until merchant picks one
+  originPostalCode         String?
+  originStreet             String?
+  originStreetNumber       String?
+  originFloor              String?
+  originApartment          String?
+  originCity               String?
+  originProvinceCode       String?  // e.g. "C", "B" (Correo Argentino province codes)
+  originCountry            String?  @default("AR")
+  originContactName        String?
+  originContactPhone       String?
+  originContactEmail       String?
+
+  handlingDaysMin          Int?     @default(1)
+  handlingDaysMax          Int?     @default(2)
+
+  defaultPackageWeightG    Int?     @default(1000) // 1 kg
+  defaultPackageHeightCm   Int?     @default(15)
+  defaultPackageWidthCm    Int?     @default(20)
+  defaultPackageLengthCm   Int?     @default(25)
+  defaultDeclaredValue     Float?
+
+  freeShippingOver         Float?
+
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+}
+
+// ─── Per-shipment record ───────────────────────────────────────────────────
+// Persists the carrier-side identifier returned when a shipment is created
+// so the merchant can later fetch tracking events or download the label
+// (when the carrier exposes one). One row per (store, carrier, shipment).
+model CarrierShipment {
+  id                    String   @id @default(uuid())
+  storeId               String
+  store                 Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  carrier               String   // CarrierId
+  externalShipmentId    String?  // numeroAndreani / extOrderId / shippingId
+  trackingNumber        String?  // human-readable tracking code (often == externalShipmentId)
+  trackingUrl           String?
+  status                String   @default("created") // created | in_transit | delivered | failed | cancelled
+  serviceType           String?  // "D" / "S" for Correo Argentino, contract code for Andreani
+
+  destinationName       String?
+  destinationEmail      String?
+  destinationPostalCode String?
+  destinationCity       String?
+  destinationProvince   String?
+
+  weightG               Int?
+  heightCm              Int?
+  widthCm               Int?
+  lengthCm              Int?
+  declaredValue         Float?
+  costAmount            Float?
+  costCurrency          String?  @default("ARS")
+
+  rawCreateResponse     String?  // JSON snapshot of the carrier response
+  rawTrackingResponse   String?  // last tracking JSON for diagnostics
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  lastTrackedAt         DateTime?
+
+  @@index([storeId])
+  @@index([carrier])
+  @@index([trackingNumber])
 }
 
 model StockMovement {

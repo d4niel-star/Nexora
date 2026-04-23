@@ -26,6 +26,8 @@ interface Props {
   carrierId: "correo_argentino" | "andreani";
   carrierName: string;
   requiresClientNumber: boolean;
+  /** Andreani-only: separate number tied to the negotiated rates. */
+  requiresContractNumber?: boolean;
   supportsSandbox: boolean;
   summary: CarrierConnectionSummary;
 }
@@ -42,6 +44,7 @@ export function CarrierConnectionForm({
   carrierId,
   carrierName,
   requiresClientNumber,
+  requiresContractNumber = false,
   supportsSandbox,
   summary,
 }: Props) {
@@ -55,6 +58,11 @@ export function CarrierConnectionForm({
   const [username, setUsername] = useState<string>(summary.accountUsername ?? "");
   const [clientNumber, setClientNumber] = useState<string>(
     summary.accountClientNumber ?? "",
+  );
+  const [contractNumber, setContractNumber] = useState<string>(
+    typeof summary.config.contractNumber === "string"
+      ? (summary.config.contractNumber as string)
+      : "",
   );
   const [password, setPassword] = useState<string>("");
   const [showPassword, setShowPassword] = useState(false);
@@ -109,6 +117,9 @@ export function CarrierConnectionForm({
         username,
         password,
         clientNumber: requiresClientNumber ? clientNumber : undefined,
+        contractNumber: requiresContractNumber
+          ? contractNumber || undefined
+          : undefined,
       }),
     );
   }
@@ -297,6 +308,23 @@ export function CarrierConnectionForm({
               </Field>
             ) : null}
           </div>
+
+          {requiresContractNumber ? (
+            <Field
+              label="Número de contrato"
+              hint="Andreani: necesario para cotizar y generar etiquetas. Lo podés actualizar después desde la sección Datos de contrato."
+            >
+              <input
+                type="text"
+                value={contractNumber}
+                onChange={(e) => setContractNumber(e.target.value)}
+                autoComplete="off"
+                spellCheck={false}
+                className="block w-full rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 py-2 text-[13px] text-ink-0 placeholder:text-ink-6 focus:outline-none focus:ring-2 focus:ring-[color:var(--accent-400)]"
+                placeholder="400006611"
+              />
+            </Field>
+          ) : null}
 
           <Field
             label="Contraseña"

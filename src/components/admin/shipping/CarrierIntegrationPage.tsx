@@ -5,6 +5,8 @@ import type { CarrierMetadata } from "@/lib/shipping/registry";
 import type { CarrierConnectionSummary } from "@/lib/shipping/types";
 
 import { CarrierConnectionForm } from "./CarrierConnectionForm";
+import { CapabilityList } from "./CapabilityList";
+import { CarrierExtrasForm } from "./CarrierExtrasForm";
 
 interface Props {
   carrier: CarrierMetadata;
@@ -12,6 +14,8 @@ interface Props {
 }
 
 export function CarrierIntegrationPage({ carrier, summary }: Props) {
+  const isConnected = summary.status === "connected";
+
   return (
     <div className="animate-in fade-in space-y-8 py-2 duration-300">
       {/* ── Header ─────────────────────────────────────────────────── */}
@@ -59,31 +63,54 @@ export function CarrierIntegrationPage({ carrier, summary }: Props) {
         carrierId={carrier.id}
         carrierName={carrier.name}
         requiresClientNumber={carrier.requiresClientNumber}
+        requiresContractNumber={carrier.requiresContractNumber}
         supportsSandbox={carrier.supportsSandbox}
         summary={summary}
+      />
+
+      {/* ── Carrier-specific extras ────────────────────────────────── */}
+      {carrier.requiresContractNumber && isConnected ? (
+        <CarrierExtrasForm
+          carrierId={carrier.id}
+          contractNumber={
+            typeof summary.config.contractNumber === "string"
+              ? (summary.config.contractNumber as string)
+              : ""
+          }
+        />
+      ) : null}
+
+      {/* ── Capabilities ──────────────────────────────────────────── */}
+      <CapabilityList
+        capabilities={carrier.adapter.capabilities}
+        notes={carrier.capabilityNotes}
       />
 
       {/* ── Security notes ─────────────────────────────────────────── */}
       <section className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6">
         <header className="flex items-center gap-2">
           <ShieldCheck className="h-4 w-4 text-ink-3" strokeWidth={1.75} />
-          <h2 className="text-[14px] font-semibold text-ink-0">Tratamiento de credenciales</h2>
+          <h2 className="text-[14px] font-semibold text-ink-0">
+            Tratamiento de credenciales
+          </h2>
         </header>
         <ul className="mt-3 space-y-2 text-[12px] leading-[1.6] text-ink-5">
           <li>
-            <span className="font-semibold text-ink-3">Cifrado en reposo.</span> La contraseña
-            se cifra con AES-256-CBC usando la misma <code>ENCRYPTION_KEY</code> que protege a
-            Mercado Pago, Google Ads y los demás secretos por tienda.
+            <span className="font-semibold text-ink-3">Cifrado en reposo.</span>{" "}
+            La contraseña se cifra con AES-256-CBC usando la misma{" "}
+            <code>ENCRYPTION_KEY</code> que protege a Mercado Pago, Google Ads
+            y los demás secretos por tienda.
           </li>
           <li>
-            <span className="font-semibold text-ink-3">Bearer efímero.</span> El token de
-            autenticación que devuelve {carrier.name} es de uso único: se solicita on-demand y
-            se descarta después de cada operación. Nexora no lo persiste.
+            <span className="font-semibold text-ink-3">Bearer efímero.</span> El
+            token de autenticación que devuelve {carrier.name} es de uso único:
+            se solicita on-demand y se descarta después de cada operación.
+            Nexora no lo persiste.
           </li>
           <li>
-            <span className="font-semibold text-ink-3">Desconexión limpia.</span> Al
-            desconectar, eliminamos por completo la fila de tu base: no queda ningún
-            secreto residual en disco.
+            <span className="font-semibold text-ink-3">Desconexión limpia.</span>{" "}
+            Al desconectar, eliminamos por completo la fila de tu base: no
+            queda ningún secreto residual en disco.
           </li>
         </ul>
       </section>

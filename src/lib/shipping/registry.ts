@@ -4,7 +4,7 @@
 // /lib/shipping/carriers/, (3) a new admin page under /admin/shipping/.
 // Persistence + UI shells are reused as-is.
 
-import type { CarrierAdapter, CarrierId } from "./types";
+import type { CarrierAdapter, CarrierCapabilities, CarrierId } from "./types";
 import { correoArgentinoAdapter } from "./carriers/correo-argentino";
 import { andreaniAdapter } from "./carriers/andreani";
 
@@ -30,6 +30,14 @@ export interface CarrierMetadata {
   supportsSandbox: boolean;
   /** Adapter that performs credential validation against the live API. */
   adapter: CarrierAdapter;
+  /** Whether the merchant must provide a separate "contract number" (Andreani). */
+  requiresContractNumber: boolean;
+  /** Honest, human-readable note about what the carrier does NOT support. */
+  capabilityNotes: string[];
+}
+
+export function getCapabilities(c: CarrierMetadata): CarrierCapabilities {
+  return c.adapter.capabilities;
 }
 
 export const CARRIERS: ReadonlyArray<CarrierMetadata> = [
@@ -49,6 +57,10 @@ export const CARRIERS: ReadonlyArray<CarrierMetadata> = [
     requiresClientNumber: true,
     supportsSandbox: true,
     adapter: correoArgentinoAdapter,
+    requiresContractNumber: false,
+    capabilityNotes: [
+      "La API de MiCorreo no expone un endpoint para descargar la etiqueta. Se imprime desde el portal de MiCorreo después de generar el envío.",
+    ],
   },
   {
     id: "andreani",
@@ -64,6 +76,11 @@ export const CARRIERS: ReadonlyArray<CarrierMetadata> = [
     requiresClientNumber: true,
     supportsSandbox: true,
     adapter: andreaniAdapter,
+    requiresContractNumber: true,
+    capabilityNotes: [
+      "Andreani exige whitelisting de IPs por cuenta: la IP del backend debe estar autorizada para que las llamadas autenticadas funcionen.",
+      "Cotización y creación de envío requieren el número de contrato además del número de cliente.",
+    ],
   },
 ];
 

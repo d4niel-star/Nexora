@@ -7,8 +7,9 @@
 //    actions stay declarative.
 
 import { prisma } from "@/lib/db/prisma";
-import { encryptToken } from "@/lib/security/token-crypto";
+import { decryptToken, encryptToken } from "@/lib/security/token-crypto";
 import type {
+  CarrierAuthContext,
   CarrierConnectionStatus,
   CarrierConnectionSummary,
   CarrierEnvironment,
@@ -46,6 +47,7 @@ export async function getCarrierConnectionSummary(
       lastError: null,
       connectedAt: null,
       lastValidatedAt: null,
+      config: {},
     };
   }
 
@@ -61,7 +63,20 @@ export async function getCarrierConnectionSummary(
     lastError: row.lastError,
     connectedAt: row.connectedAt?.toISOString() ?? null,
     lastValidatedAt: row.lastValidatedAt?.toISOString() ?? null,
+    config: parseConfigJson(row.configJson),
   };
+}
+
+function parseConfigJson(raw: string | null | undefined): Record<string, unknown> {
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : {};
+  } catch {
+    return {};
+  }
 }
 
 export async function listCarrierSummaries(
@@ -86,6 +101,8 @@ export interface UpsertCarrierConnectionInput {
   password: string | null;
   externalAccountId: string | null;
   accountDisplayName: string | null;
+  /** Optional carrier-specific extras (merged into existing configJson). */
+  configPatch?: Record<string, unknown>;
 }
 
 /**
@@ -98,6 +115,18 @@ export async function upsertConnectedCarrier(
 ): Promise<void> {
   assertCarrier(input.carrier);
   const now = new Date();
+
+  // Merge configPatch on top of the existing configJson (e.g. preserve
+  // Andreani's contractNumber when the merchant just retypes the
+  // password) instead of clobbering it.
+  const existing = await prisma.storeCarrierConnection.findUnique({
+    where: { storeId_carrier: { storeId: input.storeId, carrier: input.carrier } },
+    select: { configJson: true },
+  });
+  const baseConfig = parseConfigJson(existing?.configJson);
+  const mergedConfig = { ...baseConfig, ...(input.configPatch ?? {}) };
+  const configJson =
+    Object.keys(mergedConfig).length > 0 ? JSON.stringify(mergedConfig) : null;
 
   await prisma.storeCarrierConnection.upsert({
     where: {
@@ -113,6 +142,7 @@ export async function upsertConnectedCarrier(
       accountDisplayName: input.accountDisplayName,
       externalAccountId: input.externalAccountId,
       passwordEncrypted: input.password ? encryptToken(input.password) : null,
+      configJson,
       lastError: null,
       connectedAt: now,
       lastValidatedAt: now,
@@ -132,11 +162,63 @@ export async function upsertConnectedCarrier(
       ...(input.password
         ? { passwordEncrypted: encryptToken(input.password) }
         : {}),
+      configJson,
       lastError: null,
       connectedAt: now,
       lastValidatedAt: now,
     },
   });
+}
+
+/**
+ * Patches `configJson` for an existing connection without re-running
+ * credential validation. Used by the carrier page to capture extras
+ * such as Andreani's contract number when the connection is already
+ * live.
+ */
+export async function patchCarrierConfig(
+  storeId: string,
+  carrier: CarrierId,
+  patch: Record<string, unknown>,
+): Promise<void> {
+  assertCarrier(carrier);
+  const existing = await prisma.storeCarrierConnection.findUnique({
+    where: { storeId_carrier: { storeId, carrier } },
+    select: { configJson: true },
+  });
+  if (!existing) return;
+  const merged = { ...parseConfigJson(existing.configJson), ...patch };
+  await prisma.storeCarrierConnection.update({
+    where: { storeId_carrier: { storeId, carrier } },
+    data: {
+      configJson: Object.keys(merged).length > 0 ? JSON.stringify(merged) : null,
+    },
+  });
+}
+
+/**
+ * Loads the row needed to call any carrier verb. Decrypts the password
+ * and parses the carrier-specific config blob. Used only inside the
+ * operations layer; the result is discarded after each round-trip.
+ */
+export async function loadAuthContext(
+  storeId: string,
+  carrier: CarrierId,
+): Promise<CarrierAuthContext | null> {
+  assertCarrier(carrier);
+  const row = await prisma.storeCarrierConnection.findUnique({
+    where: { storeId_carrier: { storeId, carrier } },
+  });
+  if (!row || !row.passwordEncrypted || !row.accountUsername) return null;
+  const password = decryptToken(row.passwordEncrypted);
+  if (!password) return null;
+  return {
+    username: row.accountUsername,
+    password,
+    clientNumber: row.accountClientNumber,
+    environment: (row.environment as CarrierEnvironment) ?? "production",
+    config: parseConfigJson(row.configJson),
+  };
 }
 
 /**

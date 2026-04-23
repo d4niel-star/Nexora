@@ -131,6 +131,7 @@ const primaryNav: readonly NavEntry[] = [
     items: [
       { kind: "leaf", href: "/admin/shipping/correo-argentino", label: "Correo Argentino", icon: Truck },
       { kind: "leaf", href: "/admin/shipping/andreani", label: "Andreani", icon: Truck },
+      { kind: "leaf", href: "/admin/shipping/settings", label: "Ajustes de envío", icon: Settings },
     ],
   },
   { kind: "leaf", href: "/admin/finances", label: "Finanzas", icon: TrendingUp },
