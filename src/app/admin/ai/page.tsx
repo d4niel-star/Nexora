@@ -60,7 +60,7 @@ export default async function AIGeneralPage() {
       description: r.summary,
       meta: `${r.platform.toUpperCase()} · $${(payload.budgetSuggestion || 0).toLocaleString()}/día`,
       priority: r.priority === "high" ? "high" : "medium",
-      href: "/admin/ai/ads",
+      href: "/admin/ads",
       budgetLabel: `${r.platform.toUpperCase()} · $${(payload.budgetSuggestion || 0).toLocaleString()}/día`,
     });
   });
@@ -74,7 +74,7 @@ export default async function AIGeneralPage() {
       description: `${d.platform.toUpperCase()} · ${d.objective} · $${(d.budgetDaily || 0).toLocaleString()}/día`,
       meta: `Score IA: ${d.aiScore || "—"}%`,
       priority: "medium",
-      href: "/admin/ai/ads",
+      href: "/admin/ads",
       scoreLabel: `Score IA: ${d.aiScore || "—"}%`,
     });
   });
@@ -125,7 +125,7 @@ export default async function AIGeneralPage() {
             )}
 
             {/* Ads context entry */}
-            <Link href="/admin/ai/ads" className="block group">
+            <Link href="/admin/ads" className="block group">
               <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 transition-colors hover:border-[color:var(--hairline-strong)] h-full">
                 <div className="flex items-center gap-2 mb-4">
                   <Megaphone className="w-3.5 h-3.5 text-ink-4" strokeWidth={1.75} />

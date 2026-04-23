@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 // shell, landing and navigation.
 const AI_CONTEXTS = [
   { key: "general", label: "General", href: "/admin/ai", icon: Sparkles },
-  { key: "ads", label: "Ads", href: "/admin/ai/ads", icon: Megaphone },
+  { key: "ads", label: "Ads", href: "/admin/ads", icon: Megaphone },
   { key: "finances", label: "Finanzas", href: "/admin/ai/finances", icon: TrendingUp },
   { key: "operations", label: "Operación", href: "/admin/ai/operations", icon: PackageCheck },
   { key: "catalog", label: "Catálogo", href: "/admin/ai/catalog", icon: Package },

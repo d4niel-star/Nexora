@@ -275,8 +275,8 @@ function evaluateAdsAptitude(
     verdict = "not_apt";
   }
 
-  let actionHref = "/admin/ai/ads";
-  let actionLabel = "Ver Ads Copilot";
+  let actionHref = "/admin/ads";
+  let actionLabel = "Ver Ads";
 
   if (verdict === "not_apt") {
     if (!p.isPublished) {

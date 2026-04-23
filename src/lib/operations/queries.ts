@@ -217,7 +217,7 @@ export async function getOperationsCenterData(): Promise<OperationsCenterData> {
       title: `${aiRecommendations} recomendacion${aiRecommendations !== 1 ? "es" : ""} de IA lista${aiRecommendations !== 1 ? "s" : ""}`,
       description: "Nexora AI genero sugerencias de campana listas para revision.",
       metric: `${aiRecommendations}`,
-      href: "/admin/ai/ads",
+      href: "/admin/ads",
       actionLabel: "Ver recomendaciones",
     });
   }
@@ -230,7 +230,7 @@ export async function getOperationsCenterData(): Promise<OperationsCenterData> {
       title: `${aiDrafts} borrador${aiDrafts !== 1 ? "es" : ""} de campana pendiente${aiDrafts !== 1 ? "s" : ""}`,
       description: "Campanas pre-armadas por IA esperando aprobacion.",
       metric: `${aiDrafts}`,
-      href: "/admin/ai/ads",
+      href: "/admin/ads",
       actionLabel: "Revisar borradores",
     });
   }

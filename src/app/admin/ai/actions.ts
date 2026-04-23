@@ -11,7 +11,7 @@ const INTENT_REGISTRY = [
   {
     id: "ads",
     keywords: ["ad", "ads", "campaña", "pauta", "roas", "vender", "publicidad", "performance", "meta", "google ads", "tiktok"],
-    route: "/admin/ai/ads",
+    route: "/admin/ads",
   },
   {
     id: "finances",
@@ -39,7 +39,7 @@ function resolveIntent(input: string): string {
     }
   }
   
-  return "/admin/ai/ads";
+  return "/admin/ads";
 }
 
 export async function processGlobalCommand(input: string) {
@@ -107,7 +107,7 @@ export async function dismissRecommendation(recoId: string) {
   });
 
   revalidatePath("/admin/ai");
-  revalidatePath("/admin/ai/ads");
+  revalidatePath("/admin/ads");
   return { success: true };
 }
 
@@ -121,7 +121,7 @@ export async function promoteToDraft(recoId: string) {
   const draft = await createCampaignDraft(reco.storeId, recoId);
 
   revalidatePath("/admin/ai");
-  revalidatePath("/admin/ai/ads");
+  revalidatePath("/admin/ads");
   return { success: true, draftId: draft.id };
 }
 
@@ -146,6 +146,6 @@ export async function archiveDraft(draftId: string) {
   });
 
   revalidatePath("/admin/ai");
-  revalidatePath("/admin/ai/ads");
+  revalidatePath("/admin/ads");
   return { success: true };
 }

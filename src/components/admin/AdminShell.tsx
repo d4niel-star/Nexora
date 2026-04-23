@@ -19,6 +19,7 @@ import {
   ShoppingCart,
   Store,
   Tag,
+  TrendingUp,
   Truck,
   Users,
   Wrench,
@@ -110,9 +111,10 @@ const primaryNav: readonly NavEntry[] = [
     label: "Marketing",
     icon: Megaphone,
     items: [
-      { kind: "leaf", href: "/admin/ai/ads", label: "Ads", icon: Megaphone },
+      { kind: "leaf", href: "/admin/ads", label: "Ads", icon: Megaphone },
     ],
   },
+  { kind: "leaf", href: "/admin/finances", label: "Finanzas", icon: TrendingUp },
   { kind: "leaf", href: "/admin/operations", label: "Operación", icon: PackageSearch },
   {
     kind: "group",
