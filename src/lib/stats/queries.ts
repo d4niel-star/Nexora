@@ -85,12 +85,11 @@ export async function getStatsOverview(): Promise<OverviewData> {
       _count: true,
     }),
     // Margin from profitability — avg net contribution %
+    // costSnapshot is Float @default(0) (non-nullable), no need to filter nulls
     prisma.orderItem.aggregate({
       where: {
         order: { ...paidFilter, createdAt: { gte: d30 } },
-        costSnapshot: { not: null as unknown as number },
       },
-      _avg: { costSnapshot: true },
       _sum: { lineTotal: true, costSnapshot: true, quantity: true },
     }),
     prisma.product.count({ where: { storeId: sid, isPublished: true } }),
