@@ -28,6 +28,10 @@ import {
   formatResponse,
   HELP_RESPONSE,
   GREETING_RESPONSE,
+  SOCIAL_RESPONSE,
+  THANKS_RESPONSE,
+  NOISE_RESPONSE,
+  AMBIGUOUS_RESPONSE,
   type CopilotResponse,
 } from "@/lib/copilot/feedback";
 
@@ -154,15 +158,23 @@ export function NexoraEditorChat({
         const needClarification = result.actions.filter((a) => a.status === "needs-clarification");
 
         if (readyActions.length === 0 && unsupported.length > 0) {
-          const resp = errResponse(
-            "No entendí ese pedido.",
-            unsupported.map((a) => a.rawText),
-            [
-              "Probá algo como: \"poné tonos más premium\", \"ocultá testimonios\", \"cambiá la fuente\".",
-              "Escribí \"ayuda\" para ver todo lo que puedo hacer.",
-            ],
-          );
-          responses.push(makeAssistantMessage(formatResponse(resp), resp, "err"));
+          // Check if the classifier flagged this as noise/ambiguous (intent=unknown with high confidence)
+          const mainAction = result.actions[0];
+          const isNoiseOrAmbiguous = mainAction?.intent === "unknown" && (mainAction?.confidence ?? 0) >= 0.5;
+          
+          if (isNoiseOrAmbiguous) {
+            responses.push(makeAssistantMessage(NOISE_RESPONSE.summary, NOISE_RESPONSE, "ok"));
+          } else {
+            const resp = errResponse(
+              "No entendí ese pedido.",
+              unsupported.map((a) => a.rawText),
+              [
+                "Probá algo como: \"poné tonos más premium\", \"ocultá testimonios\", \"cambiá la fuente\".",
+                "Escribí \"ayuda\" para ver todo lo que puedo hacer.",
+              ],
+            );
+            responses.push(makeAssistantMessage(formatResponse(resp), resp, "err"));
+          }
           setMessages((prev) => [...prev, ...responses]);
           return;
         }

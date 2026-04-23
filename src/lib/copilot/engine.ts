@@ -22,6 +22,7 @@
 
 import { planFromInput, type PlannedAction as V3PlannedAction } from "./planner";
 import { normalize, fixTypos, splitCompoundInput } from "./normalizer";
+import { classifyMessage, type MessageCategory } from "./classifier";
 import {
   COLOR_MAP,
   COMPOUND_COLOR_PALETTES,
@@ -906,6 +907,71 @@ export function extractTextValue(text: string): string | null {
 // ─── Main NLU pipeline ───────────────────────────────────────────────────
 
 export function processInput(raw: string, ctx: ConversationContext): NLUResult {
+  // ── AI CORE: Message classification first ───────────────────────────
+  // Intercept social, noise, ambiguous BEFORE hitting the heavy pipeline.
+  const hasContext = !!(ctx.lastAction || ctx.lastColorChanged || ctx.lastBlockType || ctx.lastThemeApplied);
+  const classification = classifyMessage(raw, hasContext);
+
+  if (classification.category === "social") {
+    return {
+      actions: [{
+        id: `act-${Date.now()}-social`,
+        intent: "greeting",
+        entities: {},
+        rawText: raw,
+        confidence: 0.95,
+        status: "ready",
+      }],
+      rawInput: raw,
+      understood: true,
+    };
+  }
+
+  if (classification.category === "noise") {
+    return {
+      actions: [{
+        id: `act-${Date.now()}-noise`,
+        intent: "unknown",
+        entities: {},
+        rawText: raw,
+        confidence: 0.9,
+        status: "ready",
+      }],
+      rawInput: raw,
+      understood: true,
+    };
+  }
+
+  if (classification.category === "ask_help") {
+    return {
+      actions: [{
+        id: `act-${Date.now()}-help`,
+        intent: "help",
+        entities: {},
+        rawText: raw,
+        confidence: 0.95,
+        status: "ready",
+      }],
+      rawInput: raw,
+      understood: true,
+    };
+  }
+
+  if (classification.category === "ambiguous") {
+    return {
+      actions: [{
+        id: `act-${Date.now()}-ambiguous`,
+        intent: "unknown",
+        entities: {},
+        rawText: raw,
+        confidence: 0.3,
+        status: "ready",
+      }],
+      rawInput: raw,
+      understood: true,
+    };
+  }
+
   // ── V3 PIPELINE: Try conversational interpreter → planner first ──────
   // This handles abstract/ambiguous inputs that v2 can't match.
   try {
