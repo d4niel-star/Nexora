@@ -426,7 +426,7 @@ function AudienceTab({ data }: { data: AudienceData }) {
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(val: any) => [val, "Clientes"]}
+                    formatter={(val) => [val, "Clientes"]}
                     contentStyle={{
                       borderRadius: "var(--r-md)",
                       border: "1px solid var(--hairline)",
@@ -663,8 +663,8 @@ function RevenueChart({ data }: { data: DailyRevenuePoint[] }) {
           tickFormatter={(v: number) => v >= 1000 ? `${Math.round(v / 1000)}k` : String(v)}
         />
         <Tooltip
-          formatter={(val: any, name: any) => [
-            name === "revenue" ? fmtCurrency(val) : val,
+          formatter={(val, name) => [
+            name === "revenue" ? fmtCurrency(Number(val)) : val,
             name === "revenue" ? "Ingresos" : "Pedidos",
           ]}
           contentStyle={{
@@ -707,7 +707,7 @@ function CategoryChart({ data }: { data: { category: string; revenue: number; un
           width={100}
         />
         <Tooltip
-          formatter={(val: any) => [fmtCurrency(val), "Ingresos"]}
+          formatter={(val) => [fmtCurrency(Number(val)), "Ingresos"]}
           contentStyle={{
             borderRadius: "var(--r-md)",
             border: "1px solid var(--hairline)",
@@ -743,8 +743,8 @@ function ChannelChart({ data }: { data: { channel: string; count: number; revenu
           tickFormatter={(v: number) => v >= 1000 ? `${Math.round(v / 1000)}k` : String(v)}
         />
         <Tooltip
-          formatter={(val: any, name: any) => [
-            name === "revenue" ? fmtCurrency(val) : val,
+          formatter={(val, name) => [
+            name === "revenue" ? fmtCurrency(Number(val)) : val,
             name === "revenue" ? "Ingresos" : "Pedidos",
           ]}
           contentStyle={{

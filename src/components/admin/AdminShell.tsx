@@ -183,10 +183,13 @@ export function AdminShell({ children, storeName, storeInitials, dunningBanner }
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>(initialExpanded);
 
-  // When the pathname changes, open the group that now owns the
-  // current route. We never FORCE-close other groups — if the
-  // merchant manually expanded another group we respect that.
-  useEffect(() => {
+  // When pathname changes, adjust state during render (React-recommended
+  // pattern instead of useEffect + setState). We auto-expand the group
+  // that owns the new route and close the mobile sidebar.
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
+    setSidebarOpen(false);
     setExpanded((prev) => {
       const next = { ...prev };
       let changed = false;
@@ -198,15 +201,11 @@ export function AdminShell({ children, storeName, storeInitials, dunningBanner }
       }
       return changed ? next : prev;
     });
-  }, [pathname]);
+  }
 
   const toggleGroup = useCallback((id: string) => {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   }, []);
-
-  useEffect(() => {
-    closeSidebar();
-  }, [pathname, closeSidebar]);
 
   useEffect(() => {
     if (!sidebarOpen) return;
@@ -474,48 +473,3 @@ function SidebarGroup({ group, pathname, expanded, onToggle, onNavigate }: Sideb
   );
 }
 
-// ─── Nexora IA — Sidebar bottom entry (dark context) ─────────────────────
-
-function NexoraIAEntry({ pathname, onNavigate }: { pathname: string; onNavigate: () => void }) {
-  const isActive = pathname.startsWith("/admin/ai") && !pathname.startsWith("/admin/ai-");
-
-  return (
-    <Link
-      href="/admin/ai"
-      onClick={onNavigate}
-      aria-current={isActive ? "page" : undefined}
-      className={cn(
-        "group relative flex items-center gap-2.5 rounded-[var(--r-sm)] px-3 py-2.5 text-[13px] transition-colors outline-none focus-visible:shadow-[var(--shadow-focus)]",
-        isActive
-          ? "bg-[var(--sidebar-active-bg)] font-medium text-[var(--sidebar-fg-active)]"
-          : "text-[var(--sidebar-fg)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-fg-active)]",
-      )}
-    >
-      {isActive && (
-        <span
-          aria-hidden
-          className="absolute left-0 top-1/2 h-5 -translate-y-1/2 rounded-r-full bg-[var(--accent-400)]"
-          style={{ width: 2 }}
-        />
-      )}
-      <Sparkles
-        className={cn(
-          "h-4 w-4 shrink-0",
-          isActive ? "text-[var(--sidebar-fg-active)]" : "text-[var(--sidebar-fg)] group-hover:text-[var(--sidebar-fg-active)]",
-        )}
-        strokeWidth={1.75}
-      />
-      <span className="flex-1">Nexora IA</span>
-      <span
-        className={cn(
-          "inline-flex h-[18px] items-center rounded-[var(--r-xs)] px-1.5 text-[9px] font-semibold uppercase tracking-[0.08em]",
-          isActive
-            ? "bg-[var(--accent-500)] text-white"
-            : "bg-[var(--sidebar-hover)] text-[var(--sidebar-fg)] group-hover:bg-[var(--accent-500)]/20 group-hover:text-[var(--accent-200)]",
-        )}
-      >
-        AI
-      </span>
-    </Link>
-  );
-}
