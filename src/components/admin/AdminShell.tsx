@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  BarChart3,
   Boxes,
   ChevronRight,
   LayoutDashboard,
@@ -73,6 +74,7 @@ type NavEntry = NavLeaf | NavGroup;
 // src/app/admin/* — no dead links, no placeholders.
 const primaryNav: readonly NavEntry[] = [
   { kind: "leaf", href: "/admin/dashboard", label: "Panel de control", icon: LayoutDashboard },
+  { kind: "leaf", href: "/admin/stats", label: "Estadísticas", icon: BarChart3 },
   {
     kind: "group",
     id: "sales",
