@@ -57,6 +57,7 @@ model Store {
   legalSettings  StoreLegalSettings?
   billingTransactions BillingTransaction[]
   paymentProviders StorePaymentProvider[]
+  carrierConnections StoreCarrierConnection[]
   
   users          User[]
   adConnections      AdPlatformConnection[]
@@ -557,6 +558,38 @@ model ShippingMethod {
   updatedAt        DateTime @updatedAt
   
   @@unique([storeId, code])
+}
+
+// ─── Carrier connection per store ──────────────────────────────────────────
+// One row per (store, carrier) pair. Stores the credentials a merchant
+// needs to authenticate against a real shipping provider (Andreani, Correo
+// Argentino, …). The auth pattern of both supported carriers today is
+// Basic Auth → short-lived bearer/JWT token, so we only persist the
+// long-lived secret (password) encrypted via the AES-256-CBC vault and
+// re-issue the bearer on demand. Username and accountClientNumber are
+// stored in plaintext because the merchant dashboard shows them back.
+model StoreCarrierConnection {
+  id                    String   @id @default(uuid())
+  storeId               String
+  store                 Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  carrier               String   // "correo_argentino" | "andreani"
+  status                String   @default("disconnected") // "disconnected" | "connected" | "error" | "needs_reconnection"
+  environment           String   @default("production")   // "production" | "sandbox"
+  accountUsername       String?
+  accountClientNumber   String?
+  accountDisplayName    String?
+  externalAccountId     String?
+  passwordEncrypted     String?  // AES-256-CBC via token-crypto. Same vault as StorePaymentProvider.
+  configJson            String?  // Non-secret extras (e.g. default service level) — JSON.
+  lastError             String?
+  connectedAt           DateTime?
+  lastValidatedAt       DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@unique([storeId, carrier])
+  @@index([storeId])
+  @@index([carrier])
 }
 
 model StockMovement {

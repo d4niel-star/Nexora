@@ -66,6 +66,12 @@ type NavGroup = {
   readonly label: string;
   readonly icon: LucideIcon;
   readonly items: readonly NavLeaf[];
+  /**
+   * Optional path prefix that also activates the group. Useful when the
+   * group has a hub page (e.g. /admin/shipping) that isn't itself a
+   * sidebar leaf — visiting the hub still highlights the parent group.
+   */
+  readonly basePath?: string;
 };
 
 type NavEntry = NavLeaf | NavGroup;
@@ -116,6 +122,17 @@ const primaryNav: readonly NavEntry[] = [
       { kind: "leaf", href: "/admin/ads", label: "Ads", icon: Megaphone },
     ],
   },
+  {
+    kind: "group",
+    id: "shipping",
+    label: "Envíos",
+    icon: Truck,
+    basePath: "/admin/shipping",
+    items: [
+      { kind: "leaf", href: "/admin/shipping/correo-argentino", label: "Correo Argentino", icon: Truck },
+      { kind: "leaf", href: "/admin/shipping/andreani", label: "Andreani", icon: Truck },
+    ],
+  },
   { kind: "leaf", href: "/admin/finances", label: "Finanzas", icon: TrendingUp },
   { kind: "leaf", href: "/admin/operations", label: "Operación", icon: PackageSearch },
   {
@@ -150,7 +167,11 @@ function isLeafActive(leaf: NavLeaf, pathname: string): boolean {
 }
 
 function isGroupActive(group: NavGroup, pathname: string): boolean {
-  return group.items.some((leaf) => isLeafActive(leaf, pathname));
+  if (group.items.some((leaf) => isLeafActive(leaf, pathname))) return true;
+  if (group.basePath && (pathname === group.basePath || pathname.startsWith(`${group.basePath}/`))) {
+    return true;
+  }
+  return false;
 }
 
 interface AdminShellProps {
