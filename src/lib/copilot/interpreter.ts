@@ -31,7 +31,7 @@ import type { ConversationContext } from "./context";
 // ─── Types ──────────────────────────────────────────────────────────────
 
 export type Domain = "visual" | "layout" | "copy" | "navigation" | "meta";
-export type Direction = "more" | "less" | "change" | "undo" | "show" | "hide" | "move" | "generate" | "preview" | "greeting" | "help" | "unknown";
+export type Direction = "more" | "less" | "change" | "undo" | "show" | "hide" | "move" | "generate" | "preview" | "greeting" | "help" | "reference" | "unknown";
 export type Target = "color" | "font" | "image" | "section" | "button" | "tone" | "theme" | "headline" | "subheadline" | "cta" | "preview-device" | "preview-surface" | "full-style" | "none";
 
 export interface InterpretedIntent {
@@ -601,7 +601,7 @@ const CONCEPT_SPACES: ConceptSpace[] = [
 const MORE_WORDS = ["mas", "mucho", "muy", "super", "ultra", "bien", "bastante", "re", "mega"];
 const LESS_WORDS = ["menos", "poco", "poca", "suave", "suavizar", "bajar", "reducir", "no tan", "poco"];
 const NO_WORDS = ["no", "nunca", "nada", "ni", "tampoco", "para"];
-const CHANGE_WORDS = ["cambia", "cambiar", "pon", "poner", "usa", "usar", "hace", "hacer", "quiero", "busco", "necesito", "damelo", "dame", "aplica", "aplicar", "probemos", "proba", "veamos", "dejalo", "deja"];
+const CHANGE_WORDS = ["cambia", "cambiar", "pon", "poner", "usa", "usar", "hace", "hacer", "quiero", "busco", "necesito", "damelo", "dame", "aplica", "aplicar", "probemos", "proba", "veamos", "dejalo", "deja", "mejora", "mejore", "mejorá"];
 
 // ─── Main Interpreter ───────────────────────────────────────────────────
 
@@ -609,6 +609,20 @@ export function interpretInput(raw: string, ctx: ConversationContext): Interpret
   const normalized = normalize(raw);
   const fixed = fixTypos(normalized);
   const words = tokenize(fixed);
+
+  // Step 0: High-confidence direct patterns (bypass concept scoring)
+  if (fixed.includes("portada") && (fixed.includes("no me convence") || fixed.includes("no me gusta"))) {
+    return {
+      domain: "visual",
+      direction: "change",
+      target: "image",
+      qualifiers: ["better"],
+      specificValues: {},
+      isFollowUp: false,
+      rawText: raw,
+      confidence: 0.85,
+    };
+  }
 
   // Step 1: Check for follow-up first (short messages referencing context)
   const followUp = detectFollowUp(fixed, words, ctx);
@@ -676,6 +690,21 @@ interface ConceptScore {
 }
 
 function scoreAllConcepts(words: string[], fullText: string): ConceptScore[] {
+  // Domain anchors: when these words are present, boost their domain significantly
+  const DOMAIN_ANCHORS: Record<string, string> = {
+    "tipografia": "change-font", "fuente": "change-font", "font": "change-font", "letra": "change-font",
+    "boton": "change-button", "button": "change-button", "botones": "change-button",
+    "imagen": "change-image", "foto": "change-image", "portada": "change-image", "banner": "change-image",
+    "color": "change-color", "colores": "change-color", "paleta": "change-color",
+    "titulo": "edit-headline", "titular": "edit-headline", "headline": "edit-headline",
+    "seccion": "hide-section",
+    "celu": "preview-mobile", "celular": "preview-mobile", "mobile": "preview-mobile",
+  };
+  const activeAnchors = new Set<string>();
+  for (const word of words) {
+    if (DOMAIN_ANCHORS[word]) activeAnchors.add(DOMAIN_ANCHORS[word]);
+  }
+
   const scores: ConceptScore[] = [];
 
   for (const space of CONCEPT_SPACES) {
@@ -697,6 +726,11 @@ function scoreAllConcepts(words: string[], fullText: string): ConceptScore[] {
       if (conceptWord.word.includes(" ") && fullText.includes(conceptWord.word)) {
         score += conceptWord.weight * 3;
       }
+    }
+
+    // Domain anchor boost: if a specific domain word is present, boost that space
+    if (activeAnchors.has(space.id)) {
+      score += 5; // Strong boost for domain-specific matches
     }
 
     // Anti-word penalty
@@ -876,6 +910,61 @@ function detectFollowUp(text: string, words: string[], ctx: ConversationContext)
 // "esto se siente muy duro", "hace que se vea mejor", etc.
 
 function tryAbstractInterpretation(text: string, words: string[], ctx: ConversationContext): InterpretedIntent | null {
+  // ── Pattern: "menos X" / "no tan X" → opposite tone direction ──────
+  const menosMatch = text.match(/(?:menos|no\s+tan|poco)\s+(\w+)/);
+  if (menosMatch) {
+    const qualifier = menosMatch[1];
+    const menosMap: Record<string, string> = {
+      "duro": "calido", "oscuro": "calido", "cargado": "minimalista",
+      "recargado": "minimalista", "formal": "calido", "serio": "calido",
+      "simple": "premium", "basico": "premium", "frio": "calido",
+      "grande": "minimalista", "comercial": "elegante", "ruidoso": "minimalista",
+      "colorido": "minimalista", "llamativo": "minimalista",
+    };
+    const tone = menosMap[qualifier];
+    if (tone) {
+      return {
+        domain: "visual",
+        direction: "change",
+        target: "full-style",
+        qualifiers: [tone],
+        specificValues: { toneKey: tone },
+        isFollowUp: ctx.lastAction ? true : false,
+        followUpType: ctx.lastAction ? "refinement" : undefined,
+        rawText: text,
+        confidence: 0.7,
+      };
+    }
+  }
+
+  // ── Pattern: "la portada no me convence" → image change ────────────
+  if (text.includes("portada") && (text.includes("no") || text.includes("convence") || text.includes("gusta"))) {
+    return {
+      domain: "visual",
+      direction: "change",
+      target: "image",
+      qualifiers: ["better"],
+      specificValues: {},
+      isFollowUp: false,
+      rawText: text,
+      confidence: 0.7,
+    };
+  }
+
+  // ── Pattern: "mejorá esta parte" / "mejora X" → visual improvement ─
+  if (words.some(w => ["mejora", "mejorá", "mejore", "mejorar"].includes(w)) && !text.includes("imagen") && !text.includes("color")) {
+    return {
+      domain: "visual",
+      direction: "change",
+      target: "full-style",
+      qualifiers: ["premium"],
+      specificValues: { toneKey: "premium" },
+      isFollowUp: false,
+      rawText: text,
+      confidence: 0.55,
+    };
+  }
+
   // ── Pattern: "quiero algo mas X" / "algo mas X" / "mas X" ──────────
   const abstractToneMatch = text.match(/(?:quiero\s+(?:algo\s+)?)?mas\s+(\w+)/);
   if (abstractToneMatch) {

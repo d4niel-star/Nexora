@@ -125,6 +125,15 @@ function planAction(intent: InterpretedIntent, ctx: ConversationContext): Planne
     case "button":
       return planButtonChange(intent, ctx);
     case "section":
+      // If direction is "reference" and context has lastBlockType, infer from context
+      if (intent.direction === "reference" && ctx.lastBlockType) {
+        return [{
+          intent: "move-section",
+          status: "ready",
+          rawText: intent.rawText,
+          entities: { sectionKey: ctx.lastBlockType, sectionLabel: capitalize(ctx.lastBlockType) },
+        }];
+      }
       return planSectionChange(intent, ctx);
     case "theme":
       return planThemeApply(intent, ctx);

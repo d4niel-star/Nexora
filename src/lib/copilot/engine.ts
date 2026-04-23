@@ -969,7 +969,10 @@ function convertV3Action(a: V3PlannedAction): PlannedAction {
     entities: a.entities,
     rawText: a.rawText,
     confidence: 0.8,
-    status: a.status === "no-op" ? "unsupported" : a.status,
+    // Preserve no-op as needs-clarification when it has a clarification message
+    status: a.status === "no-op"
+      ? (a.clarification ? "needs-clarification" : "unsupported")
+      : a.status,
     clarification: a.clarification,
   };
 }
