@@ -9,7 +9,7 @@ import { getCurrentStore } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
-const validTabs = ["resumen", "comercial", "audiencia"] as const;
+const validTabs = ["panel", "clientes"] as const;
 type Tab = (typeof validTabs)[number];
 
 interface Props {
@@ -21,7 +21,7 @@ export default async function StatsRoute({ searchParams }: Props) {
   if (!store) redirect("/login");
 
   const params = await searchParams;
-  const tab = validTabs.includes(params.tab as Tab) ? (params.tab as Tab) : "resumen";
+  const tab = validTabs.includes(params.tab as Tab) ? (params.tab as Tab) : "panel";
 
   const [overview, commercial, audience] = await Promise.all([
     getStatsOverview(),
