@@ -1,18 +1,78 @@
 // ─── Copilot v3 Validation Test Harness ──────────────────────────────────
-// Run with: node scripts/test-copilot-v3.mjs
+// Run with: npx tsx scripts/test-copilot-v3.ts
 //
 // Tests the full v3 pipeline (interpreter → planner → engine fallback)
 // against 50 prompts across 5 categories.
 
-import { processInput } from "../src/lib/copilot/engine.ts";
+import { processInput, type ActionType } from "../src/lib/copilot/engine";
+import type { ConversationContext } from "../src/lib/copilot/context";
 
-const EMPTY_CTX = { lastAction: null, lastBlockType: null, lastColorChanged: null, lastFontChanged: null };
-const AFTER_VISUAL_TONE = { ...EMPTY_CTX, lastAction: "apply-visual-tone", lastBlockType: "hero", lastColorChanged: "beige" };
-const AFTER_COLOR_CHANGE = { ...EMPTY_CTX, lastAction: "change-primary-color", lastBlockType: null, lastColorChanged: "beige", lastFontChanged: null };
-const AFTER_IMAGE_CHANGE = { ...EMPTY_CTX, lastAction: "change-hero-image", lastBlockType: "hero", lastColorChanged: null };
-const AFTER_SECTION_CHANGE = { ...EMPTY_CTX, lastAction: "hide-section", lastBlockType: "testimonials", lastColorChanged: null };
+// ─── Types ──────────────────────────────────────────────────────────────
 
-function test(prompt, expectedIntent, ctx = EMPTY_CTX) {
+interface TestResult {
+  prompt: string;
+  expectedIntent: string;
+  mainIntent: string;
+  status: string;
+  understood: boolean;
+  passed: boolean;
+  entities: Record<string, string>;
+  clarification: string | null;
+  partialSuccess?: number;
+  totalExpected?: number;
+  allIntents?: string;
+}
+
+interface CategoryTotals {
+  pass: number;
+  fail: number;
+  total: number;
+}
+
+// ─── Contexts ───────────────────────────────────────────────────────────
+
+const EMPTY_CTX: ConversationContext = {
+  lastAction: null,
+  lastBlockType: null,
+  lastColorChanged: null,
+  lastFontChanged: null,
+  lastThemeApplied: null,
+  currentDevice: "desktop",
+  undoStack: [],
+};
+
+const AFTER_VISUAL_TONE: ConversationContext = {
+  ...EMPTY_CTX,
+  lastAction: "apply-visual-tone",
+  lastBlockType: "hero",
+  lastColorChanged: "beige",
+};
+
+const AFTER_COLOR_CHANGE: ConversationContext = {
+  ...EMPTY_CTX,
+  lastAction: "change-primary-color",
+  lastBlockType: null,
+  lastColorChanged: "beige",
+  lastFontChanged: null,
+};
+
+const AFTER_IMAGE_CHANGE: ConversationContext = {
+  ...EMPTY_CTX,
+  lastAction: "change-hero-image",
+  lastBlockType: "hero",
+  lastColorChanged: null,
+};
+
+const AFTER_SECTION_CHANGE: ConversationContext = {
+  ...EMPTY_CTX,
+  lastAction: "hide-section",
+  lastBlockType: "testimonials",
+  lastColorChanged: null,
+};
+
+// ─── Test runner ────────────────────────────────────────────────────────
+
+function test(prompt: string, expectedIntent: string, ctx: ConversationContext = EMPTY_CTX): TestResult {
   try {
     const result = processInput(prompt, ctx);
     const actions = result.actions;
@@ -22,17 +82,18 @@ function test(prompt, expectedIntent, ctx = EMPTY_CTX) {
     const entities = actions[0]?.entities ?? {};
     const clarification = actions[0]?.clarification ?? null;
 
-    const passed = expectedIntent.split("|").some(ei => mainIntent === ei) && (status !== "unsupported" || expectedIntent.includes("unknown"));
+    const passed = expectedIntent.split("|").some((ei: string) => mainIntent === ei) && (status !== "unsupported" || expectedIntent.includes("unknown"));
     return { prompt, expectedIntent, mainIntent, status, understood, passed, entities, clarification };
-  } catch (e) {
-    return { prompt, expectedIntent, mainIntent: "ERROR", status: "error", understood: false, passed: false, entities: {}, clarification: e.message };
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { prompt, expectedIntent, mainIntent: "ERROR", status: "error", understood: false, passed: false, entities: {}, clarification: msg };
   }
 }
 
-const results = [];
+const results: Array<TestResult & { category: string }> = [];
 
 // ═══ A. 20 ABSTRACT PROMPTS ═══
-const abstracts = [
+const abstracts: Array<[string, string]> = [
   ["quiero algo más premium", "apply-visual-tone"],
   ["hacelo más elegante", "apply-visual-tone"],
   ["más limpio", "apply-visual-tone|change-font-by-style"],
@@ -57,7 +118,7 @@ const abstracts = [
 for (const [p, ei] of abstracts) results.push({ ...test(p, ei), category: "abstract" });
 
 // ═══ B. 10 FOLLOW-UPS ═══
-const followups = [
+const followups: Array<[string, string, ConversationContext]> = [
   ["eso no", "undo", AFTER_VISUAL_TONE],
   ["el anterior", "undo", AFTER_COLOR_CHANGE],
   ["esa imagen", "change-hero-image", AFTER_IMAGE_CHANGE],
@@ -72,7 +133,7 @@ const followups = [
 for (const [p, ei, ctx] of followups) results.push({ ...test(p, ei, ctx), category: "follow-up" });
 
 // ═══ C. 10 COMPOUND PROMPTS ═══
-const compounds = [
+const compounds: Array<[string, string]> = [
   ["cambiá la fuente y hacé el hero más premium", "change-font|apply-visual-tone"],
   ["poné colores más cálidos y hacé los botones más redondos", "change-color|change-primary-color|change-button-style|apply-visual-tone"],
   ["cambiá la imagen y subí esa sección", "change-hero-image|move-section"],
@@ -88,16 +149,19 @@ for (const [p, ei] of compounds) {
   const res = test(p, ei);
   // For compound, check if ANY expected intent was matched
   const expectedIntents = ei.split("|");
-  const allActions = processInput(p, EMPTY_CTX).actions.map(a => a.intent);
-  const matchedCount = expectedIntents.filter(e => allActions.includes(e)).length;
-  res.partialSuccess = matchedCount;
-  res.totalExpected = expectedIntents.length;
-  res.allIntents = allActions.join(", ");
-  results.push({ ...res, category: "compound" });
+  const allActions = processInput(p, EMPTY_CTX).actions.map((a: { intent: string }) => a.intent);
+  const matchedCount = expectedIntents.filter((e: string) => allActions.includes(e)).length;
+  results.push({
+    ...res,
+    partialSuccess: matchedCount,
+    totalExpected: expectedIntents.length,
+    allIntents: allActions.join(", "),
+    category: "compound",
+  });
 }
 
 // ═══ D. 5 AMBIGUOUS PROMPTS ═══
-const ambiguous = [
+const ambiguous: Array<[string, string, ConversationContext?]> = [
   ["hacelo mejor", "apply-visual-tone|unknown"],
   ["eso", "unknown", AFTER_VISUAL_TONE],
   ["más así", "apply-visual-tone|unknown", AFTER_VISUAL_TONE],
@@ -107,12 +171,12 @@ const ambiguous = [
 for (const [p, ei, ctx] of ambiguous) results.push({ ...test(p, ei, ctx ?? EMPTY_CTX), category: "ambiguous" });
 
 // ═══ E. 5 NO-OP / CONFLICT PROMPTS ═══
-const noop = [
+const noop: Array<[string, string, ConversationContext?]> = [
   ["deshacé", "undo", AFTER_VISUAL_TONE],
   ["no me gusta, volvé atrás", "undo", AFTER_COLOR_CHANGE],
   ["quiero algo más premium y más oscuro", "apply-visual-tone"],
   ["poné la imagen que ya tiene", "change-hero-image|unknown"],
-  ["deshacé de nuevo", "undo", EMPTY_CTX],
+  ["deshacé de nuevo", "undo"],
 ];
 for (const [p, ei, ctx] of noop) results.push({ ...test(p, ei, ctx ?? EMPTY_CTX), category: "no-op" });
 
@@ -123,12 +187,12 @@ console.log("╚═════════════════════�
 
 let totalPass = 0;
 let totalFail = 0;
-const byCategory = {};
+const byCategory: Record<string, CategoryTotals> = {};
 
 for (const r of results) {
   const icon = r.passed ? "✅" : "❌";
   if (r.passed) totalPass++; else totalFail++;
-  
+
   if (!byCategory[r.category]) byCategory[r.category] = { pass: 0, fail: 0, total: 0 };
   byCategory[r.category].total++;
   if (r.passed) byCategory[r.category].pass++; else byCategory[r.category].fail++;
@@ -155,7 +219,7 @@ console.log(`FAILURES: ${totalFail}`);
 console.log("");
 if (totalFail > 0) {
   console.log("FAILED PROMPTS:");
-  for (const r of results.filter(r => !r.passed)) {
+  for (const r of results.filter((r: TestResult & { category: string }) => !r.passed)) {
     console.log(`  ❌ "${r.prompt}" → expected ${r.expectedIntent}, got ${r.mainIntent} (${r.status})`);
   }
 }
