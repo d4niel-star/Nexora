@@ -8,14 +8,15 @@ import {
   ChevronRight,
   LayoutDashboard,
   LineChart,
+  Megaphone,
   Menu,
+  Sparkles,
   Package,
   PackageSearch,
   Puzzle,
   Settings,
   ShoppingBag,
   ShoppingCart,
-  Sparkles,
   Store,
   Tag,
   Truck,
@@ -29,6 +30,7 @@ import { cn } from "@/lib/utils";
 
 import { TopbarUserMenu } from "./layout/TopbarUserMenu";
 import { NexoraLogo } from "./layout/NexoraLogo";
+import { NexoraGlobalChat } from "./store-ai/NexoraGlobalChat";
 
 // ─── Admin Shell v4 ──────────────────────────────────────────────────────
 // Dark sidebar against a cool neutral canvas. Previous revisions shipped a
@@ -41,8 +43,8 @@ import { NexoraLogo } from "./layout/NexoraLogo";
 //   · Tienda            (group)   → tienda IA, mi tienda
 //   · Operación         (single)  → /admin/operations
 //   · Apps y herramientas (group) → apps, market
-//   · Nexora IA         (pinned)  → /admin/ai                     ← bottom
-//   · Configuración     (group)   → general, plan, finanzas, …    ← pinned
+//   · Marketing         (group)   → ads
+//   · Configuración     (leaf)    → /admin/settings                ← pinned
 //
 // Each group is collapsible, auto-expands when the current pathname lives
 // inside it, and reuses the exact same row styling as a top-level item so
@@ -102,6 +104,15 @@ const primaryNav: readonly NavEntry[] = [
       { kind: "leaf", href: "/admin/store", label: "Mi tienda", icon: Store },
     ],
   },
+  {
+    kind: "group",
+    id: "marketing",
+    label: "Marketing",
+    icon: Megaphone,
+    items: [
+      { kind: "leaf", href: "/admin/ai/ads", label: "Ads", icon: Megaphone },
+    ],
+  },
   { kind: "leaf", href: "/admin/operations", label: "Operación", icon: PackageSearch },
   {
     kind: "group",
@@ -115,12 +126,9 @@ const primaryNav: readonly NavEntry[] = [
   },
 ];
 
-// Bottom-pinned Configuración entry. Sits BELOW Nexora IA — this is an
-// explicit brief requirement, not a cosmetic choice. Configuración is a
-// SINGLE sidebar leaf on purpose: clicking it opens a dedicated settings
-// surface (/admin/settings) that owns its own right-side category nav.
-// We do not expand categories in the global sidebar — the settings
-// surface is the settings center, not a dropdown of links.
+// Bottom-pinned Configuración entry. Configuración is a SINGLE sidebar
+// leaf on purpose: clicking it opens a dedicated settings surface
+// (/admin/settings) that owns its own right-side category nav.
 const settingsLeaf: NavLeaf = {
   kind: "leaf",
   href: "/admin/settings",
@@ -250,11 +258,9 @@ export function AdminShell({ children, storeName, storeInitials, dunningBanner }
         </ul>
       </nav>
 
-      {/* ─── Pinned bottom area: Nexora IA, then Configuración ─── */}
-      {/* Brief requirement: Configuración must sit BELOW Nexora IA. */}
+      {/* ─── Pinned bottom area: Configuración ─── */}
       <div className="border-t border-[color:var(--sidebar-hairline)] px-3 py-3">
-        <NexoraIAEntry pathname={pathname} onNavigate={closeSidebar} />
-        <ul className="mt-1 flex flex-col gap-0.5">
+        <ul className="flex flex-col gap-0.5">
           <SidebarLeaf
             leaf={settingsLeaf}
             pathname={pathname}
@@ -335,6 +341,10 @@ export function AdminShell({ children, storeName, storeInitials, dunningBanner }
           )}
         </div>
       </main>
+
+      {/* ── Nexora IA Global Chat ──────────────────────────────── */}
+      {/* Visible on ALL admin pages EXCEPT the store editor, which has its own copilot. */}
+      {!pathname.startsWith("/admin/store-ai/editor") && <NexoraGlobalChat />}
     </div>
   );
 }
