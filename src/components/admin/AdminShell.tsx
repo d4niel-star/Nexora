@@ -14,6 +14,7 @@ import {
   MapPin,
   Megaphone,
   Menu,
+  MessageSquare,
   Network,
   Package,
   Puzzle,
@@ -143,6 +144,9 @@ const primaryNav: readonly NavEntry[] = [
       { kind: "leaf", href: "/admin/store", label: "Mi tienda", icon: Store },
     ],
   },
+  // Comunicación — own top-level leaf. A single page internally tabbed
+  // into channels, contact info, WhatsApp button, and automated emails.
+  { kind: "leaf", href: "/admin/communication", label: "Comunicación", icon: MessageSquare },
   // Marketing replaces the old generic "Ads" sub-leaf with one explicit
   // surface per advertising network (Meta, TikTok, Google) plus a
   // dedicated "Píxeles y tags" hub that owns all the technical, non-OAuth

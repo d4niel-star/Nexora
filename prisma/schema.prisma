@@ -73,6 +73,7 @@ model Store {
   productReviews     ProductReview[]
   bundleOffers       BundleOffer[]
   postPurchaseFlows  PostPurchaseFlowsSettings?
+  communicationSettings StoreCommunicationSettings?
 
   @@index([ownerId])
 }
@@ -1468,3 +1469,63 @@ model PostPurchaseFlowsSettings {
   updatedAt                  DateTime @updatedAt
 }
 
+
+// ─── Communication / Canales de contacto ─────────────────────────────────
+// Single row per store. Centralises every piece of contact / social /
+// messaging configuration the merchant manages from the Comunicación
+// admin category. The storefront reads this on every request (via
+// getStorefrontData) so changes are reflected instantly — no publish
+// step needed.
+model StoreCommunicationSettings {
+  id                    String   @id @default(cuid())
+  storeId               String   @unique
+  store                 Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  // ── Contact info ────────────────────────────────────────────────────
+  contactEmail          String?
+  contactPhone          String?
+  contactAddress        String?
+  contactCity           String?
+  contactProvince       String?
+  contactCountry        String?  @default("AR")
+  contactSchedule       String?  // e.g. "Lun a Vie 9 a 18hs"
+  showContactInStore    Boolean  @default(true)
+
+  // ── WhatsApp ────────────────────────────────────────────────────────
+  whatsappNumber        String?  // international format, digits only
+  whatsappDisplayName   String?  // "Soporte Mi Tienda"
+  whatsappConnected     Boolean  @default(false)
+  whatsappVerifiedAt    DateTime?
+
+  // ── WhatsApp floating button (storefront) ───────────────────────────
+  whatsappButtonEnabled Boolean  @default(false)
+  whatsappButtonText    String?  @default("¡Hola! Quiero consultar sobre sus productos")
+  whatsappButtonPosition String? @default("bottom-right") // "bottom-right" | "bottom-left"
+
+  // ── Instagram ───────────────────────────────────────────────────────
+  instagramHandle       String?  // @handle (without @)
+  instagramUrl          String?  // full URL
+  instagramConnected    Boolean  @default(false)
+  showInstagramInStore  Boolean  @default(false)
+
+  // ── Facebook ────────────────────────────────────────────────────────
+  facebookPageUrl       String?  // https://facebook.com/mypage
+  facebookPageName      String?
+  facebookConnected     Boolean  @default(false)
+  showFacebookInStore   Boolean  @default(false)
+
+  // ── Automated emails ────────────────────────────────────────────────
+  emailOrderCreated     Boolean  @default(true)
+  emailPaymentApproved  Boolean  @default(true)
+  emailPaymentPending   Boolean  @default(true)
+  emailPaymentFailed    Boolean  @default(true)
+  emailOrderShipped     Boolean  @default(true)
+  emailOrderCancelled   Boolean  @default(true)
+  emailPaymentRefunded  Boolean  @default(true)
+  emailOrderDelivered   Boolean  @default(true)
+  emailAbandonedCart    Boolean  @default(false)
+  emailStockCritical    Boolean  @default(true)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}

@@ -2,11 +2,13 @@ import { notFound } from "next/navigation";
 import type { CSSProperties } from "react";
 import { StoreHeader } from "@/components/storefront/layout/StoreHeader";
 import { StoreFooter } from "@/components/storefront/layout/StoreFooter";
+import { WhatsAppFloatingButton } from "@/components/storefront/layout/WhatsAppFloatingButton";
 import { getStorefrontData } from "@/lib/store-engine/queries";
 import { getCart } from "@/lib/store-engine/cart/queries";
 import { normalizeStorefrontHref } from "@/lib/store-engine/urls";
 import type { StoreConfig } from "@/types/storefront";
 import { isTrackingWidgetActive } from "@/lib/apps/order-tracking-widget/queries";
+import { getStorefrontCommunication } from "@/lib/communication/queries";
 import {
   getStoreButtonRadius,
   normalizeThemeColor,
@@ -32,6 +34,13 @@ export default async function StorefrontLayout({
   const fontOption = resolveStoreFontOption(storefrontData.branding.fontFamily);
   const buttonRadius = getStoreButtonRadius(storefrontData.branding.buttonStyle);
 
+  // Fetch communication + cart + tracking in parallel
+  const [cart, trackingEnabled, commData] = await Promise.all([
+    getCart(storefrontData.store.id),
+    isTrackingWidgetActive(storefrontData.store.id),
+    getStorefrontCommunication(storefrontData.store.id),
+  ]);
+
   const config: StoreConfig = {
     slug: storefrontData.store.slug,
     name: storefrontData.store.name,
@@ -56,13 +65,13 @@ export default async function StorefrontLayout({
         href: normalizeStorefrontHref(item.href, storefrontData.store.slug),
       })),
     })),
-    cartItemCount: 0,
+    cartItemCount: cart?.totalQuantity ?? 0,
+    // Communication data
+    contactInfo: commData.contact,
+    socialLinks: commData.socialLinks,
+    whatsapp: commData.whatsapp,
   };
 
-  const cart = await getCart(storefrontData.store.id);
-  config.cartItemCount = cart?.totalQuantity ?? 0;
-
-  const trackingEnabled = await isTrackingWidgetActive(storefrontData.store.id);
   const storefrontStyle = {
     "--store-primary": primaryColor,
     "--store-secondary": secondaryColor,
@@ -86,6 +95,15 @@ export default async function StorefrontLayout({
       <StoreHeader config={config} />
       <main className="flex-1">{children}</main>
       <StoreFooter config={config} showTrackingLink={trackingEnabled} />
+      {/* WhatsApp floating button — rendered only when enabled */}
+      {config.whatsapp?.buttonEnabled && config.whatsapp.number && (
+        <WhatsAppFloatingButton
+          number={config.whatsapp.number}
+          buttonText={config.whatsapp.buttonText}
+          position={config.whatsapp.buttonPosition}
+        />
+      )}
     </div>
   );
 }
+

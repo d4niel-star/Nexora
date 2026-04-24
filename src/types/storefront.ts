@@ -12,6 +12,24 @@ export interface StoreConfig {
   headerNavigation: NavItem[];
   footerNavigation: FooterNavGroup[];
   cartItemCount: number;
+  /** Communication settings surfaced from Comunicación admin */
+  contactInfo?: {
+    email: string | null;
+    phone: string | null;
+    address: string | null;
+    schedule: string | null;
+  } | null;
+  socialLinks?: Array<{
+    platform: "instagram" | "facebook" | "whatsapp";
+    label: string;
+    url: string;
+  }>;
+  whatsapp?: {
+    number: string;
+    buttonEnabled: boolean;
+    buttonText: string;
+    buttonPosition: "bottom-right" | "bottom-left";
+  } | null;
 }
 
 export interface NavItem {
