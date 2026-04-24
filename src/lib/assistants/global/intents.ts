@@ -45,24 +45,25 @@ export const GLOBAL_INTENTS: ConceptIntent<GlobalIntentId>[] = [
   // ─── Ads ───────────────────────────────────────────────────────────
   {
     id: "ads.recommendations",
-    words: ["recomenda", "recomendaciones", "sugerencias", "ideas", "que campaña", "que publico", "que campania"],
-    phrases: ["que recomendas", "que sugerís", "que me recomendas para ads", "ideas de ads", "campañas para probar"],
-    requireAny: ["ads", "campaña", "campania", "anuncio", "publicidad", "meta", "tiktok", "google", "facebook", "instagram", "pauta", "publico", "audiencia", "creativos", "creativo"],
+    words: ["recomenda", "recomendaciones", "sugerencias", "ideas", "que campaña", "que publico", "que campania", "mejorar", "conviene", "optimizar"],
+    phrases: ["que recomendas", "que sugerís", "que me recomendas para ads", "ideas de ads", "campañas para probar", "que conviene mejorar", "que conviene en marketing", "mejorar marketing", "mejorar ads"],
+    requireAny: ["ads", "campaña", "campania", "anuncio", "publicidad", "meta", "tiktok", "google", "facebook", "instagram", "pauta", "publico", "audiencia", "creativos", "creativo", "marketing"],
   },
   {
     id: "ads.connections.status",
-    words: ["conectado", "conexion", "conexiones", "conectada", "vinculado", "vinculada"],
-    phrases: ["que tengo conectado", "ads conectado", "estoy conectado", "tengo conectado meta", "tengo conectado tiktok", "tengo conectado google"],
+    words: ["conectado", "conexion", "conexiones", "conectada", "vinculado", "vinculada", "falta", "faltan"],
+    phrases: ["que tengo conectado", "ads conectado", "estoy conectado", "tengo conectado meta", "tengo conectado tiktok", "tengo conectado google", "que me falta en", "que falta en"],
     requireAny: ["ads", "meta", "facebook", "instagram", "tiktok", "google", "publicidad", "campaña", "campania"],
   },
   {
     id: "ads.pixels.status",
     words: ["pixel", "pixeles", "tag", "tags", "tracking"],
-    phrases: ["tengo el pixel", "tengo pixel", "esta el pixel", "config pixel", "instalar pixel"],
+    phrases: ["tengo el pixel", "tengo pixel", "esta el pixel", "config pixel", "instalar pixel", "revisa los pixeles", "revisar pixeles"],
   },
   {
     id: "ads.performance",
     words: ["rendimiento", "performance", "roas", "cpa", "ctr", "impresiones", "clicks", "resultados"],
+    phrases: ["como esta meta", "como esta tiktok", "como esta google", "como van los ads", "como va meta", "como va tiktok", "como va google", "como esta google ads", "como esta meta ads"],
     requireAny: ["ads", "meta", "tiktok", "google", "campaña", "campania", "anuncio", "publicidad", "facebook", "instagram"],
   },
   {
@@ -86,7 +87,7 @@ export const GLOBAL_INTENTS: ConceptIntent<GlobalIntentId>[] = [
   {
     id: "ads.go.meta",
     words: [],
-    phrases: ["llevame a meta", "abrime meta", "ir a meta", "abrir meta ads", "ver meta", "panel de meta"],
+    phrases: ["llevame a meta", "abrime meta", "ir a meta", "abrir meta ads", "ver meta", "panel de meta", "quiero ir a meta ads"],
     requireAny: ["meta", "facebook", "instagram"],
   },
   {
@@ -98,13 +99,13 @@ export const GLOBAL_INTENTS: ConceptIntent<GlobalIntentId>[] = [
   {
     id: "ads.go.google",
     words: [],
-    phrases: ["llevame a google", "abrime google", "ir a google ads", "panel de google"],
+    phrases: ["llevame a google", "abrime google", "ir a google ads", "panel de google", "quiero ver google ads"],
     requireAny: ["google"],
   },
   {
     id: "ads.go.pixels",
     words: [],
-    phrases: ["llevame a pixeles", "ir a pixeles", "abrir pixeles", "configurar pixel", "configurar tags", "abrir tags"],
+    phrases: ["llevame a pixeles", "ir a pixeles", "abrir pixeles", "configurar pixel", "configurar tags", "abrir tags", "quiero configurar pixeles"],
     requireAny: ["pixel", "pixeles", "tag", "tags"],
   },
   // ─── Navigation ────────────────────────────────────────────────────
@@ -132,12 +133,12 @@ export const GLOBAL_INTENTS: ConceptIntent<GlobalIntentId>[] = [
   {
     id: "nav.stats",
     words: ["estadisticas", "estadísticas", "reportes", "metricas", "métricas", "analytics"],
-    phrases: ["ver estadisticas", "abrir estadisticas", "ir a reportes"],
+    phrases: ["ver estadisticas", "abrir estadisticas", "ir a reportes", "llevame a estadisticas"],
   },
   {
     id: "nav.payments",
     words: ["pagos", "cobros", "checkout", "transacciones"],
-    phrases: ["ir a pagos", "abrir pagos", "ver pagos"],
+    phrases: ["ir a pagos", "abrir pagos", "ver pagos", "abrime finanzas"],
   },
   {
     id: "nav.shipping",
@@ -177,6 +178,7 @@ export const GLOBAL_INTENTS: ConceptIntent<GlobalIntentId>[] = [
     id: "status.alerts",
     words: ["alertas", "pendientes", "urgentes"],
     phrases: ["que tengo pendiente", "que me falta", "que tengo que hacer", "que urge"],
+    antiWords: ["meta", "tiktok", "google", "campana", "campaña", "pixel", "conect"],
   },
   {
     id: "status.revenue",
@@ -188,6 +190,12 @@ export const GLOBAL_INTENTS: ConceptIntent<GlobalIntentId>[] = [
   {
     id: "editor.handoff",
     words: ["color", "colores", "tipografia", "tipografía", "fuente", "hero", "secciones", "tema", "diseño", "diseno", "branding", "logo"],
-    phrases: ["cambiar el color", "cambiar la fuente", "ocultar testimonios", "aplicar tema", "cambiar diseño", "editar la portada"],
+    phrases: [
+      "cambiar el color", "cambiar la fuente", "ocultar testimonios", "aplicar tema",
+      "cambiar diseño", "editar la portada",
+      "algo mas premium", "look mas premium", "mas elegante", "mas vendedor", "mas luxury",
+      "cambiame el diseño", "cambia los colores", "pone una imagen mejor en la portada",
+      "haceme el hero mas elegante",
+    ],
   },
 ];
