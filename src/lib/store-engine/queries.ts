@@ -308,6 +308,19 @@ export async function getAdminStoreInitialData(): Promise<AdminStoreInitialData 
       paymentProviders: {
         orderBy: { updatedAt: "desc" },
       },
+      shippingMethods: {
+        where: { isActive: true },
+        select: { id: true },
+      },
+      legalSettings: {
+        select: {
+          termsOfService: true,
+          privacyPolicy: true,
+          refundPolicy: true,
+          businessInfo: true,
+          btnWithdrawalActive: true,
+        },
+      },
       _count: {
         select: { products: true },
       },
@@ -317,6 +330,12 @@ export async function getAdminStoreInitialData(): Promise<AdminStoreInitialData 
   if (!store) return null;
 
   const lastSnapshot = store.snapshots[0] ?? null;
+  const policiesReady = Boolean(
+    store.legalSettings?.termsOfService?.trim() &&
+      store.legalSettings?.privacyPolicy?.trim() &&
+      store.legalSettings?.refundPolicy?.trim(),
+  );
+  const businessInfoReady = Boolean(store.legalSettings?.businessInfo?.trim());
   const [publishedProducts, sellableProducts, previewProduct, previewCollection] = await Promise.all([
     prisma.product.count({
       where: { storeId: store.id, isPublished: true, status: { not: "archived" } },
@@ -424,6 +443,13 @@ export async function getAdminStoreInitialData(): Promise<AdminStoreInitialData 
       products: store._count.products,
       publishedProducts,
       sellableProducts,
+    },
+    checkout: {
+      activeShippingMethods: store.shippingMethods.length,
+      hasShippingConfigured: store.shippingMethods.length > 0,
+      policiesReady,
+      businessInfoReady,
+      withdrawalEnabled: store.legalSettings?.btnWithdrawalActive ?? false,
     },
     paymentProvider: paymentProvider
       ? {

@@ -168,6 +168,13 @@ export interface AdminStoreInitialData {
     publishedProducts: number;
     sellableProducts: number;
   };
+  checkout: {
+    activeShippingMethods: number;
+    hasShippingConfigured: boolean;
+    policiesReady: boolean;
+    businessInfoReady: boolean;
+    withdrawalEnabled: boolean;
+  };
   paymentProvider: {
     provider: string;
     status: string;

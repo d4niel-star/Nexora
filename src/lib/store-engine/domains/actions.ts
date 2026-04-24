@@ -87,13 +87,47 @@ export async function removeCustomDomain(domainId: string, storeId: string) {
 }
 
 export async function setPrimaryDomain(storeId: string, domainNameOrHostname: string) {
+  const normalizedTarget = domainNameOrHostname
+    .toLowerCase()
+    .replace(/^(https?:\/\/)?/, "")
+    .replace(/\/.*$/, "")
+    .trim();
+
+  const store = await prisma.store.findUnique({
+    where: { id: storeId },
+    select: {
+      slug: true,
+      subdomain: true,
+    },
+  });
+
+  if (!store) {
+    throw new Error("Tienda no encontrada");
+  }
+
   // Reset all primary flags for this store
   await prisma.storeDomain.updateMany({
     where: { storeId },
     data: { isPrimary: false }
   });
 
-  if (domainNameOrHostname.includes(".")) {
+  const normalizedSubdomain = store.subdomain
+    ? store.subdomain
+        .toLowerCase()
+        .replace(/^(https?:\/\/)?/, "")
+        .replace(/\/.*$/, "")
+        .trim()
+    : null;
+
+  if (
+    normalizedTarget === store.slug.toLowerCase() ||
+    (normalizedSubdomain && normalizedTarget === normalizedSubdomain)
+  ) {
+     await prisma.store.update({
+       where: { id: storeId },
+       data: { primaryDomain: normalizedSubdomain ?? store.slug }
+     });
+  } else if (normalizedTarget.includes(".")) {
      const { checkFeatureAccess } = await import("@/lib/billing/service");
      const gate = await checkFeatureAccess(storeId, "custom_domain");
      if (!gate.allowed) {
@@ -102,25 +136,27 @@ export async function setPrimaryDomain(storeId: string, domainNameOrHostname: st
 
      // Setting a custom domain as primary
      const domain = await prisma.storeDomain.findUnique({
-       where: { hostname: domainNameOrHostname }
+       where: { hostname: normalizedTarget }
      });
      
-     if (domain && domain.storeId === storeId) {
-       await prisma.storeDomain.update({
-         where: { id: domain.id },
-         data: { isPrimary: true }
-       });
-       
-       await prisma.store.update({
-         where: { id: storeId },
-         data: { primaryDomain: domain.hostname }
-       });
+     if (!domain || domain.storeId !== storeId) {
+       throw new Error("Dominio no encontrado");
      }
+
+     await prisma.storeDomain.update({
+       where: { id: domain.id },
+       data: { isPrimary: true }
+     });
+     
+     await prisma.store.update({
+       where: { id: storeId },
+       data: { primaryDomain: domain.hostname }
+     });
   } else {
      // Settng subdomain or slug as primary fallback
      await prisma.store.update({
        where: { id: storeId },
-       data: { primaryDomain: domainNameOrHostname }
+       data: { primaryDomain: normalizedTarget }
      });
   }
 

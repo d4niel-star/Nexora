@@ -1,102 +1,82 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  Check,
-  CreditCard,
-  Eye,
-  Globe,
-  Layers,
-  Pencil,
-  Save,
-  Share2,
-  Sparkles,
-  X,
-} from "lucide-react";
+import { CheckCircle2, CreditCard, Globe, Layers, RefreshCw, X } from "lucide-react";
 
-import { ColorDot } from "@/components/admin/store/StoreBadge";
+import {
+  formatInternalStoreDomain,
+  normalizeDomainHost,
+} from "@/components/admin/store/domain-utils";
+import { StoreSummaryView } from "@/components/admin/store/StoreSummaryView";
 import { DomainSettingsView } from "@/components/admin/store/tabs/DomainSettingsView";
 import { PaymentsHub } from "@/components/admin/store/tabs/PaymentsHub";
 import { TableSkeleton } from "@/components/admin/orders/TableSkeleton";
 import { cn } from "@/lib/utils";
-
-import {
-  createFirstStoreProductAction,
-  publishStoreAction,
-} from "@/lib/store-engine/actions";
-import type { AdminStoreInitialData } from "@/types/store-engine";
-import type { StoreSummary, StoreStatus } from "@/types/store";
 import type { MercadoPagoPlatformReadiness } from "@/lib/payments/mercadopago/platform-readiness";
-import type { PaymentProviderConnectionView, PaymentProviderStatus } from "@/lib/payments/types";
-
-// ─── Mi tienda — superficie operativa ───────────────────────────────────
-//
-// Responsabilidad única: mostrar el estado operativo de la tienda y
-// resolver dominio y pagos. TODO lo que sea edición de diseño —
-// branding, navegación, páginas, secciones del home, tema — vive en
-// `Tienda IA` (/admin/store-ai y /admin/store-ai/editor). Mantener
-// esas tabs aquí significaba duplicar fuentes de verdad sobre el mismo
-// StoreBranding / StoreNavItem / StorePage, ofrecer ediciones parciales
-// (Navegación y Páginas estaban solo en modo lectura) y diluir el foco
-// de esta pantalla.
+import type {
+  PaymentProviderConnectionView,
+  PaymentProviderStatus,
+} from "@/lib/payments/types";
+import type { AdminStoreInitialData } from "@/types/store-engine";
 
 type TabValue = "resumen" | "dominio" | "pagos";
 
-interface ToastMessage { id: string; title: string; description: string; }
+interface ToastMessage {
+  id: string;
+  title: string;
+  description: string;
+}
 
-const timeFormatter = new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+const loadingDelayMs = 260;
 
-// ─── Mercado Pago error reason → user-facing copy ────────────────────────
-// Maps the stable error vocabulary emitted by the OAuth callback
-// (see `classifyMpOAuthError` in lib/payments/mercadopago/oauth.ts) into
-// actionable toast messages. Anything we don't recognize falls back to
-// a generic copy that still points the user at the Developer Dashboard.
+function resolveStoreTab(tab: string | null): TabValue {
+  return tab === "dominio" || tab === "pagos" ? tab : "resumen";
+}
+
 function mpReasonCopy(reason: string): { title: string; description: string } {
   switch (reason) {
     case "invalid_grant":
       return {
-        title: "Código de autorización inválido",
+        title: "Codigo de autorizacion invalido",
         description:
-          "El código de Mercado Pago ya fue usado o expiró. Volvé a iniciar la conexión desde cero (los códigos duran sólo unos minutos).",
+          "El codigo de Mercado Pago ya fue usado o expiro. Volve a iniciar la conexion desde cero.",
       };
     case "invalid_client":
       return {
-        title: "Credenciales de la app rechazadas",
+        title: "Credenciales rechazadas",
         description:
-          "Mercado Pago rechazó el Client ID o Secret de la app. Verificá que los valores cargados en la infraestructura correspondan a las credenciales de PRODUCCIÓN de la aplicación.",
+          "Mercado Pago rechazo la aplicacion configurada. Revisa el setup global de la plataforma.",
       };
     case "invalid_redirect_uri":
       return {
         title: "Redirect URI no autorizada",
         description:
-          "La URL de retorno no coincide con ninguna dada de alta en el Developer Dashboard de Mercado Pago. Agregá el redirect URI exacto que figura en la configuración global y volvé a intentarlo.",
+          "La URL de retorno no coincide con la configurada en Mercado Pago. Hace falta corregir la integracion.",
       };
     case "same_account":
       return {
-        title: "Cuenta MP dueña de la app",
+        title: "Cuenta no permitida",
         description:
-          "Mercado Pago no permite vincular la misma cuenta que creó la aplicación. Conectate con otra cuenta MP (podés crear una cuenta de prueba desde el Developer Panel).",
+          "La cuenta de Mercado Pago que creo la aplicacion no puede vincularse como tienda cobradora.",
       };
     case "no_access_token":
       return {
-        title: "Respuesta incompleta de Mercado Pago",
+        title: "Respuesta incompleta",
         description:
-          "MP devolvió una respuesta OK pero sin access_token. Reintentá la conexión; si persiste, revisá el estado de la aplicación en el Developer Dashboard.",
+          "Mercado Pago respondio sin access token. Reintenta la conexion desde la pestaña de pagos.",
       };
     case "network":
       return {
         title: "No se pudo contactar a Mercado Pago",
-        description:
-          "La request al endpoint de Mercado Pago falló antes de llegar. Revisá la conectividad del deployment y reintentá.",
+        description: "La conexion fallo antes de llegar a Mercado Pago. Reintenta en unos minutos.",
       };
     default:
       return {
         title: "No se pudo conectar",
         description:
-          "Mercado Pago rechazó el intercambio de código. Revisá el estado de la app en el Developer Dashboard (OAuth habilitado, Redirect URI dada de alta, credenciales de producción activas).",
+          "Mercado Pago rechazo el intercambio. Revisa la configuracion de la aplicacion y vuelve a intentarlo.",
       };
   }
 }
@@ -112,73 +92,119 @@ export function StorePage({
 }) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const tabParam = searchParams.get("tab");
-  // Back-compat: old deep links pointing at branding / navegacion / paginas
-  // (and the never-implemented `home`) fall back to "resumen" so nothing
-  // crashes when external readiness/onboarding links are stale.
-  const initialTab: TabValue =
-    tabParam === "dominio" || tabParam === "pagos" ? tabParam : "resumen";
-  const [activeTab, setActiveTab] = useState<TabValue>(initialTab);
+  const pathname = usePathname();
+  const urlTab = resolveStoreTab(searchParams.get("tab"));
+
+  const [activeTab, setActiveTab] = useState<TabValue>(urlTab);
   const [isLoading, setIsLoading] = useState(true);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  // ─── Map persisted data to view models (mock fallback) ───
-  const storeSummary: StoreSummary = initialData ? {
-    themeName: initialData.theme?.activeTheme === "bold" ? "Bold Commerce" : initialData.theme?.activeTheme === "classic" ? "Classic Elegance" : "Minimal Pro",
-    themeStatus: (initialData.theme?.isPublished ? "published" : "draft") as StoreStatus,
-    hasLogo: !!initialData.branding?.logoUrl,
-    primaryColor: initialData.branding?.primaryColor ?? "#111111",
-    secondaryColor: initialData.branding?.secondaryColor ?? "#10B981",
-    domain: initialData.store.primaryDomain ?? initialData.store.subdomain ?? "Sin dominio",
-    publishStatus: (initialData.summary.lastPublishedAt ? "published" : "draft") as StoreStatus,
-    pagesCount: initialData.pages.length,
-    navItemsCount: initialData.navigation.length,
-    homeSectionsCount: initialData.homeBlocks.length,
-  } : {
-    themeName: "Sin configuración",
-    themeStatus: "draft",
-    hasLogo: false,
-    primaryColor: "#111111",
-    secondaryColor: "#10B981",
-    domain: "Sin configurar",
-    publishStatus: "draft",
-    pagesCount: 0,
-    navItemsCount: 0,
-    homeSectionsCount: 0,
-  };
-
-  const publicPath = initialData?.publicUrl ?? (initialData ? `/store/${initialData.store.slug}` : "#");
-  const publicUrl = typeof window === "undefined" || publicPath === "#" ? publicPath : `${window.location.origin}${publicPath}`;
+  const publicPath =
+    initialData?.publicUrl ?? (initialData ? `/store/${initialData.store.slug}` : "#");
   const paymentStatus = initialData?.paymentProvider?.status ?? "disconnected";
-  const isMercadoPagoConnected = paymentStatus === "connected" && !!initialData?.paymentProvider;
-  const isLive = initialData?.store.status === "active" && (initialData?.counts.sellableProducts ?? 0) > 0;
+  const isMercadoPagoConnected =
+    paymentStatus === "connected" && Boolean(initialData?.paymentProvider);
+  const isPaymentsOperational =
+    mercadoPagoPlatformReadiness.ready && isMercadoPagoConnected;
+  const isLive =
+    initialData?.store.status === "active" && (initialData?.counts.sellableProducts ?? 0) > 0;
 
-  // Map persisted payment-provider rows to the canonical view-model shape.
+  const activeDomain =
+    normalizeDomainHost(initialData?.store.primaryDomain) ??
+    formatInternalStoreDomain(initialData?.store.subdomain, initialData?.store.slug) ??
+    "sin dominio";
+
+  const hasDomainAttention = (initialData?.domains ?? []).some(
+    (domain) => domain.status === "pending" || domain.status === "failed",
+  );
+
   const paymentConnections: PaymentProviderConnectionView[] = useMemo(() => {
-    return (initialData?.paymentProviders ?? []).map((p) => ({
-      provider: p.provider,
+    return (initialData?.paymentProviders ?? []).map((provider) => ({
+      provider: provider.provider,
       status: ((): PaymentProviderStatus => {
-        switch (p.status) {
+        switch (provider.status) {
           case "connected":
           case "disconnected":
           case "needs_reconnection":
           case "error":
-            return p.status;
+            return provider.status;
           default:
             return "disconnected";
         }
       })(),
-      externalAccountId: p.externalAccountId,
-      accountEmail: p.accountEmail,
-      publicKey: p.publicKey,
-      connectedAt: p.connectedAt,
-      lastValidatedAt: p.lastValidatedAt,
-      lastError: p.lastError,
-      config: p.config,
+      externalAccountId: provider.externalAccountId,
+      accountEmail: provider.accountEmail,
+      publicKey: provider.publicKey,
+      connectedAt: provider.connectedAt,
+      lastValidatedAt: provider.lastValidatedAt,
+      lastError: provider.lastError,
+      config: provider.config,
     }));
   }, [initialData?.paymentProviders]);
 
-  useEffect(() => { if (!isLoading) return; const t = window.setTimeout(() => setIsLoading(false), 720); return () => window.clearTimeout(t); }, [isLoading]);
+  const pushToast = useCallback((title: string, description: string) => {
+    const id =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random()}`;
+
+    setToasts((current) => [...current, { id, title, description }]);
+    window.setTimeout(() => {
+      setToasts((current) => current.filter((toast) => toast.id !== id));
+    }, 3600);
+  }, []);
+
+  const dismissToast = useCallback((id: string) => {
+    setToasts((current) => current.filter((toast) => toast.id !== id));
+  }, []);
+
+  useEffect(() => {
+    if (urlTab === activeTab) return;
+    setActiveTab(urlTab);
+    setIsLoading(true);
+  }, [activeTab, urlTab]);
+
+  useEffect(() => {
+    if (!isLoading) return;
+    const timeout = window.setTimeout(() => setIsLoading(false), loadingDelayMs);
+    return () => window.clearTimeout(timeout);
+  }, [isLoading]);
+
+  useEffect(() => {
+    const mp = searchParams.get("mp");
+    if (!mp) return;
+
+    if (mp === "connected") {
+      pushToast("Mercado Pago conectado", "El checkout ya puede cobrar con la cuenta vinculada.");
+      router.refresh();
+    } else if (mp === "platform_not_ready" || mp === "missing_config") {
+      pushToast(
+        "Mercado Pago no esta listo",
+        isOps
+          ? "La plataforma tiene una configuracion incompleta. Revisa la integracion global."
+          : "La plataforma todavia no habilito la integracion. Contacta al equipo operativo.",
+      );
+    } else if (mp === "invalid_state") {
+      pushToast(
+        "Conexion rechazada",
+        "La respuesta OAuth no pertenece a esta sesion. Vuelve a iniciar la conexion.",
+      );
+    } else if (mp.startsWith("error_")) {
+      const reason = mp.slice("error_".length);
+      const copy = mpReasonCopy(reason);
+      pushToast(copy.title, copy.description);
+    } else if (mp === "error") {
+      pushToast(
+        "No se pudo conectar",
+        "Mercado Pago rechazo la autorizacion. Revisa la integracion y vuelve a intentarlo.",
+      );
+    }
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("mp");
+    const nextQuery = params.toString();
+    router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
+  }, [isOps, pathname, pushToast, router, searchParams]);
 
   const tabs: Array<{ label: string; value: TabValue; icon: React.ReactNode }> = [
     { label: "Resumen", value: "resumen", icon: <Layers className="h-3.5 w-3.5" /> },
@@ -186,61 +212,21 @@ export function StorePage({
     { label: "Pagos", value: "pagos", icon: <CreditCard className="h-3.5 w-3.5" /> },
   ];
 
-  const handleTabChange = (v: TabValue) => { if (v === activeTab) return; setActiveTab(v); setIsLoading(true); };
+  const handleTabChange = (tab: TabValue) => {
+    if (tab === activeTab) return;
 
-  const pushToast = (title: string, description: string) => {
-    const id = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
-    setToasts((c) => [...c, { id, title, description }]);
-    window.setTimeout(() => setToasts((c) => c.filter((t) => t.id !== id)), 3200);
+    setActiveTab(tab);
+    setIsLoading(true);
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", tab);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
-  useEffect(() => {
-    const mp = searchParams.get("mp");
-    if (!mp) return;
-
-    if (mp === "connected") {
-      pushToast("Mercado Pago conectado", "El checkout de la tienda quedo habilitado para pagos reales.");
-      // Force a server re-fetch so paymentProvider status flips from
-      // "disconnected" to "connected" in the rendered UI immediately.
-      // revalidatePath on the server + this refresh are belt-and-suspenders:
-      // if the RSC payload was already cached client-side, refresh() makes
-      // it re-request a fresh render.
-      router.refresh();
-    } else if (mp === "platform_not_ready" || mp === "missing_config") {
-      // `missing_config` is kept for backward compatibility with old links.
-      // Intentionally generic for merchants: we don't leak env names here.
-      pushToast(
-        "Mercado Pago no está listo",
-        isOps
-          ? "La integración está incompleta a nivel plataforma. Abrí la configuración global para ver qué falta."
-          : "La plataforma todavía no habilitó Mercado Pago. Contactá al equipo operativo para configurarlo.",
-      );
-    } else if (mp === "invalid_state") {
-      pushToast("Conexión rechazada", "La respuesta OAuth no pertenece a esta sesión. Volvé a iniciar la conexión.");
-    } else if (mp && mp.startsWith("error_")) {
-      // Specific diagnostics from the structured MP exchange error. These
-      // are fail-honest messages: they point at the real cause instead of
-      // the old generic "no devolvió credenciales válidas".
-      const reason = mp.slice("error_".length);
-      const { title, description } = mpReasonCopy(reason);
-      pushToast(title, description);
-    } else if (mp === "error") {
-      pushToast("No se pudo conectar", "Mercado Pago no devolvió credenciales válidas. Revisá la configuración de la app en el Developer Dashboard.");
-    }
-
-    // Strip the `mp` param from the URL so a manual refresh doesn't keep
-    // re-triggering the toast and router.refresh() loop. We preserve the
-    // active tab so the user stays on "pagos" after the cleanup.
-    const url = new URL(window.location.href);
-    url.searchParams.delete("mp");
-    window.history.replaceState(null, "", url.toString());
-    // Intentionally depend only on the presence of `mp`: when it's stripped
-    // this effect re-runs with `mp === null` and exits via the early return.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
-
-  const refreshData = () => router.refresh();
-  const handleAction = (action: string) => { pushToast("Información", action); };
+  const refreshData = () => {
+    setIsLoading(true);
+    router.refresh();
+  };
 
   return (
     <div className="space-y-7 pb-32">
@@ -248,40 +234,54 @@ export function StorePage({
         initial={{ opacity: 0, y: -6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-        className="flex flex-col justify-between gap-3 md:flex-row md:items-end"
+        className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"
       >
-        <div>
+        <div className="space-y-2">
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-5">
-            Operación de la tienda
+            Centro operativo
           </p>
-          <h1 className="mt-1 text-[28px] lg:text-[32px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0">
-            Mi tienda
-          </h1>
-          <p className="mt-2 max-w-2xl text-[13.5px] leading-[1.55] text-ink-5">
-            Estado general, dominio y pagos. El diseño visual y el branding viven en{" "}
-            <Link href="/admin/store-ai" className="font-medium text-ink-1 underline underline-offset-4">
-              Tienda IA
-            </Link>
-            .
-          </p>
+          <div className="space-y-1">
+            <h1 className="text-[28px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0 lg:text-[32px]">
+              Mi tienda
+            </h1>
+            <p className="max-w-2xl text-[13.5px] leading-[1.55] text-ink-5">
+              Publicacion, dominio, checkout y cobro. El trabajo editorial y visual vive en
+              Tienda IA.
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium",
-              isLive
-                ? "bg-[color:color-mix(in_srgb,var(--signal-success)_14%,transparent)] text-[color:var(--signal-success)] ring-1 ring-inset ring-[color:color-mix(in_srgb,var(--signal-success)_28%,transparent)]"
-                : "bg-[var(--surface-2)] text-ink-5 ring-1 ring-inset ring-[color:var(--hairline)]",
-            )}
+
+        <div className="flex flex-wrap items-center gap-2">
+          <HeaderPill
+            icon={<CheckCircle2 className="h-3.5 w-3.5" />}
+            tone={isLive ? "success" : "neutral"}
+            label={isLive ? "Tienda en vivo" : "Operacion en borrador"}
+          />
+          <HeaderPill
+            icon={<Globe className="h-3.5 w-3.5" />}
+            tone={hasDomainAttention ? "warning" : "neutral"}
+            label={activeDomain}
+            monospace
+          />
+          <HeaderPill
+            icon={<CreditCard className="h-3.5 w-3.5" />}
+            tone={isPaymentsOperational ? "success" : "warning"}
+            label={
+              !mercadoPagoPlatformReadiness.ready
+                ? "Cobro bloqueado"
+                : isMercadoPagoConnected
+                  ? "Cobro listo"
+                  : "Cobro pendiente"
+            }
+          />
+          <button
+            type="button"
+            onClick={refreshData}
+            className="inline-flex h-9 items-center gap-2 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3.5 text-[12.5px] font-medium text-ink-2 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0"
           >
-            <span
-              className={cn(
-                "inline-block h-1.5 w-1.5 rounded-full",
-                isLive ? "bg-[color:var(--signal-success)] animate-pulse" : "bg-ink-5",
-              )}
-            />
-            {isLive ? "Tienda en vivo" : "En borrador"}
-          </span>
+            <RefreshCw className="h-3.5 w-3.5" />
+            Actualizar
+          </button>
         </div>
       </motion.header>
 
@@ -296,10 +296,10 @@ export function StorePage({
             return (
               <button
                 key={tab.value}
+                type="button"
+                role="tab"
                 aria-selected={active}
                 onClick={() => handleTabChange(tab.value)}
-                role="tab"
-                type="button"
                 className={cn(
                   "relative inline-flex items-center gap-2 whitespace-nowrap rounded-[var(--r-sm)] px-3.5 py-2 text-[12.5px] font-medium transition-colors",
                   "focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
@@ -334,19 +334,24 @@ export function StorePage({
               {isLoading ? (
                 <TableSkeleton />
               ) : activeTab === "resumen" ? (
-                <SummaryView
+                <StoreSummaryView
                   initialData={initialData ?? null}
                   isLive={isLive}
                   isMercadoPagoConnected={isMercadoPagoConnected}
-                  onAction={handleAction}
+                  isOps={isOps}
+                  paymentsPlatformReady={mercadoPagoPlatformReadiness.ready}
                   onNavigate={handleTabChange}
                   onRefresh={refreshData}
+                  pushToast={pushToast}
                   publicPath={publicPath}
-                  publicUrl={publicUrl}
-                  summary={storeSummary}
                 />
               ) : activeTab === "dominio" ? (
-                <DomainSettingsView initialData={initialData!} onAction={handleAction} storeId={initialData?.store.id} />
+                <DomainSettingsView
+                  initialData={initialData ?? null}
+                  onRefresh={refreshData}
+                  pushToast={pushToast}
+                  storeId={initialData?.store.id ?? null}
+                />
               ) : (
                 <PaymentsHub
                   storeId={initialData?.store.id ?? null}
@@ -362,277 +367,55 @@ export function StorePage({
         </div>
       </div>
 
-      <ToastViewport onDismiss={(id) => setToasts((c) => c.filter((t) => t.id !== id))} toasts={toasts} />
+      <ToastViewport onDismiss={dismissToast} toasts={toasts} />
     </div>
   );
 }
 
-/* ─── Summary ─── */
-
-function SummaryView({
-  initialData,
-  isLive,
-  isMercadoPagoConnected,
-  onNavigate,
-  onAction,
-  onRefresh,
-  publicPath,
-  publicUrl,
-  summary,
-}: {
-  initialData: AdminStoreInitialData | null;
-  isLive: boolean;
-  isMercadoPagoConnected: boolean;
-  onNavigate: (t: TabValue) => void;
-  onAction: (a: string) => void;
-  onRefresh: () => void;
-  publicPath: string;
-  publicUrl: string;
-  summary: StoreSummary;
-}) {
-  const s = summary;
-  const [isPublishing, startPublishing] = useTransition();
-  const productCount = initialData?.counts.products ?? 0;
-  const sellableProducts = initialData?.counts.sellableProducts ?? 0;
-
-  const handlePublish = () => {
-    startPublishing(async () => {
-      try {
-        await publishStoreAction();
-        onAction("Tienda publicada correctamente.");
-        onRefresh();
-      } catch (error) {
-        onAction(error instanceof Error ? error.message : "No se pudo publicar la tienda.");
-      }
-    });
-  };
-
-  const handleShare = async () => {
-    if (!isLive) return;
-    try {
-      await navigator.clipboard.writeText(publicUrl);
-      onAction("Link publico copiado.");
-    } catch {
-      onAction("No se pudo copiar el link automaticamente.");
-    }
-  };
-
-  return (
-    <div className="space-y-6 p-6">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <SummaryCard label="Tema activo" value={s.themeName} accent />
-        <SummaryCard label="Estado" value={isLive ? "Live" : "Borrador"} />
-        <SummaryCard label="Dominio" value={s.domain} />
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5">
-          <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Logo</p>
-          <div className="mt-3 flex h-12 w-12 items-center justify-center rounded-[var(--r-sm)] bg-[var(--surface-1)] border border-[color:var(--hairline)] text-ink-6">
-            {s.hasLogo ? <Check className="h-5 w-5 text-[color:var(--signal-success)]" strokeWidth={1.75} /> : <X className="h-5 w-5" strokeWidth={1.75} />}
-          </div>
-        </div>
-        <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5">
-          <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Colores</p>
-          <div className="mt-3 flex gap-2"><ColorDot color={s.primaryColor} /><ColorDot color={s.secondaryColor} /></div>
-        </div>
-        <SummaryCard label="Páginas" value={s.pagesCount.toString()} />
-        <SummaryCard label="Secciones home" value={s.homeSectionsCount.toString()} />
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 lg:col-span-2">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">URL pública</p>
-              <p className="mt-2 break-all font-mono text-[13px] font-semibold text-ink-0">{publicPath}</p>
-              <p className="mt-2 text-[12px] leading-[1.55] text-ink-5">
-                {isLive
-                  ? isMercadoPagoConnected
-                    ? "La tienda está publicada y el checkout está habilitado con la cuenta MP conectada."
-                    : "La tienda está publicada. El checkout queda desactivado hasta conectar Mercado Pago."
-                  : "La URL queda activa cuando publiques una tienda con productos disponibles."}
-              </p>
-            </div>
-            <div className="flex shrink-0 flex-wrap gap-2">
-              {isLive ? (
-                <Link className="inline-flex items-center gap-2 h-10 px-4 rounded-[var(--r-sm)] bg-ink-0 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" href={publicPath} target="_blank">
-                  <Eye className="h-3.5 w-3.5" />
-                  Ver mi tienda
-                </Link>
-              ) : (
-                <button className="inline-flex cursor-not-allowed items-center gap-2 h-10 px-4 rounded-[var(--r-sm)] bg-ink-0 text-[13px] font-medium text-ink-12 opacity-40" disabled type="button">
-                  <Eye className="h-3.5 w-3.5" />
-                  Ver mi tienda
-                </button>
-              )}
-              <button className="inline-flex items-center gap-2 h-10 px-4 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" disabled={!isLive} onClick={handleShare} type="button">
-                <Share2 className="h-3.5 w-3.5" />
-                Compartir tienda
-              </button>
-            </div>
-          </div>
-        </div>
-        <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5">
-          <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Checkout</p>
-          <p className={cn("mt-2 text-[13px] font-semibold", isMercadoPagoConnected ? "text-[color:var(--signal-success)]" : "text-[color:var(--signal-warning)]")}>
-            {isMercadoPagoConnected ? "Mercado Pago conectado" : "Mercado Pago pendiente"}
-          </p>
-          <p className="mt-2 text-[12px] leading-[1.55] text-ink-5">
-            {isMercadoPagoConnected ? "Las compras redirigen a la cuenta propia del dueño de la tienda." : "La tienda se puede preparar y publicar, pero no cobra hasta conectar una cuenta real."}
-          </p>
-          <button className="mt-4 text-[12px] font-medium text-ink-0 underline underline-offset-4" onClick={() => onNavigate("pagos")} type="button">
-            Revisar pagos
-          </button>
-        </div>
-      </div>
-
-      {productCount === 0 ? (
-        <FirstProductPanel onAction={onAction} onRefresh={onRefresh} />
-      ) : null}
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <NavCard
-          icon={<Sparkles className="h-5 w-5 text-ink-4" strokeWidth={1.75} />}
-          title="Tienda IA"
-          description="Diseño, branding, navegación y páginas"
-          href="/admin/store-ai"
-        />
-        <NavCard
-          icon={<Globe className="h-5 w-5 text-ink-4" strokeWidth={1.75} />}
-          title="Dominio"
-          description={s.domain}
-          onClick={() => onNavigate("dominio")}
-        />
-        <NavCard
-          icon={<CreditCard className="h-5 w-5 text-ink-4" strokeWidth={1.75} />}
-          title="Pagos"
-          description={isMercadoPagoConnected ? "Conectado" : "Pendiente"}
-          onClick={() => onNavigate("pagos")}
-        />
-      </div>
-
-      <div className="flex items-center gap-3">
-        <button className="inline-flex items-center gap-2 h-10 px-5 rounded-[var(--r-sm)] bg-ink-0 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" disabled={isPublishing || sellableProducts === 0} onClick={handlePublish} type="button">
-          <Eye className="h-3.5 w-3.5" />
-          {isPublishing ? "Publicando..." : "Publicar tienda"}
-        </button>
-        <Link href="/admin/store-ai/editor" className="inline-flex items-center gap-2 h-10 px-5 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]">
-          <Pencil className="h-3.5 w-3.5" />
-          Editor de tema
-        </Link>
-      </div>
-    </div>
-  );
-}
-
-function FirstProductPanel({ onAction, onRefresh }: { onAction: (a: string) => void; onRefresh: () => void }) {
-  const [isPending, startTransition] = useTransition();
-
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const formData = new FormData(form);
-
-    startTransition(async () => {
-      try {
-        await createFirstStoreProductAction(formData);
-        form.reset();
-        onAction("Primer producto creado con variante, precio y stock.");
-        onRefresh();
-      } catch (error) {
-        onAction(error instanceof Error ? error.message : "No se pudo crear el producto.");
-      }
-    });
-  };
-
-  const inputCls = "h-11 px-3.5 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] text-[13px] font-medium text-ink-0 outline-none transition-[box-shadow,border-color] focus:border-[var(--accent-500)] focus:shadow-[var(--shadow-focus)] placeholder:text-ink-6";
-
-  return (
-    <form className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5" onSubmit={handleSubmit}>
-      <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-        <div>
-          <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Primer producto</p>
-          <h3 className="mt-2 text-[16px] font-semibold tracking-[-0.01em] text-ink-0">Cargá un SKU vendible</h3>
-          <p className="mt-1 max-w-xl text-[13px] leading-[1.55] text-ink-5">
-            Crea un producto real en la DB con una variante, precio y stock. Después podés editarlo desde Catálogo e Inventario.
-          </p>
-        </div>
-        <button className="inline-flex shrink-0 items-center gap-2 h-10 px-5 rounded-[var(--r-sm)] bg-ink-0 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" disabled={isPending} type="submit">
-          <Save className="h-3.5 w-3.5" />
-          {isPending ? "Creando..." : "Crear producto"}
-        </button>
-      </div>
-
-      <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <input className={inputCls} name="title" placeholder="Nombre del producto" required />
-        <input className={inputCls} name="variantTitle" placeholder="Variante, ej. Default" />
-        <input className={inputCls} min="1" name="price" placeholder="Precio" required step="0.01" type="number" />
-        <input className={inputCls} min="0" name="stock" placeholder="Stock" required step="1" type="number" />
-        <input className={cn(inputCls, "md:col-span-2")} name="category" placeholder="Categoría" />
-        <input className={cn(inputCls, "md:col-span-2")} name="featuredImage" placeholder="URL de imagen pública" type="url" />
-        <textarea className={cn(inputCls, "min-h-24 md:col-span-2 xl:col-span-4")} name="description" placeholder="Descripción breve" />
-      </div>
-    </form>
-  );
-}
-
-/* ─── Shared ─── */
-
-function SummaryCard({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
-  return (
-    <div className={cn("rounded-[var(--r-md)] border p-5", accent ? "border-transparent bg-ink-0" : "border-[color:var(--hairline)] bg-[var(--surface-0)]")}>
-      <p className={cn("text-[10px] font-medium uppercase tracking-[0.14em]", accent ? "text-ink-11" : "text-ink-5")}>{label}</p>
-      <p className={cn("mt-2 truncate text-[22px] font-semibold tracking-[-0.02em]", accent ? "text-ink-12" : "text-ink-0")} title={value}>{value}</p>
-    </div>
-  );
-}
-
-function NavCard({
+function HeaderPill({
   icon,
-  title,
-  description,
-  onClick,
-  href,
+  label,
+  monospace = false,
+  tone,
 }: {
   icon: React.ReactNode;
-  title: string;
-  description: string;
-  onClick?: () => void;
-  href?: string;
+  label: string;
+  monospace?: boolean;
+  tone: "neutral" | "success" | "warning";
 }) {
-  const inner = (
-    <>
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--r-sm)] bg-[var(--surface-1)] border border-[color:var(--hairline)] transition-colors group-hover:bg-[var(--surface-2)]">{icon}</div>
-      <div className="min-w-0">
-        <p className="text-[13px] font-medium text-ink-0">{title}</p>
-        <p className="mt-1 truncate text-[11px] font-medium text-ink-5">{description}</p>
-      </div>
-      <span className="ml-auto shrink-0 text-ink-6 transition-colors group-hover:text-ink-0">→</span>
-    </>
-  );
-  const cls = "group flex items-start gap-4 rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 text-left transition-colors hover:bg-[var(--surface-1)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]";
-  if (href) {
-    return (
-      <Link className={cls} href={href}>
-        {inner}
-      </Link>
-    );
-  }
   return (
-    <button className={cls} onClick={onClick} type="button">
-      {inner}
-    </button>
+    <span
+      className={cn(
+        "inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-medium ring-1 ring-inset",
+        tone === "success" &&
+          "bg-[color:color-mix(in_srgb,var(--signal-success)_14%,transparent)] text-[color:var(--signal-success)] ring-[color:color-mix(in_srgb,var(--signal-success)_28%,transparent)]",
+        tone === "warning" &&
+          "bg-[color:color-mix(in_srgb,var(--signal-warning)_14%,transparent)] text-[color:var(--signal-warning)] ring-[color:color-mix(in_srgb,var(--signal-warning)_28%,transparent)]",
+        tone === "neutral" &&
+          "bg-[var(--surface-1)] text-ink-4 ring-[color:var(--hairline)]",
+        monospace && "font-mono text-[10.5px]",
+      )}
+      title={label}
+    >
+      {icon}
+      <span className={cn("truncate", monospace && "max-w-[200px]")}>{label}</span>
+    </span>
   );
 }
 
-function ToastViewport({ toasts, onDismiss }: { toasts: ToastMessage[]; onDismiss: (id: string) => void }) {
+function ToastViewport({
+  toasts,
+  onDismiss,
+}: {
+  toasts: ToastMessage[];
+  onDismiss: (id: string) => void;
+}) {
   return (
     <div aria-live="polite" className="pointer-events-none fixed right-6 top-20 z-[60] flex w-full max-w-sm flex-col gap-3">
       <AnimatePresence initial={false}>
-        {toasts.map((t) => (
+        {toasts.map((toast) => (
           <motion.div
-            key={t.id}
+            key={toast.id}
             initial={{ opacity: 0, x: 24, scale: 0.96 }}
             animate={{ opacity: 1, x: 0, scale: 1 }}
             exit={{ opacity: 0, x: 24, scale: 0.96 }}
@@ -641,14 +424,14 @@ function ToastViewport({ toasts, onDismiss }: { toasts: ToastMessage[]; onDismis
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-[13px] font-semibold text-ink-0">{t.title}</p>
-                <p className="mt-1 text-[12px] text-ink-5">{t.description}</p>
+                <p className="text-[13px] font-semibold text-ink-0">{toast.title}</p>
+                <p className="mt-1 text-[12px] text-ink-5">{toast.description}</p>
               </div>
               <button
+                type="button"
                 aria-label="Cerrar"
                 className="rounded-[var(--r-sm)] p-1 text-ink-5 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0"
-                onClick={() => onDismiss(t.id)}
-                type="button"
+                onClick={() => onDismiss(toast.id)}
               >
                 <X className="h-4 w-4" />
               </button>
