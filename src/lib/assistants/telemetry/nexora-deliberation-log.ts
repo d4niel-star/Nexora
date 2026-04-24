@@ -30,7 +30,11 @@ export function compactDeliberationMeta(meta: DeliberationMeta): Record<string, 
     replyKind: meta.replyKind,
     resultIntent: meta.resultIntent,
     resultDomain: meta.resultDomain,
+    sessionRoute: meta.sessionRoute,
     pipeline: meta.pipeline,
     stageCount: meta.stages.length,
+    /** Ordered tags for quick scanning (redacted in trace separately). */
+    stageTags: meta.stages,
+    observability: meta.observability,
   };
 }

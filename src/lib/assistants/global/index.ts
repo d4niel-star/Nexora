@@ -22,12 +22,14 @@ import {
   type AssistantAdapter,
   type CoreContext,
   type DeliberationMeta,
+  type DeliberationOptions,
   type DeliberationOutcome,
   type DomainPlan,
   type Reply,
   type ToneProfile,
   type TraceNote,
 } from "@/lib/ai-core";
+import { minConfidenceForGlobalHandoff } from "@/lib/ai-core/risk";
 import { GLOBAL_INTENTS, type GlobalIntentId } from "./intents";
 import { dispatchGlobal } from "./dispatcher";
 
@@ -54,6 +56,17 @@ const globalAdapter: AssistantAdapter<GlobalIntentId> = {
     // Editor handoff is a deliberate refusal — render the explanation
     // here so the dispatcher path doesn't need to special-case it.
     if (plan.intent === "editor.handoff") {
+      const minH = minConfidenceForGlobalHandoff(
+        plan.intent,
+        plan.rawText?.length ?? 0,
+      );
+      if (plan.confidence < minH) {
+        return compose({
+          kind: "ask",
+          tone,
+          text: "No estoy seguro de qué retocar en el diseño. Decime con una frase qué sección o color querés ajustar y te acompaño.",
+        });
+      }
       return {
         ...plan,
         handoffTo: "editor" as const,
@@ -128,8 +141,14 @@ export interface GlobalProcessResult {
 export async function processGlobalMessage(
   raw: string,
   ctx: CoreContext,
+  deliberationOptions?: DeliberationOptions,
 ): Promise<GlobalProcessResult> {
-  const outcome: DeliberationOutcome = await deliberate(raw, globalAdapter, ctx);
+  const outcome: DeliberationOutcome = await deliberate(
+    raw,
+    globalAdapter,
+    ctx,
+    deliberationOptions,
+  );
   return {
     reply: outcome.reply,
     context: outcome.context,

@@ -21,6 +21,7 @@ import {
 import type { Reply } from "@/lib/ai-core";
 import {
   buildEditorMemoryPayload,
+  getEditorContentSignature,
   hydrateEditorContext,
   isEditorMemoryPayload,
   type TranscriptLine,
@@ -30,7 +31,10 @@ import {
   logNexoraDeliberation,
   saveNexoraAssistantMemory,
 } from "@/lib/assistants/nexora-memory-actions";
+import { computeStoreContentSignature } from "@/lib/assistants/memory/signature";
 import type { AssistantMemoryScope } from "@/lib/assistants/memory/scope";
+import type { DeliberationOptions } from "@/lib/ai-core";
+import type { AdminStoreInitialData } from "@/types/store-engine";
 
 // ─── Nexora Editor Chat — built on the shared AI Core ───────────────────
 //
@@ -68,6 +72,8 @@ interface NexoraEditorChatProps {
   } | null;
   /** Server-scoped; editor memory is never shared with the global assistant. */
   memoryScope?: AssistantMemoryScope;
+  /** Store snapshot for safe continuity vs. persisted `contentSignature` (from server). */
+  storeInitialData?: AdminStoreInitialData | null;
 }
 
 const STARTER: ChatMessage = {
@@ -98,6 +104,7 @@ export function NexoraEditorChat({
   onDeviceChange,
   onPreviewSurfaceChange,
   memoryScope,
+  storeInitialData,
 }: NexoraEditorChatProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([STARTER]);
@@ -116,6 +123,12 @@ export function NexoraEditorChat({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const memoryRecoveredThisSession = useRef(false);
+  const memoryRowUpdatedAt = useRef<string | null>(null);
+  const loadedContentSigRef = useRef<string | undefined>(undefined);
+  const stalePassUsedRef = useRef(false);
+
+  const contentSignature = storeInitialData ? computeStoreContentSignature(storeInitialData) : undefined;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -138,6 +151,9 @@ export function NexoraEditorChat({
       try {
         const parsed: unknown = JSON.parse(row.payloadJson);
         if (!isEditorMemoryPayload(parsed)) return;
+        memoryRecoveredThisSession.current = true;
+        memoryRowUpdatedAt.current = row.updatedAt;
+        loadedContentSigRef.current = getEditorContentSignature(parsed);
         setCtx(hydrateEditorContext(parsed, "/admin/store-ai/editor"));
         if (parsed.transcript?.length) {
           setMessages(editorTranscriptToMessages(parsed.transcript));
@@ -173,8 +189,27 @@ export function NexoraEditorChat({
           onDeviceChange: (d) => onDeviceChangeRef.current?.(d),
           onPreviewSurfaceChange: (s) => onPreviewSurfaceChangeRef.current?.(s),
         };
+        const ageFromRow =
+          memoryRowUpdatedAt.current == null
+            ? undefined
+            : Date.now() - new Date(memoryRowUpdatedAt.current).getTime();
+        const stateStale = Boolean(
+          !stalePassUsedRef.current &&
+            loadedContentSigRef.current != null &&
+            contentSignature != null &&
+            loadedContentSigRef.current !== contentSignature,
+        );
+        if (stateStale) {
+          stalePassUsedRef.current = true;
+        }
+        const deliberationOptions: DeliberationOptions = {
+          preloadedMemoryAgeMs: ageFromRow,
+          memoryRecoveredThisSession: memoryRecoveredThisSession.current,
+          stateStale,
+        };
         const { reply, context, meta, trace } = await processEditorMessage(text, ctxRef.current, {
           callbacks,
+          deliberationOptions,
         });
         setMessages((prev) => {
           const aMsg: ChatMessage = {
@@ -189,6 +224,7 @@ export function NexoraEditorChat({
             const t = editorMessagesToTranscript(next);
             const payload = buildEditorMemoryPayload(context, t, {
               lastRecommendation: reply.nextSteps?.[0] ?? reply.bullets?.[0],
+              contentSignature,
             });
             const json = JSON.stringify(payload);
             void saveNexoraAssistantMemory(
@@ -199,6 +235,8 @@ export function NexoraEditorChat({
               payload.summaryLine,
             );
             void logNexoraDeliberation(memoryScope.storeId, memoryScope.userId, meta, trace);
+            loadedContentSigRef.current = contentSignature;
+            memoryRowUpdatedAt.current = new Date().toISOString();
           }
           return next;
         });

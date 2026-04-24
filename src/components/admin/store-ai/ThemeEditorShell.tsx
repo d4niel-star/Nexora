@@ -499,6 +499,7 @@ export function ThemeEditorShell({
         onDeviceChange={(d) => { setDevice(d); }}
         onPreviewSurfaceChange={(s) => { setPreviewSurface(s); }}
         memoryScope={memoryScope}
+        storeInitialData={initialData}
         currentBranding={initialData.branding ? {
           primaryColor: initialData.branding.primaryColor,
           secondaryColor: initialData.branding.secondaryColor,

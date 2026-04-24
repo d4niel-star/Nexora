@@ -840,11 +840,14 @@ model NexoraAssistantMemory {
   assistantId   String   // "global" | "editor"
   summaryLine   String   @default("")
   payloadJson   String
+  /// Rolling TTL — extended on each save; rows past this are pruned on read.
+  expiresAt     DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   @@unique([storeId, userId, assistantId])
   @@index([storeId, userId, updatedAt])
+  @@index([expiresAt])
 }
 
 model AIUsageLog {

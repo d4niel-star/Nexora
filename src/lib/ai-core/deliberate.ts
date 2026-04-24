@@ -30,6 +30,7 @@ import { classifyMessage } from "./classifier";
 import { compose, pickSocialReply } from "./composer";
 import { detectTone } from "./tone";
 import { normalize } from "./normalize";
+import { editorActionRisk, isEditorDestructiveIntent } from "./risk";
 import {
   pushTurn,
   type CoreContext,
@@ -130,12 +131,24 @@ export type TraceStage =
   | "execute"
   | "noop"
   | "error"
-  | "post_check";
+  | "post_check"
+  | "recovery"
+  | "risk_gate";
 
 export interface TraceNote {
   stage: TraceStage;
   detail: string;
   data?: Record<string, unknown>;
+}
+
+/** Options from the client / orchestrator (not shown to the user). */
+export interface DeliberationOptions {
+  /** Editor store content no longer matches saved memory fingerprint. */
+  stateStale?: boolean;
+  /** Time since a cross-session memory row was loaded, at send (ms). */
+  preloadedMemoryAgeMs?: number;
+  /** True when we had a row from `loadNexoraAssistantMemory` this session. */
+  memoryRecoveredThisSession?: boolean;
 }
 
 /** Observable summary of a run — safe to log (no raw user text). */
@@ -146,6 +159,7 @@ export interface DeliberationMeta {
   replyKind: ReplyKind;
   resultIntent: string | null;
   resultDomain: string | null;
+  sessionRoute: string;
   pipeline: {
     branch: string;
     planIntent: string | null;
@@ -158,6 +172,18 @@ export interface DeliberationMeta {
   };
   /** Stage order as executed (for dashboards / debugging). */
   stages: TraceStage[];
+  /** Richer product / debugging fields (no raw user utterances). */
+  observability: {
+    memoryHit: boolean;
+    memoryAgeMsAtSend: number | null;
+    stateStaleAtStart: boolean;
+    /** Follow-up re-framed after stale, or null intent re-opened, etc. */
+    recoveryNarrow?: string;
+    riskLevel: "n/a" | "low" | "med" | "high";
+    riskTierGated: boolean;
+    verifyNarrow: string;
+    errorLabel?: string;
+  };
 }
 
 export interface DeliberationOutcome {
@@ -178,15 +204,22 @@ function nowMs(): number {
   return Date.now();
 }
 
+type MetaAug = Partial<DeliberationMeta["observability"]>;
+
 export async function deliberate<TIntentId extends string>(
   raw: string,
   adapter: AssistantAdapter<TIntentId>,
   ctx: CoreContext,
+  options?: DeliberationOptions,
 ): Promise<DeliberationOutcome> {
   const t0 = nowMs();
   const trace: TraceNote[] = [];
   const note = (stage: TraceStage, detail: string, data?: Record<string, unknown>) =>
     trace.push({ stage, detail, data });
+
+  if (options?.stateStale) {
+    note("recovery", "content_signature_mismatch", { memoryAgeMs: options.preloadedMemoryAgeMs });
+  }
 
   // ── 1. INTAKE ───────────────────────────────────────────────────
   const text = raw.trim();
@@ -196,7 +229,9 @@ export async function deliberate<TIntentId extends string>(
       tone: detectTone(""),
       text: "¿En qué te ayudo?",
     });
-    return finalize(reply, ctx, raw, "noop", trace, adapter.id, t0);
+    return finalize(reply, ctx, raw, "noop", trace, adapter.id, t0, options, {
+      verifyNarrow: "empty_input",
+    });
   }
 
   const tone = detectTone(text);
@@ -214,7 +249,9 @@ export async function deliberate<TIntentId extends string>(
       adapter.smalltalk?.(cls.hint, tone) ??
       compose({ kind: "smalltalk", tone, text: pickSocialReply(cls.hint, tone) });
     note("social", cls.hint ?? "greeting");
-    return finalize(reply, ctx, raw, "social", trace, adapter.id, t0);
+    return finalize(reply, ctx, raw, "social", trace, adapter.id, t0, options, {
+      verifyNarrow: "short_circuit_social",
+    });
   }
   if (cls.category === "smalltalk") {
     const reply =
@@ -228,23 +265,44 @@ export async function deliberate<TIntentId extends string>(
             : "Todo en orden. ¿En qué te ayudo?",
       });
     note("smalltalk", "generic");
-    return finalize(reply, ctx, raw, "social", trace, adapter.id, t0);
+    return finalize(reply, ctx, raw, "social", trace, adapter.id, t0, options, {
+      verifyNarrow: "short_circuit_smalltalk",
+    });
   }
   if (cls.category === "ask_help") {
     const reply = adapter.help(tone);
     note("help", adapter.label);
-    return finalize(reply, ctx, raw, "help", trace, adapter.id, t0);
+    return finalize(reply, ctx, raw, "help", trace, adapter.id, t0, options, {
+      verifyNarrow: "short_circuit_help",
+    });
   }
   if (cls.category === "ask_status" && adapter.status) {
     const reply = adapter.status(tone, ctx);
     note("status", adapter.label);
-    return finalize(reply, ctx, raw, "status", trace, adapter.id, t0);
+    return finalize(reply, ctx, raw, "status", trace, adapter.id, t0, options, {
+      verifyNarrow: "short_circuit_status",
+    });
   }
 
   // ── 3b. FOLLOW-UP ────────────────────────────────────────────────
   if (cls.category === "follow_up") {
     note("follow_up", `lastIntent=${ctx.lastIntent ?? "∅"}`);
-    const fallback = adapter.resolveFollowUp?.(raw, ctx, tone) ?? defaultFollowUp(ctx);
+    if (options?.stateStale) {
+      const reply = compose({
+        kind: "ask",
+        tone,
+        text:
+          tone.register === "casual"
+            ? "Puede que la tienda haya cambiado desde la última vez. ¿Qué querés tocar ahora, con un poco de detalle?"
+            : "Es posible que el diseño haya cambiado desde la última sesión. Decime qué ajuste querés hacer ahora, con un poco más de detalle.",
+        nextSteps: ["Ej.: \"cambiá el principal a azul marino\""],
+      });
+      return finalize(reply, ctx, raw, "noop", trace, adapter.id, t0, options, {
+        verifyNarrow: "stale_block_followup",
+        recoveryNarrow: "stale",
+      });
+    }
+    const fallback = adapter.resolveFollowUp?.(raw, ctx, tone) ?? defaultFollowUp(ctx, options);
     if (fallback === null) {
       const reply = compose({
         kind: "ask",
@@ -254,14 +312,18 @@ export async function deliberate<TIntentId extends string>(
             ? "Decime un poco más a qué te referís."
             : "¿Podés darme un poco más de contexto?",
       });
-      return finalize(reply, ctx, raw, "noop", trace, adapter.id, t0);
+      return finalize(reply, ctx, raw, "noop", trace, adapter.id, t0, options, {
+        verifyNarrow: "follow_up_no_anchor",
+      });
     }
     if (isReply(fallback)) {
-      return finalize(fallback, ctx, raw, ctx.lastIntent ?? "follow_up", trace, adapter.id, t0);
+      return finalize(fallback, ctx, raw, ctx.lastIntent ?? "follow_up", trace, adapter.id, t0, options, {
+        verifyNarrow: "follow_up_adapter_reply",
+      });
     }
     // It's a plan — fall through to verify+execute
     const plan = fallback as DomainPlan<TIntentId>;
-    return runPlan(plan, adapter, ctx, tone, raw, trace, note, t0);
+    return runPlan(plan, adapter, ctx, tone, raw, trace, note, t0, options);
   }
 
   // ── 4. PLAN — let the assistant interpret ───────────────────────
@@ -283,7 +345,9 @@ export async function deliberate<TIntentId extends string>(
           : "No terminé de entender. ¿Podés reformular con un poco más de detalle?",
       nextSteps: ["Probá ser más concreto", "Decime el módulo o la sección"],
     });
-    return finalize(reply, ctx, raw, "ambiguous", trace, adapter.id, t0);
+    return finalize(reply, ctx, raw, "ambiguous", trace, adapter.id, t0, options, {
+      verifyNarrow: "low_confidence_no_clarif_path",
+    });
   }
 
   // 4b. Explicit clarification request from interpreter
@@ -293,10 +357,12 @@ export async function deliberate<TIntentId extends string>(
       tone,
       text: plan.needsClarification,
     });
-    return finalize(reply, ctx, raw, "noop", trace, adapter.id, t0);
+    return finalize(reply, ctx, raw, "noop", trace, adapter.id, t0, options, {
+      verifyNarrow: "planner_clarification",
+    });
   }
 
-  return runPlan(plan, adapter, ctx, tone, raw, trace, note, t0);
+  return runPlan(plan, adapter, ctx, tone, raw, trace, note, t0, options);
 }
 
 // ─── Verify + Execute path ──────────────────────────────────────────────
@@ -310,6 +376,7 @@ async function runPlan<TIntentId extends string>(
   trace: TraceNote[],
   note: (stage: TraceStage, detail: string, data?: Record<string, unknown>) => void,
   t0: number,
+  options?: DeliberationOptions,
 ): Promise<DeliberationOutcome> {
   // ── 4c. Custom verifier ─────────────────────────────────────────
   let verified: DomainPlan<TIntentId> | Reply = plan;
@@ -319,10 +386,15 @@ async function runPlan<TIntentId extends string>(
 
   if (isReply(verified)) {
     note("verify", "short-circuited by adapter");
-    return finalize(verified, ctx, raw, plan.intent ?? "noop", trace, adapter.id, t0);
+    return finalize(verified, ctx, raw, plan.intent ?? "noop", trace, adapter.id, t0, options, {
+      verifyNarrow: "adapter_verify_short_circuit",
+    });
   }
 
   const finalPlan = verified;
+  if (finalPlan.intent && adapter.id === "editor") {
+    note("risk_gate", `intent=${finalPlan.intent}`, { intent: String(finalPlan.intent) });
+  }
 
   // ── 4d. Handoff guard ───────────────────────────────────────────
   if (finalPlan.handoffTo && finalPlan.handoffTo !== adapter.id) {
@@ -338,11 +410,13 @@ async function runPlan<TIntentId extends string>(
 
   // ── 5. EXECUTE ───────────────────────────────────────────────────
   let reply: Reply;
+  let errLabel: string | undefined;
   try {
     reply = await adapter.dispatch(finalPlan, ctx, tone);
     note("execute", `ok intent=${finalPlan.intent ?? "∅"} kind=${reply.kind}`);
   } catch (e) {
     const msg = (e as Error).message ?? "Error desconocido";
+    errLabel = "dispatch_exception";
     note("error", msg);
     reply = compose({
       kind: "err",
@@ -351,14 +425,22 @@ async function runPlan<TIntentId extends string>(
     });
   }
 
-  return finalize(reply, ctx, raw, finalPlan.intent ?? "noop", trace, adapter.id, t0);
+  return finalize(reply, ctx, raw, finalPlan.intent ?? "noop", trace, adapter.id, t0, options, {
+    verifyNarrow: errLabel ? "execute_failed" : "pass_to_dispatch",
+    errorLabel: errLabel,
+  });
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
-function defaultFollowUp(ctx: CoreContext): null | DomainPlan {
+function defaultFollowUp(ctx: CoreContext, options?: DeliberationOptions): null | DomainPlan {
   if (!ctx.lastIntent) return null;
-  return { intent: ctx.lastIntent, confidence: 0.6, rawText: "(follow-up)" };
+  let confidence = 0.6;
+  const age = options?.preloadedMemoryAgeMs;
+  if (typeof age === "number" && age > 7 * 24 * 60 * 60 * 1000) {
+    confidence = 0.48;
+  }
+  return { intent: ctx.lastIntent, confidence, rawText: "(follow-up)" };
 }
 
 function isReply(x: unknown): x is Reply {
@@ -378,6 +460,8 @@ function finalize(
   trace: TraceNote[],
   assistant: "global" | "editor",
   t0: number,
+  options?: DeliberationOptions,
+  obsAug?: MetaAug,
 ): DeliberationOutcome {
   let next = pushTurn(ctx, { role: "user", text: raw, ts: Date.now() });
   next = pushTurn(next, {
@@ -393,7 +477,7 @@ function finalize(
     detail: "context_persisted",
     data: { lastIntent: next.lastIntent, lastDomain: next.lastDomain },
   });
-  const meta = buildDeliberationMeta(assistant, t0, trace, reply, next, raw.length);
+  const meta = buildDeliberationMeta(assistant, t0, trace, reply, next, raw.length, options, obsAug);
   return { reply: { ...reply, newContext: next }, context: next, trace, meta };
 }
 
@@ -404,6 +488,8 @@ function buildDeliberationMeta(
   reply: Reply,
   context: CoreContext,
   messageLength: number,
+  options?: DeliberationOptions,
+  obsAug?: MetaAug,
 ): DeliberationMeta {
   const durationMs = Math.max(0, Math.round(nowMs() - t0));
   const stages = trace.map((s) => s.stage);
@@ -448,6 +534,33 @@ function buildDeliberationMeta(
   else if (verifyShortCircuit) branch = "verify_short_circuit";
   else if (executionError) branch = "execute_error";
 
+  const riskGate = trace.find((s) => s.stage === "risk_gate");
+  const gatedIntent = (riskGate?.data?.intent as string | undefined) ?? planIntent;
+  let riskLevel: "n/a" | "low" | "med" | "high" = "n/a";
+  if (assistant === "editor" && gatedIntent) {
+    riskLevel = editorActionRisk(gatedIntent);
+  }
+  const riskTierGated =
+    obsAug?.riskTierGated === true ||
+    (assistant === "editor" &&
+      verifyShortCircuit &&
+      Boolean(gatedIntent && isEditorDestructiveIntent(gatedIntent)));
+
+  const verifyNarrow =
+    obsAug?.verifyNarrow ??
+    (executionError ? "inferred_error" : verifyShortCircuit ? "inferred_verify_sc" : "inferred_ok");
+
+  const observability: DeliberationMeta["observability"] = {
+    memoryHit: options?.memoryRecoveredThisSession === true,
+    memoryAgeMsAtSend: options?.preloadedMemoryAgeMs ?? null,
+    stateStaleAtStart: options?.stateStale === true,
+    recoveryNarrow: obsAug?.recoveryNarrow,
+    riskLevel,
+    riskTierGated,
+    verifyNarrow,
+    errorLabel: obsAug?.errorLabel,
+  };
+
   return {
     assistant,
     durationMs,
@@ -455,6 +568,7 @@ function buildDeliberationMeta(
     replyKind: reply.kind,
     resultIntent: context.lastIntent,
     resultDomain: context.lastDomain,
+    sessionRoute: context.currentRoute,
     pipeline: {
       branch,
       planIntent,
@@ -466,6 +580,7 @@ function buildDeliberationMeta(
       classification,
     },
     stages,
+    observability,
   };
 }
 

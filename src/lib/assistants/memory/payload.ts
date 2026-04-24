@@ -1,5 +1,6 @@
 // ─── Compact, versioned memory payloads for cross-session restore ───────
-// · No raw secrets · trimmed text · separate keys per assistant · v1 schema
+// · v1 = legacy; v2 = + savedAt, editor continuity + contentSignature
+// · No secrets · trimmed text · separate assistants
 
 import {
   createCoreContext,
@@ -9,7 +10,9 @@ import {
 import { createEmptyContext } from "@/lib/copilot/context";
 import { createEditorContext, type EditorContext, type PreviewSurface } from "../editor/state";
 
-export const MEMORY_VERSION = 1 as const;
+export const MEMORY_V1 = 1 as const;
+export const MEMORY_V2 = 2 as const;
+export const MEMORY_TTL_DAYS = 45;
 export const MAX_HISTORY_TURNS = 6;
 export const MAX_TRANSCRIPT_MESSAGES = 12;
 export const MAX_TURN_TEXT = 480;
@@ -20,32 +23,58 @@ export interface TranscriptLine {
   ts: number;
 }
 
-export interface BaseMemoryPayloadV1 {
-  v: typeof MEMORY_VERSION;
+export interface BaseMemoryCore {
   lastIntent: string | null;
   lastDomain: string | null;
   currentRoute: string;
-  /** Core rolling history for NLU (trimmed). */
   history: ConversationTurn[];
-  /** Shorter thread for chat UI restore (trimmed). */
   transcript: TranscriptLine[];
   summaryLine: string;
-  /** Optional hint (e.g. first nextStep from last reply). */
   lastRecommendation?: string;
 }
 
+export interface BaseMemoryPayloadV1 extends BaseMemoryCore {
+  v: typeof MEMORY_V1;
+}
+
+export interface BaseMemoryPayloadV2 extends BaseMemoryCore {
+  v: typeof MEMORY_V2;
+  /** Client clock when this snapshot was built (ms). */
+  savedAt: number;
+}
+
 export type GlobalMemoryPayloadV1 = BaseMemoryPayloadV1;
+export type GlobalMemoryPayloadV2 = BaseMemoryPayloadV2;
+
+export interface EditorMemoryBody {
+  preview: PreviewSurface;
+  lastAction: string | null;
+  lastBlockType: string | null;
+  lastColorChanged: string | null;
+  lastFontChanged: string | null;
+  lastThemeApplied: string | null;
+  currentDevice: "desktop" | "mobile";
+  /** Fingerprint of branding + home blocks at save (see `signature.ts`). */
+  contentSignature?: string;
+  /** One-line resumable hint for the copilot (not shown as CoT). */
+  resumeHint?: string;
+  /** Human label for the last successful mutation, if any. */
+  lastMutationLabel?: string;
+}
 
 export interface EditorMemoryPayloadV1 extends BaseMemoryPayloadV1 {
-  editor: {
-    preview: PreviewSurface;
-    lastAction: string | null;
-    lastBlockType: string | null;
-    lastColorChanged: string | null;
-    lastFontChanged: string | null;
-    lastThemeApplied: string | null;
-    currentDevice: "desktop" | "mobile";
-  };
+  editor: EditorMemoryBody;
+}
+
+export interface EditorMemoryPayloadV2 extends BaseMemoryPayloadV2 {
+  editor: EditorMemoryBody;
+}
+
+export function buildResumeHint(ctx: EditorContext): string {
+  const p = ctx.editor.preview;
+  const a = ctx.editor.legacy.lastAction;
+  if (!a) return `Editor · ${p}`;
+  return `Editor · ${p} · ${a.replace(/-/g, " ")}`;
 }
 
 function clamp(s: string, n: number): string {
@@ -76,9 +105,10 @@ export function buildGlobalMemoryPayload(
   ctx: CoreContext,
   transcript: TranscriptLine[],
   opts?: { lastRecommendation?: string },
-): GlobalMemoryPayloadV1 {
+): GlobalMemoryPayloadV2 {
   return {
-    v: MEMORY_VERSION,
+    v: MEMORY_V2,
+    savedAt: Date.now(),
     lastIntent: ctx.lastIntent,
     lastDomain: ctx.lastDomain,
     currentRoute: ctx.currentRoute,
@@ -96,10 +126,16 @@ export function buildGlobalMemoryPayload(
 export function buildEditorMemoryPayload(
   ctx: EditorContext,
   transcript: TranscriptLine[],
-  opts?: { lastRecommendation?: string },
-): EditorMemoryPayloadV1 {
+  opts?: {
+    lastRecommendation?: string;
+    contentSignature?: string;
+  },
+): EditorMemoryPayloadV2 {
   const base = buildGlobalMemoryPayload(ctx, transcript, opts);
   const e = ctx.editor;
+  const lastMutationLabel = e.legacy.lastAction
+    ? e.legacy.lastAction.replace(/-/g, " ")
+    : undefined;
   return {
     ...base,
     editor: {
@@ -110,14 +146,18 @@ export function buildEditorMemoryPayload(
       lastFontChanged: e.legacy.lastFontChanged,
       lastThemeApplied: e.legacy.lastThemeApplied,
       currentDevice: e.legacy.currentDevice,
+      contentSignature: opts?.contentSignature,
+      resumeHint: buildResumeHint(ctx),
+      lastMutationLabel,
     },
   };
 }
 
-export function hydrateGlobalContext(payload: GlobalMemoryPayloadV1 | null, liveRoute: string): CoreContext {
-  if (!payload || payload.v !== MEMORY_VERSION) {
-    return createCoreContext(liveRoute);
-  }
+function coreFromAnyPayload(
+  payload: { lastIntent: string | null; lastDomain: string | null; history: ConversationTurn[] } | null,
+  liveRoute: string,
+): CoreContext {
+  if (!payload) return createCoreContext(liveRoute);
   return {
     lastIntent: payload.lastIntent,
     lastDomain: payload.lastDomain,
@@ -126,11 +166,29 @@ export function hydrateGlobalContext(payload: GlobalMemoryPayloadV1 | null, live
   };
 }
 
-export function hydrateEditorContext(payload: EditorMemoryPayloadV1 | null, liveRoute: string): EditorContext {
-  const base = hydrateGlobalContext(payload, liveRoute);
-  if (!payload || payload.v !== MEMORY_VERSION) {
+export function hydrateGlobalContext(
+  payload: GlobalMemoryPayloadV1 | GlobalMemoryPayloadV2 | null,
+  liveRoute: string,
+): CoreContext {
+  if (!payload) return createCoreContext(liveRoute);
+  if (payload.v !== MEMORY_V1 && payload.v !== MEMORY_V2) {
+    return createCoreContext(liveRoute);
+  }
+  return coreFromAnyPayload(payload, liveRoute);
+}
+
+export function hydrateEditorContext(
+  payload: EditorMemoryPayloadV1 | EditorMemoryPayloadV2 | null,
+  liveRoute: string,
+): EditorContext {
+  if (!payload) return createEditorContext(liveRoute);
+  if (payload.v !== MEMORY_V1 && payload.v !== MEMORY_V2) {
     return createEditorContext(liveRoute);
   }
+  if (!isEditorBodyPayload(payload)) {
+    return createEditorContext(liveRoute);
+  }
+  const base = coreFromAnyPayload(payload, liveRoute);
   return {
     ...base,
     editor: {
@@ -149,12 +207,21 @@ export function hydrateEditorContext(payload: EditorMemoryPayloadV1 | null, live
   };
 }
 
-export function isEditorMemoryPayload(x: unknown): x is EditorMemoryPayloadV1 {
-  return (
-    typeof x === "object" &&
-    x !== null &&
-    (x as EditorMemoryPayloadV1).v === 1 &&
-    "editor" in (x as EditorMemoryPayloadV1) &&
-    typeof (x as EditorMemoryPayloadV1).editor === "object"
-  );
+function isEditorBodyPayload(
+  p: BaseMemoryPayloadV1 | BaseMemoryPayloadV2,
+): p is EditorMemoryPayloadV1 | EditorMemoryPayloadV2 {
+  return typeof (p as EditorMemoryPayloadV2).editor === "object" && (p as EditorMemoryPayloadV2).editor != null;
+}
+
+export function isEditorMemoryPayload(x: unknown): x is EditorMemoryPayloadV1 | EditorMemoryPayloadV2 {
+  if (typeof x !== "object" || x === null) return false;
+  const o = x as { v?: number; editor?: unknown };
+  if (o.v !== MEMORY_V1 && o.v !== MEMORY_V2) return false;
+  return typeof o.editor === "object" && o.editor != null;
+}
+
+export function getEditorContentSignature(
+  p: EditorMemoryPayloadV1 | EditorMemoryPayloadV2,
+): string | undefined {
+  return p.editor.contentSignature;
 }

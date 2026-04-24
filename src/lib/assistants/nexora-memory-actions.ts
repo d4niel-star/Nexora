@@ -9,11 +9,14 @@
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
 import { logSystemEvent } from "@/lib/observability/audit";
+import { MEMORY_TTL_DAYS } from "@/lib/assistants/memory/payload";
 import type { DeliberationMeta, TraceNote } from "@/lib/ai-core";
 import {
   compactDeliberationMeta,
   sanitizeDeliberationTraceForStorage,
 } from "./telemetry/nexora-deliberation-log";
+
+const memoryTtlMs = () => MEMORY_TTL_DAYS * 24 * 60 * 60 * 1000;
 
 export type NexoraAssistantId = "global" | "editor";
 
@@ -43,6 +46,16 @@ export async function loadNexoraAssistantMemory(
     },
   });
   if (!row) return null;
+  if (row.expiresAt && row.expiresAt < new Date()) {
+    try {
+      await prisma.nexoraAssistantMemory.delete({
+        where: { id: row.id },
+      });
+    } catch {
+      /* ignore */
+    }
+    return null;
+  }
   return {
     payloadJson: row.payloadJson,
     summaryLine: row.summaryLine,
@@ -61,6 +74,7 @@ export async function saveNexoraAssistantMemory(
   if (!scope) return { ok: false };
   if (payloadJson.length > 120_000) return { ok: false };
   const line = summaryLine.slice(0, 500);
+  const expiresAt = new Date(Date.now() + memoryTtlMs());
   await prisma.nexoraAssistantMemory.upsert({
     where: {
       storeId_userId_assistantId: { storeId: scope.storeId, userId, assistantId },
@@ -71,8 +85,9 @@ export async function saveNexoraAssistantMemory(
       assistantId,
       payloadJson,
       summaryLine: line,
+      expiresAt,
     },
-    update: { payloadJson, summaryLine: line, updatedAt: new Date() },
+    update: { payloadJson, summaryLine: line, updatedAt: new Date(), expiresAt },
   });
   return { ok: true };
 }

@@ -19,14 +19,21 @@
 import {
   compose,
   deliberate,
-  type AssistantAdapter,
   type DeliberationMeta,
+  type DeliberationOptions,
   type DeliberationOutcome,
+  type AssistantAdapter,
   type DomainPlan,
   type Reply,
   type ToneProfile,
   type TraceNote,
 } from "@/lib/ai-core";
+import {
+  editorActionRisk,
+  editorPlanHasStrongEntity,
+  isEditorDestructiveIntent,
+  minConfidenceForEditorRisk,
+} from "@/lib/ai-core/risk";
 import {
   processInput as legacyProcessInput,
   type ActionType,
@@ -122,11 +129,12 @@ const editorAdapter: AssistantAdapter<EditorIntentId> = {
   verify(plan, _ctx, tone) {
     if (!plan.intent) return plan;
 
-    // Belt-and-suspenders: low-confidence destructive actions go through
-    // a confirmation prompt rather than impulsive execution.
-    if (plan.confidence < 0.45 && isDestructive(plan.intent)) {
-      const planned = (plan.entities as unknown as EditorEntities | undefined)?.planned;
-      const hint = planned ? planned.rawText : plan.rawText ?? "";
+    const planned = (plan.entities as unknown as EditorEntities | undefined)?.planned;
+    const strong = editorPlanHasStrongEntity(plan.intent, planned?.entities);
+    const risk = editorActionRisk(plan.intent);
+    const minC = minConfidenceForEditorRisk(risk, strong);
+    if (plan.confidence < minC && isEditorDestructiveIntent(plan.intent)) {
+      const hint = planned ? planned.rawText : (plan.rawText ?? "");
       const reply: Reply = compose({
         kind: "ask",
         tone,
@@ -219,6 +227,8 @@ const editorAdapter: AssistantAdapter<EditorIntentId> = {
 
 export interface EditorProcessOptions {
   callbacks: EditorCallbacks;
+  /** Session recovery / memory staleness (not shown in UI). */
+  deliberationOptions?: DeliberationOptions;
 }
 
 export interface EditorProcessResult {
@@ -236,7 +246,12 @@ export async function processEditorMessage(
   // Make callbacks visible to the adapter for THIS invocation.
   activeCallbacks = options.callbacks;
   try {
-    const outcome: DeliberationOutcome = await deliberate(raw, editorAdapter, ctx);
+    const outcome: DeliberationOutcome = await deliberate(
+      raw,
+      editorAdapter,
+      ctx,
+      options.deliberationOptions,
+    );
     return {
       reply: outcome.reply,
       context: outcome.context as EditorContext,
@@ -253,18 +268,6 @@ export { createEditorContext, type EditorContext } from "./state";
 export type { EditorCallbacks } from "./dispatcher";
 
 // ─── Helpers ────────────────────────────────────────────────────────────
-
-function isDestructive(intent: ActionType): boolean {
-  return (
-    intent !== "undo" &&
-    intent !== "switch-desktop" &&
-    intent !== "switch-mobile" &&
-    intent !== "switch-preview-surface" &&
-    intent !== "greeting" &&
-    intent !== "help" &&
-    intent !== "unknown"
-  );
-}
 
 function truncate(s: string, n: number): string {
   return s.length > n ? `${s.slice(0, n - 1)}…` : s;

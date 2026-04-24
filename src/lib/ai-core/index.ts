@@ -19,8 +19,10 @@ export {
   deliberate,
   type AssistantAdapter,
   type DeliberationMeta,
+  type DeliberationOptions,
   type DeliberationOutcome,
   type DomainPlan,
   type TraceNote,
   type TraceStage,
 } from "./deliberate";
+export * from "./risk";

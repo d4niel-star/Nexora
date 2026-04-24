@@ -9,7 +9,8 @@ import { processGlobalMessage } from "@/lib/assistants/global";
 import {
   buildGlobalMemoryPayload,
   hydrateGlobalContext,
-  type GlobalMemoryPayloadV1,
+  MEMORY_V1,
+  MEMORY_V2,
   type TranscriptLine,
 } from "@/lib/assistants/memory/payload";
 import type { AssistantMemoryScope } from "@/lib/assistants/memory/scope";
@@ -75,6 +76,8 @@ export function NexoraGlobalChat({ memoryScope }: { memoryScope?: AssistantMemor
   ctxRef.current = ctx;
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const memoryRecoveredThisSession = useRef(false);
+  const memoryRowUpdatedAt = useRef<string | null>(null);
 
   // Keep currentRoute fresh; the assistant uses it as a soft hint.
   useEffect(() => {
@@ -110,11 +113,28 @@ export function NexoraGlobalChat({ memoryScope }: { memoryScope?: AssistantMemor
       );
       if (cancelled || !row?.payloadJson) return;
       try {
-        const parsed = JSON.parse(row.payloadJson) as GlobalMemoryPayloadV1;
-        if (parsed.v !== 1) return;
-        setCtx(hydrateGlobalContext(parsed, pathname));
-        if (parsed.transcript?.length) {
-          setMessages(transcriptToChatMessages(parsed.transcript));
+        const parsed: unknown = JSON.parse(row.payloadJson);
+        if (
+          typeof parsed !== "object" ||
+          parsed === null ||
+          !("v" in parsed) ||
+          ((parsed as { v: number }).v !== MEMORY_V1 && (parsed as { v: number }).v !== MEMORY_V2)
+        ) {
+          return;
+        }
+        memoryRecoveredThisSession.current = true;
+        memoryRowUpdatedAt.current = row.updatedAt;
+        setCtx(hydrateGlobalContext(parsed as Parameters<typeof hydrateGlobalContext>[0], pathname));
+        if (
+          "transcript" in parsed &&
+          Array.isArray((parsed as { transcript: unknown }).transcript) &&
+          (parsed as { transcript: { length: number } }).transcript.length
+        ) {
+          setMessages(
+            transcriptToChatMessages(
+              (parsed as { transcript: TranscriptLine[] }).transcript,
+            ),
+          );
         }
       } catch {
         /* ignore bad legacy rows */
@@ -140,7 +160,14 @@ export function NexoraGlobalChat({ memoryScope }: { memoryScope?: AssistantMemor
 
     startTransition(async () => {
       try {
-        const { reply, context, meta, trace } = await processGlobalMessage(text, ctxRef.current);
+        const ageFromRow =
+          memoryRowUpdatedAt.current == null
+            ? undefined
+            : Date.now() - new Date(memoryRowUpdatedAt.current).getTime();
+        const { reply, context, meta, trace } = await processGlobalMessage(text, ctxRef.current, {
+          preloadedMemoryAgeMs: ageFromRow,
+          memoryRecoveredThisSession: memoryRecoveredThisSession.current,
+        });
         const aMsg: ChatMessage = {
           id: `a-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
           role: "assistant",
@@ -164,6 +191,7 @@ export function NexoraGlobalChat({ memoryScope }: { memoryScope?: AssistantMemor
               payload.summaryLine,
             );
             void logNexoraDeliberation(memoryScope.storeId, memoryScope.userId, meta, trace);
+            memoryRowUpdatedAt.current = new Date().toISOString();
           }
           return next;
         });
