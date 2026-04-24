@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState, useTransition } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowDownRight,
   ArrowUpRight,
   BarChart3,
   CircleDollarSign,
   Eye,
+  Loader2,
   Minus,
   ShoppingCart,
   Sparkles,
@@ -14,8 +17,6 @@ import {
   Users,
 } from "lucide-react";
 import {
-  Area,
-  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
@@ -32,19 +33,25 @@ import { fmtCurrency, fmtNumber, fmtPercent } from "@/lib/stats/format";
 import type {
   AudienceData,
   CommercialData,
-  DailyRevenuePoint,
   OverviewData,
 } from "@/lib/stats/types";
 
-// ─── Stats Page ──────────────────────────────────────────────────────────
-// Executive statistics module: Panel · Clientes.
-// Two-tab architecture merging overview + commercial into a single powerful
-// Panel view. Client-side tab switching for instant transitions.
-// Token-based styling matches Nexora's design system. Charts via recharts.
-// Every metric comes from real DB data — no fabricated numbers.
+import { DateRangePicker, type DateRangeValue } from "./DateRangePicker";
+import { RevenueHeroChart } from "./RevenueHeroChart";
+
+// ─── Stats Page · Rendimiento ────────────────────────────────────────────
+//
+// Subroute of the Estadísticas family. Two-tab structure:
+//   · Rendimiento — date-range driven hero chart + KPI strip + commercial
+//                   detail (top products, categories, table).
+//   · Clientes    — audience breakdown (segments, top customers, channel).
+//
+// The header, range picker and tabs all live in one editorial frame so
+// the surface reads as a single executive cockpit instead of a dashboard
+// of disconnected widgets.
 
 const TABS = [
-  { key: "panel", label: "Panel", icon: BarChart3 },
+  { key: "panel", label: "Rendimiento", icon: TrendingUp },
   { key: "clientes", label: "Clientes", icon: Users },
 ] as const;
 
@@ -63,59 +70,130 @@ export function StatsPage({
   audience,
   initialTab = "panel",
 }: StatsPageProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
+  const [isPending, startTransition] = useTransition();
+
+  // The active range mirrors what the server produced. Changing it in the
+  // picker pushes new searchParams and triggers a server-side refetch
+  // (Next handles revalidation thanks to dynamic = "force-dynamic").
+  const range: DateRangeValue = { from: overview.range.from, to: overview.range.to };
+
+  const handleRangeChange = useCallback(
+    (next: DateRangeValue) => {
+      const params = new URLSearchParams(searchParams?.toString() ?? "");
+      params.set("from", next.from);
+      params.set("to", next.to);
+      startTransition(() => {
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      });
+    },
+    [pathname, router, searchParams],
+  );
+
+  const handleTabChange = useCallback(
+    (key: TabKey) => {
+      setActiveTab(key);
+      const params = new URLSearchParams(searchParams?.toString() ?? "");
+      params.set("tab", key);
+      startTransition(() => {
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      });
+    },
+    [pathname, router, searchParams],
+  );
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      {/* ── Header ──────────────────────────────────────────────────────── */}
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+      className="space-y-7"
+    >
+      {/* ── Editorial header ─────────────────────────────────────────── */}
       <header className="relative">
-        <div className="flex items-center gap-3 mb-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-6">
-            Estadísticas
-          </p>
-          <span className="h-3 w-px bg-[color:var(--hairline)]" />
-          <span className="inline-flex items-center gap-1.5 rounded-[var(--r-xs)] bg-[var(--surface-2)] px-2 py-0.5 text-[10px] font-medium text-ink-5">
-            <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--signal-success)]" />
-            Últimos 30 días
-          </span>
+        <div className="mb-3 flex items-center gap-2 text-[11px] font-medium text-ink-6">
+          <span className="uppercase tracking-[0.16em]">Estadísticas</span>
+          <span aria-hidden>›</span>
+          <span className="text-ink-0">Rendimiento</span>
+          <AnimatePresence>
+            {isPending && (
+              <motion.span
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="ml-2 inline-flex items-center gap-1 text-[10px] text-ink-5"
+              >
+                <Loader2 className="h-3 w-3 animate-spin" strokeWidth={2} />
+                Actualizando
+              </motion.span>
+            )}
+          </AnimatePresence>
         </div>
-        <h1 className="font-semibold text-[34px] leading-[1.02] tracking-[-0.035em] text-ink-0 sm:text-[42px]">
-          Cómo marcha tu negocio.
-        </h1>
-        <p className="mt-2.5 max-w-xl text-[14px] leading-[1.55] text-ink-5">
-          Datos reales de ventas, productos y clientes. Comparado con el periodo anterior.
-        </p>
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h1 className="font-semibold text-[34px] leading-[1.02] tracking-[-0.035em] text-ink-0 sm:text-[42px]">
+              Cómo marcha tu negocio.
+            </h1>
+            <p className="mt-2.5 max-w-xl text-[14px] leading-[1.55] text-ink-5">
+              Ingresos, pedidos, clientes y márgenes para el rango elegido. Comparado contra el periodo anterior de igual duración.
+            </p>
+          </div>
+          <DateRangePicker value={range} onChange={handleRangeChange} className="self-start lg:self-end" />
+        </div>
       </header>
 
-      {/* ── Tab navigation ──────────────────────────────────────────────── */}
-      <nav className="flex gap-1 rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-1">
+      {/* ── Tab navigation — animated underline ──────────────────────── */}
+      <nav
+        role="tablist"
+        aria-label="Vista analítica"
+        className="flex items-center gap-6 border-b border-[color:var(--hairline)]"
+      >
         {TABS.map((tab) => {
           const Icon = tab.icon;
+          const active = activeTab === tab.key;
           return (
             <button
               key={tab.key}
+              role="tab"
+              aria-selected={active}
               type="button"
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => handleTabChange(tab.key)}
               className={cn(
-                "flex flex-1 items-center justify-center gap-2 rounded-[var(--r-md)] py-2.5 text-[13px] font-medium transition-all duration-200",
-                activeTab === tab.key
-                  ? "bg-[var(--surface-2)] text-ink-0 shadow-sm"
-                  : "text-ink-5 hover:text-ink-0",
+                "relative flex items-center gap-2 pb-3 pt-1 text-[13px] font-medium transition-colors outline-none",
+                active ? "text-ink-0" : "text-ink-5 hover:text-ink-0",
               )}
             >
               <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
               {tab.label}
+              {active && (
+                <motion.span
+                  layoutId="stats-tab-underline"
+                  className="absolute -bottom-px left-0 right-0 h-px bg-ink-0"
+                  transition={{ type: "spring", stiffness: 500, damping: 40 }}
+                />
+              )}
             </button>
           );
         })}
       </nav>
 
-      {/* ── Tab content ─────────────────────────────────────────────────── */}
-      {activeTab === "panel" && (
-        <PanelTab overview={overview} commercial={commercial} />
-      )}
-      {activeTab === "clientes" && <ClientesTab data={audience} />}
-    </div>
+      {/* ── Tab content ──────────────────────────────────────────────── */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -4 }}
+          transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+        >
+          {activeTab === "panel" && <PanelTab overview={overview} commercial={commercial} />}
+          {activeTab === "clientes" && <ClientesTab data={audience} />}
+        </motion.div>
+      </AnimatePresence>
+    </motion.div>
   );
 }
 
@@ -130,15 +208,15 @@ function PanelTab({
   overview: OverviewData;
   commercial: CommercialData;
 }) {
-  const { kpis, dailyRevenue, topProducts, revenueByCategory } = overview;
+  const { kpis, dailyRevenue, prevDailyRevenue, topProducts, revenueByCategory } = overview;
   const hasData = kpis.revenue30d > 0 || kpis.orders30d > 0;
 
   if (!hasData) {
     return (
       <EmptyState
         icon={<BarChart3 className="h-5 w-5 text-ink-6" strokeWidth={1.5} />}
-        title="Aún no hay datos de ventas."
-        description="Las estadísticas aparecerán automáticamente cuando se registren las primeras ventas con pago confirmado."
+        title="Aún no hay datos de ventas en este rango."
+        description="Probá un rango más amplio (90 días, año en curso) o esperá a que se registren las primeras ventas con pago confirmado."
       />
     );
   }
@@ -188,7 +266,24 @@ function PanelTab({
 
   return (
     <div className="space-y-7">
-      {/* ── Insight strip ──────────────────────────────────────────────── */}
+      {/* ── Hero chart — protagonist ──────────────────────────────────── */}
+      <section className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6 lg:p-8">
+        {dailyRevenue.length > 0 ? (
+          <RevenueHeroChart
+            current={dailyRevenue}
+            previous={prevDailyRevenue}
+            totalRevenue={kpis.revenue30d}
+            prevTotalRevenue={kpis.revenuePrev30d}
+            changePercent={kpis.revenueChange}
+          />
+        ) : (
+          <div className="flex h-[300px] items-center justify-center text-[13px] text-ink-6">
+            Sin datos suficientes para el gráfico.
+          </div>
+        )}
+      </section>
+
+      {/* ── Insight strip ─────────────────────────────────────────────── */}
       {insights.length > 0 && (
         <section className="flex flex-wrap gap-2">
           {insights.slice(0, 4).map((insight, i) => (
@@ -200,14 +295,7 @@ function PanelTab({
       {/* ── KPI strip ──────────────────────────────────────────────────── */}
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <KPICard
-          label="Ingresos 30d"
-          value={fmtCurrency(kpis.revenue30d)}
-          change={kpis.revenueChange}
-          icon={<CircleDollarSign className="h-4 w-4" strokeWidth={1.75} />}
-          hero
-        />
-        <KPICard
-          label="Pedidos 30d"
+          label="Pedidos"
           value={fmtNumber(kpis.orders30d)}
           change={kpis.ordersChange}
           icon={<ShoppingCart className="h-4 w-4" strokeWidth={1.75} />}
@@ -222,41 +310,31 @@ function PanelTab({
           label="Margen neto"
           value={kpis.marginPercent !== null ? `${kpis.marginPercent}%` : "—"}
           change={null}
-          icon={<BarChart3 className="h-4 w-4" strokeWidth={1.75} />}
+          icon={<CircleDollarSign className="h-4 w-4" strokeWidth={1.75} />}
           tone={kpis.marginPercent !== null && kpis.marginPercent < 15 ? "warning" : "neutral"}
+        />
+        <KPICard
+          label="Clientes nuevos"
+          value={fmtNumber(kpis.newCustomers30d)}
+          change={null}
+          icon={<Users className="h-4 w-4" strokeWidth={1.75} />}
         />
         <KPICard
           label="Tasa repetición"
           value={kpis.repeatRate !== null ? `${kpis.repeatRate}%` : "—"}
           change={null}
-          icon={<Users className="h-4 w-4" strokeWidth={1.75} />}
+          icon={<Sparkles className="h-4 w-4" strokeWidth={1.75} />}
         />
       </section>
 
-      {/* ── Revenue chart + Top products ───────────────────────────────── */}
+      {/* ── Top products + categorías ────────────────────────────────── */}
       <section className="grid grid-cols-1 gap-5 lg:grid-cols-5">
         <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 lg:col-span-3">
-          <div className="mb-5 flex items-center justify-between">
-            <h3 className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">
-              Evolución de ingresos
-            </h3>
-            <span className="text-[10px] text-ink-6">Diario · 30 días</span>
-          </div>
-          {dailyRevenue.length > 0 ? (
-            <RevenueChart data={dailyRevenue} />
-          ) : (
-            <div className="flex h-[240px] items-center justify-center text-[13px] text-ink-6">
-              Sin datos suficientes para el gráfico.
-            </div>
-          )}
-        </div>
-
-        <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 lg:col-span-2">
           <h3 className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5 mb-4">
             Productos que más venden
           </h3>
           <div className="space-y-2.5">
-            {topProducts.slice(0, 7).map((p, i) => (
+            {topProducts.slice(0, 8).map((p, i) => (
               <ProductRow key={i} rank={i + 1} title={p.title} value={fmtCurrency(p.revenue)} meta={`${p.units} uds`} />
             ))}
             {topProducts.length === 0 && (
@@ -264,10 +342,7 @@ function PanelTab({
             )}
           </div>
         </div>
-      </section>
 
-      {/* ── Category chart + Product performance table ─────────────────── */}
-      <section className="grid grid-cols-1 gap-5 lg:grid-cols-5">
         <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 lg:col-span-2">
           <h3 className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5 mb-5">
             Ingresos por categoría
@@ -280,9 +355,11 @@ function PanelTab({
             </div>
           )}
         </div>
+      </section>
 
-        {/* Product performance table */}
-        <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] lg:col-span-3">
+      {/* ── Product performance table ────────────────────────────────── */}
+      <section>
+        <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)]">
           <div className="px-5 pt-5 pb-2">
             <h3 className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">
               Rendimiento de productos
@@ -764,55 +841,6 @@ const CHART_COLORS = [
   "#ef4444",
   "#8b5cf6",
 ];
-
-function RevenueChart({ data }: { data: DailyRevenuePoint[] }) {
-  return (
-    <ResponsiveContainer width="100%" height={260}>
-      <AreaChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-        <defs>
-          <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#6366f1" stopOpacity={0.15} />
-            <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-        <XAxis
-          dataKey="label"
-          tick={{ fontSize: 10, fill: "#94a3b8" }}
-          tickLine={false}
-          axisLine={{ stroke: "#e2e8f0" }}
-          interval="preserveStartEnd"
-        />
-        <YAxis
-          tick={{ fontSize: 10, fill: "#94a3b8" }}
-          tickLine={false}
-          axisLine={false}
-          tickFormatter={(v: number) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))}
-        />
-        <Tooltip
-          formatter={(val, name) => [
-            name === "revenue" ? fmtCurrency(Number(val)) : val,
-            name === "revenue" ? "Ingresos" : "Pedidos",
-          ]}
-          contentStyle={{
-            borderRadius: 8,
-            border: "1px solid #e2e8f0",
-            background: "#fff",
-            fontSize: 12,
-            boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-          }}
-        />
-        <Area
-          type="monotone"
-          dataKey="revenue"
-          stroke="#6366f1"
-          strokeWidth={2}
-          fill="url(#revenueGrad)"
-        />
-      </AreaChart>
-    </ResponsiveContainer>
-  );
-}
 
 function CategoryChart({ data }: { data: { category: string; revenue: number; units: number }[] }) {
   return (

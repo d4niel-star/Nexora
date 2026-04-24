@@ -9,20 +9,24 @@ import {
   ChevronRight,
   LayoutDashboard,
   LineChart,
+  Mail,
+  MapPin,
   Megaphone,
   Menu,
-  Sparkles,
+  Network,
   Package,
   PackageSearch,
   Puzzle,
   Settings,
   ShoppingBag,
   ShoppingCart,
+  Sparkles,
   Store,
   Tag,
   TrendingUp,
   Truck,
   Users,
+  Wallet,
   Wrench,
   X,
 } from "lucide-react";
@@ -78,9 +82,32 @@ type NavEntry = NavLeaf | NavGroup;
 
 // Primary navigation. Every href here MUST resolve to a page under
 // src/app/admin/* — no dead links, no placeholders.
+//
+// IA notes:
+//   · Estadísticas is a *family* (group) that owns the analytic surfaces:
+//     Rendimiento (KPIs, charts, evolución de ventas) and Finanzas
+//     (cobrado / pendiente / rentabilidad). They share temporal lens and
+//     belong together; keeping Finanzas as a top-level peer was a
+//     hierarchy mistake.
+//   · Truck is reserved for Envíos (parent). Carrier leaves use
+//     destination-specific icons (Mail / MapPin) so the Envíos sub-tree
+//     no longer renders three identical truck rows.
+//   · "Abastecimiento" → "Proveedores": the module is, in practice, the
+//     supplier connection / catalog import surface. "Proveedores" is the
+//     word merchants actually use. Icon switches from Truck (collided
+//     with Envíos) to Network (a graph of supplier connections).
 const primaryNav: readonly NavEntry[] = [
   { kind: "leaf", href: "/admin/dashboard", label: "Panel de control", icon: LayoutDashboard },
-  { kind: "leaf", href: "/admin/stats", label: "Estadísticas", icon: BarChart3 },
+  {
+    kind: "group",
+    id: "analytics",
+    label: "Estadísticas",
+    icon: BarChart3,
+    items: [
+      { kind: "leaf", href: "/admin/stats", label: "Rendimiento", icon: TrendingUp },
+      { kind: "leaf", href: "/admin/finances", label: "Finanzas", icon: Wallet },
+    ],
+  },
   {
     kind: "group",
     id: "sales",
@@ -100,7 +127,7 @@ const primaryNav: readonly NavEntry[] = [
     items: [
       { kind: "leaf", href: "/admin/catalog", label: "Productos", icon: Tag },
       { kind: "leaf", href: "/admin/inventory", label: "Inventario", icon: Boxes },
-      { kind: "leaf", href: "/admin/sourcing", label: "Abastecimiento", icon: Truck },
+      { kind: "leaf", href: "/admin/sourcing", label: "Proveedores", icon: Network },
     ],
   },
   {
@@ -129,12 +156,11 @@ const primaryNav: readonly NavEntry[] = [
     icon: Truck,
     basePath: "/admin/shipping",
     items: [
-      { kind: "leaf", href: "/admin/shipping/correo-argentino", label: "Correo Argentino", icon: Truck },
-      { kind: "leaf", href: "/admin/shipping/andreani", label: "Andreani", icon: Truck },
+      { kind: "leaf", href: "/admin/shipping/correo-argentino", label: "Correo Argentino", icon: Mail },
+      { kind: "leaf", href: "/admin/shipping/andreani", label: "Andreani", icon: MapPin },
       { kind: "leaf", href: "/admin/shipping/settings", label: "Ajustes de envío", icon: Settings },
     ],
   },
-  { kind: "leaf", href: "/admin/finances", label: "Finanzas", icon: TrendingUp },
   { kind: "leaf", href: "/admin/operations", label: "Operación", icon: PackageSearch },
   {
     kind: "group",

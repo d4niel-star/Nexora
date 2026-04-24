@@ -14,43 +14,97 @@ import { getCurrentStore } from "@/lib/auth/session";
 import { getAggregatedCustomers } from "@/lib/customers/queries";
 import type {
   DailyRevenuePoint,
+  PrevDailyRevenuePoint,
   OverviewKPIs,
   OverviewData,
   CommercialData,
   AudienceData,
+  DateRange,
 } from "./types";
 
 // Re-export types for backward compatibility
 export type {
   DailyRevenuePoint,
+  PrevDailyRevenuePoint,
   OverviewKPIs,
   OverviewData,
   CommercialData,
   AudienceData,
+  DateRange,
 } from "./types";
 
 // ─── Shared helpers ──────────────────────────────────────────────────────
 
-function daysAgo(n: number): Date {
-  return new Date(Date.now() - n * 86_400_000);
+/** Parse a YYYY-MM-DD into a UTC Date pinned to 00:00:00.000. Returns null
+ *  on any malformed input — defensive parsing because this comes from
+ *  searchParams. */
+function parseISODate(value: string | undefined | null): Date | null {
+  if (!value) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const d = new Date(`${value}T00:00:00.000Z`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function toISODate(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+/** Resolve the effective analytical range. Defaults to the trailing 30
+ *  days. Always returns a {from, to} pair where `to` is the END of the
+ *  selected day (so SQL `< toExclusive` behaves correctly). */
+export function resolveStatsRange(
+  fromParam?: string | null,
+  toParam?: string | null,
+): { from: Date; to: Date; toExclusive: Date; days: number } {
+  const fromArg = parseISODate(fromParam);
+  const toArg = parseISODate(toParam);
+
+  // Default = last 30 days, ending today.
+  const todayUtc = new Date();
+  todayUtc.setUTCHours(0, 0, 0, 0);
+
+  const to = toArg ?? todayUtc;
+  const from = fromArg ?? new Date(to.getTime() - 29 * 86_400_000);
+
+  // Normalize: from <= to. If swapped, swap.
+  const safeFrom = from <= to ? from : to;
+  const safeTo = from <= to ? to : from;
+
+  const toExclusive = new Date(safeTo.getTime() + 86_400_000);
+  const days = Math.round((toExclusive.getTime() - safeFrom.getTime()) / 86_400_000);
+
+  return { from: safeFrom, to: safeTo, toExclusive, days };
+}
+
+interface StatsRangeArgs {
+  from?: string | null;
+  to?: string | null;
 }
 
 // ─── Overview queries ────────────────────────────────────────────────────
 
-export async function getStatsOverview(): Promise<OverviewData> {
+export async function getStatsOverview(args: StatsRangeArgs = {}): Promise<OverviewData> {
   const store = await getCurrentStore();
+  const range = resolveStatsRange(args.from, args.to);
+  const prevTo = new Date(range.from.getTime()); // exclusive upper bound for prev period
+  const prevFrom = new Date(range.from.getTime() - range.days * 86_400_000);
+  const fallbackRange: DateRange = { from: toISODate(range.from), to: toISODate(range.to) };
+  const fallbackPrev: DateRange = { from: toISODate(prevFrom), to: toISODate(new Date(prevTo.getTime() - 86_400_000)) };
+
   if (!store) {
     return {
+      range: fallbackRange,
+      prevRange: fallbackPrev,
+      rangeDays: range.days,
       kpis: emptyKPIs(),
       dailyRevenue: [],
+      prevDailyRevenue: [],
       topProducts: [],
       revenueByCategory: [],
     };
   }
 
   const sid = store.id;
-  const d30 = daysAgo(30);
-  const d60 = daysAgo(60);
 
   const paidFilter = {
     storeId: sid,
@@ -58,55 +112,59 @@ export async function getStatsOverview(): Promise<OverviewData> {
     status: { notIn: ["cancelled", "refunded"] as string[] },
   };
 
-  // Core aggregates in parallel
+  // Core aggregates in parallel — all bounded by the resolved range.
   const [
-    agg30,
+    aggCurr,
     aggPrev,
     marginAgg,
     productsPublished,
     productsWithSales,
     dailyOrders,
+    prevDailyOrders,
     topProductsRaw,
     categoryRaw,
-    customers30d,
+    customersInRange,
     totalCustomers,
     recurringCount,
   ] = await Promise.all([
-    // Revenue + orders last 30d
+    // Revenue + orders for current range
     prisma.order.aggregate({
-      where: { ...paidFilter, createdAt: { gte: d30 } },
+      where: { ...paidFilter, createdAt: { gte: range.from, lt: range.toExclusive } },
       _sum: { total: true },
       _count: true,
     }),
-    // Revenue + orders prev 30d
+    // Revenue + orders for previous equal-length range
     prisma.order.aggregate({
-      where: { ...paidFilter, createdAt: { gte: d60, lt: d30 } },
+      where: { ...paidFilter, createdAt: { gte: prevFrom, lt: prevTo } },
       _sum: { total: true },
       _count: true,
     }),
     // Margin from profitability — avg net contribution %
-    // costSnapshot is Float @default(0) (non-nullable), no need to filter nulls
     prisma.orderItem.aggregate({
       where: {
-        order: { ...paidFilter, createdAt: { gte: d30 } },
+        order: { ...paidFilter, createdAt: { gte: range.from, lt: range.toExclusive } },
       },
       _sum: { lineTotal: true, costSnapshot: true, quantity: true },
     }),
     prisma.product.count({ where: { storeId: sid, isPublished: true } }),
     prisma.orderItem.findMany({
-      where: { order: { ...paidFilter, createdAt: { gte: d30 } } },
+      where: { order: { ...paidFilter, createdAt: { gte: range.from, lt: range.toExclusive } } },
       distinct: ["productId"],
       select: { productId: true },
     }).then((r) => new Set(r.map((x) => x.productId)).size),
-    // Daily buckets for chart
+    // Daily buckets for current range
     prisma.$queryRaw<
       { day: Date; total: number; cnt: number }[]
-    >`SELECT DATE("createdAt") as day, SUM("total") as total, COUNT(*) as cnt FROM "Order" WHERE "storeId" = ${sid} AND "paymentStatus" IN ('approved','paid') AND "status" NOT IN ('cancelled','refunded') AND "createdAt" >= ${d30} GROUP BY DATE("createdAt") ORDER BY day ASC`,
+    >`SELECT DATE("createdAt") as day, SUM("total") as total, COUNT(*) as cnt FROM "Order" WHERE "storeId" = ${sid} AND "paymentStatus" IN ('approved','paid') AND "status" NOT IN ('cancelled','refunded') AND "createdAt" >= ${range.from} AND "createdAt" < ${range.toExclusive} GROUP BY DATE("createdAt") ORDER BY day ASC`,
+    // Daily buckets for previous range — used by the hero chart overlay
+    prisma.$queryRaw<
+      { day: Date; total: number }[]
+    >`SELECT DATE("createdAt") as day, SUM("total") as total FROM "Order" WHERE "storeId" = ${sid} AND "paymentStatus" IN ('approved','paid') AND "status" NOT IN ('cancelled','refunded') AND "createdAt" >= ${prevFrom} AND "createdAt" < ${prevTo} GROUP BY DATE("createdAt") ORDER BY day ASC`,
     // Top products by revenue
     prisma.orderItem.groupBy({
       by: ["productId"],
       where: {
-        order: { ...paidFilter, createdAt: { gte: d30 } },
+        order: { ...paidFilter, createdAt: { gte: range.from, lt: range.toExclusive } },
         productId: { not: null },
       },
       _sum: { lineTotal: true, quantity: true },
@@ -117,28 +175,28 @@ export async function getStatsOverview(): Promise<OverviewData> {
     prisma.orderItem.groupBy({
       by: ["productId"],
       where: {
-        order: { ...paidFilter, createdAt: { gte: d30 } },
+        order: { ...paidFilter, createdAt: { gte: range.from, lt: range.toExclusive } },
         productId: { not: null },
       },
       _sum: { lineTotal: true, quantity: true },
     }),
-    // New customers last 30d — raw SQL for accuracy
+    // New customers in range — raw SQL for accuracy
     prisma.$queryRaw<{ cnt: number }[]>`
       SELECT COUNT(*) as cnt FROM (
         SELECT "email", MIN("createdAt") as first_order
         FROM "Order"
         WHERE "storeId" = ${sid} AND "status" != 'cancelled' AND "email" IS NOT NULL AND "email" != ''
         GROUP BY "email"
-        HAVING MIN("createdAt") >= ${d30}
+        HAVING MIN("createdAt") >= ${range.from} AND MIN("createdAt") < ${range.toExclusive}
       ) sub
     `.then((r) => Number(r[0]?.cnt ?? 0)),
-    // Total distinct customers
+    // Total distinct customers (lifetime)
     prisma.order.findMany({
       where: { storeId: sid, status: { not: "cancelled" as string }, email: { not: "" } },
       distinct: ["email"],
       select: { email: true },
     }).then((r) => r.length),
-    // Recurring customers (>= 2 orders)
+    // Recurring customers (>= 2 orders) lifetime
     prisma.$queryRaw<{ cnt: number }[]>`
       SELECT COUNT(*) as cnt FROM (
         SELECT "email" FROM "Order"
@@ -148,9 +206,9 @@ export async function getStatsOverview(): Promise<OverviewData> {
     `.then((r) => Number(r[0]?.cnt ?? 0)),
   ]);
 
-  const revenue30d = agg30._sum.total ?? 0;
+  const revenue30d = aggCurr._sum.total ?? 0;
   const revenuePrev30d = aggPrev._sum.total ?? 0;
-  const orders30d = agg30._count;
+  const orders30d = aggCurr._count;
   const ordersPrev30d = aggPrev._count;
 
   // Margin calculation
@@ -196,22 +254,44 @@ export async function getStatsOverview(): Promise<OverviewData> {
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 6);
 
-  // Daily revenue chart
+  // Daily revenue chart — fill missing days with zeros so the line is
+  // continuous and the X axis density matches the selected range.
   const monthLabels = [
     "", "ene", "feb", "mar", "abr", "may", "jun",
     "jul", "ago", "sep", "oct", "nov", "dic",
   ];
-  const dailyRevenue: DailyRevenuePoint[] = dailyOrders.map((row) => {
-    const d = new Date(row.day);
-    const day = d.getDate();
-    const month = monthLabels[d.getMonth() + 1];
-    return {
-      date: d.toISOString().slice(0, 10),
-      label: `${day} ${month}`,
-      revenue: Number(row.total),
-      orders: Number(row.cnt),
-    };
-  });
+
+  const dailyMap = new Map<string, { revenue: number; orders: number }>();
+  for (const row of dailyOrders) {
+    const key = toISODate(new Date(row.day));
+    dailyMap.set(key, { revenue: Number(row.total), orders: Number(row.cnt) });
+  }
+  const prevMap = new Map<string, number>();
+  for (const row of prevDailyOrders) {
+    const key = toISODate(new Date(row.day));
+    prevMap.set(key, Number(row.total));
+  }
+
+  const dailyRevenue: DailyRevenuePoint[] = [];
+  const prevDailyRevenue: PrevDailyRevenuePoint[] = [];
+  for (let i = 0; i < range.days; i++) {
+    const cur = new Date(range.from.getTime() + i * 86_400_000);
+    const prev = new Date(prevFrom.getTime() + i * 86_400_000);
+    const curKey = toISODate(cur);
+    const prevKey = toISODate(prev);
+    const curBucket = dailyMap.get(curKey) ?? { revenue: 0, orders: 0 };
+    dailyRevenue.push({
+      date: curKey,
+      label: `${cur.getUTCDate()} ${monthLabels[cur.getUTCMonth() + 1]}`,
+      revenue: curBucket.revenue,
+      orders: curBucket.orders,
+    });
+    prevDailyRevenue.push({
+      index: i,
+      date: prevKey,
+      revenue: prevMap.get(prevKey) ?? 0,
+    });
+  }
 
   const pctChange = (curr: number, prev: number): number | null => {
     if (prev === 0 && curr === 0) return null;
@@ -219,7 +299,7 @@ export async function getStatsOverview(): Promise<OverviewData> {
     return Math.round(((curr - prev) / prev) * 100);
   };
 
-  const newCustomers30d = customers30d as number;
+  const newCustomers30d = customersInRange as number;
   const repeatRate = totalCustomers > 0 ? Math.round((recurringCount / totalCustomers) * 100) : null;
 
   const kpis: OverviewKPIs = {
@@ -243,17 +323,26 @@ export async function getStatsOverview(): Promise<OverviewData> {
     productsWithSales,
   };
 
-  return { kpis, dailyRevenue, topProducts, revenueByCategory };
+  return {
+    range: fallbackRange,
+    prevRange: fallbackPrev,
+    rangeDays: range.days,
+    kpis,
+    dailyRevenue,
+    prevDailyRevenue,
+    topProducts,
+    revenueByCategory,
+  };
 }
 
 // ─── Commercial queries ──────────────────────────────────────────────────
 
-export async function getStatsCommercial(): Promise<CommercialData> {
+export async function getStatsCommercial(args: StatsRangeArgs = {}): Promise<CommercialData> {
   const store = await getCurrentStore();
   if (!store) return { topProducts: [], topCategories: [], bottomProducts: [] };
 
   const sid = store.id;
-  const d30 = daysAgo(30);
+  const range = resolveStatsRange(args.from, args.to);
   const paidFilter = {
     storeId: sid,
     paymentStatus: { in: ["approved", "paid"] as string[] },
@@ -264,7 +353,7 @@ export async function getStatsCommercial(): Promise<CommercialData> {
     prisma.orderItem.groupBy({
       by: ["productId"],
       where: {
-        order: { ...paidFilter, createdAt: { gte: d30 } },
+        order: { ...paidFilter, createdAt: { gte: range.from, lt: range.toExclusive } },
         productId: { not: null },
       },
       _sum: { lineTotal: true, quantity: true, costSnapshot: true },
@@ -274,7 +363,7 @@ export async function getStatsCommercial(): Promise<CommercialData> {
     prisma.orderItem.groupBy({
       by: ["productId"],
       where: {
-        order: { ...paidFilter, createdAt: { gte: d30 } },
+        order: { ...paidFilter, createdAt: { gte: range.from, lt: range.toExclusive } },
         productId: { not: null },
       },
       _sum: { lineTotal: true, quantity: true, costSnapshot: true },
