@@ -20,10 +20,12 @@ import {
   compose,
   deliberate,
   type AssistantAdapter,
+  type DeliberationMeta,
   type DeliberationOutcome,
   type DomainPlan,
   type Reply,
   type ToneProfile,
+  type TraceNote,
 } from "@/lib/ai-core";
 import {
   processInput as legacyProcessInput,
@@ -219,11 +221,18 @@ export interface EditorProcessOptions {
   callbacks: EditorCallbacks;
 }
 
+export interface EditorProcessResult {
+  reply: Reply;
+  context: EditorContext;
+  trace: TraceNote[];
+  meta: DeliberationMeta;
+}
+
 export async function processEditorMessage(
   raw: string,
   ctx: EditorContext,
   options: EditorProcessOptions,
-): Promise<{ reply: Reply; context: EditorContext }> {
+): Promise<EditorProcessResult> {
   // Make callbacks visible to the adapter for THIS invocation.
   activeCallbacks = options.callbacks;
   try {
@@ -231,6 +240,8 @@ export async function processEditorMessage(
     return {
       reply: outcome.reply,
       context: outcome.context as EditorContext,
+      trace: outcome.trace,
+      meta: outcome.meta,
     };
   } finally {
     // Reset to a no-op holder so a stray call without callbacks can't run.

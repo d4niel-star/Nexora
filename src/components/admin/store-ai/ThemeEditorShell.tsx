@@ -42,6 +42,7 @@ import {
   resolveStoreFontOption,
 } from "@/lib/store-engine/theme-tokens";
 import type { AdminStoreInitialData, BlockType } from "@/types/store-engine";
+import type { AssistantMemoryScope } from "@/lib/assistants/memory/scope";
 
 type EditorPanel = "colors" | "typography" | "buttons" | "identity" | "media" | "header" | "home" | "footer";
 type PreviewSurface = "home" | "listing" | "product" | "cart";
@@ -161,8 +162,10 @@ function createDraftId() {
 
 export function ThemeEditorShell({
   initialData,
+  memoryScope,
 }: {
   initialData: AdminStoreInitialData | null;
+  memoryScope?: AssistantMemoryScope;
 }) {
   const router = useRouter();
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
@@ -495,6 +498,7 @@ export function ThemeEditorShell({
         onActionApplied={refreshPreview}
         onDeviceChange={(d) => { setDevice(d); }}
         onPreviewSurfaceChange={(s) => { setPreviewSurface(s); }}
+        memoryScope={memoryScope}
         currentBranding={initialData.branding ? {
           primaryColor: initialData.branding.primaryColor,
           secondaryColor: initialData.branding.secondaryColor,

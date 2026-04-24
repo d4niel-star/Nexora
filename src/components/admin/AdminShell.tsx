@@ -40,6 +40,7 @@ import { cn } from "@/lib/utils";
 import { TopbarUserMenu } from "./layout/TopbarUserMenu";
 import { NexoraLogo } from "./layout/NexoraLogo";
 import { NexoraGlobalChat } from "./store-ai/NexoraGlobalChat";
+import type { AssistantMemoryScope } from "@/lib/assistants/memory/scope";
 
 // ─── Admin Shell v4 ──────────────────────────────────────────────────────
 // Dark sidebar against a cool neutral canvas. Previous revisions shipped a
@@ -222,9 +223,17 @@ interface AdminShellProps {
   storeName: string;
   storeInitials: string;
   dunningBanner?: React.ReactNode;
+  /** Enables cross-session assistant memory + trace telemetry for the global chat. */
+  assistantMemoryScope?: AssistantMemoryScope;
 }
 
-export function AdminShell({ children, storeName, storeInitials, dunningBanner }: AdminShellProps) {
+export function AdminShell({
+  children,
+  storeName,
+  storeInitials,
+  dunningBanner,
+  assistantMemoryScope,
+}: AdminShellProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -411,7 +420,9 @@ export function AdminShell({ children, storeName, storeInitials, dunningBanner }
 
       {/* ── Nexora IA Global Chat ──────────────────────────────── */}
       {/* Visible on ALL admin pages EXCEPT the store editor, which has its own copilot. */}
-      {!pathname.startsWith("/admin/store-ai/editor") && <NexoraGlobalChat />}
+      {!pathname.startsWith("/admin/store-ai/editor") && (
+        <NexoraGlobalChat memoryScope={assistantMemoryScope} />
+      )}
     </div>
   );
 }

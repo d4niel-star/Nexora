@@ -6,6 +6,18 @@ import { ArrowUpRight, CheckCircle2, Loader2, Send, Sparkles, X } from "lucide-r
 import { cn } from "@/lib/utils";
 import { createCoreContext, type CoreContext, type Reply } from "@/lib/ai-core";
 import { processGlobalMessage } from "@/lib/assistants/global";
+import {
+  buildGlobalMemoryPayload,
+  hydrateGlobalContext,
+  type GlobalMemoryPayloadV1,
+  type TranscriptLine,
+} from "@/lib/assistants/memory/payload";
+import type { AssistantMemoryScope } from "@/lib/assistants/memory/scope";
+import {
+  loadNexoraAssistantMemory,
+  logNexoraDeliberation,
+  saveNexoraAssistantMemory,
+} from "@/lib/assistants/nexora-memory-actions";
 
 // ─── Nexora Global Chat ──────────────────────────────────────────────────
 //
@@ -34,7 +46,22 @@ const STARTER_MSG: ChatMessage = {
   ts: Date.now(),
 };
 
-export function NexoraGlobalChat() {
+function transcriptToChatMessages(t: TranscriptLine[]): ChatMessage[] {
+  return t.map((line, i) => ({
+    id: `m-${line.ts}-${i}`,
+    role: line.role,
+    text: line.text,
+    ts: line.ts,
+  }));
+}
+
+function chatMessagesToTranscript(msgs: ChatMessage[]): TranscriptLine[] {
+  return msgs
+    .filter((m) => m.role === "user" || m.role === "assistant")
+    .map((m) => ({ role: m.role, text: m.text, ts: m.ts }));
+}
+
+export function NexoraGlobalChat({ memoryScope }: { memoryScope?: AssistantMemoryScope }) {
   const router = useRouter();
   const pathname = usePathname() ?? "/admin";
 
@@ -71,6 +98,33 @@ export function NexoraGlobalChat() {
     return () => window.removeEventListener("keydown", onKey);
   }, [isOpen]);
 
+  // Cross-session memory (separate from editor assistant; server-validated)
+  useEffect(() => {
+    if (!memoryScope) return;
+    let cancelled = false;
+    (async () => {
+      const row = await loadNexoraAssistantMemory(
+        memoryScope.storeId,
+        memoryScope.userId,
+        "global",
+      );
+      if (cancelled || !row?.payloadJson) return;
+      try {
+        const parsed = JSON.parse(row.payloadJson) as GlobalMemoryPayloadV1;
+        if (parsed.v !== 1) return;
+        setCtx(hydrateGlobalContext(parsed, pathname));
+        if (parsed.transcript?.length) {
+          setMessages(transcriptToChatMessages(parsed.transcript));
+        }
+      } catch {
+        /* ignore bad legacy rows */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [memoryScope?.storeId, memoryScope?.userId, pathname]);
+
   const handleSend = useCallback(() => {
     const text = input.trim();
     if (!text) return;
@@ -86,7 +140,7 @@ export function NexoraGlobalChat() {
 
     startTransition(async () => {
       try {
-        const { reply, context } = await processGlobalMessage(text, ctxRef.current);
+        const { reply, context, meta, trace } = await processGlobalMessage(text, ctxRef.current);
         const aMsg: ChatMessage = {
           id: `a-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
           role: "assistant",
@@ -94,7 +148,25 @@ export function NexoraGlobalChat() {
           text: reply.text,
           ts: Date.now(),
         };
-        setMessages((prev) => [...prev, aMsg]);
+        setMessages((prev) => {
+          const next = [...prev, aMsg];
+          if (memoryScope) {
+            const t = chatMessagesToTranscript(next);
+            const payload = buildGlobalMemoryPayload(context, t, {
+              lastRecommendation: reply.nextSteps?.[0] ?? reply.bullets?.[0],
+            });
+            const json = JSON.stringify(payload);
+            void saveNexoraAssistantMemory(
+              memoryScope.storeId,
+              memoryScope.userId,
+              "global",
+              json,
+              payload.summaryLine,
+            );
+            void logNexoraDeliberation(memoryScope.storeId, memoryScope.userId, meta, trace);
+          }
+          return next;
+        });
         setCtx(context);
       } catch (e) {
         const err = (e as Error).message ?? "Algo salió mal.";
@@ -109,7 +181,7 @@ export function NexoraGlobalChat() {
         ]);
       }
     });
-  }, [input]);
+  }, [input, memoryScope]);
 
   const onActionClick = useCallback(
     (href: string) => {

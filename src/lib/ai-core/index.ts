@@ -18,8 +18,9 @@ export { compose, pickSocialReply } from "./composer";
 export {
   deliberate,
   type AssistantAdapter,
-  type DomainPlan,
+  type DeliberationMeta,
   type DeliberationOutcome,
+  type DomainPlan,
   type TraceNote,
   type TraceStage,
 } from "./deliberate";

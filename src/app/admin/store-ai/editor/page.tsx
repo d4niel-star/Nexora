@@ -5,6 +5,7 @@ import { ThemeEditorShell } from "@/components/admin/store-ai/ThemeEditorShell";
 import { checkAIBuilderAccess } from "@/lib/billing/service";
 import { getAdminStoreId } from "@/lib/store-engine/actions";
 import { getAdminStoreInitialData } from "@/lib/store-engine/queries";
+import { getCurrentUser } from "@/lib/auth/session";
 
 // ─── Theme Editor — dedicated editing surface ────────────────────────────
 // This page owns the full visual editing experience: sidebar settings,
@@ -43,6 +44,9 @@ export default async function ThemeEditorPage() {
   }
 
   const initialData = await getAdminStoreInitialData();
+  const user = await getCurrentUser();
+  const memoryScope =
+    storeId && user?.id ? { storeId, userId: user.id } : undefined;
 
-  return <ThemeEditorShell initialData={initialData} />;
+  return <ThemeEditorShell initialData={initialData} memoryScope={memoryScope} />;
 }

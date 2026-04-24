@@ -41,6 +41,7 @@ model Store {
   domains        StoreDomain[]
   aiDrafts       AIGenerationDraft[]
   aiConversations AIConversation[]
+  nexoraMemories  NexoraAssistantMemory[]
   subscription    StoreSubscription?
   creditBalance   StoreCreditBalance?
   creditTransactions CreditTransaction[]
@@ -89,6 +90,8 @@ model User {
   verificationTokens EmailVerificationToken[]
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  nexoraMemories NexoraAssistantMemory[]
   
   @@index([email])
 }
@@ -823,6 +826,25 @@ model AIMessage {
   createdAt      DateTime @default(now())
 
   @@index([conversationId])
+}
+
+// ─── Nexora — per-user, per-store, per-assistant working memory (compact) ─
+// Separates "global" vs "editor" (unique key). No cross-assistant state.
+
+model NexoraAssistantMemory {
+  id            String   @id @default(uuid())
+  storeId       String
+  store         Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assistantId   String   // "global" | "editor"
+  summaryLine   String   @default("")
+  payloadJson   String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([storeId, userId, assistantId])
+  @@index([storeId, userId, updatedAt])
 }
 
 model AIUsageLog {

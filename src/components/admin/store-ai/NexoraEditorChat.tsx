@@ -19,6 +19,18 @@ import {
   type EditorContext,
 } from "@/lib/assistants/editor";
 import type { Reply } from "@/lib/ai-core";
+import {
+  buildEditorMemoryPayload,
+  hydrateEditorContext,
+  isEditorMemoryPayload,
+  type TranscriptLine,
+} from "@/lib/assistants/memory/payload";
+import {
+  loadNexoraAssistantMemory,
+  logNexoraDeliberation,
+  saveNexoraAssistantMemory,
+} from "@/lib/assistants/nexora-memory-actions";
+import type { AssistantMemoryScope } from "@/lib/assistants/memory/scope";
 
 // ─── Nexora Editor Chat — built on the shared AI Core ───────────────────
 //
@@ -54,6 +66,8 @@ interface NexoraEditorChatProps {
     tone: string;
     buttonStyle: string;
   } | null;
+  /** Server-scoped; editor memory is never shared with the global assistant. */
+  memoryScope?: AssistantMemoryScope;
 }
 
 const STARTER: ChatMessage = {
@@ -64,10 +78,26 @@ const STARTER: ChatMessage = {
   ts: Date.now(),
 };
 
+function editorTranscriptToMessages(t: TranscriptLine[]): ChatMessage[] {
+  return t.map((line, i) => ({
+    id: `e-${line.ts}-${i}`,
+    role: line.role,
+    text: line.text,
+    ts: line.ts,
+  }));
+}
+
+function editorMessagesToTranscript(msgs: ChatMessage[]): TranscriptLine[] {
+  return msgs
+    .filter((m) => m.role === "user" || m.role === "assistant")
+    .map((m) => ({ role: m.role, text: m.text, ts: m.ts }));
+}
+
 export function NexoraEditorChat({
   onActionApplied,
   onDeviceChange,
   onPreviewSurfaceChange,
+  memoryScope,
 }: NexoraEditorChatProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([STARTER]);
@@ -95,6 +125,34 @@ export function NexoraEditorChat({
     if (isOpen) setTimeout(() => inputRef.current?.focus(), 150);
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!memoryScope) return;
+    let cancelled = false;
+    (async () => {
+      const row = await loadNexoraAssistantMemory(
+        memoryScope.storeId,
+        memoryScope.userId,
+        "editor",
+      );
+      if (cancelled || !row?.payloadJson) return;
+      try {
+        const parsed: unknown = JSON.parse(row.payloadJson);
+        if (!isEditorMemoryPayload(parsed)) return;
+        setCtx(hydrateEditorContext(parsed, "/admin/store-ai/editor"));
+        if (parsed.transcript?.length) {
+          setMessages(editorTranscriptToMessages(parsed.transcript));
+        }
+        onPreviewSurfaceChangeRef.current?.(parsed.editor.preview);
+        onDeviceChangeRef.current?.(parsed.editor.currentDevice);
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [memoryScope?.storeId, memoryScope?.userId]);
+
   const handleSend = useCallback(() => {
     const text = input.trim();
     if (!text) return;
@@ -115,19 +173,35 @@ export function NexoraEditorChat({
           onDeviceChange: (d) => onDeviceChangeRef.current?.(d),
           onPreviewSurfaceChange: (s) => onPreviewSurfaceChangeRef.current?.(s),
         };
-        const { reply, context } = await processEditorMessage(text, ctxRef.current, {
+        const { reply, context, meta, trace } = await processEditorMessage(text, ctxRef.current, {
           callbacks,
         });
-        setMessages((prev) => [
-          ...prev,
-          {
+        setMessages((prev) => {
+          const aMsg: ChatMessage = {
             id: `a-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
             role: "assistant",
             text: reply.text,
             reply,
             ts: Date.now(),
-          },
-        ]);
+          };
+          const next = [...prev, aMsg];
+          if (memoryScope) {
+            const t = editorMessagesToTranscript(next);
+            const payload = buildEditorMemoryPayload(context, t, {
+              lastRecommendation: reply.nextSteps?.[0] ?? reply.bullets?.[0],
+            });
+            const json = JSON.stringify(payload);
+            void saveNexoraAssistantMemory(
+              memoryScope.storeId,
+              memoryScope.userId,
+              "editor",
+              json,
+              payload.summaryLine,
+            );
+            void logNexoraDeliberation(memoryScope.storeId, memoryScope.userId, meta, trace);
+          }
+          return next;
+        });
         setCtx(context);
       } catch (e) {
         const msg = (e as Error).message ?? "Error desconocido";
@@ -142,7 +216,7 @@ export function NexoraEditorChat({
         ]);
       }
     });
-  }, [input]);
+  }, [input, memoryScope]);
 
   const undoCount = ctx.editor.legacy.undoStack.length;
 

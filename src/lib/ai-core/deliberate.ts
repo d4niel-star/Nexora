@@ -34,6 +34,7 @@ import {
   pushTurn,
   type CoreContext,
   type Reply,
+  type ReplyKind,
   type ToneProfile,
 } from "./types";
 
@@ -128,7 +129,8 @@ export type TraceStage =
   | "out_of_scope"
   | "execute"
   | "noop"
-  | "error";
+  | "error"
+  | "post_check";
 
 export interface TraceNote {
   stage: TraceStage;
@@ -136,20 +138,52 @@ export interface TraceNote {
   data?: Record<string, unknown>;
 }
 
+/** Observable summary of a run — safe to log (no raw user text). */
+export interface DeliberationMeta {
+  assistant: "global" | "editor";
+  durationMs: number;
+  messageLength: number;
+  replyKind: ReplyKind;
+  resultIntent: string | null;
+  resultDomain: string | null;
+  pipeline: {
+    branch: string;
+    planIntent: string | null;
+    planConfidence: number | null;
+    verifyShortCircuit: boolean;
+    executed: boolean;
+    executionError: boolean;
+    handoffTo?: "global" | "editor";
+    classification?: string;
+  };
+  /** Stage order as executed (for dashboards / debugging). */
+  stages: TraceStage[];
+}
+
 export interface DeliberationOutcome {
   reply: Reply;
   context: CoreContext;
   /** Internal-only. NEVER render this to the user. */
   trace: TraceNote[];
+  /** Timing + pipeline summary for observability (log server-side, not in chat UI). */
+  meta: DeliberationMeta;
 }
 
 // ─── Pipeline ───────────────────────────────────────────────────────────
+
+function nowMs(): number {
+  if (typeof performance !== "undefined" && typeof performance.now === "function") {
+    return performance.now();
+  }
+  return Date.now();
+}
 
 export async function deliberate<TIntentId extends string>(
   raw: string,
   adapter: AssistantAdapter<TIntentId>,
   ctx: CoreContext,
 ): Promise<DeliberationOutcome> {
+  const t0 = nowMs();
   const trace: TraceNote[] = [];
   const note = (stage: TraceStage, detail: string, data?: Record<string, unknown>) =>
     trace.push({ stage, detail, data });
@@ -162,7 +196,7 @@ export async function deliberate<TIntentId extends string>(
       tone: detectTone(""),
       text: "¿En qué te ayudo?",
     });
-    return finalize(reply, ctx, raw, "noop", trace);
+    return finalize(reply, ctx, raw, "noop", trace, adapter.id, t0);
   }
 
   const tone = detectTone(text);
@@ -180,7 +214,7 @@ export async function deliberate<TIntentId extends string>(
       adapter.smalltalk?.(cls.hint, tone) ??
       compose({ kind: "smalltalk", tone, text: pickSocialReply(cls.hint, tone) });
     note("social", cls.hint ?? "greeting");
-    return finalize(reply, ctx, raw, "social", trace);
+    return finalize(reply, ctx, raw, "social", trace, adapter.id, t0);
   }
   if (cls.category === "smalltalk") {
     const reply =
@@ -194,17 +228,17 @@ export async function deliberate<TIntentId extends string>(
             : "Todo en orden. ¿En qué te ayudo?",
       });
     note("smalltalk", "generic");
-    return finalize(reply, ctx, raw, "social", trace);
+    return finalize(reply, ctx, raw, "social", trace, adapter.id, t0);
   }
   if (cls.category === "ask_help") {
     const reply = adapter.help(tone);
     note("help", adapter.label);
-    return finalize(reply, ctx, raw, "help", trace);
+    return finalize(reply, ctx, raw, "help", trace, adapter.id, t0);
   }
   if (cls.category === "ask_status" && adapter.status) {
     const reply = adapter.status(tone, ctx);
     note("status", adapter.label);
-    return finalize(reply, ctx, raw, "status", trace);
+    return finalize(reply, ctx, raw, "status", trace, adapter.id, t0);
   }
 
   // ── 3b. FOLLOW-UP ────────────────────────────────────────────────
@@ -220,14 +254,14 @@ export async function deliberate<TIntentId extends string>(
             ? "Decime un poco más a qué te referís."
             : "¿Podés darme un poco más de contexto?",
       });
-      return finalize(reply, ctx, raw, "noop", trace);
+      return finalize(reply, ctx, raw, "noop", trace, adapter.id, t0);
     }
     if (isReply(fallback)) {
-      return finalize(fallback, ctx, raw, ctx.lastIntent ?? "follow_up", trace);
+      return finalize(fallback, ctx, raw, ctx.lastIntent ?? "follow_up", trace, adapter.id, t0);
     }
     // It's a plan — fall through to verify+execute
     const plan = fallback as DomainPlan<TIntentId>;
-    return runPlan(plan, adapter, ctx, tone, raw, trace, note);
+    return runPlan(plan, adapter, ctx, tone, raw, trace, note, t0);
   }
 
   // ── 4. PLAN — let the assistant interpret ───────────────────────
@@ -249,7 +283,7 @@ export async function deliberate<TIntentId extends string>(
           : "No terminé de entender. ¿Podés reformular con un poco más de detalle?",
       nextSteps: ["Probá ser más concreto", "Decime el módulo o la sección"],
     });
-    return finalize(reply, ctx, raw, "ambiguous", trace);
+    return finalize(reply, ctx, raw, "ambiguous", trace, adapter.id, t0);
   }
 
   // 4b. Explicit clarification request from interpreter
@@ -259,10 +293,10 @@ export async function deliberate<TIntentId extends string>(
       tone,
       text: plan.needsClarification,
     });
-    return finalize(reply, ctx, raw, "noop", trace);
+    return finalize(reply, ctx, raw, "noop", trace, adapter.id, t0);
   }
 
-  return runPlan(plan, adapter, ctx, tone, raw, trace, note);
+  return runPlan(plan, adapter, ctx, tone, raw, trace, note, t0);
 }
 
 // ─── Verify + Execute path ──────────────────────────────────────────────
@@ -275,6 +309,7 @@ async function runPlan<TIntentId extends string>(
   raw: string,
   trace: TraceNote[],
   note: (stage: TraceStage, detail: string, data?: Record<string, unknown>) => void,
+  t0: number,
 ): Promise<DeliberationOutcome> {
   // ── 4c. Custom verifier ─────────────────────────────────────────
   let verified: DomainPlan<TIntentId> | Reply = plan;
@@ -284,7 +319,7 @@ async function runPlan<TIntentId extends string>(
 
   if (isReply(verified)) {
     note("verify", "short-circuited by adapter");
-    return finalize(verified, ctx, raw, plan.intent ?? "noop", trace);
+    return finalize(verified, ctx, raw, plan.intent ?? "noop", trace, adapter.id, t0);
   }
 
   const finalPlan = verified;
@@ -316,7 +351,7 @@ async function runPlan<TIntentId extends string>(
     });
   }
 
-  return finalize(reply, ctx, raw, finalPlan.intent ?? "noop", trace);
+  return finalize(reply, ctx, raw, finalPlan.intent ?? "noop", trace, adapter.id, t0);
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────
@@ -341,6 +376,8 @@ function finalize(
   raw: string,
   intent: string,
   trace: TraceNote[],
+  assistant: "global" | "editor",
+  t0: number,
 ): DeliberationOutcome {
   let next = pushTurn(ctx, { role: "user", text: raw, ts: Date.now() });
   next = pushTurn(next, {
@@ -351,7 +388,85 @@ function finalize(
   if (intent !== "noop" && intent !== "social") {
     next = { ...next, lastIntent: intent, lastDomain: domainOf(intent) };
   }
-  return { reply: { ...reply, newContext: next }, context: next, trace };
+  trace.push({
+    stage: "post_check",
+    detail: "context_persisted",
+    data: { lastIntent: next.lastIntent, lastDomain: next.lastDomain },
+  });
+  const meta = buildDeliberationMeta(assistant, t0, trace, reply, next, raw.length);
+  return { reply: { ...reply, newContext: next }, context: next, trace, meta };
+}
+
+function buildDeliberationMeta(
+  assistant: "global" | "editor",
+  t0: number,
+  trace: TraceNote[],
+  reply: Reply,
+  context: CoreContext,
+  messageLength: number,
+): DeliberationMeta {
+  const durationMs = Math.max(0, Math.round(nowMs() - t0));
+  const stages = trace.map((s) => s.stage);
+  const intake = trace.find((s) => s.stage === "intake");
+  let classification: string | undefined;
+  if (intake?.detail) {
+    const m = intake.detail.match(/cls=([a-z_]+)/);
+    if (m) classification = m[1];
+  }
+  const planNote = trace.find((s) => s.stage === "plan");
+  let planIntent: string | null = null;
+  let planConfidence: number | null = null;
+  if (planNote?.detail) {
+    const im = planNote.detail.match(/intent=([^\s]+)/);
+    if (im && im[1] !== "∅") planIntent = im[1];
+    const cm = planNote.detail.match(/conf=([0-9.]+)/);
+    if (cm) planConfidence = Number.parseFloat(cm[1]);
+  }
+  const verifyShortCircuit = trace.some(
+    (s) => s.stage === "verify" && s.detail.includes("short-circuited"),
+  );
+  const executionError = trace.some((s) => s.stage === "error");
+  const executed = trace.some((s) => s.stage === "execute" && s.detail.startsWith("ok"));
+  const handoffNote = trace.find((s) => s.stage === "handoff");
+  let handoffTo: "global" | "editor" | undefined;
+  if (handoffNote?.detail?.startsWith("to=")) {
+    const h = handoffNote.detail.slice(3);
+    if (h === "global" || h === "editor") handoffTo = h;
+  }
+  if (!handoffTo && planNote?.data?.handoffTo) {
+    const h = planNote.data.handoffTo;
+    if (h === "global" || h === "editor") handoffTo = h;
+  }
+
+  let branch = "plan_execute";
+  if (trace.some((s) => s.stage === "social")) branch = "social";
+  else if (trace.some((s) => s.stage === "smalltalk")) branch = "smalltalk";
+  else if (trace.some((s) => s.stage === "help")) branch = "help";
+  else if (trace.some((s) => s.stage === "status")) branch = "status";
+  else if (trace.some((s) => s.stage === "follow_up")) branch = "follow_up";
+  else if (trace.some((s) => s.stage === "ambiguous")) branch = "ambiguous";
+  else if (verifyShortCircuit) branch = "verify_short_circuit";
+  else if (executionError) branch = "execute_error";
+
+  return {
+    assistant,
+    durationMs,
+    messageLength,
+    replyKind: reply.kind,
+    resultIntent: context.lastIntent,
+    resultDomain: context.lastDomain,
+    pipeline: {
+      branch,
+      planIntent,
+      planConfidence,
+      verifyShortCircuit,
+      executed,
+      executionError,
+      handoffTo,
+      classification,
+    },
+    stages,
+  };
 }
 
 function domainOf(intent: string): string {

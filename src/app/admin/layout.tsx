@@ -1,7 +1,8 @@
 import { getActiveStoreInfo } from "@/lib/store-engine/admin/queries";
 import { AdminShell } from "@/components/admin/AdminShell";
-import { getDunningState, type DunningState } from "@/lib/billing/dunning";
+import { getDunningState } from "@/lib/billing/dunning";
 import { DunningBanner } from "@/components/admin/billing/DunningBanner";
+import { getCurrentUser } from "@/lib/auth/session";
 
 export default async function AdminLayout({
   children,
@@ -9,6 +10,7 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   const store = await getActiveStoreInfo();
+  const user = await getCurrentUser();
 
   // CRITICAL: Auth validation - redirect to login if no session
   if (!store.id) {
@@ -35,11 +37,15 @@ export default async function AdminLayout({
   // Dunning: check subscription health for global banner
   const dunningState = await getDunningState(store.id);
 
+  const assistantMemoryScope =
+    user?.id && store.id ? { storeId: store.id, userId: user.id } : undefined;
+
   return (
     <AdminShell
       storeName={store.name}
       storeInitials={initials}
       dunningBanner={dunningState ? <DunningBanner state={dunningState} /> : undefined}
+      assistantMemoryScope={assistantMemoryScope}
     >
       {children}
     </AdminShell>

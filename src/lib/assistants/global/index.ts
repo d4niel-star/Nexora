@@ -21,10 +21,12 @@ import {
   interpretWithFloor,
   type AssistantAdapter,
   type CoreContext,
+  type DeliberationMeta,
   type DeliberationOutcome,
   type DomainPlan,
   type Reply,
   type ToneProfile,
+  type TraceNote,
 } from "@/lib/ai-core";
 import { GLOBAL_INTENTS, type GlobalIntentId } from "./intents";
 import { dispatchGlobal } from "./dispatcher";
@@ -119,6 +121,8 @@ const globalAdapter: AssistantAdapter<GlobalIntentId> = {
 export interface GlobalProcessResult {
   reply: Reply;
   context: CoreContext;
+  trace: TraceNote[];
+  meta: DeliberationMeta;
 }
 
 export async function processGlobalMessage(
@@ -126,7 +130,12 @@ export async function processGlobalMessage(
   ctx: CoreContext,
 ): Promise<GlobalProcessResult> {
   const outcome: DeliberationOutcome = await deliberate(raw, globalAdapter, ctx);
-  return { reply: outcome.reply, context: outcome.context };
+  return {
+    reply: outcome.reply,
+    context: outcome.context,
+    trace: outcome.trace,
+    meta: outcome.meta,
+  };
 }
 
 export type { GlobalIntentId } from "./intents";
