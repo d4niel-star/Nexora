@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { StoreConfig } from "@/types/storefront";
 import { storePath } from "@/lib/store-engine/urls";
+import { cn } from "@/lib/utils";
 
 // ─── Store Footer ───
 // Sober editorial footer. Zones:
@@ -39,8 +40,8 @@ export function StoreFooter({
 
       <div className="mx-auto max-w-7xl px-4 pb-10 pt-16 sm:px-6 lg:px-8 lg:pt-20">
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-12">
-          {/* Brand */}
-          <div className="lg:col-span-3">
+          {/* Brand + Social */}
+          <div className={hasContact ? "lg:col-span-3" : "lg:col-span-4"}>
             {config.logoUrl ? (
               <img
                 src={config.logoUrl}
@@ -61,15 +62,15 @@ export function StoreFooter({
 
             {/* Social links — below brand description */}
             {hasSocial && (
-              <div className="mt-5 flex items-center gap-3">
+              <div className="mt-6 flex items-center gap-2.5">
                 {config.socialLinks!.map((link) => (
                   <a
                     key={link.platform}
                     href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label={link.label}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[var(--surface-2)] text-ink-4 transition-colors hover:bg-ink-9 hover:text-ink-0"
+                    aria-label={`Seguinos en ${link.label}`}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[color:var(--hairline)] bg-[var(--surface-0)] text-ink-4 transition-colors hover:border-ink-6 hover:text-ink-0"
                   >
                     <SocialIcon platform={link.platform} />
                   </a>
@@ -79,7 +80,10 @@ export function StoreFooter({
           </div>
 
           {/* Navigation groups */}
-          <div className="grid grid-cols-2 gap-8 lg:col-span-3 lg:grid-cols-2">
+          <div className={cn(
+            "grid grid-cols-2 gap-8 lg:grid-cols-2",
+            hasContact ? "lg:col-span-3" : "lg:col-span-5",
+          )}>
             {config.footerNavigation.map((group, idx) => (
               <div key={`${group.title}-${idx}`}>
                 <h3 className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">
@@ -107,15 +111,15 @@ export function StoreFooter({
               <h3 className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">
                 Contacto
               </h3>
-              <ul role="list" className="mt-5 space-y-3">
+              <ul role="list" className="mt-5 space-y-3.5">
                 {config.contactInfo!.email && (
                   <li>
                     <a
                       href={`mailto:${config.contactInfo!.email}`}
-                      className="flex items-center gap-2 text-[14px] text-ink-3 transition-colors hover:text-ink-0"
+                      className="flex items-center gap-2.5 text-[14px] text-ink-3 transition-colors hover:text-ink-0"
                     >
                       <MailIcon />
-                      {config.contactInfo!.email}
+                      <span className="truncate">{config.contactInfo!.email}</span>
                     </a>
                   </li>
                 )}
@@ -123,7 +127,7 @@ export function StoreFooter({
                   <li>
                     <a
                       href={`tel:${config.contactInfo!.phone.replace(/\s/g, "")}`}
-                      className="flex items-center gap-2 text-[14px] text-ink-3 transition-colors hover:text-ink-0"
+                      className="flex items-center gap-2.5 text-[14px] text-ink-3 transition-colors hover:text-ink-0"
                     >
                       <PhoneIcon />
                       {config.contactInfo!.phone}
@@ -131,13 +135,13 @@ export function StoreFooter({
                   </li>
                 )}
                 {config.contactInfo!.address && (
-                  <li className="flex items-start gap-2 text-[14px] text-ink-3">
+                  <li className="flex items-start gap-2.5 text-[14px] text-ink-3">
                     <MapPinIcon />
                     <span>{config.contactInfo!.address}</span>
                   </li>
                 )}
                 {config.contactInfo!.schedule && (
-                  <li className="flex items-center gap-2 text-[14px] text-ink-3">
+                  <li className="flex items-center gap-2.5 text-[14px] text-ink-3">
                     <ClockIcon />
                     {config.contactInfo!.schedule}
                   </li>
@@ -147,7 +151,7 @@ export function StoreFooter({
           )}
 
           {/* Newsletter */}
-          <div className={hasContact ? "lg:col-span-3" : "lg:col-span-6"}>
+          <div className="lg:col-span-3">
             <h3 className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">
               Newsletter
             </h3>
@@ -155,13 +159,13 @@ export function StoreFooter({
               Enterate de nuevos lanzamientos y promociones especiales.
             </p>
             <form className="mt-5 flex flex-col gap-2 sm:flex-row">
-              <label htmlFor="email-address" className="sr-only">
+              <label htmlFor="footer-email" className="sr-only">
                 Email
               </label>
               <input
                 type="email"
                 name="email-address"
-                id="email-address"
+                id="footer-email"
                 autoComplete="email"
                 required
                 placeholder="tu@email.com"

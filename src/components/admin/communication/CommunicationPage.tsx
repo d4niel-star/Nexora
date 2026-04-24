@@ -432,93 +432,105 @@ export function CommunicationPage({ initialSettings }: Props) {
 
       {/* ── Section: E-mails automáticos ── */}
       {activeSection === "emails" && (
-        <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6">
-          <div className="mb-6">
-            <h2 className="text-[16px] font-semibold text-ink-0">
-              E-mails automáticos
-            </h2>
-            <p className="mt-1 text-[13px] text-ink-4">
-              Nexora envía e-mails transaccionales automáticos cuando ocurren
-              eventos en tu tienda. Podés activar o desactivar cada uno.
-            </p>
-            <p className="mt-2 text-[12px] text-ink-5">
-              Los e-mails se envían vía{" "}
-              <span className="font-medium text-ink-3">Resend</span> en producción.
-              En desarrollo usan un provider mock que loguea a consola.
-            </p>
-          </div>
+        <div className="space-y-6">
+          <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6">
+            <div className="mb-6">
+              <h2 className="text-[16px] font-semibold text-ink-0">
+                E-mails automáticos
+              </h2>
+              <p className="mt-1 text-[13px] text-ink-4">
+                Nexora envía correos automáticos cuando ocurren eventos en tu tienda.
+                Podés activar o desactivar cada uno según lo que necesites.
+              </p>
+            </div>
 
-          <div className="space-y-0.5">
-            <EmailToggleRow
-              label="Pedido recibido"
-              description="Confirmación al cliente cuando se crea un nuevo pedido"
-              event="ORDER_CREATED"
-              checked={settings.emails.orderCreated}
-              onChange={(v) => updateEmails({ orderCreated: v })}
-            />
-            <EmailToggleRow
-              label="Pago aprobado"
-              description="Notificación al cliente cuando su pago fue acreditado"
-              event="PAYMENT_APPROVED"
-              checked={settings.emails.paymentApproved}
-              onChange={(v) => updateEmails({ paymentApproved: v })}
-            />
-            <EmailToggleRow
-              label="Pago pendiente"
-              description="Aviso cuando el pago está en proceso de acreditación"
-              event="PAYMENT_PENDING"
-              checked={settings.emails.paymentPending}
-              onChange={(v) => updateEmails({ paymentPending: v })}
-            />
-            <EmailToggleRow
-              label="Pago fallido"
-              description="Alerta al cliente si el pago fue rechazado"
-              event="PAYMENT_FAILED"
-              checked={settings.emails.paymentFailed}
-              onChange={(v) => updateEmails({ paymentFailed: v })}
-            />
-            <EmailToggleRow
-              label="Pedido despachado"
-              description="Notificación con tracking cuando el pedido fue enviado"
-              event="ORDER_SHIPPED"
-              checked={settings.emails.orderShipped}
-              onChange={(v) => updateEmails({ orderShipped: v })}
-            />
-            <EmailToggleRow
-              label="Pedido entregado"
-              description="Confirmación cuando el carrier marca como entregado"
-              event="ORDER_DELIVERED"
-              checked={settings.emails.orderDelivered}
-              onChange={(v) => updateEmails({ orderDelivered: v })}
-            />
-            <EmailToggleRow
-              label="Pedido cancelado"
-              description="Aviso al cliente cuando un pedido es cancelado"
-              event="ORDER_CANCELLED"
-              checked={settings.emails.orderCancelled}
-              onChange={(v) => updateEmails({ orderCancelled: v })}
-            />
-            <EmailToggleRow
-              label="Reembolso procesado"
-              description="Confirmación al cliente del reembolso de su pago"
-              event="PAYMENT_REFUNDED"
-              checked={settings.emails.paymentRefunded}
-              onChange={(v) => updateEmails({ paymentRefunded: v })}
-            />
-            <EmailToggleRow
-              label="Carrito abandonado"
-              description="Recordatorio al cliente sobre productos que dejó en el carrito"
-              event="ABANDONED_CART"
-              checked={settings.emails.abandonedCart}
-              onChange={(v) => updateEmails({ abandonedCart: v })}
-            />
-            <EmailToggleRow
-              label="Stock crítico (merchant)"
-              description="Alerta para vos cuando un producto llega a stock mínimo"
-              event="STOCK_CRITICAL"
-              checked={settings.emails.stockCritical}
-              onChange={(v) => updateEmails({ stockCritical: v })}
-            />
+            {/* Client-facing emails */}
+            <div className="mb-6">
+              <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.12em] text-ink-5">
+                Notificaciones al cliente
+              </p>
+              <div className="space-y-0.5 rounded-[var(--r-md)] border border-[color:var(--hairline)] overflow-hidden">
+                <EmailToggleRow
+                  label="Pedido recibido"
+                  description="Confirmación al cliente cuando se crea un nuevo pedido"
+                  recipient="cliente"
+                  checked={settings.emails.orderCreated}
+                  onChange={(v) => updateEmails({ orderCreated: v })}
+                />
+                <EmailToggleRow
+                  label="Pago aprobado"
+                  description="Notificación al cliente cuando su pago fue acreditado"
+                  recipient="cliente"
+                  checked={settings.emails.paymentApproved}
+                  onChange={(v) => updateEmails({ paymentApproved: v })}
+                />
+                <EmailToggleRow
+                  label="Pago pendiente"
+                  description="Aviso cuando el pago está en proceso de acreditación"
+                  recipient="cliente"
+                  checked={settings.emails.paymentPending}
+                  onChange={(v) => updateEmails({ paymentPending: v })}
+                />
+                <EmailToggleRow
+                  label="Pago fallido"
+                  description="Alerta al cliente si el pago fue rechazado"
+                  recipient="cliente"
+                  checked={settings.emails.paymentFailed}
+                  onChange={(v) => updateEmails({ paymentFailed: v })}
+                />
+                <EmailToggleRow
+                  label="Pedido despachado"
+                  description="Notificación con código de seguimiento cuando el pedido fue enviado"
+                  recipient="cliente"
+                  checked={settings.emails.orderShipped}
+                  onChange={(v) => updateEmails({ orderShipped: v })}
+                />
+                <EmailToggleRow
+                  label="Pedido entregado"
+                  description="Confirmación cuando el transportista marca el pedido como entregado"
+                  recipient="cliente"
+                  checked={settings.emails.orderDelivered}
+                  onChange={(v) => updateEmails({ orderDelivered: v })}
+                />
+                <EmailToggleRow
+                  label="Pedido cancelado"
+                  description="Aviso al cliente cuando un pedido es cancelado"
+                  recipient="cliente"
+                  checked={settings.emails.orderCancelled}
+                  onChange={(v) => updateEmails({ orderCancelled: v })}
+                />
+                <EmailToggleRow
+                  label="Reembolso procesado"
+                  description="Confirmación al cliente del reembolso de su pago"
+                  recipient="cliente"
+                  checked={settings.emails.paymentRefunded}
+                  onChange={(v) => updateEmails({ paymentRefunded: v })}
+                />
+                <EmailToggleRow
+                  label="Carrito abandonado"
+                  description="Recordatorio al cliente sobre productos que dejó en el carrito"
+                  recipient="cliente"
+                  checked={settings.emails.abandonedCart}
+                  onChange={(v) => updateEmails({ abandonedCart: v })}
+                />
+              </div>
+            </div>
+
+            {/* Merchant-facing emails */}
+            <div>
+              <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.12em] text-ink-5">
+                Operativas — para vos
+              </p>
+              <div className="space-y-0.5 rounded-[var(--r-md)] border border-[color:var(--hairline)] overflow-hidden">
+                <EmailToggleRow
+                  label="Stock crítico"
+                  description="Alerta cuando un producto llega al stock mínimo de reposición"
+                  recipient="merchant"
+                  checked={settings.emails.stockCritical}
+                  onChange={(v) => updateEmails({ stockCritical: v })}
+                />
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -663,23 +675,30 @@ function Toggle({
 function EmailToggleRow({
   label,
   description,
-  event,
+  recipient,
   checked,
   onChange,
 }: {
   label: string;
   description: string;
-  event: string;
+  recipient: "cliente" | "merchant";
   checked: boolean;
   onChange: (v: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-[var(--r-md)] px-4 py-3.5 transition-colors hover:bg-[var(--surface-1)]">
+    <div className="flex items-center justify-between px-4 py-3.5 transition-colors hover:bg-[var(--surface-1)]">
       <div className="flex-1 min-w-0 pr-4">
         <div className="flex items-center gap-2">
           <span className="text-[14px] font-medium text-ink-0">{label}</span>
-          <span className="rounded bg-ink-10 px-1.5 py-0.5 text-[10px] font-mono text-ink-5">
-            {event}
+          <span
+            className={cn(
+              "rounded-full px-2 py-0.5 text-[10px] font-medium",
+              recipient === "merchant"
+                ? "bg-violet-50 text-violet-600"
+                : "bg-sky-50 text-sky-600",
+            )}
+          >
+            {recipient === "merchant" ? "Para vos" : "Al cliente"}
           </span>
         </div>
         <p className="mt-0.5 text-[12px] text-ink-5">{description}</p>
@@ -687,6 +706,7 @@ function EmailToggleRow({
       <button
         type="button"
         onClick={() => onChange(!checked)}
+        aria-label={`${checked ? "Desactivar" : "Activar"} ${label}`}
         className={cn(
           "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus-visible:shadow-[var(--shadow-focus)]",
           checked ? "bg-emerald-500" : "bg-ink-8",
@@ -702,3 +722,4 @@ function EmailToggleRow({
     </div>
   );
 }
+

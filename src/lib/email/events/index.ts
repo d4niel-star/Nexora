@@ -38,6 +38,39 @@ export async function sendEmailEvent(params: SendEmailEventParams): Promise<bool
     // If it failed previously, we can try again
   }
 
+  // ─── Communication settings: check if this event type is enabled ────
+  // Fails-open: if no communication settings exist (first-time store) or
+  // the lookup errors, we send the email (safe default).
+  const eventToggleMap: Partial<Record<EventType, string>> = {
+    ORDER_CREATED: "emailOrderCreated",
+    PAYMENT_APPROVED: "emailPaymentApproved",
+    PAYMENT_PENDING: "emailPaymentPending",
+    PAYMENT_FAILED: "emailPaymentFailed",
+    ORDER_SHIPPED: "emailOrderShipped",
+    ORDER_CANCELLED: "emailOrderCancelled",
+    PAYMENT_REFUNDED: "emailPaymentRefunded",
+    ORDER_DELIVERED: "emailOrderDelivered",
+    ABANDONED_CART: "emailAbandonedCart",
+    STOCK_CRITICAL: "emailStockCritical",
+  };
+
+  const toggleColumn = eventToggleMap[params.eventType];
+  if (toggleColumn) {
+    try {
+      const commSettings = await prisma.storeCommunicationSettings.findUnique({
+        where: { storeId: params.storeId },
+        select: { [toggleColumn]: true },
+      });
+      // If a row exists and the toggle is explicitly false, skip
+      if (commSettings && (commSettings as Record<string, unknown>)[toggleColumn] === false) {
+        console.log(`[Email] Skipping ${params.eventType}: disabled by merchant in Comunicación settings.`);
+        return true;
+      }
+    } catch {
+      // Fail-open: if the lookup errors, proceed with sending
+    }
+  }
+
   const provider = getEmailProvider();
 
   // Create or Update log as pending
