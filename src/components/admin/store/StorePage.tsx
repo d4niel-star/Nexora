@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
 import {
-  AlertTriangle,
   Check,
   CreditCard,
   Eye,
@@ -19,6 +19,7 @@ import {
 
 import { ColorDot } from "@/components/admin/store/StoreBadge";
 import { DomainSettingsView } from "@/components/admin/store/tabs/DomainSettingsView";
+import { PaymentsHub } from "@/components/admin/store/tabs/PaymentsHub";
 import { TableSkeleton } from "@/components/admin/orders/TableSkeleton";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +30,7 @@ import {
 import type { AdminStoreInitialData } from "@/types/store-engine";
 import type { StoreSummary, StoreStatus } from "@/types/store";
 import type { MercadoPagoPlatformReadiness } from "@/lib/payments/mercadopago/platform-readiness";
+import type { PaymentProviderConnectionView, PaymentProviderStatus } from "@/lib/payments/types";
 
 // ─── Mi tienda — superficie operativa ───────────────────────────────────
 //
@@ -151,6 +153,31 @@ export function StorePage({
   const isMercadoPagoConnected = paymentStatus === "connected" && !!initialData?.paymentProvider;
   const isLive = initialData?.store.status === "active" && (initialData?.counts.sellableProducts ?? 0) > 0;
 
+  // Map persisted payment-provider rows to the canonical view-model shape.
+  const paymentConnections: PaymentProviderConnectionView[] = useMemo(() => {
+    return (initialData?.paymentProviders ?? []).map((p) => ({
+      provider: p.provider,
+      status: ((): PaymentProviderStatus => {
+        switch (p.status) {
+          case "connected":
+          case "disconnected":
+          case "needs_reconnection":
+          case "error":
+            return p.status;
+          default:
+            return "disconnected";
+        }
+      })(),
+      externalAccountId: p.externalAccountId,
+      accountEmail: p.accountEmail,
+      publicKey: p.publicKey,
+      connectedAt: p.connectedAt,
+      lastValidatedAt: p.lastValidatedAt,
+      lastError: p.lastError,
+      config: p.config,
+    }));
+  }, [initialData?.paymentProviders]);
+
   useEffect(() => { if (!isLoading) return; const t = window.setTimeout(() => setIsLoading(false), 720); return () => window.clearTimeout(t); }, [isLoading]);
 
   const tabs: Array<{ label: string; value: TabValue; icon: React.ReactNode }> = [
@@ -216,51 +243,122 @@ export function StorePage({
   const handleAction = (action: string) => { pushToast("Información", action); };
 
   return (
-    <div className="animate-in fade-in space-y-8 pb-32 duration-700">
-      <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+    <div className="space-y-7 pb-32">
+      <motion.header
+        initial={{ opacity: 0, y: -6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+        className="flex flex-col justify-between gap-3 md:flex-row md:items-end"
+      >
         <div>
-          <h1 className="text-[28px] lg:text-[32px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0">Mi tienda.</h1>
-          <p className="mt-2 text-[14px] leading-[1.55] text-ink-5">Estado general, dominio y pagos. El diseño visual se edita en Tienda IA.</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-5">
+            Operación de la tienda
+          </p>
+          <h1 className="mt-1 text-[28px] lg:text-[32px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0">
+            Mi tienda
+          </h1>
+          <p className="mt-2 max-w-2xl text-[13.5px] leading-[1.55] text-ink-5">
+            Estado general, dominio y pagos. El diseño visual y el branding viven en{" "}
+            <Link href="/admin/store-ai" className="font-medium text-ink-1 underline underline-offset-4">
+              Tienda IA
+            </Link>
+            .
+          </p>
         </div>
-      </div>
+        <div className="flex items-center gap-2">
+          <span
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium",
+              isLive
+                ? "bg-[color:color-mix(in_srgb,var(--signal-success)_14%,transparent)] text-[color:var(--signal-success)] ring-1 ring-inset ring-[color:color-mix(in_srgb,var(--signal-success)_28%,transparent)]"
+                : "bg-[var(--surface-2)] text-ink-5 ring-1 ring-inset ring-[color:var(--hairline)]",
+            )}
+          >
+            <span
+              className={cn(
+                "inline-block h-1.5 w-1.5 rounded-full",
+                isLive ? "bg-[color:var(--signal-success)] animate-pulse" : "bg-ink-5",
+              )}
+            />
+            {isLive ? "Tienda en vivo" : "En borrador"}
+          </span>
+        </div>
+      </motion.header>
 
       <div className="relative overflow-hidden rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)]">
-        <div aria-label="Secciones de tienda" className="flex items-center gap-8 overflow-x-auto border-b border-[color:var(--hairline)] bg-[var(--surface-1)] px-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden" role="tablist">
-          {tabs.map((tab) => (
-            <button key={tab.value} aria-selected={activeTab === tab.value} className={cn("group relative whitespace-nowrap py-4 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]", activeTab === tab.value ? "text-ink-0" : "text-ink-5 hover:text-ink-0")} onClick={() => handleTabChange(tab.value)} role="tab" type="button">
-              <span className="flex items-center gap-2">{tab.icon}{tab.label}</span>
-              {activeTab === tab.value ? <div className="absolute inset-x-0 bottom-0 h-[2px] bg-ink-0" /> : null}
-            </button>
-          ))}
+        <div
+          aria-label="Secciones de tienda"
+          className="flex items-center gap-1 overflow-x-auto border-b border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 py-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+          role="tablist"
+        >
+          {tabs.map((tab) => {
+            const active = activeTab === tab.value;
+            return (
+              <button
+                key={tab.value}
+                aria-selected={active}
+                onClick={() => handleTabChange(tab.value)}
+                role="tab"
+                type="button"
+                className={cn(
+                  "relative inline-flex items-center gap-2 whitespace-nowrap rounded-[var(--r-sm)] px-3.5 py-2 text-[12.5px] font-medium transition-colors",
+                  "focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
+                  active ? "text-ink-12" : "text-ink-3 hover:text-ink-0",
+                )}
+              >
+                {active ? (
+                  <motion.span
+                    layoutId="store-tab-pill"
+                    className="absolute inset-0 -z-0 rounded-[var(--r-sm)] bg-ink-0"
+                    transition={{ type: "spring", stiffness: 360, damping: 32 }}
+                  />
+                ) : null}
+                <span className="relative z-10 inline-flex items-center gap-2">
+                  {tab.icon}
+                  {tab.label}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
-        <div className="min-h-[420px] bg-[var(--surface-0)]" role="tabpanel">
-          {isLoading ? (
-            <TableSkeleton />
-          ) : activeTab === "resumen" ? (
-            <SummaryView
-              initialData={initialData ?? null}
-              isLive={isLive}
-              isMercadoPagoConnected={isMercadoPagoConnected}
-              onAction={handleAction}
-              onNavigate={handleTabChange}
-              onRefresh={refreshData}
-              publicPath={publicPath}
-              publicUrl={publicUrl}
-              summary={storeSummary}
-            />
-          ) : activeTab === "dominio" ? (
-            <DomainSettingsView initialData={initialData!} onAction={handleAction} storeId={initialData?.store.id} />
-          ) : (
-            <PaymentsView
-              initialData={initialData ?? null}
-              isConnected={isMercadoPagoConnected}
-              onAction={handleAction}
-              publicPath={publicPath}
-              platformReadiness={mercadoPagoPlatformReadiness}
-              isOps={isOps}
-            />
-          )}
+        <div className="min-h-[460px] bg-[var(--surface-0)]" role="tabpanel">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={isLoading ? "loading" : activeTab}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {isLoading ? (
+                <TableSkeleton />
+              ) : activeTab === "resumen" ? (
+                <SummaryView
+                  initialData={initialData ?? null}
+                  isLive={isLive}
+                  isMercadoPagoConnected={isMercadoPagoConnected}
+                  onAction={handleAction}
+                  onNavigate={handleTabChange}
+                  onRefresh={refreshData}
+                  publicPath={publicPath}
+                  publicUrl={publicUrl}
+                  summary={storeSummary}
+                />
+              ) : activeTab === "dominio" ? (
+                <DomainSettingsView initialData={initialData!} onAction={handleAction} storeId={initialData?.store.id} />
+              ) : (
+                <PaymentsHub
+                  storeId={initialData?.store.id ?? null}
+                  publicPath={publicPath}
+                  isOps={isOps}
+                  platformReadiness={mercadoPagoPlatformReadiness}
+                  connections={paymentConnections}
+                  pushToast={pushToast}
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
 
@@ -479,166 +577,6 @@ function FirstProductPanel({ onAction, onRefresh }: { onAction: (a: string) => v
   );
 }
 
-/* ─── Payments ─── */
-
-function PaymentsView({
-  initialData,
-  isConnected,
-  onAction,
-  publicPath,
-  platformReadiness,
-  isOps,
-}: {
-  initialData: AdminStoreInitialData | null;
-  isConnected: boolean;
-  onAction: (a: string) => void;
-  publicPath: string;
-  platformReadiness: MercadoPagoPlatformReadiness;
-  isOps: boolean;
-}) {
-  const provider = initialData?.paymentProvider ?? null;
-  const connectedAt = provider?.connectedAt ? timeFormatter.format(new Date(provider.connectedAt)) : null;
-  const platformReady = platformReadiness.ready;
-  const needsReconnection = provider?.status === "needs_reconnection";
-
-  // ─── Header status: 4 explicit states, never a dead CTA ───────────────
-  // 1. Platform not ready  → no connect CTA for merchants; ops gets a
-  //    link to the platform readiness screen.
-  // 2. Platform ready, tenant disconnected → real OAuth CTA.
-  // 3. Connected           → "Reconectar" CTA.
-  // 4. Needs reconnection  → same CTA, different label + warning copy.
-  let headerAccent: "success" | "warning" | "danger";
-  let headerEyebrow: string;
-  let headerTitle: string;
-  let headerBody: string;
-  let ctaHref: string | null = null;
-  let ctaLabel = "";
-  let ctaSecondary: { href: string; label: string } | null = null;
-
-  if (!platformReady) {
-    headerAccent = "warning";
-    headerEyebrow = "Mercado Pago · Plataforma";
-    headerTitle = "Mercado Pago no está listo a nivel plataforma";
-    headerBody = isOps
-      ? "La integración OAuth de Mercado Pago no tiene toda la configuración global cargada. Abrí la pantalla de configuración global para ver qué variable falta y cargarla en la infraestructura."
-      : "La plataforma todavía no habilitó la integración con Mercado Pago. Hasta que el equipo operativo de Nexora complete la configuración global, ninguna tienda puede conectar su cuenta. Contactá soporte si necesitás acelerarlo.";
-    if (isOps) {
-      ctaHref = "/admin/settings/integrations/mercadopago";
-      ctaLabel = "Configurar Mercado Pago";
-    }
-  } else if (needsReconnection) {
-    headerAccent = "danger";
-    headerEyebrow = "Mercado Pago por tenant";
-    headerTitle = "Reconexión necesaria";
-    headerBody =
-      "La sesión de Mercado Pago de esta tienda expiró o fue revocada. Reconectá la cuenta para volver a habilitar el checkout. Los pedidos existentes no se ven afectados.";
-    ctaHref = "/api/payments/mercadopago/oauth/start";
-    ctaLabel = "Reconectar Mercado Pago";
-  } else if (isConnected) {
-    headerAccent = "success";
-    headerEyebrow = "Mercado Pago por tenant";
-    headerTitle = "Cuenta conectada";
-    headerBody =
-      "Nexora guarda el access token cifrado por tienda. Las órdenes sólo pasan a pagadas cuando Mercado Pago confirma el webhook.";
-    ctaHref = "/api/payments/mercadopago/oauth/start";
-    ctaLabel = "Reconectar";
-  } else {
-    headerAccent = "warning";
-    headerEyebrow = "Mercado Pago por tenant";
-    headerTitle = "Checkout desactivado";
-    headerBody =
-      "La tienda puede publicarse y compartirse, pero el comprador no puede pagar hasta que el dueño conecte su propia cuenta de Mercado Pago.";
-    ctaHref = "/api/payments/mercadopago/oauth/start";
-    ctaLabel = "Conectar Mercado Pago";
-  }
-
-  if (isOps && platformReady) {
-    ctaSecondary = {
-      href: "/admin/settings/integrations/mercadopago",
-      label: "Ver configuración global",
-    };
-  }
-
-  const accentClass =
-    headerAccent === "success"
-      ? "text-[color:var(--signal-success)]"
-      : headerAccent === "danger"
-        ? "text-[color:var(--signal-danger)]"
-        : "text-[color:var(--signal-warning)]";
-
-  return (
-    <div className="space-y-6 p-6">
-      <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div>
-            <p className={cn("text-[10px] font-medium uppercase tracking-[0.14em]", accentClass)}>
-              {headerEyebrow}
-            </p>
-            <h3 className="mt-2 text-[18px] font-semibold tracking-[-0.02em] text-ink-0">{headerTitle}</h3>
-            <p className="mt-2 max-w-2xl text-[13px] leading-[1.55] text-ink-5">{headerBody}</p>
-            {!platformReady && !isOps ? (
-              <p className="mt-3 max-w-2xl text-[12px] leading-[1.55] text-ink-6">
-                Esta pantalla se actualizará automáticamente cuando la configuración global esté lista.
-              </p>
-            ) : null}
-          </div>
-
-          <div className="flex shrink-0 flex-col items-end gap-2">
-            {ctaHref ? (
-              <Link
-                className="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-[var(--r-sm)] bg-ink-0 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
-                href={ctaHref}
-              >
-                <CreditCard className="h-3.5 w-3.5" />
-                {ctaLabel}
-              </Link>
-            ) : (
-              <span className="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] text-[12px] font-medium text-ink-5">
-                <AlertTriangle className="h-3.5 w-3.5" strokeWidth={1.75} />
-                Sin acciones disponibles
-              </span>
-            )}
-            {ctaSecondary ? (
-              <Link
-                href={ctaSecondary.href}
-                className="text-[12px] font-medium text-ink-0 underline underline-offset-4"
-              >
-                {ctaSecondary.label}
-              </Link>
-            ) : null}
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <SummaryCard label="Estado" value={isConnected ? "Conectado" : "Pendiente"} accent={isConnected} />
-        <SummaryCard label="Cuenta MP" value={provider?.externalAccountId ?? "Sin conectar"} />
-        <SummaryCard label="Última validación" value={provider?.lastValidatedAt ? timeFormatter.format(new Date(provider.lastValidatedAt)) : "Sin validar"} />
-      </div>
-
-      <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <FormBlock label="Proveedor" value="Mercado Pago" />
-          <FormBlock label="Conectado" value={connectedAt ?? "No conectado"} />
-          <FormBlock label="Checkout público" value={isConnected ? publicPath : "Desactivado hasta conectar MP"} />
-          <FormBlock label="Token" value={isConnected ? "Cifrado en DB por tienda" : "No guardado"} />
-        </div>
-      </div>
-
-      <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5">
-        <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Regla operativa</p>
-        <p className="mt-2 max-w-2xl text-[13px] leading-[1.55] text-ink-5">
-          No se guarda tarjeta en Nexora. No se marca una orden como pagada desde la vuelta del checkout. El estado pagado depende del webhook firmado y del pago consultado con el token de esta tienda.
-        </p>
-        <button className="mt-4 inline-flex items-center gap-2 h-10 px-4 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" onClick={() => onAction("El checkout sigue bloqueado sin una cuenta MP conectada.")} type="button">
-          <AlertTriangle className="h-3.5 w-3.5 text-[color:var(--signal-warning)]" strokeWidth={1.75} />
-          Verificar regla
-        </button>
-      </div>
-    </div>
-  );
-}
-
 /* ─── Shared ─── */
 
 function SummaryCard({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
@@ -688,27 +626,36 @@ function NavCard({
   );
 }
 
-function FormBlock({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5">
-      <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">{label}</p>
-      <p className="mt-2 text-[13px] font-medium text-ink-0">{value}</p>
-    </div>
-  );
-}
-
 function ToastViewport({ toasts, onDismiss }: { toasts: ToastMessage[]; onDismiss: (id: string) => void }) {
-  if (toasts.length === 0) return null;
   return (
-    <div aria-live="polite" className="fixed right-6 top-20 z-[60] flex w-full max-w-sm flex-col gap-3">
-      {toasts.map((t) => (
-        <div key={t.id} className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-4 shadow-[var(--shadow-overlay)] animate-in slide-in-from-right-5 fade-in duration-[var(--dur-slow)]">
-          <div className="flex items-start justify-between gap-4">
-            <div><p className="text-[13px] font-semibold text-ink-0">{t.title}</p><p className="mt-1 text-[12px] text-ink-5">{t.description}</p></div>
-            <button aria-label="Cerrar" className="rounded-[var(--r-sm)] p-1 text-ink-5 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0" onClick={() => onDismiss(t.id)} type="button"><X className="h-4 w-4" /></button>
-          </div>
-        </div>
-      ))}
+    <div aria-live="polite" className="pointer-events-none fixed right-6 top-20 z-[60] flex w-full max-w-sm flex-col gap-3">
+      <AnimatePresence initial={false}>
+        {toasts.map((t) => (
+          <motion.div
+            key={t.id}
+            initial={{ opacity: 0, x: 24, scale: 0.96 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 24, scale: 0.96 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            className="pointer-events-auto rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-4 shadow-[var(--shadow-overlay)]"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[13px] font-semibold text-ink-0">{t.title}</p>
+                <p className="mt-1 text-[12px] text-ink-5">{t.description}</p>
+              </div>
+              <button
+                aria-label="Cerrar"
+                className="rounded-[var(--r-sm)] p-1 text-ink-5 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0"
+                onClick={() => onDismiss(t.id)}
+                type="button"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </motion.div>
+        ))}
+      </AnimatePresence>
     </div>
   );
 }

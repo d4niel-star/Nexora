@@ -528,6 +528,9 @@ model StorePaymentProvider {
   publicKey             String?
   externalAccountId     String?
   accountEmail          String?
+  /// Non-secret extras (environment, account label, merchant id…) — JSON.
+  /// Used by API-key providers (MODO, Ualá Bis, dLocal, PayU, Payway).
+  configJson            String?
   lastError             String?  // Last refresh/connection error message for UI display
   connectedAt           DateTime?
   lastValidatedAt       DateTime?

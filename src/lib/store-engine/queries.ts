@@ -306,9 +306,7 @@ export async function getAdminStoreInitialData(): Promise<AdminStoreInitialData 
       snapshots: { orderBy: { publishedAt: "desc" }, take: 1 },
       domains: { orderBy: { isPrimary: "desc" } },
       paymentProviders: {
-        where: { provider: "mercadopago" },
         orderBy: { updatedAt: "desc" },
-        take: 1,
       },
       _count: {
         select: { products: true },
@@ -347,7 +345,29 @@ export async function getAdminStoreInitialData(): Promise<AdminStoreInitialData 
       select: { handle: true, title: true },
     }),
   ]);
-  const paymentProvider = store.paymentProviders[0] ?? null;
+  const paymentProvider =
+    store.paymentProviders.find((p) => p.provider === "mercadopago") ?? null;
+  const paymentProviders = store.paymentProviders.map((p) => ({
+    provider: p.provider,
+    status: p.status,
+    publicKey: p.publicKey,
+    externalAccountId: p.externalAccountId,
+    accountEmail: p.accountEmail,
+    connectedAt: p.connectedAt?.toISOString() ?? null,
+    lastValidatedAt: p.lastValidatedAt?.toISOString() ?? null,
+    lastError: p.lastError,
+    config: ((): Record<string, unknown> => {
+      if (!p.configJson) return {};
+      try {
+        const parsed = JSON.parse(p.configJson);
+        return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+          ? (parsed as Record<string, unknown>)
+          : {};
+      } catch {
+        return {};
+      }
+    })(),
+  }));
 
   const summary: AdminStoreSummary = {
     store: {
@@ -416,6 +436,7 @@ export async function getAdminStoreInitialData(): Promise<AdminStoreInitialData 
           lastValidatedAt: paymentProvider.lastValidatedAt?.toISOString() ?? null,
         }
       : null,
+    paymentProviders,
     branding: store.branding
       ? {
           logoUrl: store.branding.logoUrl,

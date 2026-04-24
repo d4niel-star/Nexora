@@ -177,6 +177,17 @@ export interface AdminStoreInitialData {
     connectedAt: string | null;
     lastValidatedAt: string | null;
   } | null;
+  paymentProviders: Array<{
+    provider: string;
+    status: string;
+    publicKey: string | null;
+    externalAccountId: string | null;
+    accountEmail: string | null;
+    connectedAt: string | null;
+    lastValidatedAt: string | null;
+    lastError: string | null;
+    config: Record<string, unknown>;
+  }>;
   branding: {
     logoUrl: string | null;
     faviconUrl: string | null;
