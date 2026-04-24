@@ -16,7 +16,6 @@ import {
   Menu,
   Network,
   Package,
-  PackageSearch,
   Puzzle,
   Search,
   Settings,
@@ -51,7 +50,6 @@ import { NexoraGlobalChat } from "./store-ai/NexoraGlobalChat";
 //   · Ventas            (group)   → pedidos, clientes, crecimiento
 //   · Catálogo          (group)   → productos, inventario, abastecimiento
 //   · Tienda            (group)   → tienda IA, mi tienda
-//   · Operación         (single)  → /admin/operations
 //   · Apps y herramientas (group) → apps, market
 //   · Marketing         (group)   → ads
 //   · Configuración     (leaf)    → /admin/settings                ← pinned
@@ -176,7 +174,10 @@ const primaryNav: readonly NavEntry[] = [
       { kind: "leaf", href: "/admin/shipping/settings", label: "Ajustes de envío", icon: Settings },
     ],
   },
-  { kind: "leaf", href: "/admin/operations", label: "Operación", icon: PackageSearch },
+  // Operación was removed as a sidebar entry. Its data (alerts on orders /
+  // inventory / catalog / sourcing / AI) is already a strict subset of the
+  // CommandCenter that lives at /admin/dashboard, so /admin/operations now
+  // 307-redirects to the dashboard. No orphans, no dead links.
   {
     kind: "group",
     id: "apps",
