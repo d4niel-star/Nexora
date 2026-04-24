@@ -15,3 +15,11 @@ export {
   type InterpretResult,
 } from "./interpreter";
 export { compose, pickSocialReply } from "./composer";
+export {
+  deliberate,
+  type AssistantAdapter,
+  type DomainPlan,
+  type DeliberationOutcome,
+  type TraceNote,
+  type TraceStage,
+} from "./deliberate";
