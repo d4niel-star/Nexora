@@ -14,7 +14,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ prov
   try {
     const store = await getDefaultStore();
     if (!store) {
-      return NextResponse.redirect(`${APP_URL}/admin/ads?error=no_store`);
+      return NextResponse.redirect(`${APP_URL}/admin/ads/${provider}?error=no_store`);
     }
 
     await prisma.systemEvent.create({
@@ -41,6 +41,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ prov
   } catch (e: any) {
     console.error(`[Ads Start Error: ${provider}]`, e.message);
     const detail = encodeURIComponent(e.message || "Error desconocido");
-    return NextResponse.redirect(`${APP_URL}/admin/ads?error=config_error&detail=${detail}`);
+    return NextResponse.redirect(`${APP_URL}/admin/ads/${provider}?error=config_error&detail=${detail}`);
   }
 }

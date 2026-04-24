@@ -67,6 +67,7 @@ export async function syncAdsInsights(connectionId: string) {
     });
 
     revalidatePath("/admin/ads");
+    revalidatePath(`/admin/ads/${connection.platform}`);
     revalidatePath("/admin/integrations");
     return { success: true, metrics };
 

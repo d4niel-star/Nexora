@@ -18,13 +18,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ prov
   if (error) {
     const reason = error === "access_denied" ? "auth_denied" : "provider_error";
     const msg = encodeURIComponent(errorDescription || error);
-    return NextResponse.redirect(`${APP_URL}/admin/ads?error=${reason}&detail=${msg}`);
+    return NextResponse.redirect(`${APP_URL}/admin/ads/${provider}?error=${reason}&detail=${msg}`);
   }
 
   const storeIdCookie = req.cookies.get("oauth_store_id")?.value;
 
   if (!code) {
-    return NextResponse.redirect(`${APP_URL}/admin/ads?error=missing_params`);
+    return NextResponse.redirect(`${APP_URL}/admin/ads/${provider}?error=missing_params`);
   }
 
   try {
@@ -52,10 +52,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ prov
        throw new Error(`Proveedor de Ads desconocido: ${provider}`);
     }
 
-    return NextResponse.redirect(`${APP_URL}/admin/ads?connected=${provider}`);
+    return NextResponse.redirect(`${APP_URL}/admin/ads/${provider}?connected=${provider}`);
   } catch (e: any) {
     console.error(`[Ads Callback Error: ${provider}]`, e.message);
     const detail = encodeURIComponent(e.message || "Error desconocido");
-    return NextResponse.redirect(`${APP_URL}/admin/ads?error=callback_failed&detail=${detail}`);
+    return NextResponse.redirect(`${APP_URL}/admin/ads/${provider}?error=callback_failed&detail=${detail}`);
   }
 }

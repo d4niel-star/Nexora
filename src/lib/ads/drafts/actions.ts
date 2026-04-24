@@ -57,6 +57,7 @@ export async function createCampaignDraft(storeId: string, recommendationId: str
   });
 
   revalidatePath("/admin/ads");
+  revalidatePath(`/admin/ads/${recommendation.platform}`);
   return draft;
 }
 

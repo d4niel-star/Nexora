@@ -64,6 +64,8 @@ export async function addAdsConnection(storeId: string, platform: string, extern
   });
 
   revalidatePath("/admin/ads");
+  revalidatePath(`/admin/ads/${platform}`);
+  revalidatePath("/admin/ads/pixels");
   revalidatePath("/admin/integrations");
   return connection;
 }
@@ -82,6 +84,8 @@ export async function removeAdsConnection(connectionId: string, storeId: string)
   });
 
   revalidatePath("/admin/ads");
+  revalidatePath(`/admin/ads/${connection.platform}`);
+  revalidatePath("/admin/ads/pixels");
   revalidatePath("/admin/integrations");
   return { success: true };
 }

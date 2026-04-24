@@ -7,6 +7,7 @@ import {
   BarChart3,
   Boxes,
   ChevronRight,
+  Code2,
   LayoutDashboard,
   LineChart,
   Mail,
@@ -17,15 +18,18 @@ import {
   Package,
   PackageSearch,
   Puzzle,
+  Search,
   Settings,
   ShoppingBag,
   ShoppingCart,
   Sparkles,
   Store,
   Tag,
+  Target,
   TrendingUp,
   Truck,
   Users,
+  Video,
   Wallet,
   Wrench,
   X,
@@ -140,13 +144,24 @@ const primaryNav: readonly NavEntry[] = [
       { kind: "leaf", href: "/admin/store", label: "Mi tienda", icon: Store },
     ],
   },
+  // Marketing replaces the old generic "Ads" sub-leaf with one explicit
+  // surface per advertising network (Meta, TikTok, Google) plus a
+  // dedicated "Píxeles y tags" hub that owns all the technical, non-OAuth
+  // configuration (Pixel IDs, Conversions API tokens, Google Tag, etc).
+  // The legacy /admin/ads route still works as a permanent redirect to
+  // the first provider so deep-linked dashboards / OAuth callbacks
+  // continue to land somewhere meaningful.
   {
     kind: "group",
     id: "marketing",
     label: "Marketing",
     icon: Megaphone,
+    basePath: "/admin/ads",
     items: [
-      { kind: "leaf", href: "/admin/ads", label: "Ads", icon: Megaphone },
+      { kind: "leaf", href: "/admin/ads/meta", label: "Meta Ads", icon: Target },
+      { kind: "leaf", href: "/admin/ads/tiktok", label: "TikTok Ads", icon: Video },
+      { kind: "leaf", href: "/admin/ads/google", label: "Google Ads", icon: Search },
+      { kind: "leaf", href: "/admin/ads/pixels", label: "Píxeles y tags", icon: Code2 },
     ],
   },
   {
