@@ -1,67 +1,75 @@
-"use server";
-
 import { prisma } from "@/lib/db/prisma";
 import type {
   CommunicationSettings,
   StorefrontCommunication,
 } from "./types";
 
+// ─── Default settings — used when no DB record exists or query fails ────
+
+const DEFAULTS: CommunicationSettings = {
+  contact: {
+    email: null,
+    phone: null,
+    address: null,
+    city: null,
+    province: null,
+    country: "AR",
+    schedule: null,
+    showInStore: true,
+  },
+  whatsapp: {
+    number: null,
+    displayName: null,
+    connected: false,
+    verifiedAt: null,
+    buttonEnabled: false,
+    buttonText: "¡Hola! Quiero consultar sobre sus productos",
+    buttonPosition: "bottom-right",
+  },
+  instagram: {
+    handle: null,
+    url: null,
+    connected: false,
+    showInStore: false,
+  },
+  facebook: {
+    pageUrl: null,
+    pageName: null,
+    connected: false,
+    showInStore: false,
+  },
+  emails: {
+    orderCreated: true,
+    paymentApproved: true,
+    paymentPending: true,
+    paymentFailed: true,
+    orderShipped: true,
+    orderCancelled: true,
+    paymentRefunded: true,
+    orderDelivered: true,
+    abandonedCart: false,
+    stockCritical: true,
+  },
+};
+
 // ─── Admin: get full communication settings ─────────────────────────────
 
 export async function getCommunicationSettings(
   storeId: string,
 ): Promise<CommunicationSettings> {
-  const row = await prisma.storeCommunicationSettings.findUnique({
-    where: { storeId },
-  });
+  let row;
+  try {
+    row = await prisma.storeCommunicationSettings.findUnique({
+      where: { storeId },
+    });
+  } catch (error) {
+    // Table may not exist yet (migration pending) — return safe defaults
+    console.error("[Communication] Failed to load settings, using defaults:", error);
+    return DEFAULTS;
+  }
 
   if (!row) {
-    // Return defaults — the record will be created on first save
-    return {
-      contact: {
-        email: null,
-        phone: null,
-        address: null,
-        city: null,
-        province: null,
-        country: "AR",
-        schedule: null,
-        showInStore: true,
-      },
-      whatsapp: {
-        number: null,
-        displayName: null,
-        connected: false,
-        verifiedAt: null,
-        buttonEnabled: false,
-        buttonText: "¡Hola! Quiero consultar sobre sus productos",
-        buttonPosition: "bottom-right",
-      },
-      instagram: {
-        handle: null,
-        url: null,
-        connected: false,
-        showInStore: false,
-      },
-      facebook: {
-        pageUrl: null,
-        pageName: null,
-        connected: false,
-        showInStore: false,
-      },
-      emails: {
-        orderCreated: true,
-        paymentApproved: true,
-        paymentPending: true,
-        paymentFailed: true,
-        orderShipped: true,
-        orderCancelled: true,
-        paymentRefunded: true,
-        orderDelivered: true,
-        abandonedCart: false,
-        stockCritical: true,
-      },
-    };
+    return DEFAULTS;
   }
 
   return {
@@ -116,12 +124,20 @@ export async function getCommunicationSettings(
 export async function getStorefrontCommunication(
   storeId: string,
 ): Promise<StorefrontCommunication> {
-  const row = await prisma.storeCommunicationSettings.findUnique({
-    where: { storeId },
-  });
+  const EMPTY: StorefrontCommunication = { contact: null, whatsapp: null, socialLinks: [] };
+
+  let row;
+  try {
+    row = await prisma.storeCommunicationSettings.findUnique({
+      where: { storeId },
+    });
+  } catch (error) {
+    console.error("[Communication] Failed to load storefront settings:", error);
+    return EMPTY;
+  }
 
   if (!row) {
-    return { contact: null, whatsapp: null, socialLinks: [] };
+    return EMPTY;
   }
 
   // Contact info — only expose if merchant enabled it
