@@ -105,12 +105,13 @@ export function DateRangePicker({
   }, [open]);
 
   return (
-    <div className={cn("relative inline-flex items-center gap-1.5", className)}>
-      {/* Preset bar */}
+    <div className={cn("relative flex flex-wrap items-center gap-1.5", className)}>
+      {/* Preset bar — hidden on narrow viewports to avoid wrapping noise;
+          on mobile users tap the calendar trigger instead. */}
       <div
         role="tablist"
         aria-label="Rangos predefinidos"
-        className="flex items-center rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-0.5"
+        className="hidden items-center rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-0.5 shadow-[0_1px_0_rgba(15,23,42,0.02)] sm:inline-flex"
       >
         {PRESETS.map((preset) => {
           const active = activePresetId === preset.id;
@@ -122,7 +123,7 @@ export function DateRangePicker({
               aria-selected={active}
               onClick={() => onChange(preset.resolve())}
               className={cn(
-                "relative px-2.5 py-1.5 text-[12px] font-medium leading-none tabular-nums transition-colors outline-none focus-visible:shadow-[var(--shadow-focus)] rounded-[var(--r-sm)]",
+                "relative rounded-[var(--r-sm)] px-2.5 py-1.5 text-[12px] font-medium leading-none tabular-nums outline-none transition-colors focus-visible:shadow-[var(--shadow-focus)]",
                 active ? "text-ink-0" : "text-ink-5 hover:text-ink-0",
               )}
             >
@@ -148,7 +149,7 @@ export function DateRangePicker({
           aria-expanded={open}
           aria-haspopup="dialog"
           className={cn(
-            "flex items-center gap-1.5 rounded-[var(--r-md)] border px-2.5 py-1.5 text-[12px] font-medium leading-none transition-colors outline-none focus-visible:shadow-[var(--shadow-focus)]",
+            "inline-flex items-center gap-1.5 rounded-[var(--r-md)] border px-2.5 py-1.5 text-[12px] font-medium leading-none outline-none transition-colors focus-visible:shadow-[var(--shadow-focus)]",
             activePresetId === null
               ? "border-[color:var(--accent-300)] bg-[var(--accent-50)] text-[var(--accent-700)]"
               : "border-[color:var(--hairline)] bg-[var(--surface-0)] text-ink-5 hover:text-ink-0",
@@ -169,8 +170,34 @@ export function DateRangePicker({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.98 }}
             transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute right-0 top-[calc(100%+8px)] z-30 w-[min(560px,90vw)] rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-4 shadow-[0_24px_60px_-20px_rgba(15,23,42,0.25)]"
+            className="absolute right-0 top-[calc(100%+8px)] z-30 w-[min(560px,92vw)] rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-4 shadow-[0_24px_60px_-20px_rgba(15,23,42,0.25)]"
           >
+            {/* Mobile-only preset bar inside the popover so users on
+                narrow viewports keep one-tap access to the canonical
+                ranges without the inline bar wrapping. */}
+            <div className="mb-3 flex flex-wrap gap-1.5 border-b border-[color:var(--hairline)] pb-3 sm:hidden">
+              {PRESETS.map((preset) => {
+                const active = activePresetId === preset.id;
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => {
+                      onChange(preset.resolve());
+                      setOpen(false);
+                    }}
+                    className={cn(
+                      "rounded-[var(--r-sm)] px-2.5 py-1.5 text-[12px] font-medium leading-none tabular-nums transition-colors",
+                      active
+                        ? "bg-[var(--accent-500)] text-white"
+                        : "bg-[var(--surface-2)] text-ink-5 hover:text-ink-0",
+                    )}
+                  >
+                    {preset.label}
+                  </button>
+                );
+              })}
+            </div>
             <CalendarRange
               value={value}
               onChange={(next) => {
@@ -326,10 +353,6 @@ function MonthGrid({ monthStart, range, pendingFrom, onDayClick }: MonthGridProp
           const isStart = !pendingDate && fromDate && iso === range.from;
           const isEnd = !pendingDate && toDate && iso === range.to;
           const isPending = pendingDate && iso === pendingFrom;
-          const inPendingRange =
-            pendingDate &&
-            ((dayDate >= pendingDate && dayDate <= pendingDate) || // pendingDate alone
-              false);
           const isToday = iso === today;
           return (
             <button
@@ -342,9 +365,7 @@ function MonthGrid({ monthStart, range, pendingFrom, onDayClick }: MonthGridProp
                   ? "bg-[var(--accent-500)] font-semibold text-white"
                   : inRange
                     ? "bg-[var(--accent-50)] text-[var(--accent-700)]"
-                    : inPendingRange
-                      ? "bg-[var(--accent-50)] text-[var(--accent-700)]"
-                      : "text-ink-0 hover:bg-[var(--surface-2)]",
+                    : "text-ink-0 hover:bg-[var(--surface-2)]",
                 isToday && !(isStart || isEnd || isPending) && "ring-1 ring-inset ring-[color:var(--hairline-strong)]",
               )}
             >

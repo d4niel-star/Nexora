@@ -15,7 +15,7 @@ import {
   Menu,
   Network,
   Recycle,
-  Stethoscope,
+  Filter,
   Package,
   Puzzle,
   Search,
@@ -89,11 +89,11 @@ type NavEntry = NavLeaf | NavGroup;
 // IA notes:
 //   · Estadísticas is a *family* (group) that owns analytic surfaces.
 //     Rendimiento answers "¿cómo va la tienda?" with KPIs and evolución
-//     de ventas. Diagnóstico answers "¿qué está bloqueando ventas hoy?"
-//     by reading the readiness snapshot (perfil, pagos, catálogo,
-//     conversion, etc.). The legacy Finanzas surface still exists at
-//     /admin/finances for compatibility but is no longer in the
-//     sidebar — it duplicated Pagos + Rendimiento.
+//     de ventas. Conversión answers "¿dónde se cae el embudo?" using
+//     the real cart → checkout → order → paid signals captured by the
+//     storefront. The legacy /admin/diagnostics (readiness panel) and
+//     /admin/finances surfaces still exist for compatibility but are
+//     no longer in the sidebar — they were operational, not analytical.
 //   · Ventas owns operational surfaces. "Crecimiento" (post-purchase
 //     lifecycle hub) overlapped with Estadísticas; it was renamed and
 //     refocused as Recuperación, which surfaces inactive customers,
@@ -119,7 +119,7 @@ const primaryNav: readonly NavEntry[] = [
     icon: BarChart3,
     items: [
       { kind: "leaf", href: "/admin/stats", label: "Rendimiento", icon: TrendingUp },
-      { kind: "leaf", href: "/admin/diagnostics", label: "Diagnóstico", icon: Stethoscope },
+      { kind: "leaf", href: "/admin/conversion", label: "Conversión", icon: Filter },
     ],
   },
   {
