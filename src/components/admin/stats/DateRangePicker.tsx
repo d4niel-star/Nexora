@@ -6,13 +6,15 @@ import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-// ─── DateRangePicker ─────────────────────────────────────────────────────
+// ─── DateRangePicker ────────────────────────────────────────────────────
 //
 // Premium, dependency-free range selector for the Rendimiento surface.
-// Combines a horizontal preset bar (most-used windows) with a compact
-// two-month calendar revealed on demand. Designed to feel native — no
-// modal, no popover overlay competing with the page chrome — and to
-// remain operable on touch sizes.
+// Visually it is a single editorial inline rail — no segmented bar,
+// no boxed wrapper, no shadow. Presets read as ghost tabs, the custom
+// trigger sits next to them separated by a hairline divider, and the
+// calendar opens on demand in a floating popover. The intent is to
+// stop looking like a generic dashboard control and behave like part
+// of the chart itself.
 //
 // All dates are handled in **local YYYY-MM-DD** strings so they round
 // trip cleanly via URL searchParams. The component is fully controlled
@@ -105,13 +107,14 @@ export function DateRangePicker({
   }, [open]);
 
   return (
-    <div className={cn("relative flex flex-wrap items-center gap-1.5", className)}>
-      {/* Preset bar — hidden on narrow viewports to avoid wrapping noise;
-          on mobile users tap the calendar trigger instead. */}
+    <div className={cn("relative inline-flex items-center", className)}>
+      {/* Preset rail — ghost tabs, no border/shadow. On narrow viewports
+          we collapse to the calendar trigger only, which exposes the
+          presets inside the popover. */}
       <div
         role="tablist"
         aria-label="Rangos predefinidos"
-        className="hidden items-center rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-0.5 shadow-[0_1px_0_rgba(15,23,42,0.02)] sm:inline-flex"
+        className="hidden items-center sm:inline-flex"
       >
         {PRESETS.map((preset) => {
           const active = activePresetId === preset.id;
@@ -140,24 +143,40 @@ export function DateRangePicker({
         })}
       </div>
 
-      {/* Custom range trigger */}
+      {/* Custom range trigger — separated by a hairline divider so the
+          calendar feels like an extension of the preset rail rather
+          than a competing control. */}
       {enableCustom && (
-        <button
-          ref={triggerRef}
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          aria-haspopup="dialog"
-          className={cn(
-            "inline-flex items-center gap-1.5 rounded-[var(--r-md)] border px-2.5 py-1.5 text-[12px] font-medium leading-none outline-none transition-colors focus-visible:shadow-[var(--shadow-focus)]",
-            activePresetId === null
-              ? "border-[color:var(--accent-300)] bg-[var(--accent-50)] text-[var(--accent-700)]"
-              : "border-[color:var(--hairline)] bg-[var(--surface-0)] text-ink-5 hover:text-ink-0",
-          )}
-        >
-          <Calendar className="h-3.5 w-3.5" strokeWidth={1.75} />
-          <span className="tabular-nums">{formatRangeLabel(value)}</span>
-        </button>
+        <>
+          <span
+            aria-hidden
+            className="mx-2 hidden h-4 w-px bg-[color:var(--hairline)] sm:inline-block"
+          />
+          <button
+            ref={triggerRef}
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            aria-haspopup="dialog"
+            className={cn(
+              "group inline-flex items-center gap-1.5 rounded-[var(--r-sm)] px-2 py-1.5 text-[12px] font-medium leading-none tabular-nums outline-none transition-colors focus-visible:shadow-[var(--shadow-focus)]",
+              activePresetId === null
+                ? "text-ink-0"
+                : "text-ink-5 hover:text-ink-0",
+            )}
+          >
+            <Calendar
+              className={cn(
+                "h-3.5 w-3.5 transition-colors",
+                activePresetId === null ? "text-ink-2" : "text-ink-6 group-hover:text-ink-2",
+              )}
+              strokeWidth={1.75}
+            />
+            <span>
+              {activePresetId === null ? formatRangeLabel(value) : "Personalizado"}
+            </span>
+          </button>
+        </>
       )}
 
       <AnimatePresence>

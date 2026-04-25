@@ -25,11 +25,17 @@ import { cn } from "@/lib/utils";
 // a thin baseline reference. No grid clutter, no legend chrome — colour
 // + dashing carry the meaning.
 //
-// IMPORTANT: the chart MUST render even when the store has zero sales in
-// the selected window. The empty-state branch lives inside the chart
-// itself: a flat zero baseline, a quiet axis at [0, 1], and a single
-// discreet caption. We never collapse the canvas into a placeholder card
-// — that would defeat the whole "premium analytical surface" feel.
+// EMPTY STATE POLICY (no sales in the window):
+//   1. The headline number stays honest at $0 (KPI-driven).
+//   2. The chart renders a quiet "ghost curve" — an unlabelled,
+//      adimensional ease-out shape that suggests latent activity without
+//      pretending to be revenue. It uses a synthetic dataKey (`ghost`)
+//      that is normalised to [0, 1] and never formatted as currency, so
+//      the surface cannot be misread as data.
+//   3. There is no overlay text inside the chart, no tooltip, no Y
+//      ticks, no grid, no legend. The visual carries the state alone.
+// We never collapse the canvas into a placeholder card — that would
+// defeat the whole "premium analytical surface" feel.
 
 interface RevenueHeroChartProps {
   current: DailyRevenuePoint[];
@@ -46,6 +52,10 @@ interface ChartPoint {
   current: number;
   previous: number | null;
   orders: number;
+  /** Synthetic adimensional value used only by the empty-state ghost
+   *  curve. Always undefined for real-data points so it can never be
+   *  read as currency by the chart pipeline. */
+  ghost?: number;
 }
 
 export function RevenueHeroChart({
@@ -57,7 +67,7 @@ export function RevenueHeroChart({
 }: RevenueHeroChartProps) {
   const [hover, setHover] = useState<ChartPoint | null>(null);
 
-  const data = useMemo<ChartPoint[]>(() => {
+  const realData = useMemo<ChartPoint[]>(() => {
     return current.map((row, i) => ({
       index: i,
       label: row.label,
@@ -69,26 +79,57 @@ export function RevenueHeroChart({
   }, [current, previous]);
 
   const peakRevenue = useMemo(
-    () => data.reduce((m, d) => (d.current > m ? d.current : m), 0),
-    [data],
+    () => realData.reduce((m, d) => (d.current > m ? d.current : m), 0),
+    [realData],
   );
   const meanRevenue = useMemo(() => {
-    if (data.length === 0) return 0;
-    const sum = data.reduce((acc, d) => acc + d.current, 0);
-    return sum / data.length;
-  }, [data]);
+    if (realData.length === 0) return 0;
+    const sum = realData.reduce((acc, d) => acc + d.current, 0);
+    return sum / realData.length;
+  }, [realData]);
+
+  // Detect the neutral / no-sales state. Treat as empty when there are
+  // no buckets at all OR every bucket reports zero revenue.
+  const isEmpty = realData.length === 0 || realData.every((d) => d.current === 0);
+
+  // Synthetic ghost curve — only used when the chart has no real data.
+  // Adimensional values normalised to [0, 1] so the canvas feels alive
+  // and signals "latent capacity / waiting for activity" without ever
+  // being read as currency. Length matches the requested window or
+  // falls back to 30 buckets if there are no buckets at all. Each
+  // point is shaped as a full `ChartPoint` (with current=0, previous=null)
+  // so the recharts pipeline keeps a stable data type — the only field
+  // actually rendered is `ghost`.
+  const ghostData = useMemo<ChartPoint[]>(() => {
+    if (!isEmpty) return [];
+    const n = realData.length > 0 ? realData.length : 30;
+    const points: ChartPoint[] = [];
+    for (let i = 0; i < n; i++) {
+      const t = n === 1 ? 1 : i / (n - 1);
+      // Ease-out cubic with a touch of head-room — keeps the curve
+      // visibly arching towards the upper portion of the canvas.
+      const eased = 1 - Math.pow(1 - t, 3);
+      const y = 0.08 + 0.78 * eased;
+      points.push({
+        index: i,
+        label: realData[i]?.label ?? "",
+        date: realData[i]?.date ?? "",
+        current: 0,
+        previous: null,
+        orders: 0,
+        ghost: y,
+      });
+    }
+    return points;
+  }, [isEmpty, realData]);
+
+  const data: ChartPoint[] = isEmpty ? ghostData : realData;
 
   const xTickInterval = useMemo(() => {
     if (data.length <= 14) return 0;
     if (data.length <= 45) return Math.max(0, Math.floor(data.length / 7));
     return Math.max(0, Math.floor(data.length / 6));
-  }, [data]);
-
-  // Detect the neutral / no-sales state. We treat the chart as empty when
-  // either there are no buckets at all (defensive) OR every bucket has
-  // zero revenue. In that case the hero number reads $0 and the chart
-  // renders a flat baseline instead of a placeholder card.
-  const isEmpty = data.length === 0 || data.every((d) => d.current === 0);
+  }, [data.length]);
 
   const isUp = !isEmpty && (changePercent ?? 0) > 0;
   const isDown = !isEmpty && (changePercent ?? 0) < 0;
@@ -97,13 +138,13 @@ export function RevenueHeroChart({
   const headlineSubtitle = hover
     ? `${hover.label} · ${hover.orders} ${hover.orders === 1 ? "pedido" : "pedidos"}`
     : isEmpty
-      ? "Sin ventas registradas en este rango."
+      ? "Listo para medir actividad en este periodo."
       : prevTotalRevenue > 0
         ? `vs ${fmtCurrency(prevTotalRevenue)} en el periodo anterior`
         : "Periodo anterior sin movimiento.";
 
-  // When the chart is empty Y-axis to [0, 1] keeps the baseline visible
-  // and the gridline stable. Otherwise let recharts auto-scale.
+  // Y axis: real data auto-scales; ghost canvas pinned to [0, 1] but the
+  // ticks are hidden so the values cannot be misread.
   const yDomain: [number | string, number | string] = isEmpty ? [0, 1] : [0, "auto"];
 
   return (
@@ -143,7 +184,7 @@ export function RevenueHeroChart({
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={data}
-            margin={{ top: 8, right: 14, bottom: 6, left: 0 }}
+            margin={{ top: 12, right: 14, bottom: 6, left: 0 }}
             onMouseMove={(state) => {
               if (isEmpty) return;
               // recharts v3 narrows the public type but still emits the
@@ -162,36 +203,40 @@ export function RevenueHeroChart({
                 <stop offset="55%" stopColor="#6366f1" stopOpacity={0.06} />
                 <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
               </linearGradient>
-              <linearGradient id="heroAreaGradMuted" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#94a3b8" stopOpacity={0.12} />
+              <linearGradient id="heroGhostGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#94a3b8" stopOpacity={0.10} />
+                <stop offset="60%" stopColor="#94a3b8" stopOpacity={0.03} />
                 <stop offset="100%" stopColor="#94a3b8" stopOpacity={0} />
               </linearGradient>
             </defs>
 
-            <CartesianGrid
-              vertical={false}
-              stroke="#e2e8f0"
-              strokeDasharray="0"
-              strokeOpacity={isEmpty ? 0.55 : 0.45}
-            />
+            {!isEmpty && (
+              <CartesianGrid
+                vertical={false}
+                stroke="#e2e8f0"
+                strokeDasharray="0"
+                strokeOpacity={0.4}
+              />
+            )}
 
             <XAxis
               dataKey="label"
-              tick={{ fontSize: 10, fill: isEmpty ? "#cbd5e1" : "#94a3b8" }}
+              tick={{ fontSize: 10, fill: isEmpty ? "#e2e8f0" : "#94a3b8" }}
               tickLine={false}
               axisLine={false}
               interval={xTickInterval}
-              minTickGap={16}
+              minTickGap={isEmpty ? 32 : 16}
               padding={{ left: 4, right: 4 }}
             />
             <YAxis
-              tick={{ fontSize: 10, fill: isEmpty ? "#cbd5e1" : "#94a3b8" }}
+              hide={isEmpty}
+              tick={{ fontSize: 10, fill: "#94a3b8" }}
               tickLine={false}
               axisLine={false}
               width={48}
               domain={yDomain}
               tickFormatter={(v: number) => {
-                if (isEmpty) return v === 0 ? "0" : "";
+                if (isEmpty) return "";
                 return v >= 1_000_000
                   ? `${(v / 1_000_000).toFixed(1).replace(".0", "")}M`
                   : v >= 1000
@@ -237,61 +282,69 @@ export function RevenueHeroChart({
               />
             )}
 
-            {/* Current-period area — protagonist (or muted baseline when empty). */}
-            <Area
-              type="monotone"
-              dataKey="current"
-              stroke={isEmpty ? "#cbd5e1" : "#4338ca"}
-              strokeWidth={isEmpty ? 1.25 : 2.25}
-              strokeDasharray={isEmpty ? "5 5" : undefined}
-              fill={isEmpty ? "url(#heroAreaGradMuted)" : "url(#heroAreaGrad)"}
-              dot={false}
-              activeDot={
-                isEmpty
-                  ? false
-                  : {
-                      r: 4,
-                      stroke: "#ffffff",
-                      strokeWidth: 2,
-                      fill: "#4338ca",
-                    }
-              }
-              isAnimationActive
-              animationDuration={isEmpty ? 0 : 620}
-            />
+            {/* Real current-period area — only rendered when there are
+                actual sales. Never reuses the synthetic ghost dataset. */}
+            {!isEmpty && (
+              <Area
+                type="monotone"
+                dataKey="current"
+                stroke="#4338ca"
+                strokeWidth={2.25}
+                fill="url(#heroAreaGrad)"
+                dot={false}
+                activeDot={{
+                  r: 4,
+                  stroke: "#ffffff",
+                  strokeWidth: 2,
+                  fill: "#4338ca",
+                }}
+                isAnimationActive
+                animationDuration={620}
+              />
+            )}
+
+            {/* Ghost curve — adimensional ease-out shape used only when
+                the window has no real activity. The dataKey (`ghost`)
+                is a normalised 0..1 value so it cannot be misread as
+                revenue, and there is no tooltip / Y label to leak
+                synthetic numbers to the merchant. */}
+            {isEmpty && (
+              <Area
+                type="monotone"
+                dataKey="ghost"
+                stroke="#cbd5e1"
+                strokeWidth={1.25}
+                fill="url(#heroGhostGrad)"
+                dot={false}
+                activeDot={false}
+                isAnimationActive
+                animationDuration={720}
+              />
+            )}
           </ComposedChart>
         </ResponsiveContainer>
-
-        {isEmpty && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <span className="rounded-[var(--r-sm)] bg-[var(--surface-0)]/85 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-ink-6 shadow-[0_1px_2px_rgba(15,23,42,0.04)] backdrop-blur-[2px]">
-              Sin ventas en este rango
-            </span>
-          </div>
-        )}
       </div>
 
-      {/* Legend strip — minimal, three slots. */}
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[color:var(--hairline)] pt-3 text-[11px] text-ink-5">
-        <span className="inline-flex items-center gap-1.5">
-          <span
-            className={cn(
-              "h-1.5 w-3 rounded-full",
-              isEmpty ? "bg-[#cbd5e1]" : "bg-[#4338ca]",
-            )}
-          />
-          Periodo actual
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="h-px w-3 border-t border-dashed border-[#94a3b8]" />
-          Periodo anterior
-        </span>
-        {peakRevenue > 0 && (
-          <span className="ml-auto tabular-nums text-ink-6">
-            Pico {fmtCurrency(peakRevenue)}
+      {/* Legend strip — only meaningful when there is real data; when the
+          window is empty we hide the legend so the canvas reads as a
+          single quiet visual instead of a labelled placeholder. */}
+      {!isEmpty && (
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[color:var(--hairline)] pt-3 text-[11px] text-ink-5">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-1.5 w-3 rounded-full bg-[#4338ca]" />
+            Periodo actual
           </span>
-        )}
-      </div>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-px w-3 border-t border-dashed border-[#94a3b8]" />
+            Periodo anterior
+          </span>
+          {peakRevenue > 0 && (
+            <span className="ml-auto tabular-nums text-ink-6">
+              Pico {fmtCurrency(peakRevenue)}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
