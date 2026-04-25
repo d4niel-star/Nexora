@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Nexora — Design tokens  v4
+   Nexora — Design tokens  v5
    Single source of truth for color, type, radius, shadow, motion.
-   Warm matte canvas + dark chrome (shell) + one sober accent.
+   Slate-mist canvas + dark chrome (shell) + one sober accent.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
@@ -22,20 +22,20 @@
   --ink-11: #f0f2f7;
   --ink-12: #ffffff;
 
-  /* ─── Surfaces (warm matte canvas; raised cards stay crisp white) ─── */
-  --admin-canvas: #ece5da;
-  --surface-0: #fffefa;
-  --surface-1: #f8f5f0;
-  --surface-2: #f0ece5;
-  --surface-3: #e6e1d9;
+  /* ─── Surfaces (slate-mist canvas; raised cards stay pure white) ─── */
+  --admin-canvas: #eef2f5;
+  --surface-0: #ffffff;
+  --surface-1: #f8fafb;
+  --surface-2: #eaf0f3;
+  --surface-3: #d8e0e6;
 
   /* ─── Dark shell (admin sidebar, marketing chrome, topbar) ─── */
   --shell-dark: #06070b;
   --shell-dark-elevated: #0c0e15;
 
-  /* ─── Hairlines (warm-neutral, works on light; chrome uses separate) ─── */
-  --hairline: rgba(62, 48, 28, 0.12);
-  --hairline-strong: rgba(62, 48, 28, 0.22);
+  /* ─── Hairlines (cool-slate, works on light; chrome uses separate) ─── */
+  --hairline: rgba(15, 23, 42, 0.09);
+  --hairline-strong: rgba(15, 23, 42, 0.16);
 
   /* ─── Marketing / topbar chrome (on dark) ─── */
   --chrome-bg: var(--shell-dark);
@@ -69,11 +69,11 @@
   --r-xl: 16px;
   --r-full: 9999px;
 
-  /* ─── Shadows (precise depth, warm undertone) ─── */
-  --shadow-soft: 0 1px 2px rgba(62, 48, 28, 0.05), 0 12px 28px -24px rgba(62, 48, 28, 0.22), 0 0 0 1px rgba(62, 48, 28, 0.07);
-  --shadow-elevated: 0 26px 80px -36px rgba(62, 48, 28, 0.30), 0 0 0 1px rgba(62, 48, 28, 0.09);
+  /* ─── Shadows (precise depth, cool slate undertone) ─── */
+  --shadow-soft: 0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 28px -24px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(15, 23, 42, 0.06);
+  --shadow-elevated: 0 26px 80px -36px rgba(15, 23, 42, 0.24), 0 0 0 1px rgba(15, 23, 42, 0.08);
   --shadow-card: var(--shadow-soft);
-  --shadow-overlay: 0 32px 90px -40px rgba(62, 48, 28, 0.34), 0 0 0 1px rgba(62, 48, 28, 0.10);
+  --shadow-overlay: 0 32px 90px -40px rgba(15, 23, 42, 0.30), 0 0 0 1px rgba(15, 23, 42, 0.09);
   --shadow-sm: var(--shadow-soft);
   --shadow-focus: 0 0 0 2px var(--surface-0), 0 0 0 4px rgba(63, 79, 154, 0.38);
   --shadow-focus-on-dark: 0 0 0 2px var(--shell-dark), 0 0 0 4px rgba(255, 255, 255, 0.28);
