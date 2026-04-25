@@ -36,9 +36,17 @@ import { saveCommunicationSettings } from "@/lib/communication/actions";
 
 interface Props {
   initialSettings: CommunicationSettings;
+  /**
+   * When `true`, the page is rendered inside another surface
+   * (e.g. Mi tienda → tab Comunicación). In that case we suppress the
+   * redundant page title + subtitle since the parent already owns the
+   * outer header. The save button + status banner + section nav still
+   * render so the merchant can operate from the embedded view.
+   */
+  embedded?: boolean;
 }
 
-export function CommunicationPage({ initialSettings }: Props) {
+export function CommunicationPage({ initialSettings, embedded = false }: Props) {
   const [settings, setSettings] = useState<CommunicationSettings>(initialSettings);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -90,13 +98,22 @@ export function CommunicationPage({ initialSettings }: Props) {
       {/* Page header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-[22px] font-semibold tracking-[-0.03em] text-ink-0">
-            Comunicación
-          </h1>
-          <p className="mt-1 text-[14px] text-ink-4">
-            Gestioná tus canales de contacto, redes sociales y correos automáticos.
-            Los cambios se reflejan en tu tienda publicada.
-          </p>
+          {embedded ? (
+            <p className="text-[13px] text-ink-4">
+              Canales de contacto, redes sociales y correos automáticos. Los cambios
+              se reflejan en tu tienda publicada.
+            </p>
+          ) : (
+            <>
+              <h1 className="text-[22px] font-semibold tracking-[-0.03em] text-ink-0">
+                Comunicación
+              </h1>
+              <p className="mt-1 text-[14px] text-ink-4">
+                Gestioná tus canales de contacto, redes sociales y correos automáticos.
+                Los cambios se reflejan en tu tienda publicada.
+              </p>
+            </>
+          )}
         </div>
         <button
           type="button"

@@ -1,21 +1,18 @@
 import { redirect } from "next/navigation";
 
-import { getCurrentStore } from "@/lib/auth/session";
-import { getGrowthSnapshot } from "@/lib/growth/signals";
-import { GrowthPage } from "@/components/admin/growth/GrowthPage";
-
-// ─── /admin/growth ──────────────────────────────────────────────────────
-// Lifecycle + retention hub. Reads exclusively from real DB state via
-// getGrowthSnapshot — no client-side fabrication, no random metrics.
-// Tenant-scoped and session-dependent, so must NEVER be statically
-// prerendered (build would crash without a session).
+// ─── /admin/growth → /admin/recovery ───────────────────────────────────
+//
+// Crecimiento (post-purchase / lifecycle hub) overlapped conceptually
+// with Estadísticas > Rendimiento. The Ventas surface was reframed as
+// Recuperación, focused on real recoverable money/clients instead of
+// duplicate analytics.
+//
+// Old deep links, dashboard CTAs and onboarding checklists may still
+// point at /admin/growth, so we keep the route as a permanent redirect
+// to the new hub.
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminGrowthPage() {
-  const store = await getCurrentStore();
-  if (!store) redirect("/login");
-
-  const snapshot = await getGrowthSnapshot(store.id);
-  return <GrowthPage snapshot={snapshot} />;
+export default function AdminGrowthRedirectPage() {
+  redirect("/admin/recovery");
 }

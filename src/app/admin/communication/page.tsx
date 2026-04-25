@@ -1,25 +1,18 @@
 import { redirect } from "next/navigation";
-import { getCurrentStore } from "@/lib/auth/session";
-import { getCommunicationSettings } from "@/lib/communication/queries";
-import { CommunicationPage } from "@/components/admin/communication/CommunicationPage";
+
+// ─── /admin/communication → /admin/store?tab=comunicacion ──────────────
+//
+// Comunicación used to be a top-level admin category. As of the IA
+// reshuffle it lives as a tab inside Mi tienda (Resumen · Comunicación ·
+// Dominio · Pagos). Old deep links, bookmarks, dashboard CTAs and
+// onboarding checklists may still point at /admin/communication, so we
+// keep the route as a permanent redirect instead of deleting it.
+//
+// `dynamic = "force-dynamic"` makes sure no stale RSC payload is served
+// from the build cache after the IA change.
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminCommunicationPage() {
-  // Defensive: any unexpected failure in session resolution should redirect to
-  // login rather than 500 the route. The admin layout already runs the same
-  // check, so a redirect loop is impossible — if the session truly cannot be
-  // read the user is already at /home/login by the time this catch fires.
-  let storeId: string | null = null;
-  try {
-    const store = await getCurrentStore();
-    storeId = store?.id ?? null;
-  } catch (error) {
-    console.error("[Communication] getCurrentStore threw:", error);
-  }
-
-  if (!storeId) redirect("/home/login");
-
-  const settings = await getCommunicationSettings(storeId);
-  return <CommunicationPage initialSettings={settings} />;
+export default function AdminCommunicationRedirectPage() {
+  redirect("/admin/store?tab=comunicacion");
 }

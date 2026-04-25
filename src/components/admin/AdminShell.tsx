@@ -9,13 +9,13 @@ import {
   ChevronRight,
   Code2,
   LayoutDashboard,
-  LineChart,
   Mail,
   MapPin,
   Megaphone,
   Menu,
-  MessageSquare,
   Network,
+  Recycle,
+  Stethoscope,
   Package,
   Puzzle,
   Search,
@@ -30,7 +30,6 @@ import {
   Truck,
   Users,
   Video,
-  Wallet,
   Wrench,
   X,
 } from "lucide-react";
@@ -88,11 +87,22 @@ type NavEntry = NavLeaf | NavGroup;
 // src/app/admin/* — no dead links, no placeholders.
 //
 // IA notes:
-//   · Estadísticas is a *family* (group) that owns the analytic surfaces:
-//     Rendimiento (KPIs, charts, evolución de ventas) and Finanzas
-//     (cobrado / pendiente / rentabilidad). They share temporal lens and
-//     belong together; keeping Finanzas as a top-level peer was a
-//     hierarchy mistake.
+//   · Estadísticas is a *family* (group) that owns analytic surfaces.
+//     Rendimiento answers "¿cómo va la tienda?" with KPIs and evolución
+//     de ventas. Diagnóstico answers "¿qué está bloqueando ventas hoy?"
+//     by reading the readiness snapshot (perfil, pagos, catálogo,
+//     conversion, etc.). The legacy Finanzas surface still exists at
+//     /admin/finances for compatibility but is no longer in the
+//     sidebar — it duplicated Pagos + Rendimiento.
+//   · Ventas owns operational surfaces. "Crecimiento" (post-purchase
+//     lifecycle hub) overlapped with Estadísticas; it was renamed and
+//     refocused as Recuperación, which surfaces inactive customers,
+//     pending/failed payments and reorder opportunities — i.e. revenue
+//     to win back, not analytics to look at.
+//   · Comunicación was a top-level leaf. It now lives as a tab inside
+//     Mi tienda, between Resumen and Dominio, because contact info,
+//     WhatsApp button, redes and emails automáticos are part of the
+//     storefront's public surface, not a separate operational area.
 //   · Truck is reserved for Envíos (parent). Carrier leaves use
 //     destination-specific icons (Mail / MapPin) so the Envíos sub-tree
 //     no longer renders three identical truck rows.
@@ -109,7 +119,7 @@ const primaryNav: readonly NavEntry[] = [
     icon: BarChart3,
     items: [
       { kind: "leaf", href: "/admin/stats", label: "Rendimiento", icon: TrendingUp },
-      { kind: "leaf", href: "/admin/finances", label: "Finanzas", icon: Wallet },
+      { kind: "leaf", href: "/admin/diagnostics", label: "Diagnóstico", icon: Stethoscope },
     ],
   },
   {
@@ -120,7 +130,7 @@ const primaryNav: readonly NavEntry[] = [
     items: [
       { kind: "leaf", href: "/admin/orders", label: "Pedidos", icon: ShoppingCart },
       { kind: "leaf", href: "/admin/customers", label: "Clientes", icon: Users },
-      { kind: "leaf", href: "/admin/growth", label: "Crecimiento", icon: LineChart },
+      { kind: "leaf", href: "/admin/recovery", label: "Recuperación", icon: Recycle },
     ],
   },
   {
@@ -144,9 +154,6 @@ const primaryNav: readonly NavEntry[] = [
       { kind: "leaf", href: "/admin/store", label: "Mi tienda", icon: Store },
     ],
   },
-  // Comunicación — own top-level leaf. A single page internally tabbed
-  // into channels, contact info, WhatsApp button, and automated emails.
-  { kind: "leaf", href: "/admin/communication", label: "Comunicación", icon: MessageSquare },
   // Marketing replaces the old generic "Ads" sub-leaf with one explicit
   // surface per advertising network (Meta, TikTok, Google) plus a
   // dedicated "Píxeles y tags" hub that owns all the technical, non-OAuth

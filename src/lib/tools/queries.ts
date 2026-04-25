@@ -404,7 +404,7 @@ export async function getGrowthOpportunities(
       id: "reorder-customers",
       title: `${customersReadyForReorder} clientes listos para recompra`,
       description: "Clientes recurrentes cuya última compra supera los 30 días.",
-      href: "/admin/growth",
+      href: "/admin/recovery",
       ctaLabel: "Ver clientes",
       priority: "medium",
     });

@@ -3,7 +3,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { CheckCircle2, CreditCard, Globe, Layers, RefreshCw, X } from "lucide-react";
+import {
+  CheckCircle2,
+  CreditCard,
+  Globe,
+  Layers,
+  MessageSquare,
+  RefreshCw,
+  X,
+} from "lucide-react";
 
 import {
   formatInternalStoreDomain,
@@ -12,6 +20,7 @@ import {
 import { StoreSummaryView } from "@/components/admin/store/StoreSummaryView";
 import { DomainSettingsView } from "@/components/admin/store/tabs/DomainSettingsView";
 import { PaymentsHub } from "@/components/admin/store/tabs/PaymentsHub";
+import { CommunicationPage } from "@/components/admin/communication/CommunicationPage";
 import { TableSkeleton } from "@/components/admin/orders/TableSkeleton";
 import { cn } from "@/lib/utils";
 import type { MercadoPagoPlatformReadiness } from "@/lib/payments/mercadopago/platform-readiness";
@@ -20,8 +29,9 @@ import type {
   PaymentProviderStatus,
 } from "@/lib/payments/types";
 import type { AdminStoreInitialData } from "@/types/store-engine";
+import type { CommunicationSettings } from "@/lib/communication/types";
 
-type TabValue = "resumen" | "dominio" | "pagos";
+type TabValue = "resumen" | "comunicacion" | "dominio" | "pagos";
 
 interface ToastMessage {
   id: string;
@@ -32,7 +42,8 @@ interface ToastMessage {
 const loadingDelayMs = 260;
 
 function resolveStoreTab(tab: string | null): TabValue {
-  return tab === "dominio" || tab === "pagos" ? tab : "resumen";
+  if (tab === "dominio" || tab === "pagos" || tab === "comunicacion") return tab;
+  return "resumen";
 }
 
 function mpReasonCopy(reason: string): { title: string; description: string } {
@@ -85,10 +96,12 @@ export function StorePage({
   initialData,
   mercadoPagoPlatformReadiness,
   isOps,
+  communicationSettings,
 }: {
   initialData?: AdminStoreInitialData | null;
   mercadoPagoPlatformReadiness: MercadoPagoPlatformReadiness;
   isOps: boolean;
+  communicationSettings?: CommunicationSettings | null;
 }) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -206,8 +219,16 @@ export function StorePage({
     router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
   }, [isOps, pathname, pushToast, router, searchParams]);
 
+  // Tab order is intentional and merchant-facing:
+  //   1. Resumen        — overview / activation
+  //   2. Comunicación   — contact, redes, WhatsApp, emails (sits between
+  //                       Resumen and Dominio because it owns public
+  //                       storefront-visible info, just like Dominio)
+  //   3. Dominio        — public domain settings
+  //   4. Pagos          — checkout providers
   const tabs: Array<{ label: string; value: TabValue; icon: React.ReactNode }> = [
     { label: "Resumen", value: "resumen", icon: <Layers className="h-3.5 w-3.5" /> },
+    { label: "Comunicación", value: "comunicacion", icon: <MessageSquare className="h-3.5 w-3.5" /> },
     { label: "Dominio", value: "dominio", icon: <Globe className="h-3.5 w-3.5" /> },
     { label: "Pagos", value: "pagos", icon: <CreditCard className="h-3.5 w-3.5" /> },
   ];
@@ -345,6 +366,39 @@ export function StorePage({
                   pushToast={pushToast}
                   publicPath={publicPath}
                 />
+              ) : activeTab === "comunicacion" ? (
+                <div className="px-5 py-6 sm:px-7 sm:py-8">
+                  {communicationSettings ? (
+                    <CommunicationPage
+                      initialSettings={communicationSettings}
+                      embedded
+                    />
+                  ) : (
+                    <div className="rounded-[var(--r-md)] border border-dashed border-[color:var(--hairline)] bg-[var(--surface-1)] px-5 py-10 text-center">
+                      <MessageSquare
+                        className="mx-auto h-5 w-5 text-ink-5"
+                        strokeWidth={1.75}
+                        aria-hidden
+                      />
+                      <p className="mt-3 text-[14px] font-semibold text-ink-0">
+                        No pudimos cargar la configuración de Comunicación
+                      </p>
+                      <p className="mt-1.5 text-[12.5px] leading-[1.5] text-ink-5">
+                        Recargá la página para volver a intentar. Si el problema
+                        persiste, los datos de canales y emails siguen
+                        guardados — solo no pudimos leerlos en este momento.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={refreshData}
+                        className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-4 text-[12.5px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-1)]"
+                      >
+                        <RefreshCw className="h-3.5 w-3.5" />
+                        Reintentar
+                      </button>
+                    </div>
+                  )}
+                </div>
               ) : activeTab === "dominio" ? (
                 <DomainSettingsView
                   initialData={initialData ?? null}

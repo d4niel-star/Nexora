@@ -210,14 +210,14 @@ export function MarketToolsHub({ snapshot }: Props) {
           )}
         </ToolCard>
 
-        {/* ─── Tool 4: Growth Opportunities ─── */}
+        {/* ─── Tool 4: Recovery Opportunities ─── */}
         <ToolCard
           icon={<TrendingUp className="h-4 w-4" strokeWidth={1.75} />}
-          title="Oportunidades de crecimiento"
-          description="Retención, recompra y apps que mejoran conversión."
+          title="Oportunidades de recuperación"
+          description="Pagos pendientes, carritos parados, clientes para reactivar y recompra."
           issueCount={growthActions}
-          href="/admin/growth"
-          ctaLabel="Ir a Crecimiento"
+          href="/admin/recovery"
+          ctaLabel="Ir a Recuperación"
         >
           <div className="space-y-2">
             <MetricRow

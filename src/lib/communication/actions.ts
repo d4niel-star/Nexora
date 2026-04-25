@@ -129,6 +129,11 @@ export async function saveCommunicationSettings(
       },
     });
 
+    // Comunicación now lives inside Mi tienda > tab Comunicación. We
+    // revalidate both the new home (/admin/store) and the legacy
+    // /admin/communication redirect path so any pending RSC payload is
+    // refreshed and the merchant sees the change immediately.
+    revalidatePath("/admin/store");
     revalidatePath("/admin/communication");
     // Revalidate storefront so the changes appear immediately
     revalidatePath("/store/[storeSlug]", "layout");
