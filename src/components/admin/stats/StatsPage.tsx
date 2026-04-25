@@ -122,7 +122,11 @@ function PanelStream({
   return (
     <div className="space-y-7">
       {/* ── Hero chart — protagonist, always renders ──────────────────── */}
-      <section className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6 lg:p-8">
+      {/* The card frames the chart without a hard 1px border (which read
+          as a black outline on light backgrounds). Instead we use a soft
+          ring, a layered shadow, and a subtle gradient surface so the
+          chart never appears as a blank rectangle even with zero sales. */}
+      <section className="relative isolate overflow-hidden rounded-[var(--r-xl)] bg-gradient-to-br from-[var(--surface-0)] via-[#fafbfe] to-[#eef1f7] shadow-[0_1px_2px_rgba(7,8,13,0.04),0_30px_64px_-36px_rgba(7,8,13,0.24)] ring-1 ring-[#dce0e8]">
         <RevenueHeroChart
           current={dailyRevenue}
           previous={prevDailyRevenue}
