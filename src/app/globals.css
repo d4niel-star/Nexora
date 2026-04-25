@@ -22,19 +22,20 @@
   --ink-11: #f0f2f7;
   --ink-12: #ffffff;
 
-  /* ─── Surfaces (light commerce canvas — raised cards stay crisp) ─── */
-  --surface-0: var(--ink-12);
-  --surface-1: #e9ecf3;
-  --surface-2: var(--ink-11);
-  --surface-3: var(--ink-10);
+  /* ─── Surfaces (matte admin canvas; raised cards stay crisp) ─── */
+  --admin-canvas: #f4f6fa;
+  --surface-0: #ffffff;
+  --surface-1: #f7f8fb;
+  --surface-2: #eff2f7;
+  --surface-3: #e8edf5;
 
   /* ─── Dark shell (admin sidebar, marketing chrome, topbar) ─── */
   --shell-dark: #06070b;
   --shell-dark-elevated: #0c0e15;
 
   /* ─── Hairlines (cool-neutral, works on light; chrome uses separate) ─── */
-  --hairline: rgba(7, 8, 13, 0.09);
-  --hairline-strong: rgba(7, 8, 13, 0.16);
+  --hairline: rgba(7, 8, 13, 0.1);
+  --hairline-strong: rgba(7, 8, 13, 0.18);
 
   /* ─── Marketing / topbar chrome (on dark) ─── */
   --chrome-bg: var(--shell-dark);
@@ -69,8 +70,11 @@
   --r-full: 9999px;
 
   /* ─── Shadows (precise depth, low drama) ─── */
-  --shadow-soft: 0 1px 2px rgba(7, 8, 13, 0.05), 0 0 0 1px rgba(7, 8, 13, 0.05);
-  --shadow-elevated: 0 18px 44px -14px rgba(7, 8, 13, 0.14), 0 6px 16px rgba(7, 8, 13, 0.07);
+  --shadow-soft: 0 1px 2px rgba(7, 8, 13, 0.04), 0 12px 28px -24px rgba(7, 8, 13, 0.34), 0 0 0 1px rgba(7, 8, 13, 0.055);
+  --shadow-elevated: 0 26px 80px -36px rgba(7, 8, 13, 0.42), 0 0 0 1px rgba(7, 8, 13, 0.07);
+  --shadow-card: var(--shadow-soft);
+  --shadow-overlay: 0 32px 90px -40px rgba(7, 8, 13, 0.46), 0 0 0 1px rgba(7, 8, 13, 0.08);
+  --shadow-sm: var(--shadow-soft);
   --shadow-focus: 0 0 0 2px var(--surface-0), 0 0 0 4px rgba(63, 79, 154, 0.38);
   --shadow-focus-on-dark: 0 0 0 2px var(--shell-dark), 0 0 0 4px rgba(255, 255, 255, 0.28);
 
@@ -101,17 +105,18 @@
   --sidebar-active-bg: rgba(255, 255, 255, 0.08);
 
   /* ─── Back-compat tokens ─── */
-  --color-background: var(--surface-1);
+  --color-background: var(--admin-canvas);
   --color-foreground: var(--ink-0);
   --color-primary: var(--ink-0);
   --color-primary-foreground: var(--ink-12);
   --color-accent: var(--accent-500);
   --color-accent-foreground: var(--accent-ink);
+  --color-admin-canvas: var(--admin-canvas);
   --color-surface: var(--surface-0);
   --color-surface-muted: var(--surface-2);
   --color-border: var(--ink-9);
 
-  --background: var(--surface-1);
+  --background: var(--admin-canvas);
   --foreground: var(--ink-0);
 }
 
@@ -275,6 +280,8 @@ body {
    Primitive utilities
    ═══════════════════════════════════════════════════════════════════════════ */
 
+.admin-canvas { background: var(--admin-canvas); }
+.surface-0 { background: var(--surface-0); }
 .surface-1 { background: var(--surface-1); }
 .surface-2 { background: var(--surface-2); }
 .surface-3 { background: var(--surface-3); }

@@ -359,7 +359,7 @@ export function AdminShell({
   );
 
   return (
-    <div className="flex h-screen bg-[var(--surface-1)] font-sans text-ink-0">
+    <div className="flex h-screen bg-[var(--admin-canvas)] font-sans text-ink-0">
       {/* Mobile sidebar overlay */}
       {sidebarOpen ? (
         <div
@@ -385,7 +385,7 @@ export function AdminShell({
       </aside>
 
       {/* Main column */}
-      <main className="flex flex-1 flex-col overflow-hidden">
+      <main className="flex flex-1 flex-col overflow-hidden bg-[var(--admin-canvas)]">
         {/* Topbar */}
         <div className="flex h-14 shrink-0 items-center justify-between border-b border-[color:var(--chrome-border)] bg-[var(--chrome-bg)] px-4 md:px-8">
           <div className="flex items-center gap-3">
@@ -558,4 +558,3 @@ function SidebarGroup({ group, pathname, expanded, onToggle, onNavigate }: Sideb
     </li>
   );
 }
-

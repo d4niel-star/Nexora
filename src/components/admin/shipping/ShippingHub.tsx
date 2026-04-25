@@ -27,7 +27,9 @@ import { CreateShipmentForm } from "./CreateShipmentForm";
 import { TrackingLookup } from "./TrackingLookup";
 
 interface CarrierEntry {
-  meta: CarrierMetadata;
+  meta: Omit<CarrierMetadata, "adapter"> & {
+    capabilities: CarrierCapabilities;
+  };
   summary: CarrierConnectionSummary;
 }
 
@@ -59,8 +61,8 @@ export function ShippingHub({ carriers, settings }: Props) {
     id: meta.id,
     name: meta.name,
     connected: summary.status === "connected",
-    supportsLabelPdf: meta.adapter.capabilities.labelPdf,
-    publicTracking: meta.adapter.capabilities.publicTracking,
+    supportsLabelPdf: meta.capabilities.labelPdf,
+    publicTracking: meta.capabilities.publicTracking,
   }));
 
   const defaultPackage = {
@@ -237,7 +239,7 @@ function OverviewPanel({ carriers }: { carriers: ReadonlyArray<CarrierEntry> }) 
               </div>
 
               <CapabilityChips
-                capabilities={meta.adapter.capabilities}
+                capabilities={meta.capabilities}
                 connected={summary.status === "connected"}
               />
 

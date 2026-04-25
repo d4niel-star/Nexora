@@ -21,8 +21,11 @@ export default async function ShippingHubPage() {
     getStoreShippingSettings(store.id),
   ]);
 
-  const carriers = CARRIERS.map((meta) => ({
-    meta,
+  const carriers = CARRIERS.map(({ adapter, ...meta }) => ({
+    meta: {
+      ...meta,
+      capabilities: adapter.capabilities,
+    },
     summary:
       summaries.find((s) => s.carrier === meta.id) ?? {
         carrier: meta.id,

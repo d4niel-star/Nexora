@@ -126,7 +126,7 @@ function PanelStream({
           as a black outline on light backgrounds). Instead we use a soft
           ring, a layered shadow, and a subtle gradient surface so the
           chart never appears as a blank rectangle even with zero sales. */}
-      <section className="relative isolate overflow-hidden rounded-[var(--r-xl)] bg-gradient-to-br from-[var(--surface-0)] via-[#fafbfe] to-[#eef1f7] shadow-[0_1px_2px_rgba(7,8,13,0.04),0_30px_64px_-36px_rgba(7,8,13,0.24)] ring-1 ring-[#dce0e8]">
+      <section className="relative isolate overflow-hidden rounded-[var(--r-xl)] bg-gradient-to-br from-[var(--surface-0)] via-[var(--surface-1)] to-[var(--surface-2)] shadow-[0_1px_2px_rgba(7,8,13,0.04),0_30px_64px_-36px_rgba(7,8,13,0.24)] ring-1 ring-[color:var(--hairline)]">
         <RevenueHeroChart
           current={dailyRevenue}
           previous={prevDailyRevenue}
@@ -460,7 +460,7 @@ function CategoryChart({
   return (
     <ResponsiveContainer width="100%" height={220}>
       <BarChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }} layout="vertical">
-        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--surface-3)" horizontal={false} />
         <XAxis
           type="number"
           tick={{ fontSize: 10, fill: "#94a3b8" }}
@@ -480,8 +480,8 @@ function CategoryChart({
           formatter={(val) => [fmtCurrency(Number(val)), "Ingresos"]}
           contentStyle={{
             borderRadius: 8,
-            border: "1px solid #e2e8f0",
-            background: "#fff",
+            border: "1px solid var(--hairline)",
+            background: "var(--surface-0)",
             fontSize: 12,
             boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
           }}

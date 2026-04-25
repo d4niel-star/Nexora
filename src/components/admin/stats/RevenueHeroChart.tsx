@@ -163,8 +163,8 @@ export function RevenueHeroChart({
         className={cn(
           "pointer-events-none absolute inset-0 rounded-[var(--r-lg)]",
           isEmpty
-            ? "bg-[radial-gradient(90%_70%_at_85%_82%,rgba(63,79,154,0.12),transparent_58%),radial-gradient(70%_55%_at_12%_18%,rgba(21,149,106,0.08),transparent_60%),linear-gradient(135deg,#ffffff_0%,#f8fafc_48%,#eef1f7_100%)]"
-            : "bg-[radial-gradient(95%_75%_at_88%_88%,rgba(63,79,154,0.10),transparent_58%),linear-gradient(135deg,#ffffff_0%,#f8fafc_55%,#eef1f7_100%)]",
+            ? "bg-[radial-gradient(90%_70%_at_85%_82%,rgba(63,79,154,0.12),transparent_58%),radial-gradient(70%_55%_at_12%_18%,rgba(21,149,106,0.08),transparent_60%),linear-gradient(135deg,var(--surface-0)_0%,var(--surface-1)_48%,var(--surface-2)_100%)]"
+            : "bg-[radial-gradient(95%_75%_at_88%_88%,rgba(63,79,154,0.10),transparent_58%),linear-gradient(135deg,var(--surface-0)_0%,var(--surface-1)_55%,var(--surface-2)_100%)]",
         )}
       />
 
@@ -249,7 +249,7 @@ export function RevenueHeroChart({
             <CartesianGrid
               vertical={isEmpty}
               horizontal={!isEmpty}
-              stroke={isEmpty ? "#cbd5e1" : "#dce0e8"}
+              stroke={isEmpty ? "var(--ink-8)" : "var(--surface-3)"}
               strokeDasharray={isEmpty ? "2 6" : "0"}
               strokeOpacity={isEmpty ? 0.58 : 0.42}
             />
@@ -383,7 +383,7 @@ export function RevenueHeroChart({
             Periodo actual
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="h-px w-3 border-t border-dashed border-[#94a3b8]" />
+            <span className="h-px w-3 border-t border-dashed border-[color:var(--ink-6)]" />
             Periodo anterior
           </span>
           {peakRevenue > 0 && (

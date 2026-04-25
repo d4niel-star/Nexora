@@ -146,7 +146,7 @@ export function CommunicationPage({ initialSettings, embedded = false }: Props) 
       )}
 
       {/* Section nav */}
-      <div className="flex gap-1 rounded-[var(--r-md)] bg-ink-11 p-1">
+      <div className="flex gap-1 rounded-[var(--r-md)] bg-[var(--surface-1)] p-1">
         {sections.map((s) => {
           const Icon = s.icon;
           return (
@@ -157,7 +157,7 @@ export function CommunicationPage({ initialSettings, embedded = false }: Props) 
               className={cn(
                 "flex flex-1 items-center justify-center gap-2 rounded-[var(--r-sm)] py-2.5 text-[13px] font-medium transition-all duration-[var(--dur-base)]",
                 activeSection === s.id
-                  ? "bg-white text-ink-0 shadow-sm"
+                  ? "bg-[var(--surface-0)] text-ink-0 shadow-sm"
                   : "text-ink-4 hover:text-ink-2",
               )}
             >
@@ -739,4 +739,3 @@ function EmailToggleRow({
     </div>
   );
 }
-
