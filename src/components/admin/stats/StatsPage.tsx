@@ -122,11 +122,11 @@ function PanelStream({
   return (
     <div className="space-y-7">
       {/* ── Hero chart — protagonist, always renders ──────────────────── */}
-      {/* The card frames the chart without a hard 1px border (which read
-          as a black outline on light backgrounds). Instead we use a soft
-          ring, a layered shadow, and a subtle gradient surface so the
-          chart never appears as a blank rectangle even with zero sales. */}
-      <section className="relative isolate overflow-hidden rounded-[var(--r-xl)] bg-gradient-to-br from-[var(--surface-0)] via-[var(--surface-1)] to-[var(--surface-2)] shadow-[0_1px_2px_rgba(7,8,13,0.04),0_30px_64px_-36px_rgba(7,8,13,0.24)] ring-1 ring-[color:var(--hairline)]">
+      {/* Uses the global .elev-card-strong utility so the framing comes
+          from the design system (cool border + multi-layer shadow with
+          inset top sheen + subtle vertical surface gradient) rather
+          than per-page hardcodes. */}
+      <section className="elev-card-strong relative isolate overflow-hidden rounded-[var(--r-xl)]">
         <RevenueHeroChart
           current={dailyRevenue}
           previous={prevDailyRevenue}
@@ -173,7 +173,7 @@ function PanelStream({
 
       {/* ── Top products + categories ────────────────────────────────── */}
       <section className="grid grid-cols-1 gap-5 lg:grid-cols-5">
-        <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 lg:col-span-3">
+        <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 shadow-[var(--shadow-card)] lg:col-span-3">
           <h3 className="mb-4 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">
             Productos que más venden
           </h3>
@@ -194,7 +194,7 @@ function PanelStream({
           )}
         </div>
 
-        <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 lg:col-span-2">
+        <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 shadow-[var(--shadow-card)] lg:col-span-2">
           <h3 className="mb-5 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">
             Ingresos por categoría
           </h3>
@@ -209,7 +209,7 @@ function PanelStream({
       {/* ── Product performance table — only shown when there is data ── */}
       {commercial.topProducts.length > 0 && (
         <section>
-          <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)]">
+          <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] shadow-[var(--shadow-card)]">
             <div className="px-5 pb-2 pt-5">
               <h3 className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">
                 Rendimiento de productos
@@ -306,7 +306,7 @@ function KPICard({
   tone?: KPITone;
 }) {
   return (
-    <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-4 transition-shadow hover:shadow-sm">
+    <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-4 shadow-[var(--shadow-card)] transition-shadow hover:shadow-[var(--shadow-elevated)]">
       <div className="mb-2.5 flex items-center justify-between">
         <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">
           {label}

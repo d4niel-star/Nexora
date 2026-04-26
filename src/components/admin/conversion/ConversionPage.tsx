@@ -97,7 +97,7 @@ export function ConversionPage({ snapshot }: ConversionPageProps) {
       </header>
 
       {/* ── Headline strip ───────────────────────────────────────────── */}
-      <section className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6 lg:p-8">
+      <section className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6 shadow-[var(--shadow-elevated)] lg:p-8">
         <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
           <div>
             <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-6">
@@ -147,7 +147,7 @@ export function ConversionPage({ snapshot }: ConversionPageProps) {
 
       {/* ── Friction + payment failures ──────────────────────────────── */}
       <section className="grid grid-cols-1 gap-5 lg:grid-cols-5">
-        <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 lg:col-span-3">
+        <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 shadow-[var(--shadow-card)] lg:col-span-3">
           <h3 className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">
             Mayor fricción del embudo
           </h3>
@@ -187,7 +187,7 @@ export function ConversionPage({ snapshot }: ConversionPageProps) {
           )}
         </div>
 
-        <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 lg:col-span-2">
+        <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 shadow-[var(--shadow-card)] lg:col-span-2">
           <h3 className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">
             Pagos no aprobados
           </h3>

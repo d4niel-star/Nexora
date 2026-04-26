@@ -159,7 +159,7 @@ function KpiCard({
       }
       title={isClickable ? "Ver en inventario" : undefined}
       className={cn(
-        "rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-4 transition-colors",
+        "rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-4 shadow-[var(--shadow-card)] transition-colors",
         isClickable &&
           "cursor-pointer hover:border-[color:var(--hairline-strong)] hover:bg-[var(--surface-2)]",
       )}
@@ -261,7 +261,7 @@ function DirectiveCard({ directive }: { directive: CommandDirective }) {
   return (
     <Link
       href={d.href}
-      className="group flex items-start gap-4 rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 transition-colors hover:border-[color:var(--hairline-strong)] hover:bg-[var(--surface-2)]"
+      className="group flex items-start gap-4 rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 shadow-[var(--shadow-card)] transition-[colors,box-shadow] hover:border-[color:var(--hairline-strong)] hover:shadow-[var(--shadow-elevated)]"
     >
       <div
         className={cn(

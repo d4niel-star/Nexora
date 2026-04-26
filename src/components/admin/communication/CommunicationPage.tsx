@@ -280,7 +280,7 @@ export function CommunicationPage({ initialSettings, embedded = false }: Props) 
 
       {/* ── Section: Contacto ── */}
       {activeSection === "contact" && (
-        <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6">
+        <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6 shadow-[var(--shadow-card)]">
           <div className="mb-6">
             <h2 className="text-[16px] font-semibold text-ink-0">
               Información de contacto
@@ -347,7 +347,7 @@ export function CommunicationPage({ initialSettings, embedded = false }: Props) 
 
       {/* ── Section: Botón de WhatsApp ── */}
       {activeSection === "whatsapp-button" && (
-        <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6">
+        <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6 shadow-[var(--shadow-card)]">
           <div className="mb-6">
             <h2 className="text-[16px] font-semibold text-ink-0">
               Botón flotante de WhatsApp
@@ -450,7 +450,7 @@ export function CommunicationPage({ initialSettings, embedded = false }: Props) 
       {/* ── Section: E-mails automáticos ── */}
       {activeSection === "emails" && (
         <div className="space-y-6">
-          <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6">
+          <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6 shadow-[var(--shadow-card)]">
             <div className="mb-6">
               <h2 className="text-[16px] font-semibold text-ink-0">
                 E-mails automáticos
@@ -573,7 +573,7 @@ function ChannelCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6 transition-shadow hover:shadow-[var(--shadow-sm)]">
+    <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6 shadow-[var(--shadow-card)] transition-shadow hover:shadow-[var(--shadow-elevated)]">
       <div className="flex items-start gap-4">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--r-md)] bg-[var(--surface-1)]">
           {icon}

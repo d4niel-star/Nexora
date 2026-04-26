@@ -33,9 +33,19 @@
   --shell-dark: #06070b;
   --shell-dark-elevated: #0c0e15;
 
-  /* ─── Hairlines (cool-slate, works on light; chrome uses separate) ─── */
-  --hairline: rgba(15, 23, 42, 0.09);
-  --hairline-strong: rgba(15, 23, 42, 0.16);
+  /* ─── Hairlines (cool-neutral, works on light; chrome uses separate) ─── */
+  /* Slightly cooler + a touch more presence so cards read as
+     defined surfaces, not floating regions. Still well below
+     "border negro" territory (≈ 11% on a near-black ink). */
+  --hairline: rgba(15, 23, 42, 0.11);
+  --hairline-strong: rgba(15, 23, 42, 0.18);
+  /* Card border tokens — slightly cooler, used explicitly by
+     elev-card utilities to lift surfaces from the canvas. */
+  --card-border: rgba(15, 23, 42, 0.10);
+  --card-border-strong: rgba(15, 23, 42, 0.16);
+  /* White sheen on top of cards — the cheap-but-effective trick for
+     a "glass-lifted" feel without neumorphism. */
+  --card-highlight: rgba(255, 255, 255, 0.85);
 
   /* ─── Marketing / topbar chrome (on dark) ─── */
   --chrome-bg: var(--shell-dark);
@@ -69,11 +79,32 @@
   --r-xl: 16px;
   --r-full: 9999px;
 
-  /* ─── Shadows (precise depth, cool slate undertone) ─── */
-  --shadow-soft: 0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 28px -24px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(15, 23, 42, 0.06);
-  --shadow-elevated: 0 26px 80px -36px rgba(15, 23, 42, 0.24), 0 0 0 1px rgba(15, 23, 42, 0.08);
+  /* ─── Shadows (premium 3D multi-layer: top sheen + edge + mid + ambient) ─── */
+  /* The first layer is an INSET highlight that simulates a soft sheen
+     on the top edge of the card — this is what gives the surface a
+     subtle "lifted" feel without resorting to neumorphism. The remaining
+     layers are a tight edge shadow, a soft mid-range and a wide
+     ambient halo. All values stay cool/neutral. */
+  --shadow-soft:
+    inset 0 1px 0 0 var(--card-highlight),
+    0 1px 2px rgba(15, 23, 42, 0.06),
+    0 4px 12px -2px rgba(15, 23, 42, 0.07),
+    0 14px 32px -8px rgba(15, 23, 42, 0.05);
+  --shadow-elevated:
+    inset 0 1px 0 0 var(--card-highlight),
+    0 2px 4px rgba(15, 23, 42, 0.07),
+    0 10px 24px -4px rgba(15, 23, 42, 0.11),
+    0 28px 56px -16px rgba(15, 23, 42, 0.09);
   --shadow-card: var(--shadow-soft);
-  --shadow-overlay: 0 32px 90px -40px rgba(15, 23, 42, 0.30), 0 0 0 1px rgba(15, 23, 42, 0.09);
+  --shadow-card-hover:
+    inset 0 1px 0 0 var(--card-highlight),
+    0 2px 4px rgba(15, 23, 42, 0.07),
+    0 14px 28px -6px rgba(15, 23, 42, 0.13),
+    0 32px 60px -20px rgba(15, 23, 42, 0.10);
+  --shadow-overlay:
+    0 4px 8px rgba(15, 23, 42, 0.08),
+    0 16px 32px -8px rgba(15, 23, 42, 0.14),
+    0 40px 80px -20px rgba(15, 23, 42, 0.10);
   --shadow-sm: var(--shadow-soft);
   --shadow-focus: 0 0 0 2px var(--surface-0), 0 0 0 4px rgba(63, 79, 154, 0.38);
   --shadow-focus-on-dark: 0 0 0 2px var(--shell-dark), 0 0 0 4px rgba(255, 255, 255, 0.28);
@@ -291,6 +322,50 @@ body {
 .hairline-t  { border-top: 1px solid var(--hairline); }
 .hairline-r  { border-right: 1px solid var(--hairline); }
 .hairline-l  { border-left: 1px solid var(--hairline); }
+
+/* ─── Elevated surfaces ──────────────────────────────────────────────────
+ * Sober 3D system: a cool border, a full multi-layer shadow (with the
+ * inset highlight that simulates a top "sheen"), and a soft surface
+ * gradient that prevents the card from reading as a flat rectangle.
+ * Apply on admin sections that should clearly lift off the canvas.
+ *
+ *   .elev-card             → standard panel (most cards)
+ *   .elev-card-strong      → hero / protagonist surfaces
+ *   .elev-card-interactive → clickable cards: subtle hover lift
+ *
+ * These never set padding, radius or width — those stay with the
+ * consumer so we don't accidentally flatten existing layouts. */
+.elev-card {
+  background-color: var(--surface-0);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--shadow-card);
+}
+
+.elev-card-strong {
+  background-image: linear-gradient(180deg, #ffffff 0%, #fafbfd 100%);
+  background-color: var(--surface-0);
+  border: 1px solid var(--card-border-strong);
+  box-shadow: var(--shadow-elevated);
+}
+
+.elev-card-interactive {
+  background-color: var(--surface-0);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--shadow-card);
+  transition:
+    border-color var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+}
+.elev-card-interactive:hover {
+  border-color: var(--card-border-strong);
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-1px);
+}
+.elev-card-interactive:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-card);
+}
 
 .text-display {
   font-family: var(--font-display);

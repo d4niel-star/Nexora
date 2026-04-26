@@ -219,7 +219,7 @@ function OverviewPanel({ carriers }: { carriers: ReadonlyArray<CarrierEntry> }) 
           <li key={meta.id}>
             <Link
               href={`/admin/shipping/${meta.slug}`}
-              className="group block rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6 transition-colors hover:border-[color:var(--hairline-strong)] hover:bg-[var(--surface-1)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+              className="group block rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6 shadow-[var(--shadow-card)] transition-[colors,box-shadow] hover:border-[color:var(--hairline-strong)] hover:shadow-[var(--shadow-elevated)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3">
@@ -261,7 +261,7 @@ function OverviewPanel({ carriers }: { carriers: ReadonlyArray<CarrierEntry> }) 
         ))}
       </ul>
 
-      <section className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6">
+      <section className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6 shadow-[var(--shadow-card)]">
         <h2 className="text-[14px] font-semibold text-ink-0">¿Cómo funciona?</h2>
         <ol className="mt-3 space-y-2 text-[12px] leading-[1.6] text-ink-5">
           <li>
@@ -347,7 +347,7 @@ function StatCard({
           ? "text-[color:var(--signal-danger)]"
           : "text-ink-0";
   return (
-    <div className="rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-4 py-3">
+    <div className="rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-4 py-3 shadow-[var(--shadow-card)]">
       <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">
         {label}
       </p>

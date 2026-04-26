@@ -306,7 +306,7 @@ export function StorePage({
         </div>
       </motion.header>
 
-      <div className="relative overflow-hidden rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)]">
+      <div className="relative overflow-hidden rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] shadow-[var(--shadow-elevated)]">
         <div
           aria-label="Secciones de tienda"
           className="flex items-center gap-1 overflow-x-auto border-b border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 py-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
