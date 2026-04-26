@@ -363,7 +363,12 @@ export function AdminShell({
   );
 
   return (
-    <div className="flex h-screen bg-[var(--admin-canvas)] font-sans text-ink-0">
+    // Outer wrapper is the navy frame: sidebar and topbar (both already
+    // navy) read as a single continuous brand chrome instead of panels
+    // pasted onto a grey page. The light canvas now lives inside a
+    // floating paper with rounded corners, the way Linear / Vercel /
+    // Raycast structure their admin shells.
+    <div className="flex h-screen bg-[var(--shell-dark)] font-sans text-ink-0">
       {/* Mobile sidebar overlay */}
       {sidebarOpen ? (
         <div
@@ -388,8 +393,9 @@ export function AdminShell({
         {sidebarContent}
       </aside>
 
-      {/* Main column */}
-      <main className="flex flex-1 flex-col overflow-hidden bg-[var(--admin-canvas)]">
+      {/* Main column — transparent so the navy frame shows through; the
+          floating paper inside the content area carries the light canvas. */}
+      <main className="flex flex-1 flex-col overflow-hidden">
         {/* Topbar */}
         <div className="flex h-14 shrink-0 items-center justify-between border-b border-[color:var(--chrome-border)] bg-[var(--chrome-bg)] px-4 md:px-8">
           <div className="flex items-center gap-3">
@@ -416,25 +422,39 @@ export function AdminShell({
           />
         </div>
 
-        {/* Dunning banner — persistent, above content */}
+        {/* Dunning banner — persistent, sits in the navy frame above the
+            floating paper so it stays visually attached to the chrome. */}
         {dunningBanner}
 
-        {/* Content */}
-        <div className="flex-1 overflow-auto">
-          {pathname.startsWith("/admin/store-ai/editor") ? (
-            <div className="h-full">
-              {children}
+        {/* Content area.
+            • The store-ai/editor route is full-bleed (its own copilot UI)
+              and skips the paper entirely.
+            • Every other route renders the canvas inside a floating
+              "paper": small navy gutter on three sides, rounded top
+              corners, a soft hairline + shadow-soft. The canvas keeps
+              its --admin-canvas tone so cards still read on the
+              canonical Nexora surface; only the wrapper changes. */}
+        {pathname.startsWith("/admin/store-ai/editor") ? (
+          <div className="flex-1 overflow-auto">
+            <div className="h-full">{children}</div>
+          </div>
+        ) : (
+          <div className="flex-1 overflow-hidden p-1.5 pt-0 md:p-3 md:pt-0">
+            <div
+              className="h-full overflow-auto rounded-t-[var(--r-xl)] border border-b-0 border-[color:var(--hairline)] bg-[var(--admin-canvas)] shadow-[var(--shadow-soft)]"
+            >
+              {pathname.startsWith("/admin/store-ai/themes") ? (
+                <div className="mx-auto max-w-[1440px] px-4 py-8 md:px-10 md:py-12">
+                  {children}
+                </div>
+              ) : (
+                <div className="mx-auto max-w-[1400px] px-4 py-8 md:px-10 md:py-12">
+                  {children}
+                </div>
+              )}
             </div>
-          ) : pathname.startsWith("/admin/store-ai/themes") ? (
-            <div className="mx-auto max-w-[1440px] px-4 py-8 md:px-10 md:py-12">
-              {children}
-            </div>
-          ) : (
-            <div className="mx-auto max-w-[1400px] px-4 py-8 md:px-10 md:py-12">
-              {children}
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </main>
 
       {/* ── Nexora IA Global Chat ──────────────────────────────── */}
