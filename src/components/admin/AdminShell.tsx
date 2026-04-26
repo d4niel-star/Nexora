@@ -196,7 +196,7 @@ const primaryNav: readonly NavEntry[] = [
     label: "Apps y herramientas",
     icon: Puzzle,
     items: [
-      { kind: "leaf", href: "/admin/apps", label: "Apps", icon: Puzzle },
+      { kind: "leaf", href: "/admin/marketplace", label: "Marketplace", icon: Puzzle },
       { kind: "leaf", href: "/admin/market", label: "Herramientas", icon: Wrench },
     ],
   },

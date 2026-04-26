@@ -1,15 +1,21 @@
 // ─── Nexora Apps · Central CTA resolver ───
 //
-// Single source of truth for the primary action button shown on every app
-// surface (detail page, catalogue cards, in-product widgets). The rule set
-// comes from the V3 go-live spec:
+// Single source of truth for the primary action button shown on every
+// internal-app surface (detail page, marketplace cards, in-product widgets).
 //
-//   coming-soon                                    → "Próximamente"        (disabled)
-//   plan-locked                                    → "Ver plan <minPlan>"  → /admin/billing
-//   available + !installed                         → "Instalar app"       (install action)
-//   available + installed + needs_setup            → "Configurar app"     → setupRoute
-//   available + installed + disabled               → "Reactivar app"      (toggle action)
-//   available + installed + active                 → "Abrir app"          → manageRoute
+// IMPORTANT: this file resolves CTAs for *internal Nexora tools* — every
+// item in `APP_REGISTRY` is built by us and either lives as a `builtin`
+// capability or as a `deep-link` to another admin screen. None of these
+// are third-party apps. That's why we deliberately avoid the "Instalar"
+// label here:
+//
+//   coming-soon                                       → "Próximamente"  (disabled)
+//   plan-locked                                       → "Ver plan <X>"  → /admin/billing
+//   available + !installed + installMode=builtin      → "Activar"       (install action — toggles a tenant row)
+//   available + !installed + installMode=deep-link    → "Configurar"    → setupRoute (no fake install)
+//   available + installed + needs_setup               → "Configurar"    → setupRoute
+//   available + installed + disabled                  → "Reactivar"     (toggle action)
+//   available + installed + active                    → "Abrir"         → manageRoute
 //
 // No callsite should re-derive the label or the href outside of this file.
 // The only input needed is the serialised catalogue item (already carries
@@ -77,19 +83,29 @@ export function resolveAppCta(item: AppCatalogItem): AppCta {
 
   // availability.kind === "available" beyond this point.
   if (!state.installed) {
-    return { kind: "install", label: "Instalar app", action: "install" };
+    // deep-link tools live elsewhere in the admin — installing them is a
+    // no-op from the user's point of view, so the CTA should just take
+    // them to the configuration screen that owns the capability.
+    if (definition.installMode === "deep-link") {
+      const href = definition.setupRoute ?? definition.manageRoute ?? `/admin/apps/${definition.slug}`;
+      return { kind: "setup", label: "Configurar", href };
+    }
+    // builtin tools need a tenant-level row in InstalledApp before the
+    // capability runs (cron, page mount, etc.). The action label reflects
+    // that this is an internal Nexora tool, not a third-party install.
+    return { kind: "install", label: "Activar", action: "install" };
   }
 
   if (state.status === "needs_setup") {
     const href = definition.setupRoute ?? definition.manageRoute ?? `/admin/apps/${definition.slug}`;
-    return { kind: "setup", label: "Configurar app", href };
+    return { kind: "setup", label: "Configurar", href };
   }
 
   if (state.status === "disabled") {
-    return { kind: "reactivate", label: "Reactivar app", action: "toggle" };
+    return { kind: "reactivate", label: "Reactivar", action: "toggle" };
   }
 
   // status === "active"
   const href = definition.manageRoute ?? definition.setupRoute ?? `/admin/apps/${definition.slug}`;
-  return { kind: "open", label: "Abrir app", href };
+  return { kind: "open", label: "Abrir", href };
 }
