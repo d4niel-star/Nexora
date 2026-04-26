@@ -134,23 +134,23 @@ export function InventoryClient({ items, variantIntel, focusVariantId, focusActi
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-32">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+      {/* Header — matches Catalog scale for a coherent operational tone */}
+      <header className="flex flex-col items-start justify-between gap-3 md:flex-row md:items-end">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-[28px] lg:text-[32px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0">Control de inventario.</h1>
+            <h1 className="text-[24px] font-semibold leading-[1.1] tracking-[-0.025em] text-ink-0 md:text-[28px]">Inventario</h1>
             {outOfStockCount > 0 && (
               <span className="inline-flex items-center gap-1.5 h-6 px-2 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] text-[color:var(--signal-danger)] text-[10px] font-medium uppercase tracking-[0.14em]">
                 <AlertCircle className="w-3 h-3" strokeWidth={1.75} /> {outOfStockCount} agotado{outOfStockCount > 1 ? "s" : ""}
               </span>
             )}
           </div>
-          <p className="mt-2 text-[14px] leading-[1.55] text-ink-5">Stock real por variante de producto. Datos en tiempo real desde la base de datos.</p>
+          <p className="mt-1 text-[13px] leading-[1.5] text-ink-5">Stock real por variante. Ajustá ingresos, mermas o conteos físicos en cualquier momento.</p>
         </div>
-      </div>
+      </header>
 
-      {/* Main Container */}
-      <div className="bg-[var(--surface-0)] border border-[color:var(--hairline)] rounded-[var(--r-md)] overflow-hidden relative">
+      {/* Main panel — same elevation utility as Catalog for visual coherence */}
+      <section className="elev-card-strong relative overflow-hidden rounded-[var(--r-lg)]">
         {/* Tabs */}
         <div className="flex items-center gap-8 px-6 border-b border-[color:var(--hairline)] overflow-x-auto no-scrollbar bg-[var(--surface-1)]">
           {tabs.map((tab) => (
@@ -326,7 +326,7 @@ export function InventoryClient({ items, variantIntel, focusVariantId, focusActi
         )}
         </>
         )}
-      </div>
+      </section>
 
       {/* Adjust Stock Modal */}
       {adjustTarget && (
