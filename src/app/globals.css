@@ -519,34 +519,43 @@ body {
   border-radius: var(--r-full) !important;
 }
 
-/* ─── Global CTA shape contract ────────────────────────────────────────
- * Force pill silhouette on every Nexora CTA pattern without touching
- * the 50+ components that already encode the visual contract through
- * Tailwind utilities. Specificity (0,2,1 at minimum) wins over
- * Tailwind's generic .rounded-X utilities (0,1,0) so callers keep
- * their fill, padding and size while inheriting the pill shape
- * system-wide.
+/* ─── Global pill contract for buttons ────────────────────────
  *
- * Two patterns covered:
- *   1. Primary CTA  → bg-ink-0 + text-ink-12  (the Nexora navy fill)
- *   2. Secondary    → bg-surface-paper / bg-white + any border class
+ * The admin has ~300 buttons across 80 files, each composing its own
+ * background, border, padding and color. Migrating that file-by-file
+ * is high-risk and high-noise. Instead, we match the one thing every
+ * Nexora button shares: a Tailwind rounded-* utility on an actual
+ * action element (<button> or <a>).
  *
- * Deliberately scoped to <button> and <a>: no divs, no banners, no
- * decorative surfaces match, only real action elements.
+ * Specificity: 0,4,1 (one type + one class + three :not pseudo-class)
+ * — beats every plain Tailwind utility (.rounded-md, .rounded-lg,
+ * .rounded-[var(--r-sm)] etc, all of which are 0,1,0 for the class
+ * portion). So the consumer keeps their fill, padding, size and the
+ * inherited radius is forced to var(--r-full).
  *
- * Scope-out: anything that opts out by setting role="tab" stays with
- * its declared radius (tab strips read better as squared chips). */
-button.bg-ink-0.text-ink-12:not([role="tab"]),
-a.bg-ink-0.text-ink-12:not([role="tab"]),
-button[class*="bg-[var(--brand)]"]:not([role="tab"]),
-a[class*="bg-[var(--brand)]"]:not([role="tab"]) {
-  border-radius: var(--r-full);
-}
-
-button.bg-surface-paper[class*="border"]:not([role="tab"]):not([role="combobox"]),
-a.bg-surface-paper[class*="border"]:not([role="tab"]),
-button.bg-white[class*="border"]:not([role="tab"]):not([role="combobox"]),
-a.bg-white[class*="border"]:not([role="tab"]) {
+ * Opt-outs are explicit and minimal:
+ *   - [role="tab"]      : tab strips read better as squared chips.
+ *   - [role="combobox"] : selects/comboboxes whose chevron breaks pill.
+ *   - [data-square]     : manual escape hatch for any case where pill
+ *                         is wrong (segmented controls, bare icon
+ *                         square buttons that need 90° corners, etc).
+ *                         Authors set data-square on the element to
+ *                         opt out without inventing a new utility.
+ *
+ * NB: the bracketed selectors below escape the [, ], ( and ) literals
+ * because Tailwind compiles classes like `rounded-[var(--r-sm)]` to
+ * the CSS class name `.rounded-\[var\(--r-sm\)\]`. Same characters
+ * appear here so they bind 1:1. */
+:is(button, a).rounded-sm:not([role="tab"]):not([role="combobox"]):not([data-square]),
+:is(button, a).rounded-md:not([role="tab"]):not([role="combobox"]):not([data-square]),
+:is(button, a).rounded-lg:not([role="tab"]):not([role="combobox"]):not([data-square]),
+:is(button, a).rounded-xl:not([role="tab"]):not([role="combobox"]):not([data-square]),
+:is(button, a).rounded-2xl:not([role="tab"]):not([role="combobox"]):not([data-square]),
+:is(button, a).rounded-\[var\(--r-xs\)\]:not([role="tab"]):not([role="combobox"]):not([data-square]),
+:is(button, a).rounded-\[var\(--r-sm\)\]:not([role="tab"]):not([role="combobox"]):not([data-square]),
+:is(button, a).rounded-\[var\(--r-md\)\]:not([role="tab"]):not([role="combobox"]):not([data-square]),
+:is(button, a).rounded-\[var\(--r-lg\)\]:not([role="tab"]):not([role="combobox"]):not([data-square]),
+:is(button, a).rounded-\[var\(--r-xl\)\]:not([role="tab"]):not([role="combobox"]):not([data-square]) {
   border-radius: var(--r-full);
 }
 

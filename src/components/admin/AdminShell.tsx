@@ -469,8 +469,8 @@ function SidebarLeaf({ leaf, pathname, onNavigate, nested = false }: SidebarLeaf
       {active && (
         <span
           aria-hidden
-          className="absolute left-0 top-1/2 h-5 -translate-y-1/2 rounded-r-full bg-[var(--accent-400)]"
-          style={{ width: 2 }}
+          className="absolute left-0 top-1/2 h-5 -translate-y-1/2 rounded-r-full bg-[var(--sidebar-fg-active)]"
+          style={{ width: 3 }}
         />
       )}
       <Link
@@ -516,8 +516,8 @@ function SidebarGroup({ group, pathname, expanded, onToggle, onNavigate }: Sideb
       {active && !expanded && (
         <span
           aria-hidden
-          className="absolute left-0 top-1/2 h-5 -translate-y-1/2 rounded-r-full bg-[var(--accent-400)]"
-          style={{ width: 2 }}
+          className="absolute left-0 top-1/2 h-5 -translate-y-1/2 rounded-r-full bg-[var(--sidebar-fg-active)]"
+          style={{ width: 3 }}
         />
       )}
       <button
