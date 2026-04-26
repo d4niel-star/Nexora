@@ -478,7 +478,7 @@ function SidebarLeaf({ leaf, pathname, onNavigate, nested = false }: SidebarLeaf
         onClick={onNavigate}
         aria-current={active ? "page" : undefined}
         className={cn(
-          "flex items-center gap-2.5 rounded-[var(--r-sm)] py-2 text-[13px] transition-colors outline-none focus-visible:shadow-[var(--shadow-focus)]",
+          "flex items-center gap-2.5 rounded-[var(--r-sm)] py-2 text-[13px] transition-colors outline-none focus-visible:shadow-[var(--shadow-focus-on-dark)]",
           nested ? "pl-9 pr-3" : "px-3",
           active
             ? "bg-[var(--sidebar-active-bg)] font-medium text-[var(--sidebar-fg-active)]"
@@ -526,7 +526,7 @@ function SidebarGroup({ group, pathname, expanded, onToggle, onNavigate }: Sideb
         aria-expanded={expanded}
         aria-controls={panelId}
         className={cn(
-          "flex w-full items-center gap-2.5 rounded-[var(--r-sm)] px-3 py-2 text-[13px] transition-colors outline-none focus-visible:shadow-[var(--shadow-focus)]",
+          "flex w-full items-center gap-2.5 rounded-[var(--r-sm)] px-3 py-2 text-[13px] transition-colors outline-none focus-visible:shadow-[var(--shadow-focus-on-dark)]",
           active
             ? "font-medium text-[var(--sidebar-fg-active)]"
             : "text-[var(--sidebar-fg)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-fg-active)]",

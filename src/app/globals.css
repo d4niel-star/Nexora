@@ -142,8 +142,16 @@
     0 16px 32px -8px rgba(15, 23, 42, 0.14),
     0 40px 80px -20px rgba(15, 23, 42, 0.10);
   --shadow-sm: var(--shadow-soft);
-  --shadow-focus: 0 0 0 2px var(--surface-0), 0 0 0 4px var(--brand-ring);
-  --shadow-focus-on-dark: 0 0 0 2px var(--shell-dark), 0 0 0 4px rgba(255, 255, 255, 0.32);
+  /* Focus rings — single translucent halo, no hard inner ring.
+     The previous double-ring (surface-0 inner + accent outer) read as
+     a rectangular blue-on-white frame on top of any element that
+     wasn't already pill-shaped. The new rings are a single soft halo
+     that inherits the element's border-radius, so a pill button gets a
+     pill ring and a card-radius button gets a card-radius ring. Width
+     dropped from 4px to 3px so the halo stays accessible without
+     reading as a heavy frame. */
+  --shadow-focus: 0 0 0 3px var(--brand-ring);
+  --shadow-focus-on-dark: 0 0 0 3px rgba(255, 255, 255, 0.36);
 
   /* ─── Typography ─── */
   --font-sans: var(--font-inter), "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -512,18 +520,33 @@ body {
 }
 
 /* ─── Global CTA shape contract ────────────────────────────────────────
- * Force pill silhouette on every Nexora primary CTA without touching
+ * Force pill silhouette on every Nexora CTA pattern without touching
  * the 50+ components that already encode the visual contract through
- * `bg-ink-0 text-ink-12`. Specificity (0,2,1) wins over Tailwind's
- * generic .rounded-X utilities (0,1,0) so callers keep their fill,
- * padding and size while inheriting the pill shape system-wide.
+ * Tailwind utilities. Specificity (0,2,1 at minimum) wins over
+ * Tailwind's generic .rounded-X utilities (0,1,0) so callers keep
+ * their fill, padding and size while inheriting the pill shape
+ * system-wide.
+ *
+ * Two patterns covered:
+ *   1. Primary CTA  → bg-ink-0 + text-ink-12  (the Nexora navy fill)
+ *   2. Secondary    → bg-surface-paper / bg-white + any border class
  *
  * Deliberately scoped to <button> and <a>: no divs, no banners, no
- * decorative surfaces match, only real action elements. */
-button.bg-ink-0.text-ink-12,
-a.bg-ink-0.text-ink-12,
-button[class*="bg-[var(--brand)]"],
-a[class*="bg-[var(--brand)]"] {
+ * decorative surfaces match, only real action elements.
+ *
+ * Scope-out: anything that opts out by setting role="tab" stays with
+ * its declared radius (tab strips read better as squared chips). */
+button.bg-ink-0.text-ink-12:not([role="tab"]),
+a.bg-ink-0.text-ink-12:not([role="tab"]),
+button[class*="bg-[var(--brand)]"]:not([role="tab"]),
+a[class*="bg-[var(--brand)]"]:not([role="tab"]) {
+  border-radius: var(--r-full);
+}
+
+button.bg-surface-paper[class*="border"]:not([role="tab"]):not([role="combobox"]),
+a.bg-surface-paper[class*="border"]:not([role="tab"]),
+button.bg-white[class*="border"]:not([role="tab"]):not([role="combobox"]),
+a.bg-white[class*="border"]:not([role="tab"]) {
   border-radius: var(--r-full);
 }
 
