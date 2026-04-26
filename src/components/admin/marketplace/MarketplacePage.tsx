@@ -480,10 +480,7 @@ function ExternalAction({ app }: { app: ExternalAppDefinition }) {
 
   if (app.action.kind === "deep-link") {
     return (
-      <Link
-        href={app.action.href}
-        className="inline-flex h-8 items-center gap-1 rounded-[var(--r-sm)] bg-ink-0 px-3 text-[12px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
-      >
+      <Link href={app.action.href} className="btn-primary h-8 px-3 text-[12px]">
         {app.action.label}
         <ArrowUpRight className="h-3 w-3" strokeWidth={2} />
       </Link>
@@ -496,7 +493,7 @@ function ExternalAction({ app }: { app: ExternalAppDefinition }) {
       href={app.action.href}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex h-8 items-center gap-1 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-paper)] px-3 text-[12px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)]"
+      className="btn-secondary h-8 px-3 text-[12px]"
     >
       {app.action.label}
       <ExternalLink className="h-3 w-3" strokeWidth={2} />
