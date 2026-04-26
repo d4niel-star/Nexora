@@ -396,8 +396,9 @@ export function AdminShell({
       {/* Main column — transparent so the navy frame shows through; the
           floating paper inside the content area carries the light canvas. */}
       <main className="flex flex-1 flex-col overflow-hidden">
-        {/* Topbar */}
-        <div className="flex h-14 shrink-0 items-center justify-between border-b border-[color:var(--chrome-border)] bg-[var(--chrome-bg)] px-4 md:px-8">
+        {/* Topbar — no border-b: the navy frame flows continuously into
+            the gutter, so a separator hairline reads as visual noise. */}
+        <div className="flex h-14 shrink-0 items-center justify-between bg-[var(--chrome-bg)] px-4 md:px-8">
           <div className="flex items-center gap-3">
             <button
               aria-label="Abrir menú"
@@ -445,7 +446,7 @@ export function AdminShell({
           // gives the paper a premium "lifted" feel against the navy.
           <div className="flex-1 overflow-hidden p-2 md:p-3">
             <div
-              className="h-full overflow-auto rounded-[var(--r-xl)] border border-[color:var(--hairline)] bg-[var(--admin-canvas)] shadow-[var(--shadow-elevated)]"
+              className="h-full overflow-auto rounded-[var(--r-xl)] bg-[var(--admin-canvas)] shadow-[var(--shadow-elevated)]"
             >
               {pathname.startsWith("/admin/store-ai/themes") ? (
                 <div className="mx-auto max-w-[1440px] px-4 py-8 md:px-10 md:py-12">
