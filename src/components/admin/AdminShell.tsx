@@ -233,6 +233,9 @@ interface AdminShellProps {
   children: React.ReactNode;
   storeName: string;
   storeInitials: string;
+  /** Authenticated user's email — surfaced in the topbar dropdown so the
+   *  account identity is visible without repeating the store name. */
+  userEmail?: string | null;
   dunningBanner?: React.ReactNode;
   /** Enables cross-session assistant memory + trace telemetry for the global chat. */
   assistantMemoryScope?: AssistantMemoryScope;
@@ -242,6 +245,7 @@ export function AdminShell({
   children,
   storeName,
   storeInitials,
+  userEmail,
   dunningBanner,
   assistantMemoryScope,
 }: AdminShellProps) {
@@ -405,7 +409,11 @@ export function AdminShell({
               {storeName}
             </span>
           </div>
-          <TopbarUserMenu storeName={storeName} storeInitials={storeInitials} />
+          <TopbarUserMenu
+            storeName={storeName}
+            storeInitials={storeInitials}
+            userEmail={userEmail}
+          />
         </div>
 
         {/* Dunning banner — persistent, above content */}

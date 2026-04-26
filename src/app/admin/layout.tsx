@@ -44,6 +44,7 @@ export default async function AdminLayout({
     <AdminShell
       storeName={store.name}
       storeInitials={initials}
+      userEmail={user?.email ?? null}
       dunningBanner={dunningState ? <DunningBanner state={dunningState} /> : undefined}
       assistantMemoryScope={assistantMemoryScope}
     >
