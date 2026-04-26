@@ -35,9 +35,13 @@
    * inputs (the "paper" the merchant writes on) and overlays/popovers.
    * The canvas (admin shell behind cards) is pulled a touch deeper to
    * keep the elevation differential intact. */
-  --admin-canvas: #e9edf1;
+  /* Canvas pulled a touch deeper + more matte so cards (surface-paper /
+     surface-0) and hairlines clearly read as lifted from the page.
+     Surface-1 is realigned just above the canvas so the elevation
+     hierarchy (paper > 0 > 1 > canvas) keeps a perceivable step. */
+  --admin-canvas: #dde4ec;
   --surface-0: #f7f9fa;
-  --surface-1: #f1f4f7;
+  --surface-1: #e9eef3;
   --surface-2: #e7ecf0;
   --surface-3: #d4dce3;
   /* Pure white token — used by inputs and a couple of intentional
@@ -56,7 +60,7 @@
   /* Slightly cooler + a touch more presence so cards read as
      defined surfaces, not floating regions. Still well below
      "border negro" territory (≈ 11% on a near-black ink). */
-  --hairline: rgba(15, 23, 42, 0.11);
+  --hairline: rgba(15, 23, 42, 0.13);
   --hairline-strong: rgba(15, 23, 42, 0.18);
   /* Card border tokens — slightly cooler, used explicitly by
      elev-card utilities to lift surfaces from the canvas. */
