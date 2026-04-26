@@ -22,12 +22,22 @@
   --ink-11: #f0f2f7;
   --ink-12: #ffffff;
 
-  /* ─── Surfaces (slate-mist canvas; raised cards stay pure white) ─── */
-  --admin-canvas: #eef2f5;
-  --surface-0: #ffffff;
-  --surface-1: #f8fafb;
-  --surface-2: #eaf0f3;
-  --surface-3: #d8e0e6;
+  /* ─── Surfaces (slate-mist canvas; cards use cool off-white) ─────────
+   * Cards/panels sit on a cool off-white (#F7F9FA), not pure white, so
+   * the hairline border and the multi-layer shadow have something to
+   * read against. Pure white (#ffffff) is now reserved for highlights,
+   * inputs (the "paper" the merchant writes on) and overlays/popovers.
+   * The canvas (admin shell behind cards) is pulled a touch deeper to
+   * keep the elevation differential intact. */
+  --admin-canvas: #e9edf1;
+  --surface-0: #f7f9fa;
+  --surface-1: #f1f4f7;
+  --surface-2: #e7ecf0;
+  --surface-3: #d4dce3;
+  /* Pure white token — used by inputs and a couple of intentional
+     overlays. Kept separate from surface-0 so we can tune them
+     independently without breaking either contract. */
+  --surface-paper: #ffffff;
 
   /* ─── Dark shell (admin sidebar, marketing chrome, topbar) ─── */
   --shell-dark: #06070b;
@@ -43,9 +53,9 @@
      elev-card utilities to lift surfaces from the canvas. */
   --card-border: rgba(15, 23, 42, 0.10);
   --card-border-strong: rgba(15, 23, 42, 0.16);
-  /* White sheen on top of cards — the cheap-but-effective trick for
-     a "glass-lifted" feel without neumorphism. */
-  --card-highlight: rgba(255, 255, 255, 0.85);
+  /* White sheen on top of cards — on the new off-white surface this
+     needs a touch more opacity to still read as a clean top edge. */
+  --card-highlight: rgba(255, 255, 255, 0.95);
 
   /* ─── Marketing / topbar chrome (on dark) ─── */
   --chrome-bg: var(--shell-dark);
@@ -342,7 +352,10 @@ body {
 }
 
 .elev-card-strong {
-  background-image: linear-gradient(180deg, #ffffff 0%, #fafbfd 100%);
+  /* Top reads as near-pure white (paper sheen), bottom settles into
+     the cool off-white surface — produces a discreet vertical lift
+     that pairs with the inset highlight in --shadow-elevated. */
+  background-image: linear-gradient(180deg, #fbfcfd 0%, #f4f7f9 100%);
   background-color: var(--surface-0);
   border: 1px solid var(--card-border-strong);
   box-shadow: var(--shadow-elevated);
@@ -455,7 +468,9 @@ body {
   width: 100%;
   border-radius: var(--r-md);
   border: 1px solid var(--ink-9);
-  background-color: var(--surface-0);
+  /* Inputs sit ABOVE cards visually — pure white "paper" against the
+     off-white card surface gives them their own focus weight. */
+  background-color: var(--surface-paper);
   padding: 0.625rem 1rem;
   font-size: 14px;
   font-weight: 500;
