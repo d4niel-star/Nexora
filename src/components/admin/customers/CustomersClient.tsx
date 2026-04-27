@@ -8,6 +8,8 @@ import { CustomerBadge } from "./CustomerBadge";
 import type { AggregatedCustomer } from "@/lib/customers/queries";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
+import { AdminToolbar } from "@/components/admin/primitives/AdminToolbar";
+import { AdminPillTabs, type AdminPillTab } from "@/components/admin/primitives/AdminPillTabs";
 
 type TabValue = "all" | "new" | "recurring" | "vip" | "inactive" | "risk";
 
@@ -58,46 +60,42 @@ export function CustomersClient({ initialCustomers }: { initialCustomers: Aggreg
     return name.substring(0, 2).toUpperCase() || "--";
   }
 
+  const pillTabs: AdminPillTab<TabValue>[] = tabs.map((t) => ({
+    value: t.value,
+    label: t.label,
+    count: t.count,
+    warning: t.value === "risk" && t.count > 0,
+  }));
+
   return (
-    <div className="animate-in fade-in space-y-8 pb-32 duration-700">
+    <div className="animate-in fade-in space-y-6 pb-32 duration-700">
       <AdminPageHeader
-        index="01"
         eyebrow="Clientes"
         title="Clientes"
         subtitle="Base agregada de clientes según órdenes abonadas en la plataforma."
       />
 
-      <div className="relative overflow-hidden rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] shadow-[var(--shadow-soft)]">
-        <div className="flex items-center gap-8 overflow-x-auto border-b border-[color:var(--hairline)] bg-[var(--surface-1)] px-6 no-scrollbar">
-          {tabs.map((tab) => (
-            <button
-              key={tab.value}
-              className={cn("group relative whitespace-nowrap py-4 text-[13px] font-semibold transition-colors", activeTab === tab.value ? "text-ink-0" : "text-ink-5 hover:text-ink-0")}
-              onClick={() => setActiveTab(tab.value)}
-            >
-              <span className="flex items-center gap-2">
-                {tab.label}
-                <span className={cn("rounded-[var(--r-xs)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em]", activeTab === tab.value ? "bg-[var(--surface-3)] text-ink-0" : "bg-[var(--surface-2)] text-ink-5 group-hover:bg-[var(--surface-3)]")}>{tab.count}</span>
-              </span>
-              {activeTab === tab.value ? <div className="absolute inset-x-0 bottom-0 h-0.5 rounded-t-full bg-ink-0" /> : null}
-            </button>
-          ))}
-        </div>
+      <div className="admin-table-frame relative">
+        <AdminPillTabs
+          tabs={pillTabs}
+          active={activeTab}
+          onChange={(v) => setActiveTab(v)}
+        />
 
-        <div className="p-4 border-b border-[color:var(--hairline)] bg-[var(--surface-0)]">
-          <div className="relative w-full md:max-w-md group">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-6 group-focus-within:text-accent-500 transition-colors" />
-            <input
-              type="text"
-              placeholder="Buscar por nombre o email..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-[var(--surface-1)] border border-[color:var(--hairline)] rounded-[var(--r-sm)] text-[13px] font-medium focus:outline-none focus:bg-[var(--surface-0)] focus:border-[var(--accent-500)] focus:shadow-[var(--shadow-focus)] text-ink-0 placeholder:text-ink-6 transition-[box-shadow,border-color]"
-            />
-          </div>
-        </div>
+        <AdminToolbar
+          search={{
+            value: searchQuery,
+            onChange: setSearchQuery,
+            placeholder: "Buscar por nombre o email…",
+          }}
+          actions={
+            <span className="text-[11.5px] tabular-nums text-ink-5">
+              {filteredCustomers.length} de {initialCustomers.length} clientes
+            </span>
+          }
+        />
 
-        <div className="min-h-[400px] bg-[var(--surface-0)] overflow-x-auto">
+        <div className="min-h-[400px] overflow-x-auto">
           {filteredCustomers.length === 0 ? (
             <EmptyState
               icon={Users}
@@ -124,18 +122,18 @@ export function CustomersClient({ initialCustomers }: { initialCustomers: Aggreg
               }
             />
           ) : (
-            <table className="w-full min-w-[1000px] text-left">
+            <table className="admin-table min-w-[1000px]">
               <thead>
-                <tr className="border-b border-[color:var(--hairline)] bg-[var(--surface-1)]">
-                  <th className="px-6 py-4 text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">Cliente</th>
-                  <th className="px-6 py-4 text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">Canal</th>
-                  <th className="px-6 py-4 text-[11px] text-right font-medium uppercase tracking-[0.18em] text-ink-5">Pedidos</th>
-                  <th className="px-6 py-4 text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">Última compra</th>
-                  <th className="px-6 py-4 text-[11px] text-right font-medium uppercase tracking-[0.18em] text-ink-5">Ticket M.</th>
-                  <th className="px-6 py-4 text-[11px] text-right font-medium uppercase tracking-[0.18em] text-ink-5">Total gastado</th>
-                  <th className="px-6 py-4 text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">Segmento</th>
-                  <th className="px-6 py-4 text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">Estado</th>
-                  <th className="px-6 py-4 w-12"></th>
+                <tr>
+                  <th>Cliente</th>
+                  <th>Canal</th>
+                  <th style={{ textAlign: "right" }}>Pedidos</th>
+                  <th>Última compra</th>
+                  <th style={{ textAlign: "right" }}>Ticket M.</th>
+                  <th style={{ textAlign: "right" }}>Total gastado</th>
+                  <th>Segmento</th>
+                  <th>Estado</th>
+                  <th style={{ width: "3rem" }}></th>
                 </tr>
               </thead>
               {/* Rows are now a cross-module hyperlink. Clicking any cell
@@ -144,11 +142,11 @@ export function CustomersClient({ initialCustomers }: { initialCustomers: Aggreg
                   URL param effect. No duplicate order table or CRM
                   inside customers — the existing orders surface is
                   the single source of truth for per-customer history. */}
-              <tbody className="divide-y divide-[color:var(--hairline)]">
+              <tbody>
                 {filteredCustomers.map((c) => (
                   <tr
                     key={c.id}
-                    className="group bg-[var(--surface-0)] transition-colors hover:bg-[var(--surface-1)] cursor-pointer"
+                    className="admin-table-row group cursor-pointer"
                     onClick={() => {
                       // Programmatic navigation to keep <tr> semantics
                       // (nested <a> inside tbody rows is invalid HTML).

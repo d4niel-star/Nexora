@@ -82,7 +82,6 @@ export function IntegrationsClient({ initialData, healthData }: { initialData: U
   return (
     <div className="animate-in fade-in space-y-8 pb-32 duration-700">
       <AdminPageHeader
-        index="01"
         eyebrow="Integraciones"
         title="Integraciones"
         subtitle="Pagos, logística, proveedores, retención y publicidad. Todas las conexiones reales de tu tienda, con diagnóstico y acción correcta."

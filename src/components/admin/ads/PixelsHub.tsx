@@ -26,6 +26,7 @@ import {
   savePixelConfig,
   type PixelConfigSnapshot,
 } from "@/lib/ads/pixels/actions";
+import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
 
 // ─── Píxeles y tags hub ─────────────────────────────────────────────────
 //
@@ -48,29 +49,14 @@ interface PixelsHubProps {
 
 export function PixelsHub({ storeId, configs }: PixelsHubProps) {
   return (
-    <div className="space-y-8">
-      <header className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 text-[12px] text-ink-6">
-            <Link href="/admin/ads/meta" className="hover:text-ink-2 transition-colors">
-              Marketing
-            </Link>
-            <span aria-hidden>›</span>
-            <span className="text-ink-2 font-medium">Píxeles y tags</span>
-          </div>
-          <h1 className="text-[28px] lg:text-[32px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0">
-            Píxeles y tags.
-          </h1>
-          <p className="text-[14px] leading-[1.55] text-ink-5 max-w-2xl">
-            Identificadores y tokens técnicos de cada plataforma. Estos valores son los que pegás
-            desde Events Manager / Google Tag Manager para que la atribución, las conversiones y
-            las audiencias funcionen correctamente. No son secretos pero sí son específicos de tu
-            cuenta — los almacenamos como configuración por proveedor.
-          </p>
-        </div>
-      </header>
+    <div className="space-y-7">
+      <AdminPageHeader
+        eyebrow="Marketing · Píxeles y tags"
+        title="Píxeles y tags"
+        subtitle="Identificadores y tokens técnicos de cada plataforma — los pegás desde Events Manager / Google Tag Manager para que atribución, conversiones y audiencias funcionen correctamente."
+      />
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
         {configs.map((snapshot) => {
           const meta = ADS_PROVIDERS[snapshot.provider];
           return (

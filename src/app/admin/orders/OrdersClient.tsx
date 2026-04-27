@@ -10,6 +10,9 @@ import { deriveOrderNextAction, orderNeedsAction, type OrderNextAction } from "@
 import { bulkUpdateFulfillment } from "@/lib/store-engine/orders/bulk-actions";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
+import { AdminMetric } from "@/components/admin/primitives/AdminMetric";
+import { AdminToolbar } from "@/components/admin/primitives/AdminToolbar";
+import { AdminPillTabs, type AdminPillTab } from "@/components/admin/primitives/AdminPillTabs";
 
 type TabValue = 'action' | 'all' | 'new' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
 
@@ -139,13 +142,19 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
     }
   };
 
+  // Map legacy tabs to AdminPillTab shape.
+  const pillTabs: AdminPillTab<TabValue>[] = tabs.map((t) => ({
+    value: t.value,
+    label: t.label,
+    count: t.count ?? null,
+    warning: t.value === "action" && (t.count ?? 0) > 0,
+  }));
+
   return (
-    <div className="space-y-7 animate-in fade-in duration-700 pb-32">
-      
+    <div className="space-y-6 animate-in fade-in duration-700 pb-32">
       {/* 1. Page Header */}
       {!hideHeader && (
         <AdminPageHeader
-          index="01"
           eyebrow="Pedidos"
           title="Pedidos"
           subtitle="Gestioná el motor logístico corporativo. Todo en un solo lugar."
@@ -154,110 +163,85 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
 
       {!hideHeader && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {/* Ventas reales is informational (money total), not a filter. */}
-          <div className="elev-card rounded-[var(--r-lg)] px-5 py-4">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-ink-6">Ventas reales</p>
-            <p className="mt-1 text-[22px] font-semibold tracking-[-0.02em] text-ink-0 tabular-nums">${realRevenue.toLocaleString("es-AR")}</p>
-            <p className="mt-1 text-xs font-medium text-ink-6">Solo pagos confirmados por webhook.</p>
-          </div>
-          {/* Clicking these two KPIs filters the table to the matching
-              work-queue subset. No invented counts: both numbers are
-              direct reads of order.paymentStatus and shippingStatus. */}
-          <button
-            type="button"
+          <AdminMetric
+            label="Ventas reales"
+            value={`$${realRevenue.toLocaleString("es-AR")}`}
+            tone="accent"
+            hint="Solo pagos confirmados por webhook."
+          />
+          <AdminMetric
+            label="Pendientes de pago"
+            value={String(pendingPayment.length)}
+            tone={pendingPayment.length > 0 ? "warning" : "neutral"}
+            hint="No cuentan como venta real."
             onClick={() => {
               setActiveTab("action");
               setSearchQuery("");
             }}
-            className="elev-card-interactive group text-left rounded-[var(--r-lg)] px-5 py-4 focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
-            aria-label="Ver pedidos pendientes de pago"
-          >
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-ink-6">Pendientes de pago</p>
-            <p className="mt-1 text-[22px] font-semibold tracking-[-0.02em] text-[color:var(--signal-warning)] tabular-nums">{pendingPayment.length}</p>
-            <p className="mt-1 text-xs font-medium text-ink-6">No cuentan como venta real.</p>
-          </button>
-          <button
-            type="button"
+          />
+          <AdminMetric
+            label="Por preparar"
+            value={String(toPrepare.length)}
+            hint="Pagados sin despacho final."
             onClick={() => {
               setActiveTab("action");
               setSearchQuery("");
             }}
-            className="elev-card-interactive group text-left rounded-[var(--r-lg)] px-5 py-4 focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
-            aria-label="Ver pedidos por preparar"
-          >
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-ink-6">Por preparar</p>
-            <p className="mt-1 text-[22px] font-semibold tracking-[-0.02em] text-ink-0 tabular-nums">{toPrepare.length}</p>
-            <p className="mt-1 text-xs font-medium text-ink-6">Pagados sin despacho final.</p>
-          </button>
+          />
         </div>
       )}
 
-      {/* 2. Main Container (SaaS Data Grid) */}
-      <div className="elev-card-strong overflow-hidden rounded-[var(--r-lg)] relative">
-        
-        {/* Tabs */}
-        <div className="flex items-center gap-8 px-6 border-b border-[color:var(--hairline)] overflow-x-auto no-scrollbar">
-          {tabs.map((tab) => (
-            <button
-              key={tab.value}
-              onClick={() => setActiveTab(tab.value)}
-              className={`relative py-4 text-[13px] font-bold whitespace-nowrap transition-colors flex items-center gap-2 group focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]
-                ${activeTab === tab.value ? "text-ink-0" : "text-ink-6 hover:text-ink-0"}`
-              }
-            >
-              {tab.label}
-              {tab.count !== undefined && tab.count > 0 && (
-                <span className={`tabular inline-flex items-center h-5 px-2 rounded-full text-[10px] uppercase tracking-[0.12em] font-medium transition-colors ${activeTab === tab.value ? 'bg-[var(--surface-2)] text-ink-0' : 'bg-transparent text-ink-6 group-hover:bg-[var(--surface-2)]'}`}>
-                  {tab.count}
-                </span>
-              )}
-              {activeTab === tab.value && (
-                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-ink-0" />
-              )}
-            </button>
-          ))}
-        </div>
+      {/* 2. Main Container — pill tabs + new toolbar + table */}
+      <div className="admin-table-frame relative">
+        <AdminPillTabs
+          tabs={pillTabs}
+          active={activeTab}
+          onChange={(v) => setActiveTab(v)}
+        />
 
-        {/* Toolbar (Filters & Search) */}
-        <div className="p-3 flex flex-col xl:flex-row gap-4 justify-between items-center bg-[var(--surface-0)] border-b border-[color:var(--hairline)]">
-          <div className="relative w-full md:max-w-md group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-6 group-focus-within:text-ink-0 transition-colors" />
-            <input 
-              type="text" 
-              placeholder="Buscar pedido, cliente, tracking..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-[13px] font-medium bg-[var(--surface-1)] border border-[color:var(--hairline)] focus:outline-none text-ink-0 transition-all placeholder:text-ink-6"
-            />
-          </div>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full xl:w-auto">
-            <label className="flex items-center gap-2 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-paper)] px-3 py-1.5 text-[12px] font-bold text-ink-5">
-              <CalendarDays className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Desde</span>
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="bg-transparent text-[12px] font-semibold text-ink-0 outline-none"
-              />
-            </label>
-            <label className="flex items-center gap-2 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-paper)] px-3 py-1.5 text-[12px] font-bold text-ink-5">
-              <span className="hidden sm:inline">Hasta</span>
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="bg-transparent text-[12px] font-semibold text-ink-0 outline-none"
-              />
-            </label>
+        <AdminToolbar
+          search={{
+            value: searchQuery,
+            onChange: setSearchQuery,
+            placeholder: "Buscar pedido, cliente, tracking…",
+          }}
+          filters={
+            <>
+              <label className="flex h-8 items-center gap-1.5 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-paper)] px-2.5 text-[11.5px] font-medium text-ink-5">
+                <CalendarDays className="h-3 w-3" />
+                <span className="hidden sm:inline">Desde</span>
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="bg-transparent text-[12px] font-semibold text-ink-0 outline-none"
+                />
+              </label>
+              <label className="flex h-8 items-center gap-1.5 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-paper)] px-2.5 text-[11.5px] font-medium text-ink-5">
+                <span className="hidden sm:inline">Hasta</span>
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="bg-transparent text-[12px] font-semibold text-ink-0 outline-none"
+                />
+              </label>
+            </>
+          }
+          actions={
             <button
-              onClick={() => { setSearchQuery(""); setDateFrom(""); setDateTo(""); setActiveTab("all"); }}
-              className="btn-secondary w-full sm:w-auto px-3 py-1.5 text-[12px] font-bold flex items-center justify-center gap-2"
+              onClick={() => {
+                setSearchQuery("");
+                setDateFrom("");
+                setDateTo("");
+                setActiveTab("all");
+              }}
+              className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-paper)] px-3 text-[12px] font-medium text-ink-1 transition-colors hover:bg-[var(--surface-2)]"
             >
-              <Filter className="w-3.5 h-3.5" /> Limpiar
+              <Filter className="h-3.5 w-3.5" /> Limpiar
             </button>
-          </div>
-        </div>
+          }
+        />
 
         {/* 3. Data Table */}
         <div className="overflow-x-auto min-h-[400px]">
@@ -270,29 +254,29 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
               secondaryAction={{ label: "Cargar productos", href: "/admin/catalog" }}
             />
           ) : (
-            <table className="w-full text-left whitespace-nowrap">
+            <table className="admin-table whitespace-nowrap">
               <thead>
-                <tr className="border-b border-[color:var(--hairline)] bg-[var(--surface-1)]/90">
-                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-ink-6 w-12">
-                    <input 
-                      type="checkbox" 
+                <tr>
+                  <th style={{ width: "3rem" }}>
+                    <input
+                      type="checkbox"
                       onChange={handleSelectAll}
                       checked={selectedRows.length === filteredOrders.length && filteredOrders.length > 0}
-                      className="w-4 h-4 rounded border-[color:var(--hairline)] text-ink-0 cursor-pointer" 
+                      className="h-4 w-4 cursor-pointer accent-ink-0"
                     />
                   </th>
-                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-ink-6">Pedido</th>
-                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-ink-6">Fecha</th>
-                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-ink-6">Cliente</th>
-                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-ink-6">Productos</th>
-                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-ink-6">Origen</th>
-                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-ink-6">Estado Cobro</th>
-                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-ink-6">Logística</th>
-                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-ink-6">Próxima acción</th>
-                  <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-ink-6 text-right">Monto</th>
+                  <th>Pedido</th>
+                  <th>Fecha</th>
+                  <th>Cliente</th>
+                  <th>Productos</th>
+                  <th>Origen</th>
+                  <th>Estado Cobro</th>
+                  <th>Logística</th>
+                  <th>Próxima acción</th>
+                  <th style={{ textAlign: "right" }}>Monto</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[color:var(--hairline)]">
+              <tbody>
                 {filteredOrders.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="p-0">
@@ -318,10 +302,10 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
                     const isSelected = selectedRows.includes(order.id);
                     const nextAction = nextActions.get(order.id) ?? null;
                     return (
-                    <tr 
-                      key={order.id} 
+                    <tr
+                      key={order.id}
                       onClick={() => setSelectedOrder(order)}
-                      className={`group transition-colors cursor-pointer ${isSelected ? 'bg-[var(--surface-2)]' : 'hover:bg-[var(--surface-2)]/50'}`}
+                      className={`admin-table-row group cursor-pointer ${isSelected ? "admin-table-row--selected" : ""}`}
                     >
                       <td className="px-6 py-5" onClick={(e) => e.stopPropagation()}>
                          <input 

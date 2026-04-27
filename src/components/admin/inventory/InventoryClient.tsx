@@ -11,6 +11,9 @@ import { VariantRiskPanel } from "@/components/admin/inventory/VariantRiskPanel"
 import type { VariantIntelligenceReport } from "@/types/variant-intelligence";
 import Link from "next/link";
 import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
+import { AdminToolbar } from "@/components/admin/primitives/AdminToolbar";
+import { AdminPillTabs, type AdminPillTab } from "@/components/admin/primitives/AdminPillTabs";
+import { AdminEmptyState } from "@/components/admin/primitives/AdminEmptyState";
 
 type TabValue = "all" | "low_stock" | "out_of_stock" | "reserved" | "variant_risk";
 
@@ -133,101 +136,96 @@ export function InventoryClient({ items, variantIntel, focusVariantId, focusActi
 
   const outOfStockCount = items.filter((i) => i.status === "out_of_stock").length;
 
+  const pillTabs: AdminPillTab<TabValue>[] = tabs.map((t) => ({
+    value: t.value,
+    label: t.label,
+    count: t.count ?? null,
+    warning: (t.value === "out_of_stock" || t.value === "variant_risk") && (t.count ?? 0) > 0,
+  }));
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-700 pb-32">
+    <div className="space-y-6 animate-in fade-in duration-700 pb-32">
       <AdminPageHeader
-        index="01"
         eyebrow="Inventario"
         title="Inventario"
         subtitle="Stock real por variante. Ajustá ingresos, mermas o conteos físicos en cualquier momento."
         actions={
           outOfStockCount > 0 ? (
-            <span className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full border border-[color:var(--signal-danger)]/30 bg-[color:var(--signal-danger)]/10 text-[color:var(--signal-danger)] text-[11px] font-semibold uppercase tracking-[0.14em]">
-              <AlertCircle className="w-3 h-3" strokeWidth={1.75} /> {outOfStockCount} agotado{outOfStockCount > 1 ? "s" : ""}
+            <span className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-[color:var(--signal-danger)]/30 bg-[color:var(--signal-danger)]/10 text-[color:var(--signal-danger)] text-[11.5px] font-semibold">
+              <AlertCircle className="w-3.5 h-3.5" strokeWidth={1.75} /> {outOfStockCount} agotado{outOfStockCount > 1 ? "s" : ""}
             </span>
           ) : undefined
         }
       />
 
-      {/* Main panel — same elevation utility as Catalog for visual coherence */}
-      <section className="elev-card-strong relative overflow-hidden rounded-[var(--r-lg)]">
-        {/* Tabs */}
-        <div className="flex items-center gap-8 px-6 border-b border-[color:var(--hairline)] overflow-x-auto no-scrollbar bg-[var(--surface-1)]">
-          {tabs.map((tab) => (
-            <button
-              key={tab.value}
-              onClick={() => setActiveTab(tab.value)}
-              className={`relative py-4 text-[13px] font-medium whitespace-nowrap transition-colors flex items-center gap-2 group
-                ${activeTab === tab.value ? "text-ink-0" : "text-ink-5 hover:text-ink-0"}`}
-            >
-              {tab.label}
-              {tab.count !== undefined && tab.count > 0 && (
-                <span className={`tabular inline-flex items-center h-5 px-1.5 rounded-[var(--r-xs)] text-[10px] font-medium uppercase tracking-[0.14em] transition-colors ${activeTab === tab.value ? "bg-[var(--surface-2)] text-ink-0" : "bg-transparent text-ink-6 group-hover:bg-[var(--surface-2)]"}`}>
-                  {tab.count}
-                </span>
-              )}
-              {activeTab === tab.value && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-ink-0" />}
-            </button>
-          ))}
-        </div>
+      {/* Main panel — pill tabs + new toolbar + admin-table */}
+      <section className="admin-table-frame relative">
+        <AdminPillTabs
+          tabs={pillTabs}
+          active={activeTab}
+          onChange={(v) => setActiveTab(v)}
+        />
 
         {/* Variant Risk Panel (separate view) */}
         {activeTab === "variant_risk" ? (
           <VariantRiskPanel report={variantIntel} onAdjustStock={handleVariantAdjust} focusVariantId={focusVariantId} focusAction={(focusAction as "adjust" | "reorder" | null)} />
         ) : (
         <>
-        {/* Toolbar */}
-        <div className="p-4 flex flex-col md:flex-row gap-4 justify-between items-center bg-[var(--surface-0)] border-b border-[color:var(--hairline)]">
-          <div className="relative w-full md:w-[400px] group">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-6 group-focus-within:text-ink-0 transition-colors" strokeWidth={1.75} />
-            <input
-              type="text"
-              placeholder="Buscar por SKU, producto o variante…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 h-10 text-[13px] bg-[var(--surface-1)] border border-[color:var(--hairline)] rounded-[var(--r-sm)] outline-none transition-[box-shadow,border-color] focus:bg-[var(--surface-0)] focus:border-[var(--accent-500)] focus:shadow-[var(--shadow-focus)] text-ink-0 placeholder:text-ink-6"
-            />
-          </div>
-        </div>
+        <AdminToolbar
+          search={{
+            value: searchQuery,
+            onChange: setSearchQuery,
+            placeholder: "Buscar por SKU, producto o variante…",
+          }}
+          actions={
+            <span className="text-[11.5px] tabular-nums text-ink-5">
+              {filteredItems.length} de {items.length} variante
+              {items.length !== 1 ? "s" : ""}
+            </span>
+          }
+        />
 
         {/* Table */}
-        <div className="min-h-[400px] bg-[var(--surface-0)]">
+        <div className="min-h-[400px]">
           <div className="overflow-x-auto">
-            <table className="w-full text-left whitespace-nowrap">
+            <table className="admin-table whitespace-nowrap">
               <thead>
-                <tr className="border-b border-[color:var(--hairline)] bg-[var(--surface-1)]">
-                  <th className="px-6 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5 w-12">
+                <tr>
+                  <th style={{ width: "3rem" }}>
                     <input
                       type="checkbox"
                       onChange={handleSelectAll}
                       checked={selectedRows.length === filteredItems.length && filteredItems.length > 0}
-                      className="w-4 h-4 rounded-[var(--r-xs)] border-[color:var(--hairline-strong)] accent-ink-0 cursor-pointer"
+                      className="h-4 w-4 cursor-pointer accent-ink-0"
                     />
                   </th>
-                  <th className="px-6 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">SKU / ítem</th>
-                  <th className="px-6 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Origen</th>
-                  <th className="px-6 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">Estado</th>
-                  <th className="px-6 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5 text-right">Reservado</th>
-                  <th className="px-6 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5 text-right">Disponible</th>
-                  <th className="px-6 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5 text-right">Reorden</th>
-                  <th className="px-6 py-4 w-12"></th>
+                  <th>SKU / ítem</th>
+                  <th>Origen</th>
+                  <th>Estado</th>
+                  <th style={{ textAlign: "right" }}>Reservado</th>
+                  <th style={{ textAlign: "right" }}>Disponible</th>
+                  <th style={{ textAlign: "right" }}>Reorden</th>
+                  <th style={{ width: "3rem" }}></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[color:var(--hairline)]">
+              <tbody>
                 {filteredItems.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-24 text-center">
-                      <div className="inline-flex items-center justify-center w-14 h-14 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] mb-6">
-                        <PackageOpen className="w-5 h-5 text-ink-5" strokeWidth={1.5} />
-                      </div>
-                      <h3 className="text-[18px] font-semibold tracking-[-0.02em] text-ink-0">No hay inventario aquí.</h3>
-                      <p className="text-[13px] leading-[1.55] text-ink-5 mt-2 max-w-sm mx-auto">No hay variantes que coincidan con estos filtros.</p>
-                      <button
-                        onClick={() => { setSearchQuery(""); setActiveTab("all"); }}
-                        className="mt-6 inline-flex items-center h-10 px-5 bg-[var(--surface-0)] border border-[color:var(--hairline-strong)] text-ink-0 text-[13px] font-medium rounded-full hover:bg-[var(--surface-2)] transition-colors"
-                      >
-                        Limpiar filtros
-                      </button>
+                    <td colSpan={8} style={{ padding: "1.5rem" }}>
+                      <AdminEmptyState
+                        icon={PackageOpen}
+                        tone="neutral"
+                        title="No hay inventario aquí."
+                        body="No hay variantes que coincidan con estos filtros."
+                        primary={
+                          <button
+                            onClick={() => { setSearchQuery(""); setActiveTab("all"); }}
+                            className="inline-flex h-8 items-center rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-paper)] px-3 text-[12px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)]"
+                          >
+                            Limpiar filtros
+                          </button>
+                        }
+                      />
                     </td>
                   </tr>
                 ) : (
@@ -236,7 +234,7 @@ export function InventoryClient({ items, variantIntel, focusVariantId, focusActi
                     return (
                       <tr
                         key={item.variantId}
-                        className={`group transition-colors ${isSelected ? "bg-[var(--surface-2)]" : "hover:bg-[var(--surface-1)] bg-[var(--surface-0)]"}`}
+                        className={`admin-table-row group ${isSelected ? "admin-table-row--selected" : ""}`}
                       >
                         <td className="px-6 py-5" onClick={(e) => e.stopPropagation()}>
                           <input

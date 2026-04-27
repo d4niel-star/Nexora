@@ -3,6 +3,7 @@ import { getCurrentStore } from "@/lib/auth/session";
 import { AlertCircle, CheckCircle2, RotateCcw, FileText, Send, Building2, Store } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
 
 export default async function FiscalDashboardPage() {
   const store = await getCurrentStore();
@@ -14,12 +15,13 @@ export default async function FiscalDashboardPage() {
 
   return (
     <div className="space-y-10 animate-in fade-in duration-500 py-6">
+      <AdminPageHeader
+        eyebrow="Fiscal y Legal"
+        title="Fiscal y legal"
+        subtitle="Gestión de facturación electrónica ARCA/AFIP y compliance de comercio electrónico."
+      />
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[28px] lg:text-[32px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0">Fiscal y legal.</h1>
-          <p className="mt-2 text-sm text-ink-5">
-            Gestión de facturación electrónica ARCA/AFIP y compliance de comercio electrónico.
-          </p>
         </div>
         <Link href="/admin/fiscal/settings" className="inline-flex h-9 items-center px-3.5 bg-[var(--surface-0)] border border-[color:var(--hairline-strong)] rounded-[var(--r-sm)] text-[13px] font-medium text-ink-0 hover:bg-[var(--surface-2)] transition-colors">
           Configurar Perfil Fiscal

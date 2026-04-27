@@ -106,7 +106,6 @@ export function SourcingPage({ intelData, scoreReport }: { intelData: SourcingIn
     return (
       <div className="animate-in fade-in duration-[var(--dur-slow)] space-y-8">
         <AdminPageHeader
-          index="01"
           eyebrow="Proveedores · sourcing"
           title="Abastecimiento"
           subtitle="Conectá proveedores, importá productos y armá tu catálogo B2B con datos reales."
@@ -121,7 +120,6 @@ export function SourcingPage({ intelData, scoreReport }: { intelData: SourcingIn
   return (
     <div className="animate-in fade-in duration-[var(--dur-slow)] space-y-8">
       <AdminPageHeader
-        index="01"
         eyebrow="Proveedores · sourcing"
         title="Abastecimiento"
         subtitle="Conectá proveedores, importá productos y armá tu catálogo B2B con datos reales."

@@ -26,6 +26,7 @@ import { removeAdsConnection } from "@/lib/ads/connections/actions";
 import { generateAdsCopilotRecommendations } from "@/lib/ads/ai/actions";
 import { createCampaignDraft } from "@/lib/ads/drafts/actions";
 import type { AdsProviderMeta } from "@/lib/ads/registry";
+import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
 
 // ─── Per-provider Ads Hub ───────────────────────────────────────────────
 //
@@ -263,41 +264,32 @@ export function ProviderHub({
   };
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <header className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 text-[12px] text-ink-6">
-            <Link href="/admin/ads/meta" className="hover:text-ink-2 transition-colors">
-              Marketing
+    <div className="space-y-7">
+      <AdminPageHeader
+        eyebrow={`Marketing · ${provider.label}`}
+        title={provider.label}
+        subtitle={provider.tagline}
+        actions={
+          <div className="flex items-center gap-2">
+            <a
+              href={provider.docsUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-10 items-center gap-1.5 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-paper)] px-4 text-[12.5px] font-medium text-ink-1 transition-colors hover:bg-[var(--surface-2)]"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              Docs oficiales
+            </a>
+            <Link
+              href="/admin/ads/pixels"
+              className="inline-flex h-10 items-center gap-1.5 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-paper)] px-4 text-[12.5px] font-medium text-ink-1 transition-colors hover:bg-[var(--surface-2)]"
+            >
+              <KeyRound className="h-3.5 w-3.5" />
+              Píxeles y tags
             </Link>
-            <span aria-hidden>›</span>
-            <span className="text-ink-2 font-medium">{provider.label}</span>
           </div>
-          <h1 className="text-[28px] lg:text-[32px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0">
-            {provider.label}
-          </h1>
-          <p className="text-[14px] leading-[1.55] text-ink-5 max-w-xl">{provider.tagline}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <a
-            href={provider.docsUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3 py-2 text-[12px] font-medium text-ink-3 hover:bg-[var(--surface-2)] transition-colors"
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-            Docs oficiales
-          </a>
-          <Link
-            href="/admin/ads/pixels"
-            className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3 py-2 text-[12px] font-medium text-ink-3 hover:bg-[var(--surface-2)] transition-colors"
-          >
-            <KeyRound className="h-3.5 w-3.5" />
-            Píxeles y tags
-          </Link>
-        </div>
-      </header>
+        }
+      />
 
       {/* OAuth flash */}
       <AnimatePresence>

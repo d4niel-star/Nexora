@@ -30,6 +30,10 @@ import { ProductStatusBadge } from "../../../components/admin/catalog/ProductSta
 import { ProductDrawer } from "../../../components/admin/catalog/ProductDrawer";
 import { ManualProductModal } from "../../../components/admin/catalog/ManualProductModal";
 import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
+import { AdminPanel } from "@/components/admin/primitives/AdminPanel";
+import { AdminToolbar } from "@/components/admin/primitives/AdminToolbar";
+import { AdminPillTabs, type AdminPillTab } from "@/components/admin/primitives/AdminPillTabs";
+import { AdminEmptyState } from "@/components/admin/primitives/AdminEmptyState";
 
 // ─── Catalog admin surface ────────────────────────────────────────────────
 //
@@ -270,124 +274,80 @@ export default function CatalogClient({
     URL.revokeObjectURL(url);
   };
 
+  // Map legacy tabs to AdminPillTab shape (warning replaces isSpecial).
+  const pillTabs: AdminPillTab<TabValue>[] = tabs.map((t) => ({
+    value: t.value,
+    label: t.label,
+    count: t.count,
+    warning: t.isSpecial,
+  }));
+
   return (
-    <div className="space-y-7 pb-24">
+    <div className="space-y-6 pb-24">
       {/* Header */}
       {!hideHeader && (
         <AdminPageHeader
-          index="01"
           eyebrow="Catálogo"
           title="Catálogo"
           subtitle="Administrá tus productos, ajustá precios, controlá publicación y exportá tu catálogo."
           actions={
             <div className="flex items-center gap-2">
-            <button
-              onClick={handleExportCsv}
-              disabled={filtered.length === 0}
-              className="inline-flex h-10 items-center gap-2 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-4 text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] disabled:cursor-not-allowed disabled:opacity-50"
-              title={filtered.length === 0 ? "Nada para exportar" : "Exportar CSV"}
-            >
-              Exportar CSV
-            </button>
-            <button
-              onClick={() => setManualOpen(true)}
-              className="inline-flex h-10 items-center gap-2 rounded-full bg-ink-0 px-4 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
-            >
-              <Plus className="h-4 w-4" strokeWidth={1.75} />
-              Agregar manual
-            </button>
-          </div>
+              <button
+                onClick={handleExportCsv}
+                disabled={filtered.length === 0}
+                className="inline-flex h-10 items-center gap-2 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-paper)] px-4 text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] disabled:cursor-not-allowed disabled:opacity-50"
+                title={filtered.length === 0 ? "Nada para exportar" : "Exportar CSV"}
+              >
+                Exportar CSV
+              </button>
+              <button
+                onClick={() => setManualOpen(true)}
+                className="inline-flex h-10 items-center gap-2 rounded-full bg-[var(--brand)] px-4 text-[13px] font-medium text-white transition-colors hover:bg-[var(--brand-hover)]"
+              >
+                <Plus className="h-4 w-4" strokeWidth={2} />
+                Agregar manual
+              </button>
+            </div>
           }
         />
       )}
 
-      {/* Main panel */}
-      <section className="elev-card-strong relative overflow-hidden rounded-[var(--r-lg)]">
-        {/* Tabs */}
-        <div className="no-scrollbar flex items-center gap-7 overflow-x-auto border-b border-[color:var(--hairline)] bg-[var(--surface-1)] px-5">
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab.value;
-            return (
-              <button
-                key={tab.value}
-                onClick={() => setActiveTab(tab.value)}
-                className={cn(
-                  "relative flex items-center gap-2 whitespace-nowrap py-3.5 text-[12px] font-medium transition-colors",
-                  isActive
-                    ? tab.isSpecial
-                      ? "text-[color:var(--signal-warning)]"
-                      : "text-ink-0"
-                    : "text-ink-5 hover:text-ink-0",
-                )}
-              >
-                {tab.isSpecial && <AlertTriangle className="h-3 w-3" strokeWidth={1.75} />}
-                {tab.label}
-                {tab.count > 0 && (
-                  <span
-                    className={cn(
-                      "tabular-nums inline-flex items-center rounded-[var(--r-xs)] px-1.5 py-px text-[10px] font-semibold uppercase tracking-[0.12em]",
-                      isActive
-                        ? tab.isSpecial
-                          ? "bg-[color:color-mix(in_srgb,var(--signal-warning)_14%,transparent)] text-[color:var(--signal-warning)]"
-                          : "bg-[var(--surface-2)] text-ink-0"
-                        : "bg-transparent text-ink-6",
-                    )}
-                  >
-                    {tab.count}
-                  </span>
-                )}
-                {isActive && (
-                  <span
-                    className={cn(
-                      "absolute bottom-0 left-0 right-0 h-[2px]",
-                      tab.isSpecial ? "bg-[color:var(--signal-warning)]" : "bg-ink-0",
-                    )}
-                  />
-                )}
-              </button>
-            );
-          })}
-        </div>
+      {/* Main panel — pill tabs + new toolbar + table */}
+      <section className="admin-table-frame">
+        <AdminPillTabs
+          tabs={pillTabs}
+          active={activeTab}
+          onChange={(v) => setActiveTab(v)}
+        />
 
-        {/* Toolbar */}
-        <div className="flex flex-col gap-3 border-b border-[color:var(--hairline)] bg-[var(--surface-0)] px-4 py-3 md:flex-row md:items-center md:justify-between">
-          <div className="relative w-full md:max-w-md">
-            <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-6" strokeWidth={1.75} />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar por nombre o categoría…"
-              className="h-9 w-full rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-paper)] pl-9 pr-9 text-[13px] font-medium text-ink-0 outline-none transition-[box-shadow,border-color] placeholder:text-ink-6 focus:border-[var(--accent-500)] focus:shadow-[var(--shadow-focus)]"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-ink-6 hover:bg-[var(--surface-2)] hover:text-ink-0"
-                aria-label="Limpiar búsqueda"
-              >
-                <XIcon className="h-3 w-3" />
-              </button>
-            )}
-          </div>
-          <div className="flex items-center gap-2 text-[11px] text-ink-5">
-            <span className="tabular-nums">
-              {filtered.length} de {products.length} producto{products.length !== 1 ? "s" : ""}
-            </span>
-            {searchQuery && (
-              <span className="inline-flex items-center gap-1 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-ink-5">
+        <AdminToolbar
+          search={{
+            value: searchQuery,
+            onChange: setSearchQuery,
+            placeholder: "Buscar por nombre o categoría…",
+          }}
+          filters={
+            searchQuery && (
+              <span className="inline-flex h-7 items-center gap-1 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-paper)] px-2.5 text-[11px] font-medium text-ink-5">
                 <FilterIcon className="h-3 w-3" /> filtrado
               </span>
-            )}
-          </div>
-        </div>
+            )
+          }
+          actions={
+            <span className="text-[11.5px] tabular-nums text-ink-5">
+              {filtered.length} de {products.length} producto
+              {products.length !== 1 ? "s" : ""}
+            </span>
+          }
+        />
+
 
         {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="admin-table">
             <thead>
-              <tr className="border-b border-[color:var(--hairline)] bg-[var(--surface-1)]">
-                <th className="w-12 px-5 py-3">
+              <tr>
+                <th style={{ width: "3rem" }}>
                   <input
                     type="checkbox"
                     checked={everyVisibleSelected}
@@ -404,10 +364,10 @@ export default function CatalogClient({
                 <Th align="right">Acciones</Th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[color:var(--hairline)]">
+            <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-20 text-center">
+                  <td colSpan={7} style={{ padding: "1.5rem" }}>
                     <EmptyState
                       hasSearch={searchQuery.length > 0}
                       onClear={() => {
@@ -426,8 +386,8 @@ export default function CatalogClient({
                       key={product.id}
                       onClick={() => setSelectedProduct(product)}
                       className={cn(
-                        "group cursor-pointer transition-colors",
-                        isSelected ? "bg-[color:color-mix(in_srgb,var(--accent-500)_5%,var(--surface-0))]" : "bg-[var(--surface-0)] hover:bg-[var(--surface-1)]",
+                        "admin-table-row cursor-pointer",
+                        isSelected && "admin-table-row--selected",
                       )}
                     >
                       <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}>
@@ -672,40 +632,38 @@ function EmptyState({
 }) {
   if (hasSearch) {
     return (
-      <div className="space-y-3">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)]">
-          <SearchIcon className="h-4 w-4 text-ink-5" strokeWidth={1.5} />
-        </div>
-        <div>
-          <p className="text-[14px] font-medium text-ink-0">Sin resultados</p>
-          <p className="mt-1 text-[12px] text-ink-5">Probá con otro nombre o limpiá los filtros.</p>
-        </div>
-        <button
-          onClick={onClear}
-          className="inline-flex h-9 items-center rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-4 text-[12px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)]"
-        >
-          Limpiar filtros
-        </button>
-      </div>
+      <AdminEmptyState
+        icon={SearchIcon}
+        tone="neutral"
+        title="Sin resultados"
+        body="Probá con otro nombre o limpiá los filtros aplicados."
+        primary={
+          <button
+            onClick={onClear}
+            className="inline-flex h-8 items-center rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-paper)] px-3 text-[12px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)]"
+          >
+            Limpiar filtros
+          </button>
+        }
+      />
     );
   }
 
   return (
-    <div className="space-y-3">
-      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)]">
-        <Package className="h-4 w-4 text-ink-5" strokeWidth={1.5} />
-      </div>
-      <div>
-        <p className="text-[14px] font-medium text-ink-0">No tenés productos en esta vista</p>
-        <p className="mt-1 text-[12px] text-ink-5">Agregá tu primer producto manualmente o importá desde un proveedor.</p>
-      </div>
-      <button
-        onClick={onAdd}
-        className="inline-flex h-9 items-center gap-2 rounded-full bg-ink-0 px-4 text-[12px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
-      >
-        <Plus className="h-3.5 w-3.5" /> Agregar producto manual
-      </button>
-    </div>
+    <AdminEmptyState
+      icon={Package}
+      tone="info"
+      title="No tenés productos en esta vista"
+      body="Agregá tu primer producto manualmente o importá desde un proveedor para empezar a vender."
+      primary={
+        <button
+          onClick={onAdd}
+          className="inline-flex h-8 items-center gap-1.5 rounded-full bg-[var(--brand)] px-3 text-[12px] font-medium text-white transition-colors hover:bg-[var(--brand-hover)]"
+        >
+          <Plus className="h-3.5 w-3.5" strokeWidth={2} /> Agregar producto manual
+        </button>
+      }
+    />
   );
 }
 

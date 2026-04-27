@@ -36,7 +36,6 @@ export function OnboardingDashboard({ data }: { data: ActivationState }) {
   return (
     <div className="mx-auto max-w-4xl animate-in fade-in duration-500">
       <AdminPageHeader
-        index="01"
         eyebrow="Activación · onboarding"
         title="Activación de tu negocio"
         subtitle={subtitle}

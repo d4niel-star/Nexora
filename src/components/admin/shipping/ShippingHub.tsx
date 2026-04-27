@@ -25,6 +25,9 @@ import { CarrierStatusBadge } from "./CarrierStatusBadge";
 import { QuoteCalculator } from "./QuoteCalculator";
 import { CreateShipmentForm } from "./CreateShipmentForm";
 import { TrackingLookup } from "./TrackingLookup";
+import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
+import { AdminPillTabs, type AdminPillTab } from "@/components/admin/primitives/AdminPillTabs";
+import { AdminMetric } from "@/components/admin/primitives/AdminMetric";
 
 interface CarrierEntry {
   meta: Omit<CarrierMetadata, "adapter"> & {
@@ -77,30 +80,26 @@ export function ShippingHub({ carriers, settings }: Props) {
     null;
 
   return (
-    <div className="animate-in fade-in space-y-8 py-2 duration-300">
-      <header className="space-y-2">
-        <h1 className="text-[28px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0 lg:text-[32px]">
-          Envíos
-        </h1>
-        <p className="max-w-2xl text-[13px] leading-[1.55] text-ink-5">
-          Conectá Correo Argentino y Andreani, configurá las reglas base de
-          envío y operá cotización, etiquetas y tracking desde un solo lugar.
-        </p>
-      </header>
+    <div className="animate-in fade-in space-y-7 py-2 duration-300">
+      <AdminPageHeader
+        eyebrow="Envíos"
+        title="Envíos"
+        subtitle="Conectá Correo Argentino y Andreani, configurá reglas base de envío y operá cotización, etiquetas y tracking desde un solo lugar."
+      />
 
       {/* ── Top stats ────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard
+        <AdminMetric
           label="Carriers conectados"
           value={`${connectedCount}/${carriers.length}`}
           tone={connectedCount > 0 ? "success" : "neutral"}
         />
-        <StatCard
+        <AdminMetric
           label="Carrier por defecto"
           value={defaultCarrierName ?? "Sin definir"}
           tone={defaultCarrierName ? "neutral" : "warning"}
         />
-        <StatCard
+        <AdminMetric
           label="Origen del envío"
           value={
             hasOrigin
@@ -111,7 +110,7 @@ export function ShippingHub({ carriers, settings }: Props) {
           }
           tone={hasOrigin ? "neutral" : "warning"}
         />
-        <StatCard
+        <AdminMetric
           label="Estado general"
           value={
             errorCount > 0
@@ -155,32 +154,17 @@ export function ShippingHub({ carriers, settings }: Props) {
         </ul>
       )}
 
-      {/* ── Tabs ─────────────────────────────────────────────────────── */}
-      <div role="tablist" className="flex flex-wrap items-center gap-1 border-b border-[color:var(--hairline)]">
-        {TABS.map(({ id, label, icon: Icon }) => {
-          const active = tab === id;
-          return (
-            <button
-              key={id}
-              role="tab"
-              aria-selected={active}
-              type="button"
-              onClick={() => setTab(id)}
-              className={[
-                "relative -mb-px inline-flex items-center gap-2 px-4 py-2.5 text-[12px] font-medium transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
-                active
-                  ? "border-b-2 border-ink-0 text-ink-0"
-                  : "border-b-2 border-transparent text-ink-5 hover:text-ink-3",
-              ].join(" ")}
-            >
-              <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
-              {label}
-            </button>
-          );
-        })}
+      {/* ── Tabs (pill) + settings link ──────────────────────────────── */}
+      <div className="flex items-center justify-between gap-3">
+        <AdminPillTabs<Tab>
+          tabs={TABS.map(({ id, label }) => ({ value: id, label }))}
+          active={tab}
+          onChange={(v) => setTab(v)}
+          className="flex-1 border-0 bg-transparent p-0"
+        />
         <Link
           href="/admin/shipping/settings"
-          className="ml-auto inline-flex items-center gap-1.5 px-3 py-2.5 text-[12px] font-medium text-ink-5 transition-colors hover:text-ink-0"
+          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-paper)] px-3 text-[12px] font-medium text-ink-3 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0"
         >
           <Settings className="h-3.5 w-3.5" strokeWidth={1.75} />
           Ajustes de envío

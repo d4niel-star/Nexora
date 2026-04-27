@@ -5,6 +5,7 @@ import { Building2, Save, ExternalLink, ScrollText } from "lucide-react"
 import { upsertFiscalProfileAction, upsertLegalSettingsAction } from "@/lib/fiscal/arca/actions"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
+import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader"
 
 export function LegalSettingsForm({ storeId, initialProfile, initialSettings }: { storeId: string, initialProfile: any, initialSettings: any }) {
   const [isPending, startTransition] = useTransition()
@@ -63,12 +64,13 @@ export function LegalSettingsForm({ storeId, initialProfile, initialSettings }: 
     <div className="space-y-10 animate-in fade-in duration-[var(--dur-slow)]">
 
       {/* HEADER */}
+      <AdminPageHeader
+        eyebrow="Legal y Fiscal"
+        title="Configurar legal y fiscal"
+        subtitle="Administrá tu identidad en ARCA y las normativas de Defensa del Consumidor."
+      />
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
          <div>
-            <h1 className="text-[28px] lg:text-[32px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0">Configurar legal y fiscal.</h1>
-            <p className="mt-2 text-[14px] leading-[1.55] text-ink-5">
-               Administrá tu identidad en ARCA y las normativas de Defensa del Consumidor.
-            </p>
          </div>
          <div className="flex gap-2">
             <Link href="/admin/fiscal" className={secondaryBtn}>Cancelar</Link>

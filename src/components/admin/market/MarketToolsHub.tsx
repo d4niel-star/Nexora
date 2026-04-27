@@ -41,7 +41,6 @@ export function MarketToolsHub({ snapshot }: Props) {
   return (
     <div className="animate-in fade-in space-y-8 pb-32 duration-700">
       <AdminPageHeader
-        index="01"
         eyebrow="Herramientas · operación"
         title="Herramientas"
         subtitle="Utilidades operativas, scripts y automatizaciones internas. Todo el toolkit Nexora en un solo lugar."

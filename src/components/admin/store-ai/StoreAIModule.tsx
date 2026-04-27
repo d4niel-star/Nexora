@@ -19,6 +19,7 @@ import { ReadinessPanel } from "@/components/admin/readiness/ReadinessPanel";
 import type { ReadinessSnapshot } from "@/lib/readiness/snapshot";
 import type { StoreTemplate } from "@/types/store-templates";
 import { cn } from "@/lib/utils";
+import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
 
 // ─── Tienda IA — module landing (v3) ────────────────────────────────────
 //
@@ -74,32 +75,24 @@ export function StoreAIModule({
   const statusInfo = deriveStatus(draftStatus, themeState);
 
   return (
-    <div className="space-y-8">
-      {/* ── 1. Module header ─────────────────────────────── */}
-      <header className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-        <div>
-          <div className="mb-3 inline-flex items-center gap-2 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-ink-5">
-            <Store className="h-3 w-3" strokeWidth={1.75} />
-            Centro de diseño
+    <div className="space-y-7">
+      <AdminPageHeader
+        eyebrow="Tienda IA · Centro de diseño"
+        title="Tienda IA"
+        subtitle="Diseñá, editá y optimizá tu tienda con herramientas profesionales y asistencia de IA en tiempo real."
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusPill label={statusInfo.label} tone={statusInfo.tone} />
+            <Link
+              href="/admin/store-ai/editor"
+              className="inline-flex h-10 items-center gap-2 rounded-full bg-[var(--brand)] px-4 text-[13px] font-medium text-white transition-colors hover:bg-[var(--brand-hover)] focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
+            >
+              <Pencil className="h-4 w-4" strokeWidth={1.75} />
+              Editar contenido
+            </Link>
           </div>
-          <h1 className="text-[30px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0 lg:text-[34px]">
-            Tienda IA.
-          </h1>
-          <p className="mt-2 max-w-xl text-[14px] leading-[1.55] text-ink-5">
-            Diseñá, editá y optimizá tu tienda con herramientas profesionales y asistencia de IA en tiempo real.
-          </p>
-        </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-3">
-          <StatusPill label={statusInfo.label} tone={statusInfo.tone} />
-          <Link
-            href="/admin/store-ai/editor"
-            className="inline-flex h-10 items-center gap-2 rounded-full bg-ink-0 px-5 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
-          >
-            <Pencil className="h-4 w-4" strokeWidth={1.75} />
-            Editar contenido
-          </Link>
-        </div>
-      </header>
+        }
+      />
 
       {/* ── 2. Theme current hero ────────────────────────── */}
       {themeState && (

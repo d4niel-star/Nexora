@@ -389,7 +389,6 @@ export function RecoveryPage({ snapshot }: RecoveryPageProps) {
           Ventas · Recuperación
         </div>
         <AdminPageHeader
-          index="01"
           eyebrow="Recuperación · ciclo de vida"
           title="Dinero y clientes para recuperar"
           subtitle="Pagos pendientes, carritos abandonados, clientes inactivos y oportunidades de recompra. Acción concreta sobre datos reales."

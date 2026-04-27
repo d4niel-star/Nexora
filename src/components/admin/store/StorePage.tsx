@@ -30,6 +30,7 @@ import type {
 } from "@/lib/payments/types";
 import type { AdminStoreInitialData } from "@/types/store-engine";
 import type { CommunicationSettings } from "@/lib/communication/types";
+import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
 
 type TabValue = "resumen" | "comunicacion" | "dominio" | "pagos";
 
@@ -250,61 +251,46 @@ export function StorePage({
   };
 
   return (
-    <div className="space-y-7 pb-32">
-      <motion.header
-        initial={{ opacity: 0, y: -6 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-        className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"
-      >
-        <div className="space-y-2">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-5">
-            Centro operativo
-          </p>
-          <div className="space-y-1">
-            <h1 className="text-[28px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0 lg:text-[32px]">
-              Mi tienda
-            </h1>
-            <p className="max-w-2xl text-[13.5px] leading-[1.55] text-ink-5">
-              Publicacion, dominio, checkout y cobro. El trabajo editorial y visual vive en
-              Tienda IA.
-            </p>
+    <div className="space-y-6 pb-32">
+      <AdminPageHeader
+        eyebrow="Centro operativo"
+        title="Mi tienda"
+        subtitle="Publicación, dominio, checkout y cobro. El trabajo editorial y visual vive en Tienda IA."
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <HeaderPill
+              icon={<CheckCircle2 className="h-3.5 w-3.5" />}
+              tone={isLive ? "success" : "neutral"}
+              label={isLive ? "Tienda en vivo" : "Operación en borrador"}
+            />
+            <HeaderPill
+              icon={<Globe className="h-3.5 w-3.5" />}
+              tone={hasDomainAttention ? "warning" : "neutral"}
+              label={activeDomain}
+              monospace
+            />
+            <HeaderPill
+              icon={<CreditCard className="h-3.5 w-3.5" />}
+              tone={isPaymentsOperational ? "success" : "warning"}
+              label={
+                !mercadoPagoPlatformReadiness.ready
+                  ? "Cobro bloqueado"
+                  : isMercadoPagoConnected
+                    ? "Cobro listo"
+                    : "Cobro pendiente"
+              }
+            />
+            <button
+              type="button"
+              onClick={refreshData}
+              className="inline-flex h-9 items-center gap-2 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-paper)] px-3 text-[12.5px] font-medium text-ink-3 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              Actualizar
+            </button>
           </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <HeaderPill
-            icon={<CheckCircle2 className="h-3.5 w-3.5" />}
-            tone={isLive ? "success" : "neutral"}
-            label={isLive ? "Tienda en vivo" : "Operacion en borrador"}
-          />
-          <HeaderPill
-            icon={<Globe className="h-3.5 w-3.5" />}
-            tone={hasDomainAttention ? "warning" : "neutral"}
-            label={activeDomain}
-            monospace
-          />
-          <HeaderPill
-            icon={<CreditCard className="h-3.5 w-3.5" />}
-            tone={isPaymentsOperational ? "success" : "warning"}
-            label={
-              !mercadoPagoPlatformReadiness.ready
-                ? "Cobro bloqueado"
-                : isMercadoPagoConnected
-                  ? "Cobro listo"
-                  : "Cobro pendiente"
-            }
-          />
-          <button
-            type="button"
-            onClick={refreshData}
-            className="inline-flex h-9 items-center gap-2 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3.5 text-[12.5px] font-medium text-ink-2 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0"
-          >
-            <RefreshCw className="h-3.5 w-3.5" />
-            Actualizar
-          </button>
-        </div>
-      </motion.header>
+        }
+      />
 
       <div className="relative overflow-hidden rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] shadow-[var(--shadow-elevated)]">
         <div

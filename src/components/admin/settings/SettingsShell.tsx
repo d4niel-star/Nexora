@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
 
 // ─── Settings shell ──────────────────────────────────────────────────────
 //
@@ -141,18 +142,12 @@ export function SettingsShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="animate-in fade-in duration-500">
-      {/* Shell header sits above both columns so it stays stable across
-          category navigation. Each category page should NOT repeat an
-          h1 for the word "Configuración"; pages add their own subtitle. */}
-      <div className="mb-8">
-        <h1 className="text-[28px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0 lg:text-[32px]">
-          Configuración.
-        </h1>
-        <p className="mt-2 max-w-2xl text-[13px] leading-[1.55] text-ink-5">
-          Ajustes transversales de tu tienda y tu cuenta. Cada categoría agrupa settings reales del producto;
-          los módulos operativos (ventas, catálogo, operaciones, growth) viven en su propia sección del menú.
-        </p>
-      </div>
+      {/* Shell header — same AdminPageHeader rhythm as every admin hub */}
+      <AdminPageHeader
+        eyebrow="Configuración"
+        title="Configuración"
+        subtitle="Ajustes transversales de tu tienda y tu cuenta. Cada categoría agrupa settings reales del producto; los módulos operativos (ventas, catálogo, operaciones, growth) viven en su propia sección del menú."
+      />
 
       {/* Mobile category picker — replaces the right nav on narrow screens.
           Uses a native <select> to stay accessible without extra chrome. */}
@@ -194,39 +189,32 @@ export function SettingsShell({ children }: { children: React.ReactNode }) {
           aria-label="Categorías de configuración"
           className="sticky top-20 hidden h-fit w-[260px] shrink-0 lg:block"
         >
-          <nav className="flex flex-col gap-6">
+          <nav className="flex flex-col gap-6 rounded-[var(--r-lg)] border border-[color:var(--card-border)] bg-[var(--surface-paper)] p-4">
             {SETTINGS_CATEGORIES.map((group) => (
-              <div key={group.title} className="flex flex-col gap-1.5">
-                <h2 className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-6">
+              <div key={group.title} className="flex flex-col gap-2">
+                <h2 className="px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-6">
                   {group.title}
                 </h2>
-                <ul className="flex flex-col gap-0.5">
+                <ul className="flex flex-col gap-1">
                   {group.items.map((item) => {
                     const active = isCategoryActive(item.href, pathname);
                     const Icon = item.icon;
                     return (
-                      <li key={item.href} className="relative">
-                        {active && (
-                          <span
-                            aria-hidden
-                            className="absolute left-0 top-1/2 h-5 -translate-y-1/2 rounded-r-full bg-ink-0"
-                            style={{ width: 2 }}
-                          />
-                        )}
+                      <li key={item.href}>
                         <Link
                           href={item.href}
                           aria-current={active ? "page" : undefined}
                           className={cn(
-                            "flex items-start gap-2.5 rounded-[var(--r-sm)] px-3 py-2 text-[13px] transition-colors outline-none focus-visible:shadow-[var(--shadow-focus)]",
+                            "flex items-center gap-2.5 rounded-full px-3 py-1.5 text-[13px] transition-colors outline-none focus-visible:shadow-[var(--shadow-focus)]",
                             active
-                              ? "bg-[var(--surface-2)] font-medium text-ink-0"
-                              : "text-ink-5 hover:bg-[var(--surface-2)] hover:text-ink-0",
+                              ? "bg-[var(--brand)] font-medium text-white"
+                              : "text-ink-3 hover:bg-[rgba(0,0,32,0.05)] hover:text-ink-0",
                           )}
                         >
                           <Icon
                             className={cn(
-                              "mt-0.5 h-3.5 w-3.5 shrink-0",
-                              active ? "text-ink-0" : "text-ink-6",
+                              "h-3.5 w-3.5 shrink-0",
+                              active ? "text-white" : "text-ink-6",
                             )}
                             strokeWidth={1.75}
                           />

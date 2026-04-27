@@ -84,10 +84,7 @@ export function ConversionPage({ snapshot }: ConversionPageProps) {
       className="space-y-7"
     >
       <AdminPageHeader
-        index="02"
-        eyebrow={
-          isPending ? "Conversión · actualizando" : "Conversión · embudo"
-        }
+        eyebrow={isPending ? "Conversión · actualizando" : "Conversión"}
         title="Conversión"
         subtitle="Carrito → checkout → pago confirmado. Embudo construido sobre las señales reales del storefront."
         actions={<DateRangePicker value={range} onChange={handleRangeChange} />}

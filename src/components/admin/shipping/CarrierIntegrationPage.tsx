@@ -7,6 +7,7 @@ import type { CarrierConnectionSummary } from "@/lib/shipping/types";
 import { CarrierConnectionForm } from "./CarrierConnectionForm";
 import { CapabilityList } from "./CapabilityList";
 import { CarrierExtrasForm } from "./CarrierExtrasForm";
+import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
 
 interface Props {
   carrier: CarrierMetadata;
@@ -19,44 +20,42 @@ export function CarrierIntegrationPage({ carrier, summary }: Props) {
   return (
     <div className="animate-in fade-in space-y-8 py-2 duration-300">
       {/* ── Header ─────────────────────────────────────────────────── */}
-      <header className="space-y-3">
+      <div>
         <Link
           href="/admin/shipping"
-          className="inline-flex w-fit items-center gap-1.5 text-[12px] font-medium text-ink-5 transition-colors hover:text-ink-0"
+          className="mb-3 inline-flex w-fit items-center gap-1.5 text-[12px] font-medium text-ink-5 transition-colors hover:text-ink-0"
         >
           <ArrowLeft className="h-3.5 w-3.5" strokeWidth={1.75} />
           Envíos
         </Link>
-        <div className="space-y-2">
-          <h1 className="text-[28px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0 lg:text-[32px]">
-            {carrier.name}
-          </h1>
-          <p className="max-w-2xl text-[13px] leading-[1.55] text-ink-5">
-            {carrier.tagline}
-          </p>
-        </div>
-
-        <div className="flex flex-wrap gap-2 pt-1">
-          <a
-            href={carrier.docsUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3.5 text-[12px] font-medium text-ink-3 transition-colors hover:bg-[var(--surface-2)]"
-          >
-            Documentación API
-            <ExternalLink className="h-3 w-3" strokeWidth={1.75} />
-          </a>
-          <a
-            href={carrier.credentialsRequestUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3.5 text-[12px] font-medium text-ink-3 transition-colors hover:bg-[var(--surface-2)]"
-          >
-            Solicitar credenciales
-            <ExternalLink className="h-3 w-3" strokeWidth={1.75} />
-          </a>
-        </div>
-      </header>
+        <AdminPageHeader
+          eyebrow={`Envíos · ${carrier.name}`}
+          title={carrier.name}
+          subtitle={carrier.tagline}
+          actions={
+            <div className="flex flex-wrap gap-2">
+              <a
+                href={carrier.docsUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-paper)] px-3 text-[12px] font-medium text-ink-3 transition-colors hover:bg-[var(--surface-2)]"
+              >
+                Documentación API
+                <ExternalLink className="h-3 w-3" strokeWidth={1.75} />
+              </a>
+              <a
+                href={carrier.credentialsRequestUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-paper)] px-3 text-[12px] font-medium text-ink-3 transition-colors hover:bg-[var(--surface-2)]"
+              >
+                Solicitar credenciales
+                <ExternalLink className="h-3 w-3" strokeWidth={1.75} />
+              </a>
+            </div>
+          }
+        />
+      </div>
 
       {/* ── Connection form ────────────────────────────────────────── */}
       <CarrierConnectionForm

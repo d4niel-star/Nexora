@@ -18,6 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import { groupTemplatesByCategory, getCategoryForTemplate, getCategoryById } from "@/lib/themes/categories";
 import type { StoreTemplate } from "@/types/store-templates";
+import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
 import {
   applyBuiltInTemplateAction,
   applyImportedTemplateAction,
@@ -153,46 +154,45 @@ export function ThemeGalleryPage({ current, templates }: Props) {
   return (
     <div className="space-y-10">
       {/* ── Page header ────────────────────────────────────── */}
-      <header className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-        <div>
-          <Link
-            href="/admin/store-ai"
-            className="mb-4 inline-flex items-center gap-1.5 text-[12px] font-medium text-ink-5 transition-colors hover:text-ink-0"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" strokeWidth={1.75} />
-            Tienda IA
-          </Link>
-          <h1 className="text-[28px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0 lg:text-[32px]">
-            Temas disponibles
-          </h1>
-          <p className="mt-2 max-w-2xl text-[14px] leading-[1.55] text-ink-5">
-            Explorá todas las bases de diseño. Elegí la que mejor encaje con tu marca y empezá a editar inmediatamente.
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-3">
-          <button
-            type="button"
-            onClick={scrollToImport}
-            className="inline-flex h-10 items-center gap-2 rounded-full bg-ink-0 px-5 text-[12px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
-          >
-            <Upload className="h-3.5 w-3.5" strokeWidth={1.75} />
-            Importar temas
-          </button>
-          <button
-            type="button"
-            onClick={handleExport}
-            disabled={isPending}
-            className="inline-flex h-10 items-center gap-2 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-5 text-[12px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] disabled:opacity-50"
-          >
-            {busyId === "__export__" ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={1.75} />
-            ) : (
-              <Download className="h-3.5 w-3.5" strokeWidth={1.75} />
-            )}
-            Exportar mi tema
-          </button>
-        </div>
-      </header>
+      <div>
+        <Link
+          href="/admin/store-ai"
+          className="mb-3 inline-flex items-center gap-1.5 text-[12px] font-medium text-ink-5 transition-colors hover:text-ink-0"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" strokeWidth={1.75} />
+          Tienda IA
+        </Link>
+        <AdminPageHeader
+          eyebrow="Tienda IA · Galería"
+          title="Temas disponibles"
+          subtitle="Explorá todas las bases de diseño. Elegí la que mejor encaje con tu marca y empezá a editar inmediatamente."
+          actions={
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={scrollToImport}
+                className="inline-flex h-10 items-center gap-2 rounded-full bg-[var(--brand)] px-4 text-[12.5px] font-medium text-white transition-colors hover:bg-[var(--brand-hover)]"
+              >
+                <Upload className="h-3.5 w-3.5" strokeWidth={1.75} />
+                Importar temas
+              </button>
+              <button
+                type="button"
+                onClick={handleExport}
+                disabled={isPending}
+                className="inline-flex h-10 items-center gap-2 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-paper)] px-4 text-[12.5px] font-medium text-ink-1 transition-colors hover:bg-[var(--surface-2)] disabled:opacity-50"
+              >
+                {busyId === "__export__" ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={1.75} />
+                ) : (
+                  <Download className="h-3.5 w-3.5" strokeWidth={1.75} />
+                )}
+                Exportar mi tema
+              </button>
+            </div>
+          }
+        />
+      </div>
 
       {/* ── Category groups ────────────────────────────────── */}
       {grouped.map(({ category, templates: catTemplates }) => (

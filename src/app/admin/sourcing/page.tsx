@@ -21,7 +21,6 @@ export default async function Sourcing() {
     return (
       <div>
         <AdminPageHeader
-          index="01"
           eyebrow="Proveedores · sourcing"
           title="Abastecimiento"
           subtitle="Conexiones reales con proveedores y catálogo B2B. Disponible en plan Scale."

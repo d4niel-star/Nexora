@@ -38,6 +38,7 @@ import {
 import { getAppIcon } from "../apps/appIcons";
 import { AppStatusBadge } from "../apps/AppStatusBadge";
 import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
+import { AdminPillTabs } from "@/components/admin/primitives/AdminPillTabs";
 
 // ─── Marketplace UI ───────────────────────────────────────────────────────
 //
@@ -101,39 +102,32 @@ export function MarketplacePage({
   return (
     <div className="space-y-7 pb-24">
       <AdminPageHeader
-        index="01"
         eyebrow="Marketplace · Apps"
         title="Marketplace"
-        subtitle="Apps oficiales y de terceros para extender tu operación. Activá lo que necesites, sin friccion."
+        subtitle="Apps oficiales y de terceros para extender tu operación. Activá lo que necesites, sin fricción."
+        actions={
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-paper)] px-2.5 h-8 text-[11.5px] font-medium text-ink-3">
+              <BadgeCheck className="h-3 w-3" strokeWidth={1.75} />
+              {internalSummary.installed} / {internalSummary.total} activas
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-paper)] px-2.5 h-8 text-[11.5px] font-medium text-ink-3">
+              <ExternalLink className="h-3 w-3" strokeWidth={1.75} />
+              {externalAvailable} externas
+            </span>
+          </div>
+        }
       />
-      <div className="-mt-2 flex flex-wrap items-center gap-2 text-[11px] text-ink-5">
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-paper)] px-2.5 py-1 font-semibold uppercase tracking-[0.14em]">
-          <BadgeCheck className="h-3 w-3" strokeWidth={1.75} />
-          {internalSummary.installed} / {internalSummary.total} activas
-        </span>
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-paper)] px-2.5 py-1 font-semibold uppercase tracking-[0.14em]">
-          <ExternalLink className="h-3 w-3" strokeWidth={1.75} />
-          {externalAvailable} externas disponibles
-        </span>
-      </div>
 
       {/* Tab switch — explicit Internal vs External separation */}
-      <div className="inline-flex items-center rounded-full border border-[color:var(--hairline)] bg-[var(--surface-1)] p-1">
-        <TabButton
-          active={tab === "internal"}
-          onClick={() => setTab("internal")}
-          icon={<Sparkles className="h-3.5 w-3.5" strokeWidth={1.75} />}
-          label="Herramientas Nexora"
-          count={totalInternal}
-        />
-        <TabButton
-          active={tab === "external"}
-          onClick={() => setTab("external")}
-          icon={<ExternalLink className="h-3.5 w-3.5" strokeWidth={1.75} />}
-          label="Apps externas"
-          count={totalExternal}
-        />
-      </div>
+      <AdminPillTabs
+        tabs={[
+          { value: "internal", label: "Herramientas Nexora", count: totalInternal },
+          { value: "external", label: "Apps externas", count: totalExternal },
+        ]}
+        active={tab}
+        onChange={(v) => setTab(v as "internal" | "external")}
+      />
 
       {tab === "internal" ? (
         <InternalSection

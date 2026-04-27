@@ -92,7 +92,6 @@ export function FinancesPage({ initialData, profitabilityReport, hideHeader = fa
     <div className="animate-in fade-in space-y-8 pb-32 duration-700">
       {!hideHeader && (
         <AdminPageHeader
-          index="01"
           eyebrow="Finanzas · margen"
           title="Finanzas"
           subtitle="Ingresos, egresos, comisiones y salud de margen del negocio. Sobre datos reales."

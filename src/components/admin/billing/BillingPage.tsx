@@ -22,6 +22,7 @@ import {
   resolvePaymentAction,
 } from "@/lib/billing/actions";
 import type { PlanDefinition, PlanConfig } from "@/lib/billing/plans";
+import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
 
 // ─── Types ───
 
@@ -131,28 +132,29 @@ export function BillingPage() {
       {isTroubled && <RecoveryCard status={data.subscription.status} planName={data.plan.name} onResolve={handleResolvePayment} isPending={isPending} />}
 
       {/* ─── Header ─── */}
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <h1 className="text-[28px] lg:text-[32px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0">Plan y facturación.</h1>
-          <p className="mt-2 text-[13px] text-ink-5">Gestioná tu suscripción, créditos y consumo.</p>
-        </div>
-        <div className="hidden md:flex items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2.5 h-7">
-            <span className={cn("h-1.5 w-1.5 rounded-full", statusColor(data.subscription.status))} />
-            <span className="text-[11px] font-medium text-ink-0">{data.plan.name}</span>
-            <span className="text-[11px] text-ink-5">· {statusLabel(data.subscription.status)}</span>
+      <AdminPageHeader
+        eyebrow="Plan y facturación"
+        title="Plan y facturación"
+        subtitle="Gestioná tu suscripción, créditos y consumo."
+        actions={
+          <div className="hidden items-center gap-2 md:flex">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-paper)] px-3 h-9">
+              <span className={cn("h-1.5 w-1.5 rounded-full", statusColor(data.subscription.status))} />
+              <span className="text-[12px] font-medium text-ink-0">{data.plan.name}</span>
+              <span className="text-[11.5px] text-ink-5">· {statusLabel(data.subscription.status)}</span>
+            </div>
+            {data.isOps && (
+              <Link
+                href="/admin/billing/observability"
+                className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-paper)] px-3 text-[12px] font-medium text-ink-3 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0"
+              >
+                <BarChart3 className="h-3.5 w-3.5" strokeWidth={1.75} />
+                Métricas
+              </Link>
+            )}
           </div>
-          {data.isOps && (
-            <Link
-              href="/admin/billing/observability"
-              className="inline-flex items-center gap-1.5 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2.5 h-7 text-[11px] font-medium text-ink-5 transition-colors hover:text-ink-0 hover:bg-[var(--surface-2)]"
-            >
-              <BarChart3 className="h-3 w-3" strokeWidth={1.75} />
-              Métricas
-            </Link>
-          )}
-        </div>
-      </div>
+        }
+      />
 
       {/* ─── Overview Cards ─── */}
       <div className="grid grid-cols-1 gap-px overflow-hidden rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[color:var(--hairline)] md:grid-cols-3">

@@ -31,6 +31,8 @@ import type { CommercialData, OverviewData } from "@/lib/stats/types";
 import { DateRangePicker, type DateRangeValue } from "./DateRangePicker";
 import { RevenueHeroChart } from "./RevenueHeroChart";
 import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
+import { AdminMetric } from "@/components/admin/primitives/AdminMetric";
+import { AdminPanel } from "@/components/admin/primitives/AdminPanel";
 
 // ─── Stats Page · Rendimiento (minimalist redesign) ─────────────────────
 //
@@ -88,10 +90,7 @@ export function StatsPage({ overview, commercial }: StatsPageProps) {
       className="space-y-7"
     >
       <AdminPageHeader
-        index="01"
-        eyebrow={
-          isPending ? "Rendimiento · actualizando" : "Rendimiento · estadísticas"
-        }
+        eyebrow={isPending ? "Rendimiento · actualizando" : "Rendimiento"}
         title="Rendimiento"
         subtitle="Ingresos, conversión y comportamiento de catálogo sobre tu rango activo. Datos reales del backend."
         actions={<DateRangePicker value={range} onChange={handleRangeChange} />}
@@ -133,38 +132,34 @@ function PanelStream({
         />
       </section>
 
-      {/* ── KPI strip — compact, secondary ────────────────────────────── */}
+      {/* ── KPI strip — compact AdminMetric tiles ─────────────────────── */}
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        <KPICard
+        <AdminMetric
           label="Pedidos"
           value={fmtNumber(kpis.orders30d)}
-          change={kpis.ordersChange}
-          icon={<ShoppingCart className="h-4 w-4" strokeWidth={1.75} />}
+          delta={kpis.ordersChange ?? undefined}
         />
-        <KPICard
+        <AdminMetric
           label="Ticket promedio"
           value={fmtCurrency(kpis.avgTicket)}
-          change={kpis.avgTicketChange}
-          icon={<TrendingUp className="h-4 w-4" strokeWidth={1.75} />}
+          delta={kpis.avgTicketChange ?? undefined}
         />
-        <KPICard
+        <AdminMetric
           label="Margen neto"
           value={kpis.marginPercent !== null ? `${kpis.marginPercent}%` : "—"}
-          change={null}
-          icon={<CircleDollarSign className="h-4 w-4" strokeWidth={1.75} />}
-          tone={kpis.marginPercent !== null && kpis.marginPercent < 15 ? "warning" : "neutral"}
+          tone={
+            kpis.marginPercent !== null && kpis.marginPercent < 15
+              ? "warning"
+              : "neutral"
+          }
         />
-        <KPICard
+        <AdminMetric
           label="Clientes nuevos"
           value={fmtNumber(kpis.newCustomers30d)}
-          change={null}
-          icon={<Users className="h-4 w-4" strokeWidth={1.75} />}
         />
-        <KPICard
+        <AdminMetric
           label="Tasa repetición"
           value={kpis.repeatRate !== null ? `${kpis.repeatRate}%` : "—"}
-          change={null}
-          icon={<Sparkles className="h-4 w-4" strokeWidth={1.75} />}
         />
       </section>
 
@@ -205,52 +200,47 @@ function PanelStream({
 
       {/* ── Product performance table — only shown when there is data ── */}
       {commercial.topProducts.length > 0 && (
-        <section>
-          <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] shadow-[var(--shadow-card)]">
-            <div className="px-5 pb-2 pt-5">
-              <h3 className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">
-                Rendimiento de productos
-              </h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-[13px]">
-                <thead>
-                  <tr className="border-t border-[color:var(--hairline)] text-[10px] font-medium uppercase tracking-[0.12em] text-ink-6">
-                    <th className="px-5 py-2.5 text-left">#</th>
-                    <th className="px-5 py-2.5 text-left">Producto</th>
-                    <th className="px-5 py-2.5 text-right">Ingresos</th>
-                    <th className="px-5 py-2.5 text-right">Uds</th>
-                    <th className="px-5 py-2.5 text-right">Margen</th>
-                    <th className="px-5 py-2.5 text-right">Salud</th>
+        <AdminPanel
+          eyebrow="Rendimiento"
+          title="Productos por contribución"
+          dense
+          tone="plain"
+        >
+          <div className="overflow-x-auto">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Producto</th>
+                  <th style={{ textAlign: "right" }}>Ingresos</th>
+                  <th style={{ textAlign: "right" }}>Uds</th>
+                  <th style={{ textAlign: "right" }}>Margen</th>
+                  <th style={{ textAlign: "right" }}>Salud</th>
+                </tr>
+              </thead>
+              <tbody>
+                {commercial.topProducts.slice(0, 8).map((p, i) => (
+                  <tr key={p.id} className="admin-table-row">
+                    <td className="tabular-nums text-ink-6">{i + 1}</td>
+                    <td className="max-w-[200px] truncate font-medium text-ink-0">
+                      {p.title}
+                    </td>
+                    <td className="text-right tabular-nums text-ink-0">
+                      {fmtCurrency(p.revenue)}
+                    </td>
+                    <td className="text-right tabular-nums text-ink-0">{p.units}</td>
+                    <td className="text-right tabular-nums">
+                      <MarginBadge margin={p.marginPercent} />
+                    </td>
+                    <td className="text-right">
+                      <HealthBadge health={p.marginHealth} />
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {commercial.topProducts.slice(0, 8).map((p, i) => (
-                    <tr
-                      key={p.id}
-                      className="border-t border-[color:var(--hairline)] transition-colors hover:bg-[var(--surface-2)]"
-                    >
-                      <td className="px-5 py-2.5 tabular-nums text-ink-6">{i + 1}</td>
-                      <td className="max-w-[180px] truncate px-5 py-2.5 font-medium text-ink-0">
-                        {p.title}
-                      </td>
-                      <td className="px-5 py-2.5 text-right tabular-nums text-ink-0">
-                        {fmtCurrency(p.revenue)}
-                      </td>
-                      <td className="px-5 py-2.5 text-right tabular-nums text-ink-0">{p.units}</td>
-                      <td className="px-5 py-2.5 text-right tabular-nums">
-                        <MarginBadge margin={p.marginPercent} />
-                      </td>
-                      <td className="px-5 py-2.5 text-right">
-                        <HealthBadge health={p.marginHealth} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </section>
+        </AdminPanel>
       )}
 
       {/* ── Context strip ──────────────────────────────────────────────── */}
