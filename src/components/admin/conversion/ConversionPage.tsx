@@ -117,7 +117,7 @@ export function ConversionPage({ snapshot }: ConversionPageProps) {
             <div className="flex items-center gap-2 pb-1">
               <span
                 className={cn(
-                  "inline-flex items-center gap-1 rounded-[var(--r-md)] px-2.5 py-1 text-[12px] font-semibold tabular-nums",
+                  "inline-flex items-center gap-1 rounded-full px-3 py-1 text-[12px] font-semibold tabular-nums",
                   overallDelta > 0.001
                     ? "bg-[color:var(--signal-success)]/10 text-[color:var(--signal-success)]"
                     : overallDelta < -0.001
@@ -157,7 +157,7 @@ export function ConversionPage({ snapshot }: ConversionPageProps) {
                 {snapshot.primaryFriction.label}
               </p>
               <div className="flex items-center gap-3">
-                <span className="inline-flex items-center gap-1.5 rounded-[var(--r-md)] bg-[color:var(--signal-danger)]/10 px-2.5 py-1 text-[12px] font-semibold tabular-nums text-[color:var(--signal-danger)]">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[color:var(--signal-danger)]/10 px-3 py-1 text-[12px] font-semibold tabular-nums text-[color:var(--signal-danger)]">
                   <TrendingDown className="h-3.5 w-3.5" strokeWidth={2} />
                   −{fmtNumber(snapshot.primaryFriction.drop)} ({fmtRate(snapshot.primaryFriction.ratio)})
                 </span>

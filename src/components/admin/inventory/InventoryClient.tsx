@@ -224,7 +224,7 @@ export function InventoryClient({ items, variantIntel, focusVariantId, focusActi
                       <p className="text-[13px] leading-[1.55] text-ink-5 mt-2 max-w-sm mx-auto">No hay variantes que coincidan con estos filtros.</p>
                       <button
                         onClick={() => { setSearchQuery(""); setActiveTab("all"); }}
-                        className="mt-6 inline-flex items-center h-10 px-5 bg-[var(--surface-0)] border border-[color:var(--hairline-strong)] text-ink-0 text-[13px] font-medium rounded-[var(--r-sm)] hover:bg-[var(--surface-2)] transition-colors"
+                        className="mt-6 inline-flex items-center h-10 px-5 bg-[var(--surface-0)] border border-[color:var(--hairline-strong)] text-ink-0 text-[13px] font-medium rounded-full hover:bg-[var(--surface-2)] transition-colors"
                       >
                         Limpiar filtros
                       </button>
@@ -389,14 +389,14 @@ export function InventoryClient({ items, variantIntel, focusVariantId, focusActi
                 <button
                   onClick={() => !isPending && setAdjustTarget(null)}
                   disabled={isPending}
-                  className="inline-flex items-center h-10 px-4 text-[13px] font-medium text-ink-0 bg-[var(--surface-0)] border border-[color:var(--hairline-strong)] rounded-[var(--r-sm)] hover:bg-[var(--surface-2)] transition-colors"
+                  className="inline-flex items-center h-10 px-4 text-[13px] font-medium text-ink-0 bg-[var(--surface-0)] border border-[color:var(--hairline-strong)] rounded-full hover:bg-[var(--surface-2)] transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleAdjust}
                   disabled={isPending}
-                  className="inline-flex items-center h-10 px-5 text-[13px] font-medium text-ink-12 bg-ink-0 rounded-[var(--r-sm)] hover:bg-ink-2 transition-colors disabled:opacity-50"
+                  className="inline-flex items-center h-10 px-5 text-[13px] font-medium text-ink-12 bg-ink-0 rounded-full hover:bg-ink-2 transition-colors disabled:opacity-50"
                 >
                   {isPending ? "Aplicando…" : "Confirmar ajuste"}
                 </button>

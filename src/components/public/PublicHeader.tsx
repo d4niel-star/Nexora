@@ -12,19 +12,19 @@ export function PublicHeader() {
         <nav className="flex items-center gap-1 sm:gap-2 text-[13px]">
           <Link
             href="/home/pricing"
-            className="hidden rounded-[var(--r-sm)] px-3 py-2.5 text-[var(--chrome-fg-muted)] transition-colors hover:bg-[var(--chrome-hover)] hover:text-[var(--chrome-fg)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus-on-dark)] sm:inline-flex sm:min-h-11 sm:items-center"
+            className="hidden rounded-full px-3.5 py-2 text-[var(--chrome-fg-muted)] transition-colors hover:bg-[var(--chrome-hover)] hover:text-[var(--chrome-fg)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus-on-dark)] sm:inline-flex sm:min-h-11 sm:items-center"
           >
             Planes
           </Link>
           <Link
             href="/home/login"
-            className="inline-flex min-h-11 items-center rounded-[var(--r-sm)] px-3 py-2.5 text-[var(--chrome-fg-muted)] transition-colors hover:bg-[var(--chrome-hover)] hover:text-[var(--chrome-fg)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus-on-dark)]"
+            className="inline-flex min-h-11 items-center rounded-full px-3.5 py-2 text-[var(--chrome-fg-muted)] transition-colors hover:bg-[var(--chrome-hover)] hover:text-[var(--chrome-fg)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus-on-dark)]"
           >
             Ingresar
           </Link>
           <Link
             href="/home/register"
-            className="group inline-flex min-h-11 items-center gap-1.5 rounded-[var(--r-md)] bg-[var(--accent-500)] px-4 text-[13px] font-medium text-[var(--accent-ink)] transition-colors hover:bg-[var(--accent-600)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus-on-dark)]"
+            className="group inline-flex min-h-11 items-center gap-1.5 rounded-full bg-[var(--accent-500)] px-4 text-[13px] font-medium text-[var(--accent-ink)] transition-colors hover:bg-[var(--accent-600)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus-on-dark)]"
           >
             Empezar
             <ArrowRight

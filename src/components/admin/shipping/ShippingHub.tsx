@@ -392,7 +392,7 @@ function Alert({
         {cta ? (
           <Link
             href={cta.href}
-            className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 text-[12px] font-medium text-ink-3 transition-colors hover:bg-[var(--surface-2)]"
+            className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 text-[12px] font-medium text-ink-3 transition-colors hover:bg-[var(--surface-2)]"
           >
             {cta.label}
             <ArrowRight className="h-3 w-3" strokeWidth={1.75} />

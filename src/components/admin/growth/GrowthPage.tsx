@@ -202,7 +202,7 @@ function GrowthCard({
       <div className="mt-auto pt-5">
         <Link
           href={cta.href}
-          className="inline-flex h-10 items-center justify-center gap-1.5 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-4 text-[12.5px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-1)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+          className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-4 text-[12.5px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-1)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
         >
           {cta.label}
           <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
@@ -271,7 +271,7 @@ export function GrowthPage({ snapshot }: GrowthPageProps) {
             </p>
             <Link
               href="/admin/orders"
-              className="mt-5 inline-flex h-10 items-center justify-center gap-1.5 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-4 text-[12.5px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-1)]"
+              className="mt-5 inline-flex h-10 items-center justify-center gap-1.5 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-4 text-[12.5px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-1)]"
             >
               Ver pedidos
               <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
@@ -566,7 +566,7 @@ export function GrowthPage({ snapshot }: GrowthPageProps) {
           </div>
           <Link
             href="/admin/apps"
-            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-4 text-[12.5px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-1)]"
+            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-4 text-[12.5px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-1)]"
           >
             Ver todas las apps
             <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />

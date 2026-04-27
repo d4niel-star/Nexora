@@ -148,7 +148,7 @@ export default function MarketingLandingPage() {
             <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:gap-4">
               <Link
                 href="/home/register"
-                className="group inline-flex h-12 min-h-12 min-w-[180px] items-center justify-center gap-2 rounded-[var(--r-md)] bg-ink-0 px-8 text-[15px] font-medium text-ink-12 transition-[background-color,transform] duration-[var(--dur-base)] hover:bg-ink-2 active:translate-y-px focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+                className="group inline-flex h-12 min-h-12 min-w-[180px] items-center justify-center gap-2 rounded-full bg-ink-0 px-8 text-[15px] font-medium text-ink-12 transition-[background-color,transform] duration-[var(--dur-base)] hover:bg-ink-2 active:translate-y-px focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
               >
                 Crear cuenta
                 <ArrowRight
@@ -158,7 +158,7 @@ export default function MarketingLandingPage() {
               </Link>
               <Link
                 href="/home/pricing"
-                className="inline-flex h-12 min-h-12 min-w-[180px] items-center justify-center rounded-[var(--r-md)] border border-[color:var(--hairline-strong)] bg-[var(--surface-paper)] px-8 text-[15px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] active:translate-y-px focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+                className="inline-flex h-12 min-h-12 min-w-[180px] items-center justify-center rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-paper)] px-8 text-[15px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] active:translate-y-px focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
               >
                 Ver planes
               </Link>
@@ -238,7 +238,7 @@ export default function MarketingLandingPage() {
               <StaggerItem key={mod.title}>
                 <article className="group flex h-full flex-col gap-5 rounded-[var(--r-lg)] border border-[color:var(--card-border)] bg-[var(--surface-paper)] p-6 shadow-[var(--shadow-soft)] transition-shadow hover:shadow-[var(--shadow-card-hover)]">
                   <div className="flex items-center justify-between">
-                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-[var(--r-md)] bg-[var(--brand-soft)] text-[var(--brand)]">
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--brand-soft)] text-[var(--brand)]">
                       <mod.icon className="h-5 w-5" strokeWidth={1.75} />
                     </span>
                     <ArrowUpRight className="h-4 w-4 text-ink-6 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" strokeWidth={1.75} />
@@ -360,7 +360,7 @@ export default function MarketingLandingPage() {
             <div className="mt-12 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
               <Link
                 href="/home/register"
-                className="group inline-flex h-12 min-h-12 min-w-[200px] items-center justify-center gap-2 rounded-[var(--r-md)] bg-ink-0 px-8 text-[15px] font-medium text-ink-12 transition-colors hover:bg-ink-2 active:translate-y-px focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+                className="group inline-flex h-12 min-h-12 min-w-[200px] items-center justify-center gap-2 rounded-full bg-ink-0 px-8 text-[15px] font-medium text-ink-12 transition-colors hover:bg-ink-2 active:translate-y-px focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
               >
                 Empezar con Nexora
                 <ArrowRight
@@ -370,7 +370,7 @@ export default function MarketingLandingPage() {
               </Link>
               <Link
                 href="/home/pricing"
-                className="inline-flex h-12 min-h-12 min-w-[200px] items-center justify-center rounded-[var(--r-md)] border border-[color:var(--hairline-strong)] bg-[var(--surface-paper)] px-8 text-[15px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] active:translate-y-px focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+                className="inline-flex h-12 min-h-12 min-w-[200px] items-center justify-center rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-paper)] px-8 text-[15px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] active:translate-y-px focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
               >
                 Ver planes
               </Link>

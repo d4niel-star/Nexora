@@ -8,9 +8,9 @@ import { PageReveal } from "@/components/public/PublicMotion";
 import { loginAction, resendVerificationAction } from "@/app/home/auth-actions";
 
 const inputClass =
-  "flex min-h-12 h-12 w-full rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3.5 text-[15px] text-ink-0 placeholder:text-ink-6 " +
+  "flex min-h-12 h-12 w-full rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3.5 text-[15px] text-ink-0 placeholder:text-ink-6 " +
   "transition-[box-shadow,border-color] duration-[var(--dur-base)] ease-[var(--ease-out)] " +
-  "focus:border-[var(--accent-500)] focus:outline-none focus:shadow-[var(--shadow-focus)]";
+  "focus:border-[color:var(--hairline-strong)] focus:outline-none focus:shadow-[var(--shadow-focus)]";
 
 const labelClass = "mb-1.5 block text-[12px] font-medium text-ink-5";
 
@@ -126,7 +126,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isPending}
-              className="inline-flex h-12 min-h-12 w-full items-center justify-center rounded-[var(--r-md)] bg-ink-0 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2 active:translate-y-px disabled:cursor-not-allowed disabled:bg-ink-8 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+              className="inline-flex h-12 min-h-12 w-full items-center justify-center rounded-full bg-ink-0 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2 active:translate-y-px disabled:cursor-not-allowed disabled:bg-ink-8 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
             >
               {isPending ? "Ingresando..." : "Iniciar sesion"}
             </button>

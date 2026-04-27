@@ -223,7 +223,7 @@ function OrderRow({
         </p>
         <Link
           href={`/admin/orders/${row.id}`}
-          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-3.5 text-[12px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-1)]"
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-3.5 text-[12px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-1)]"
         >
           {ctaLabel}
           <ArrowRight className="h-3 w-3" strokeWidth={1.75} />
@@ -299,7 +299,7 @@ function CustomerRow({
         </p>
         <Link
           href={`/admin/customers?email=${encodeURIComponent(row.email)}`}
-          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-3.5 text-[12px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-1)]"
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-3.5 text-[12px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-1)]"
         >
           Contactar
           <ArrowRight className="h-3 w-3" strokeWidth={1.75} />
@@ -356,7 +356,7 @@ function LeverCard({
       )}
       <Link
         href={cta.href}
-        className="mt-auto inline-flex h-10 items-center justify-center gap-1.5 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-4 text-[12.5px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-1)]"
+        className="mt-auto inline-flex h-10 items-center justify-center gap-1.5 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-4 text-[12.5px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-1)]"
       >
         {cta.label}
         <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />

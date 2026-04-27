@@ -123,7 +123,7 @@ export function MarketplacePage({
       </header>
 
       {/* Tab switch — explicit Internal vs External separation */}
-      <div className="inline-flex items-center rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-1)] p-1">
+      <div className="inline-flex items-center rounded-full border border-[color:var(--hairline)] bg-[var(--surface-1)] p-1">
         <TabButton
           active={tab === "internal"}
           onClick={() => setTab("internal")}
@@ -183,7 +183,7 @@ function TabButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex h-9 items-center gap-2 rounded-[var(--r-sm)] px-3.5 text-[12px] font-medium transition-colors",
+        "inline-flex h-9 items-center gap-2 rounded-full px-3.5 text-[12px] font-medium transition-colors",
         active
           ? "bg-[var(--surface-paper)] text-ink-0 shadow-[var(--shadow-card)]"
           : "text-ink-5 hover:text-ink-0",
@@ -467,7 +467,7 @@ function ExternalCard({ app }: { app: ExternalAppDefinition }) {
 function ExternalAction({ app }: { app: ExternalAppDefinition }) {
   if (app.action.kind === "none") {
     return (
-      <span className="inline-flex h-8 cursor-not-allowed items-center gap-1 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 text-[12px] font-medium text-ink-6">
+      <span className="inline-flex h-8 cursor-not-allowed items-center gap-1 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 text-[12px] font-medium text-ink-6">
         {app.availability === "review" ? (
           <Clock className="h-3 w-3" strokeWidth={2} />
         ) : (
@@ -573,7 +573,7 @@ function FilterPill({
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex h-8 items-center rounded-[var(--r-sm)] px-3 text-[12px] font-medium transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
+        "inline-flex h-8 items-center rounded-full px-3 text-[12px] font-medium transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
         active
           ? "bg-ink-0 text-ink-12"
           : "border border-[color:var(--hairline)] bg-[var(--surface-paper)] text-ink-3 hover:bg-[var(--surface-2)]",

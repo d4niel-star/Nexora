@@ -445,7 +445,7 @@ function MercadoPagoActions({
       return (
         <a
           href="/admin/settings/integrations/mercadopago"
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-4 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-ink-0 px-4 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
         >
           <CreditCard className="h-3.5 w-3.5" />
           Configurar plataforma
@@ -453,7 +453,7 @@ function MercadoPagoActions({
       );
     }
     return (
-      <span className="inline-flex h-10 items-center gap-2 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-4 text-[12px] font-medium text-ink-5">
+      <span className="inline-flex h-10 items-center gap-2 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-1)] px-4 text-[12px] font-medium text-ink-5">
         <Info className="h-3.5 w-3.5" />
         Pendiente del equipo operativo
       </span>
@@ -487,7 +487,7 @@ function MercadoPagoActions({
       <div className="flex flex-wrap items-center justify-end gap-2">
         <a
           href="/api/payments/mercadopago/oauth/start"
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-[var(--r-sm)] bg-[color:var(--signal-warning)] px-4 text-[13px] font-medium text-ink-12 transition-[background-color,box-shadow] hover:brightness-105"
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[color:var(--signal-warning)] px-4 text-[13px] font-medium text-ink-12 transition-[background-color,box-shadow] hover:brightness-105"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           Reconectar Mercado Pago
@@ -505,7 +505,7 @@ function MercadoPagoActions({
   }
   if (status === "connecting" || status === "validating" || status === "disconnecting") {
     return (
-      <span className="inline-flex h-10 items-center gap-2 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-4 text-[13px] font-medium text-ink-5">
+      <span className="inline-flex h-10 items-center gap-2 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-1)] px-4 text-[13px] font-medium text-ink-5">
         <Loader2 className="h-3.5 w-3.5 animate-spin" />
         {hero.title}
       </span>
@@ -515,7 +515,7 @@ function MercadoPagoActions({
   return (
     <a
       href="/api/payments/mercadopago/oauth/start"
-      className="inline-flex h-10 items-center justify-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-4 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
+      className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-ink-0 px-4 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
     >
       <CreditCard className="h-3.5 w-3.5" />
       Conectar Mercado Pago

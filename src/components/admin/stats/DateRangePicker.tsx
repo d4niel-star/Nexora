@@ -126,14 +126,14 @@ export function DateRangePicker({
               aria-selected={active}
               onClick={() => onChange(preset.resolve())}
               className={cn(
-                "relative rounded-[var(--r-sm)] px-2.5 py-1.5 text-[12px] font-medium leading-none tabular-nums outline-none transition-colors focus-visible:shadow-[var(--shadow-focus)]",
+                "relative rounded-full px-3 py-1.5 text-[12px] font-medium leading-none tabular-nums outline-none transition-colors focus-visible:shadow-[var(--shadow-focus)]",
                 active ? "text-ink-0" : "text-ink-5 hover:text-ink-0",
               )}
             >
               {active && (
                 <motion.span
                   layoutId="stats-range-pill"
-                  className="absolute inset-0 rounded-[var(--r-sm)] bg-[var(--surface-2)]"
+                  className="absolute inset-0 rounded-full bg-[var(--surface-2)]"
                   transition={{ type: "spring", stiffness: 480, damping: 38 }}
                 />
               )}
@@ -159,7 +159,7 @@ export function DateRangePicker({
             aria-expanded={open}
             aria-haspopup="dialog"
             className={cn(
-              "group inline-flex items-center gap-1.5 rounded-[var(--r-sm)] px-2 py-1.5 text-[12px] font-medium leading-none tabular-nums outline-none transition-colors focus-visible:shadow-[var(--shadow-focus)]",
+              "group inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[12px] font-medium leading-none tabular-nums outline-none transition-colors focus-visible:shadow-[var(--shadow-focus)]",
               activePresetId === null
                 ? "text-ink-0"
                 : "text-ink-5 hover:text-ink-0",
@@ -206,7 +206,7 @@ export function DateRangePicker({
                       setOpen(false);
                     }}
                     className={cn(
-                      "rounded-[var(--r-sm)] px-2.5 py-1.5 text-[12px] font-medium leading-none tabular-nums transition-colors",
+                      "rounded-full px-3 py-1.5 text-[12px] font-medium leading-none tabular-nums transition-colors",
                       active
                         ? "bg-[var(--accent-500)] text-white"
                         : "bg-[var(--surface-2)] text-ink-5 hover:text-ink-0",
@@ -272,7 +272,7 @@ function CalendarRange({ value, onChange, onClose }: CalendarRangeProps) {
           type="button"
           aria-label="Mes anterior"
           onClick={() => setCursor((c) => new Date(Date.UTC(c.getUTCFullYear(), c.getUTCMonth() - 1, 1)))}
-          className="inline-flex h-7 w-7 items-center justify-center rounded-[var(--r-sm)] text-ink-5 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0"
+          className="inline-flex h-7 w-7 items-center justify-center rounded-full text-ink-5 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0"
         >
           <ChevronLeft className="h-4 w-4" strokeWidth={1.75} />
         </button>
@@ -284,7 +284,7 @@ function CalendarRange({ value, onChange, onClose }: CalendarRangeProps) {
           type="button"
           aria-label="Mes siguiente"
           onClick={() => setCursor((c) => new Date(Date.UTC(c.getUTCFullYear(), c.getUTCMonth() + 1, 1)))}
-          className="inline-flex h-7 w-7 items-center justify-center rounded-[var(--r-sm)] text-ink-5 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0"
+          className="inline-flex h-7 w-7 items-center justify-center rounded-full text-ink-5 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0"
         >
           <ChevronRight className="h-4 w-4" strokeWidth={1.75} />
         </button>
@@ -314,7 +314,7 @@ function CalendarRange({ value, onChange, onClose }: CalendarRangeProps) {
         <button
           type="button"
           onClick={onClose}
-          className="rounded-[var(--r-sm)] px-2.5 py-1 text-[11px] font-medium text-ink-5 hover:text-ink-0"
+          className="rounded-full px-3 py-1.5 text-[11px] font-medium text-ink-5 hover:text-ink-0"
         >
           Cerrar
         </button>

@@ -915,7 +915,7 @@ function ProviderWorkbench({ connection, onBack, onImportSuccess }: { connection
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <button onClick={onBack} className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] text-ink-5 hover:text-ink-0 hover:bg-[var(--surface-2)] transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]">
+        <button onClick={onBack} className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[color:var(--hairline)] bg-[var(--surface-0)] text-ink-5 hover:text-ink-0 hover:bg-[var(--surface-2)] transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]">
           <ChevronRight className="h-4 w-4 rotate-180" strokeWidth={1.75} />
         </button>
         <div>

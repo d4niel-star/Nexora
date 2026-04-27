@@ -349,7 +349,7 @@ function EmptyCTA({
   return (
     <Link
       href={href}
-      className="inline-flex h-10 items-center gap-1.5 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-4 text-[13px] font-medium text-ink-0 transition-colors hover:bg-ink-11"
+      className="inline-flex h-10 items-center gap-1.5 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-0)] px-4 text-[13px] font-medium text-ink-0 transition-colors hover:bg-ink-11"
     >
       {icon}
       {label}

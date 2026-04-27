@@ -188,7 +188,7 @@ export function BillingPage() {
             <button 
               onClick={handleBuyCredits} 
               disabled={isPending}
-              className="mt-4 w-full h-9 rounded-[var(--r-sm)] bg-[var(--surface-0)] border border-[color:var(--hairline-strong)] text-[12px] font-medium text-ink-0 hover:bg-[var(--surface-2)] transition-colors disabled:opacity-50"
+              className="mt-4 w-full h-9 rounded-full bg-[var(--surface-0)] border border-[color:var(--hairline-strong)] text-[12px] font-medium text-ink-0 hover:bg-[var(--surface-2)] transition-colors disabled:opacity-50"
             >
               Comprar 1.000 créditos extras ({formatARS(20000)})
             </button>
@@ -280,7 +280,7 @@ export function BillingPage() {
 
                 <div className="px-6 pb-6">
                   {isCurrent ? (
-                    <div className="inline-flex w-full items-center justify-center gap-1.5 rounded-[var(--r-sm)] border border-ink-12/15 h-10 text-[12px] font-medium text-ink-12/70">
+                    <div className="inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-ink-12/15 h-10 text-[12px] font-medium text-ink-12/70">
                       <Check className="h-3.5 w-3.5" strokeWidth={2} />
                       Tu plan actual
                     </div>
@@ -288,7 +288,7 @@ export function BillingPage() {
                     <button
                       onClick={() => handleUpgrade(plan.code)}
                       disabled={isPending}
-                      className="flex w-full items-center justify-center gap-1.5 rounded-[var(--r-sm)] bg-ink-0 h-10 text-[12px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:opacity-40"
+                      className="flex w-full items-center justify-center gap-1.5 rounded-full bg-ink-0 h-10 text-[12px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:opacity-40"
                       type="button"
                     >
                       Actualizar a {plan.name}
@@ -458,8 +458,8 @@ function RecoveryCard({ status, planName, onResolve, isPending }: RecoveryCardPr
     <div className={cn(
       "rounded-[var(--r-md)] border-2 p-6",
       status === "past_due"
-        ? "border-[color:var(--signal-warning)] bg-[#FFFBEB]"
-        : "border-[color:var(--signal-danger)] bg-[#FEF2F2]"
+        ? "border-[color:var(--signal-warning)] bg-[color:color-mix(in_srgb,var(--signal-warning)_10%,var(--surface-0))]"
+        : "border-[color:var(--signal-danger)] bg-[color:color-mix(in_srgb,var(--signal-danger)_8%,var(--surface-0))]"
     )}>
       <div className="flex items-start gap-4">
         <div className={cn(
@@ -508,10 +508,10 @@ function RecoveryCard({ status, planName, onResolve, isPending }: RecoveryCardPr
               onClick={onResolve}
               disabled={isPending}
               className={cn(
-                "inline-flex items-center gap-2 rounded-[var(--r-sm)] px-5 h-10 text-[13px] font-semibold text-white transition-colors disabled:opacity-50",
+                "inline-flex items-center gap-2 rounded-full px-5 h-10 text-[13px] font-semibold text-white transition-colors disabled:opacity-50",
                 status === "past_due"
-                  ? "bg-[#D97706] hover:bg-[#B45309]"
-                  : "bg-[#DC2626] hover:bg-[#B91C1C]"
+                  ? "bg-[color:var(--signal-warning)] hover:brightness-95"
+                  : "bg-[color:var(--signal-danger)] hover:brightness-95"
               )}
             >
               {isPending ? (

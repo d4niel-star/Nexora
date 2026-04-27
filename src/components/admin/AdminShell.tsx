@@ -318,7 +318,7 @@ export function AdminShell({
           aria-label="Cerrar menú"
           type="button"
           onClick={closeSidebar}
-          className="inline-flex h-11 w-11 items-center justify-center rounded-[var(--r-sm)] text-[var(--sidebar-fg)] transition-colors hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-fg-active)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus-on-dark)] md:hidden"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-full text-[var(--sidebar-fg)] transition-colors hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-fg-active)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus-on-dark)] md:hidden"
         >
           <X className="h-4 w-4" strokeWidth={1.75} />
         </button>
@@ -404,7 +404,7 @@ export function AdminShell({
               aria-label="Abrir menú"
               type="button"
               onClick={() => setSidebarOpen(true)}
-              className="-ml-1 inline-flex h-11 w-11 items-center justify-center rounded-[var(--r-sm)] text-[var(--chrome-fg-muted)] transition-colors hover:bg-[var(--chrome-hover)] hover:text-[var(--chrome-fg)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus-on-dark)] md:hidden"
+              className="-ml-1 inline-flex h-11 w-11 items-center justify-center rounded-full text-[var(--chrome-fg-muted)] transition-colors hover:bg-[var(--chrome-hover)] hover:text-[var(--chrome-fg)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus-on-dark)] md:hidden"
             >
               <Menu className="h-5 w-5" strokeWidth={1.75} />
             </button>

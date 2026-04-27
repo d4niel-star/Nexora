@@ -286,14 +286,14 @@ export default function CatalogClient({
             <button
               onClick={handleExportCsv}
               disabled={filtered.length === 0}
-              className="inline-flex h-10 items-center gap-2 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-4 text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-10 items-center gap-2 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-4 text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] disabled:cursor-not-allowed disabled:opacity-50"
               title={filtered.length === 0 ? "Nada para exportar" : "Exportar CSV"}
             >
               Exportar CSV
             </button>
             <button
               onClick={() => setManualOpen(true)}
-              className="inline-flex h-10 items-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-4 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
+              className="inline-flex h-10 items-center gap-2 rounded-full bg-ink-0 px-4 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
             >
               <Plus className="h-4 w-4" strokeWidth={1.75} />
               Agregar manual
@@ -683,7 +683,7 @@ function EmptyState({
         </div>
         <button
           onClick={onClear}
-          className="inline-flex h-9 items-center rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-4 text-[12px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)]"
+          className="inline-flex h-9 items-center rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-4 text-[12px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)]"
         >
           Limpiar filtros
         </button>
@@ -702,7 +702,7 @@ function EmptyState({
       </div>
       <button
         onClick={onAdd}
-        className="inline-flex h-9 items-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-4 text-[12px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
+        className="inline-flex h-9 items-center gap-2 rounded-full bg-ink-0 px-4 text-[12px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
       >
         <Plus className="h-3.5 w-3.5" /> Agregar producto manual
       </button>

@@ -113,7 +113,7 @@ export default function PricingPage() {
                       </p>
                     </div>
                     {isHighlight && (
-                      <span className="inline-flex h-6 items-center rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-4">
+                      <span className="inline-flex h-6 items-center rounded-full border border-[color:var(--hairline)] bg-[var(--surface-0)] px-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-4">
                         Recomendado
                       </span>
                     )}
@@ -132,7 +132,7 @@ export default function PricingPage() {
                     <Link
                       href="/home/register"
                       className={cn(
-                        "group inline-flex h-12 min-h-12 w-full items-center justify-center gap-1.5 rounded-[var(--r-md)] text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
+                        "group inline-flex h-12 min-h-12 w-full items-center justify-center gap-1.5 rounded-full text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
                         isHighlight
                           ? "bg-ink-0 text-ink-12 hover:bg-ink-2"
                           : "border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-ink-0 hover:bg-[var(--surface-2)]",

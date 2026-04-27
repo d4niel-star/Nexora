@@ -120,7 +120,7 @@ export function CommunicationPage({ initialSettings, embedded = false }: Props) 
           disabled={!dirty || saving}
           onClick={handleSave}
           className={cn(
-            "inline-flex h-10 items-center gap-2 rounded-[var(--r-md)] px-5 text-[13px] font-semibold transition-all duration-[var(--dur-base)]",
+            "inline-flex h-10 items-center gap-2 rounded-full px-5 text-[13px] font-semibold transition-all duration-[var(--dur-base)]",
             dirty
               ? "bg-ink-0 text-ink-12 shadow-[var(--shadow-sm)] hover:bg-ink-2 active:scale-[0.97]"
               : "bg-ink-10 text-ink-6 cursor-not-allowed",
@@ -139,14 +139,14 @@ export function CommunicationPage({ initialSettings, embedded = false }: Props) 
 
       {/* Error banner */}
       {error && (
-        <div className="flex items-center gap-3 rounded-[var(--r-md)] border border-[var(--signal-danger)] bg-red-50 px-4 py-3">
-          <AlertCircle className="h-4 w-4 shrink-0 text-[var(--signal-danger)]" />
-          <p className="text-[13px] text-[var(--signal-danger)]">{error}</p>
+        <div className="flex items-center gap-3 rounded-[var(--r-md)] border border-[color:color-mix(in_srgb,var(--signal-danger)_30%,var(--hairline))] bg-[color:color-mix(in_srgb,var(--signal-danger)_8%,var(--surface-0))] px-4 py-3">
+          <AlertCircle className="h-4 w-4 shrink-0 text-[color:var(--signal-danger)]" />
+          <p className="text-[13px] text-[color:var(--signal-danger)]">{error}</p>
         </div>
       )}
 
       {/* Section nav */}
-      <div className="flex gap-1 rounded-[var(--r-md)] bg-[var(--surface-1)] p-1">
+      <div className="flex gap-1 rounded-full bg-[var(--surface-1)] p-1">
         {sections.map((s) => {
           const Icon = s.icon;
           return (
@@ -155,9 +155,9 @@ export function CommunicationPage({ initialSettings, embedded = false }: Props) 
               type="button"
               onClick={() => setActiveSection(s.id)}
               className={cn(
-                "flex flex-1 items-center justify-center gap-2 rounded-[var(--r-sm)] py-2.5 text-[13px] font-medium transition-all duration-[var(--dur-base)]",
+                "flex flex-1 items-center justify-center gap-2 rounded-full py-2.5 text-[13px] font-medium transition-all duration-[var(--dur-base)]",
                 activeSection === s.id
-                  ? "bg-[var(--surface-0)] text-ink-0 shadow-sm"
+                  ? "bg-[var(--surface-0)] text-ink-0 shadow-[var(--shadow-card)]"
                   : "text-ink-4 hover:text-ink-2",
               )}
             >
@@ -359,13 +359,13 @@ export function CommunicationPage({ initialSettings, embedded = false }: Props) 
           </div>
 
           {!settings.whatsapp.number ? (
-            <div className="flex items-start gap-3 rounded-[var(--r-md)] bg-amber-50 border border-amber-200 p-4">
-              <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+            <div className="flex items-start gap-3 rounded-[var(--r-md)] border border-[color:color-mix(in_srgb,var(--signal-warning)_30%,var(--hairline))] bg-[color:color-mix(in_srgb,var(--signal-warning)_10%,var(--surface-0))] p-4">
+              <AlertCircle className="h-4 w-4 shrink-0 text-[color:var(--signal-warning)] mt-0.5" />
               <div>
-                <p className="text-[13px] font-medium text-amber-800">
+                <p className="text-[13px] font-medium text-[color:var(--signal-warning)]">
                   Primero configurá tu número de WhatsApp
                 </p>
-                <p className="mt-0.5 text-[12px] text-amber-600">
+                <p className="mt-0.5 text-[12px] text-ink-5">
                   Andá a la sección &ldquo;Canales&rdquo; y agregá tu número de WhatsApp
                   para poder activar el botón flotante.
                 </p>
@@ -407,7 +407,7 @@ export function CommunicationPage({ initialSettings, embedded = false }: Props) 
                             updateWhatsApp({ buttonPosition: opt.value })
                           }
                           className={cn(
-                            "flex-1 rounded-[var(--r-md)] border px-4 py-2.5 text-[13px] font-medium transition-all",
+                            "flex-1 rounded-full border px-4 py-2.5 text-[13px] font-medium transition-all",
                             settings.whatsapp.buttonPosition === opt.value
                               ? "border-ink-0 bg-ink-0 text-ink-12"
                               : "border-[color:var(--hairline)] bg-[var(--surface-0)] text-ink-4 hover:border-ink-6",

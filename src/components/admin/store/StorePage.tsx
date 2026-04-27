@@ -298,7 +298,7 @@ export function StorePage({
           <button
             type="button"
             onClick={refreshData}
-            className="inline-flex h-9 items-center gap-2 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3.5 text-[12.5px] font-medium text-ink-2 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0"
+            className="inline-flex h-9 items-center gap-2 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3.5 text-[12.5px] font-medium text-ink-2 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0"
           >
             <RefreshCw className="h-3.5 w-3.5" />
             Actualizar
@@ -322,7 +322,7 @@ export function StorePage({
                 aria-selected={active}
                 onClick={() => handleTabChange(tab.value)}
                 className={cn(
-                  "relative inline-flex items-center gap-2 whitespace-nowrap rounded-[var(--r-sm)] px-3.5 py-2 text-[12.5px] font-medium transition-colors",
+                  "relative inline-flex items-center gap-2 whitespace-nowrap rounded-full px-3.5 py-2 text-[12.5px] font-medium transition-colors",
                   "focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
                   active ? "text-ink-12" : "text-ink-3 hover:text-ink-0",
                 )}
@@ -330,7 +330,7 @@ export function StorePage({
                 {active ? (
                   <motion.span
                     layoutId="store-tab-pill"
-                    className="absolute inset-0 -z-0 rounded-[var(--r-sm)] bg-ink-0"
+                    className="absolute inset-0 -z-0 rounded-full bg-ink-0"
                     transition={{ type: "spring", stiffness: 360, damping: 32 }}
                   />
                 ) : null}
@@ -391,7 +391,7 @@ export function StorePage({
                       <button
                         type="button"
                         onClick={refreshData}
-                        className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-4 text-[12.5px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-1)]"
+                        className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-4 text-[12.5px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-1)]"
                       >
                         <RefreshCw className="h-3.5 w-3.5" />
                         Reintentar
@@ -484,7 +484,7 @@ function ToastViewport({
               <button
                 type="button"
                 aria-label="Cerrar"
-                className="rounded-[var(--r-sm)] p-1 text-ink-5 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0"
+                className="rounded-full p-1.5 text-ink-5 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0"
                 onClick={() => onDismiss(toast.id)}
               >
                 <X className="h-4 w-4" />
