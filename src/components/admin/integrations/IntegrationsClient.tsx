@@ -25,6 +25,7 @@ import type {
 import type { HealthCenterData } from "@/types/health";
 import { HealthCenter } from "./HealthCenter";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
 
 type TabValue = "all" | "payments" | "logistics" | "providers" | "retention" | "ads" | "health";
 
@@ -80,6 +81,13 @@ export function IntegrationsClient({ initialData, healthData }: { initialData: U
 
   return (
     <div className="animate-in fade-in space-y-8 pb-32 duration-700">
+      <AdminPageHeader
+        index="01"
+        eyebrow="Integraciones"
+        title="Integraciones"
+        subtitle="Pagos, logística, proveedores, retención y publicidad. Todas las conexiones reales de tu tienda, con diagnóstico y acción correcta."
+      />
+      {false && (
       <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
         <div>
           <h1 className="text-[28px] lg:text-[32px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0">Integraciones.</h1>
@@ -100,6 +108,7 @@ export function IntegrationsClient({ initialData, healthData }: { initialData: U
           </button>
         )}
       </div>
+      )}
 
       <div className="relative overflow-hidden rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)]">
         <div className="flex items-center gap-7 overflow-x-auto border-b border-[color:var(--hairline)] bg-[var(--surface-1)] px-6 no-scrollbar">

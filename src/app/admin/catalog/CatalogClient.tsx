@@ -29,6 +29,7 @@ import { buildVariantHref } from "@/lib/navigation/hrefs";
 import { ProductStatusBadge } from "../../../components/admin/catalog/ProductStatusBadge";
 import { ProductDrawer } from "../../../components/admin/catalog/ProductDrawer";
 import { ManualProductModal } from "../../../components/admin/catalog/ManualProductModal";
+import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
 
 // ─── Catalog admin surface ────────────────────────────────────────────────
 //
@@ -273,16 +274,13 @@ export default function CatalogClient({
     <div className="space-y-7 pb-24">
       {/* Header */}
       {!hideHeader && (
-        <header className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-end">
-          <div>
-            <h1 className="text-[24px] font-semibold leading-[1.1] tracking-[-0.025em] text-ink-0 md:text-[28px]">
-              Catálogo
-            </h1>
-            <p className="mt-1 text-[13px] leading-[1.5] text-ink-5">
-              Administrá tus productos, ajustá precios, controlá publicación y exportá tu catálogo.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
+        <AdminPageHeader
+          index="01"
+          eyebrow="Catálogo"
+          title="Catálogo"
+          subtitle="Administrá tus productos, ajustá precios, controlá publicación y exportá tu catálogo."
+          actions={
+            <div className="flex items-center gap-2">
             <button
               onClick={handleExportCsv}
               disabled={filtered.length === 0}
@@ -299,7 +297,8 @@ export default function CatalogClient({
               Agregar manual
             </button>
           </div>
-        </header>
+          }
+        />
       )}
 
       {/* Main panel */}

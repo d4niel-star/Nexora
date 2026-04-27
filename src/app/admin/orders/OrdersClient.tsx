@@ -9,6 +9,7 @@ import { OrderDrawer } from "../../../components/admin/orders/OrderDrawer";
 import { deriveOrderNextAction, orderNeedsAction, type OrderNextAction } from "@/lib/orders/workqueue";
 import { bulkUpdateFulfillment } from "@/lib/store-engine/orders/bulk-actions";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
 
 type TabValue = 'action' | 'all' | 'new' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
 
@@ -143,6 +144,14 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
       
       {/* 1. Page Header */}
       {!hideHeader && (
+        <AdminPageHeader
+          index="01"
+          eyebrow="Pedidos"
+          title="Pedidos"
+          subtitle="Gestioná el motor logístico corporativo. Todo en un solo lugar."
+        />
+      )}
+      {!hideHeader && false && (
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
             <h1 className="text-[28px] lg:text-[32px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0">Pedidos.</h1>

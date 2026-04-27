@@ -7,6 +7,7 @@ import { cn, formatCurrency } from "@/lib/utils";
 import { CustomerBadge } from "./CustomerBadge";
 import type { AggregatedCustomer } from "@/lib/customers/queries";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
 
 type TabValue = "all" | "new" | "recurring" | "vip" | "inactive" | "risk";
 
@@ -59,12 +60,12 @@ export function CustomersClient({ initialCustomers }: { initialCustomers: Aggreg
 
   return (
     <div className="animate-in fade-in space-y-8 pb-32 duration-700">
-      <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-        <div>
-          <h1 className="text-3xl font-bold tracking-[var(--tracking-display)] text-ink-0">Clientes</h1>
-          <p className="mt-1 text-[15px] font-medium text-ink-4">Base agregada de clientes según órdenes abonadas en la plataforma.</p>
-        </div>
-      </div>
+      <AdminPageHeader
+        index="01"
+        eyebrow="Clientes"
+        title="Clientes"
+        subtitle="Base agregada de clientes según órdenes abonadas en la plataforma."
+      />
 
       <div className="relative overflow-hidden rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] shadow-[var(--shadow-soft)]">
         <div className="flex items-center gap-8 overflow-x-auto border-b border-[color:var(--hairline)] bg-[var(--surface-1)] px-6 no-scrollbar">

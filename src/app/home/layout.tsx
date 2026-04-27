@@ -1,13 +1,11 @@
 import type { ReactNode } from "react";
-import { PublicHeader } from "@/components/public/PublicHeader";
-import { PublicFooter } from "@/components/public/PublicFooter";
+import { MarketingChrome } from "@/components/public/MarketingChrome";
 
+// Layout for everything under /home. Marketing pages (home, pricing) get
+// the public header + footer chrome; auth surfaces (login, register,
+// check-email, verify-email) skip the chrome and render their own
+// split-shell as the entire viewport. The decision lives in
+// MarketingChrome (client) so the layout itself stays a server component.
 export default function HomeLayout({ children }: { children: ReactNode }) {
-  return (
-    <div className="flex min-h-screen flex-col bg-[var(--surface-1)] text-ink-0 selection:bg-ink-0 selection:text-ink-12">
-      <PublicHeader />
-      <main className="flex-1">{children}</main>
-      <PublicFooter />
-    </div>
-  );
+  return <MarketingChrome>{children}</MarketingChrome>;
 }

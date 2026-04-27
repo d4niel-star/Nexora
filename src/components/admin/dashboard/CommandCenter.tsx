@@ -22,13 +22,16 @@ import type {
   CommandPriority,
 } from "@/types/command-center";
 import { buildVariantHref } from "@/lib/navigation/hrefs";
+import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
 
 // ─── Command Center ───
 // Visual rewrite unified into the token system. The prior rainbow of
 // red/amber/blue/orange/emerald pastels is replaced by a single signal
 // palette expressed via `priorityTone`: critical=danger, high=warning,
-// medium=accent, low=neutral. Every surface is a hairline card; numbers
-// go tabular; no drop shadows.
+// medium=accent, low=neutral. The 2027 pass replaces the inline header
+// with the shared AdminPageHeader and switches KPI tiles to the
+// .metric-tile primitive so the dashboard reads as the canonical
+// example of the new admin rhythm.
 
 export function CommandCenter({ data }: { data: CommandCenterData }) {
   const { directives, kpis } = data;
@@ -47,19 +50,15 @@ export function CommandCenter({ data }: { data: CommandCenterData }) {
     }).format(v);
 
   return (
-    <div className="space-y-12 animate-in fade-in duration-500">
-      {/* Header */}
-      <header>
-        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">
-          Comando comercial
-        </p>
-        <h1 className="mt-2 font-semibold text-[34px] leading-[1.02] tracking-[-0.035em] text-ink-0 sm:text-[42px]">
-          Decisiones priorizadas para hoy.
-        </h1>
-        <p className="mt-3 max-w-xl text-[14px] leading-[1.55] text-ink-5">
-          Basado en ventas, margen, stock y operación real.
-        </p>
-      </header>
+    <div className="animate-in fade-in duration-500">
+      <AdminPageHeader
+        index="01"
+        eyebrow="Comando comercial"
+        title="Decisiones priorizadas para hoy."
+        subtitle="Basado en ventas, margen, stock y operación real."
+      />
+
+      <div className="space-y-12">
 
       {/* KPI strip */}
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
@@ -119,6 +118,7 @@ export function CommandCenter({ data }: { data: CommandCenterData }) {
       ) : (
         <EmptyCommandState />
       )}
+      </div>
     </div>
   );
 }
@@ -159,17 +159,17 @@ function KpiCard({
       }
       title={isClickable ? "Ver en inventario" : undefined}
       className={cn(
-        "rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-4 shadow-[var(--shadow-card)] transition-colors",
+        "metric-tile transition-[border-color,background-color]",
         isClickable &&
-          "cursor-pointer hover:border-[color:var(--hairline-strong)] hover:bg-[var(--surface-2)]",
+          "cursor-pointer hover:border-[color:var(--card-border-strong)] hover:bg-[var(--surface-2)]",
       )}
     >
-      <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">
+      <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-5">
         {label}
       </p>
       <p
         className={cn(
-          "mt-2 tabular text-[22px] font-medium tracking-[-0.01em]",
+          "tabular text-[28px] font-semibold leading-none tracking-[-0.025em]",
           toneClass[tone],
         )}
       >

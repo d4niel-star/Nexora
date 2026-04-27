@@ -10,6 +10,7 @@ import {
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import type { ActivationState, ActivationStep, ActivationTier, ActivationStepStatus } from "@/types/activation";
+import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
 
 const TIER_META: Record<ActivationTier, { label: string; color: string }> = {
   blocker: { label: "Requisito", color: "text-[color:var(--signal-danger)]" },
@@ -25,34 +26,46 @@ export function OnboardingDashboard({ data }: { data: ActivationState }) {
     .map((tier) => ({ tier, steps: steps.filter((s) => s.tier === tier) }))
     .filter((g) => g.steps.length > 0);
 
-  return (
-    <div className="mx-auto max-w-4xl pt-8 pb-16 animate-in fade-in duration-500">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-[-0.03em] text-ink-0">
-          Activación de tu negocio
-        </h1>
-        <p className="mt-2 text-[15px] text-ink-4 max-w-2xl leading-relaxed">
-          {blockers > 0
-            ? `Hay ${blockers} paso${blockers !== 1 ? "s" : ""} bloqueante${blockers !== 1 ? "s" : ""} para empezar a vender. Resolvelos primero.`
-            : score < 100
-              ? "Ya podés vender. Completá los pasos restantes para operar con todo el potencial."
-              : "Tu negocio está completamente activado."}
-        </p>
-      </div>
+  const subtitle =
+    blockers > 0
+      ? `Hay ${blockers} paso${blockers !== 1 ? "s" : ""} bloqueante${blockers !== 1 ? "s" : ""} para empezar a vender. Resolvelos primero.`
+      : score < 100
+        ? "Ya podés vender. Completá los pasos restantes para operar con todo el potencial."
+        : "Tu negocio está completamente activado.";
 
-      {/* Progress bar */}
-      <div className="mb-10 rounded-[var(--r-xl)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 shadow-[var(--shadow-soft)]">
-        <h2 className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-5">
-          Progreso de activación
-        </h2>
-        <span className="mt-1 inline-block text-[13px] font-semibold tabular-nums text-ink-0">
-          {completedSteps}/{totalSteps}
-          <span className="ml-2 text-[color:var(--signal-success)]">{score}%</span>
-        </span>
-        <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-[var(--surface-3)]">
+  return (
+    <div className="mx-auto max-w-4xl animate-in fade-in duration-500">
+      <AdminPageHeader
+        index="01"
+        eyebrow="Activación · onboarding"
+        title="Activación de tu negocio"
+        subtitle={subtitle}
+      />
+
+      {/* Progress strip — premium variant of the previous bar */}
+      <div className="mb-10 rounded-[var(--r-xl)] border border-[color:var(--card-border)] bg-[var(--surface-paper)] p-6 shadow-[var(--shadow-soft)]">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-5">
+              Progreso de activación
+            </span>
+            <p className="mt-2 tabular text-[34px] font-semibold leading-none tracking-[-0.03em] text-ink-0">
+              {score}
+              <span className="ml-1 text-[18px] font-medium text-ink-5">%</span>
+            </p>
+          </div>
+          <div className="text-right">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-5">
+              Pasos completos
+            </span>
+            <p className="mt-2 tabular text-[20px] font-semibold tracking-[-0.02em] text-ink-0">
+              {completedSteps} <span className="text-ink-5">/ {totalSteps}</span>
+            </p>
+          </div>
+        </div>
+        <div className="mt-5 h-1.5 w-full overflow-hidden rounded-full bg-[var(--surface-3)]">
           <div
-            className="h-full rounded-full bg-[var(--signal-success)] transition-all duration-1000 ease-out"
+            className="h-full rounded-full bg-[var(--brand)] transition-all duration-1000 ease-out"
             style={{ width: `${score}%` }}
           />
         </div>
