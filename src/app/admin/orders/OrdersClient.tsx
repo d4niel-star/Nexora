@@ -2,17 +2,24 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
-import { Search, Filter, Package, X, ShoppingBag, CalendarDays, Zap, Truck, AlertTriangle } from "lucide-react";
+import { Package, ShoppingBag, CalendarDays, Zap, Truck, AlertTriangle } from "lucide-react";
 import { Order } from "../../../types/order";
 import { OrderStatusBadge, PaymentStatusBadge } from "../../../components/admin/orders/StatusBadge";
 import { OrderDrawer } from "../../../components/admin/orders/OrderDrawer";
 import { deriveOrderNextAction, orderNeedsAction, type OrderNextAction } from "@/lib/orders/workqueue";
 import { bulkUpdateFulfillment } from "@/lib/store-engine/orders/bulk-actions";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
-import { AdminMetric } from "@/components/admin/primitives/AdminMetric";
-import { AdminToolbar } from "@/components/admin/primitives/AdminToolbar";
-import { AdminPillTabs, type AdminPillTab } from "@/components/admin/primitives/AdminPillTabs";
+import {
+  NexoraPageHeader,
+  NexoraStatRow,
+  NexoraTabs,
+  NexoraTableShell,
+  NexoraCmdBar,
+  NexoraSearch,
+  NexoraFilters,
+  NexoraActions,
+  NexoraBulkBar,
+  NexoraEmpty,
+} from "@/components/admin/nexora";
 
 type TabValue = 'action' | 'all' | 'new' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
 
@@ -142,127 +149,171 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
     }
   };
 
-  // Map legacy tabs to AdminPillTab shape.
-  const pillTabs: AdminPillTab<TabValue>[] = tabs.map((t) => ({
-    value: t.value,
-    label: t.label,
-    count: t.count ?? null,
-    warning: t.value === "action" && (t.count ?? 0) > 0,
-  }));
-
   return (
-    <div className="space-y-6 animate-in fade-in duration-700 pb-32">
-      {/* 1. Page Header */}
+    <div className="space-y-5 animate-in fade-in duration-300 pb-16">
+      {/* Page header — compact inline */}
       {!hideHeader && (
-        <AdminPageHeader
-          eyebrow="Pedidos"
+        <NexoraPageHeader
           title="Pedidos"
-          subtitle="Gestioná el motor logístico corporativo. Todo en un solo lugar."
+          subtitle="Pedidos en tiempo real con estado de cobro y logística."
         />
       )}
 
+      {/* Flat 3-up KPI band, hairline-divided */}
       {!hideHeader && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <AdminMetric
-            label="Ventas reales"
-            value={`$${realRevenue.toLocaleString("es-AR")}`}
-            tone="accent"
-            hint="Solo pagos confirmados por webhook."
-          />
-          <AdminMetric
-            label="Pendientes de pago"
-            value={String(pendingPayment.length)}
-            tone={pendingPayment.length > 0 ? "warning" : "neutral"}
-            hint="No cuentan como venta real."
-            onClick={() => {
-              setActiveTab("action");
-              setSearchQuery("");
-            }}
-          />
-          <AdminMetric
-            label="Por preparar"
-            value={String(toPrepare.length)}
-            hint="Pagados sin despacho final."
-            onClick={() => {
-              setActiveTab("action");
-              setSearchQuery("");
-            }}
-          />
-        </div>
+        <NexoraStatRow
+          stats={[
+            {
+              label: "Ventas reales (30d)",
+              value: `$${realRevenue.toLocaleString("es-AR")}`,
+              hint: "Solo pagos confirmados",
+            },
+            {
+              label: "Pendientes de pago",
+              value: String(pendingPayment.length),
+              hint: "No cuentan como venta",
+              onClick: () => {
+                setActiveTab("action");
+                setSearchQuery("");
+              },
+            },
+            {
+              label: "Por preparar",
+              value: String(toPrepare.length),
+              hint: "Pagados, sin despachar",
+              onClick: () => {
+                setActiveTab("action");
+                setSearchQuery("");
+              },
+            },
+          ]}
+          cols={3}
+        />
       )}
 
-      {/* 2. Main Container — pill tabs + new toolbar + table */}
-      <div className="admin-table-frame relative">
-        <AdminPillTabs
-          tabs={pillTabs}
-          active={activeTab}
-          onChange={(v) => setActiveTab(v)}
-        />
+      {/* Status tabs — sober underline tabs */}
+      <NexoraTabs
+        tabs={tabs.map((t) => ({
+          value: t.value,
+          label: t.label,
+          count: t.count,
+        }))}
+        active={activeTab}
+        onChange={setActiveTab}
+      />
 
-        <AdminToolbar
-          search={{
-            value: searchQuery,
-            onChange: setSearchQuery,
-            placeholder: "Buscar pedido, cliente, tracking…",
-          }}
-          filters={
-            <>
-              <label className="flex h-8 items-center gap-1.5 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-paper)] px-2.5 text-[11.5px] font-medium text-ink-5">
-                <CalendarDays className="h-3 w-3" />
-                <span className="hidden sm:inline">Desde</span>
-                <input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  className="bg-transparent text-[12px] font-semibold text-ink-0 outline-none"
-                />
-              </label>
-              <label className="flex h-8 items-center gap-1.5 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-paper)] px-2.5 text-[11.5px] font-medium text-ink-5">
-                <span className="hidden sm:inline">Hasta</span>
-                <input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="bg-transparent text-[12px] font-semibold text-ink-0 outline-none"
-                />
-              </label>
-            </>
-          }
-          actions={
-            <button
-              onClick={() => {
-                setSearchQuery("");
-                setDateFrom("");
-                setDateTo("");
-                setActiveTab("all");
-              }}
-              className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-paper)] px-3 text-[12px] font-medium text-ink-1 transition-colors hover:bg-[var(--surface-2)]"
-            >
-              <Filter className="h-3.5 w-3.5" /> Limpiar
-            </button>
-          }
-        />
+      {/* DataBoard — cmd bar + bulk + table fused under one hairline frame */}
+      <NexoraTableShell>
+        <NexoraCmdBar>
+          <NexoraSearch
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Buscar pedido, cliente, tracking…"
+          />
+          <NexoraFilters>
+            <label className="nx-chip" style={{ paddingLeft: 8 }}>
+              <CalendarDays className="h-3 w-3" />
+              <span className="hidden sm:inline" style={{ opacity: 0.6 }}>Desde</span>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  outline: "none",
+                  fontSize: 11.5,
+                  fontWeight: 500,
+                  color: "var(--ink-1)",
+                  fontVariantNumeric: "tabular-nums",
+                  width: 100,
+                }}
+              />
+            </label>
+            <label className="nx-chip" style={{ paddingLeft: 8 }}>
+              <span className="hidden sm:inline" style={{ opacity: 0.6 }}>Hasta</span>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  outline: "none",
+                  fontSize: 11.5,
+                  fontWeight: 500,
+                  color: "var(--ink-1)",
+                  fontVariantNumeric: "tabular-nums",
+                  width: 100,
+                }}
+              />
+            </label>
+            {(searchQuery || dateFrom || dateTo) ? (
+              <button
+                type="button"
+                className="nx-action nx-action--ghost nx-action--sm"
+                onClick={() => {
+                  setSearchQuery("");
+                  setDateFrom("");
+                  setDateTo("");
+                  setActiveTab("all");
+                }}
+              >
+                Limpiar
+              </button>
+            ) : null}
+          </NexoraFilters>
+          <NexoraActions>
+            <span className="nx-cmd-bar__count">
+              {filteredOrders.length} de {orders.length}
+            </span>
+          </NexoraActions>
+        </NexoraCmdBar>
 
-        {/* 3. Data Table */}
-        <div className="overflow-x-auto min-h-[400px]">
+        <NexoraBulkBar selected={selectedRows.length} onClear={() => setSelectedRows([])}>
+          <button
+            type="button"
+            onClick={handleBulkMarkPreparing}
+            disabled={bulkPending || bulkPreparingEligibleIds.length === 0}
+            title={
+              bulkPreparingEligibleIds.length === 0
+                ? "Seleccioná pedidos pagados y sin despacho iniciado."
+                : `Marcar ${bulkPreparingEligibleIds.length} como preparando`
+            }
+            className="nx-action nx-action--sm"
+          >
+            <Package className="h-3.5 w-3.5" strokeWidth={1.75} />
+            {bulkPending ? "Actualizando…" : "Marcar preparando"}
+          </button>
+          {bulkFeedback ? (
+            <span style={{ fontSize: 11, color: "var(--ink-5)", marginLeft: 8 }}>
+              {bulkFeedback}
+            </span>
+          ) : null}
+        </NexoraBulkBar>
+
+        {/* Table */}
+        <div className="overflow-x-auto">
           {orders.length === 0 ? (
-            <EmptyState
-              icon={ShoppingBag}
+            <NexoraEmpty
               title="Sin pedidos aún"
-              description="Cuando tus compradores paguen desde el storefront, los pedidos aparecerán acá en tiempo real con su estado de cobro y logística."
-              action={{ label: "Ver storefront", href: "/admin/store" }}
-              secondaryAction={{ label: "Cargar productos", href: "/admin/catalog" }}
+              body="Cuando tus compradores paguen desde el storefront, los pedidos aparecerán acá en tiempo real."
+              actions={
+                <a href="/admin/store" className="nx-action nx-action--sm">
+                  Ver storefront
+                </a>
+              }
             />
           ) : (
-            <table className="admin-table whitespace-nowrap">
+            <table className="nx-table">
               <thead>
                 <tr>
-                  <th style={{ width: "3rem" }}>
+                  <th style={{ width: 36 }}>
                     <input
                       type="checkbox"
                       onChange={handleSelectAll}
                       checked={selectedRows.length === filteredOrders.length && filteredOrders.length > 0}
-                      className="h-4 w-4 cursor-pointer accent-ink-0"
+                      className="h-4 w-4 cursor-pointer accent-[var(--brand)]"
                     />
                   </th>
                   <th>Pedido</th>
@@ -270,7 +321,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
                   <th>Cliente</th>
                   <th>Productos</th>
                   <th>Origen</th>
-                  <th>Estado Cobro</th>
+                  <th>Cobro</th>
                   <th>Logística</th>
                   <th>Próxima acción</th>
                   <th style={{ textAlign: "right" }}>Monto</th>
@@ -279,21 +330,24 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
               <tbody>
                 {filteredOrders.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="p-0">
-                      <EmptyState
-                        icon={Search}
-                        title="Sin resultados para este filtro"
-                        description="Ajustá los filtros o probá limpiar la búsqueda para volver a ver todo el catálogo de pedidos."
-                        size="compact"
-                        action={{
-                          label: "Limpiar filtros",
-                          onClick: () => {
-                            setSearchQuery("");
-                            setDateFrom("");
-                            setDateTo("");
-                            setActiveTab("all");
-                          },
-                        }}
+                    <td colSpan={10} style={{ padding: 0 }}>
+                      <NexoraEmpty
+                        title="Sin resultados"
+                        body="Ajustá los filtros o limpiá la búsqueda para ver todos los pedidos."
+                        actions={
+                          <button
+                            type="button"
+                            className="nx-action nx-action--sm"
+                            onClick={() => {
+                              setSearchQuery("");
+                              setDateFrom("");
+                              setDateTo("");
+                              setActiveTab("all");
+                            }}
+                          >
+                            Limpiar filtros
+                          </button>
+                        }
                       />
                     </td>
                   </tr>
@@ -305,46 +359,47 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
                     <tr
                       key={order.id}
                       onClick={() => setSelectedOrder(order)}
-                      className={`admin-table-row group cursor-pointer ${isSelected ? "admin-table-row--selected" : ""}`}
+                      data-selected={isSelected ? "true" : undefined}
+                      style={{ cursor: "pointer" }}
                     >
-                      <td className="px-6 py-5" onClick={(e) => e.stopPropagation()}>
-                         <input 
-                           type="checkbox" 
+                      <td onClick={(e) => e.stopPropagation()}>
+                         <input
+                           type="checkbox"
                            checked={isSelected}
                            onChange={(e) => handleSelectRow(e, order.id)}
-                           className="w-4 h-4 rounded border-[color:var(--hairline)] text-ink-0 cursor-pointer" 
+                           className="h-4 w-4 cursor-pointer accent-[var(--brand)]"
                          />
                       </td>
-                      <td className="px-6 py-5 font-bold text-ink-0 text-sm tabular-nums tracking-tight">{order.number}</td>
-                      <td className="px-6 py-5 text-[13px] font-medium text-ink-6 tabular-nums">{new Date(order.createdAt).toLocaleString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
-                      <td className="px-6 py-5">
-                        <div className="text-sm font-bold text-ink-0">{order.customer.name}</div>
-                        <div className="text-xs font-medium text-ink-6 truncate max-w-[150px] mt-0.5">{order.customer.email}</div>
+                      <td className="nx-cell-strong" style={{ fontVariantNumeric: "tabular-nums" }}>{order.number}</td>
+                      <td className="nx-cell-meta" style={{ fontVariantNumeric: "tabular-nums" }}>{new Date(order.createdAt).toLocaleString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
+                      <td>
+                        <div className="nx-cell-strong">{order.customer.name}</div>
+                        <div className="nx-cell-meta truncate" style={{ maxWidth: 160 }}>{order.customer.email}</div>
                       </td>
-                      <td className="px-6 py-5">
-                        <div className="text-sm font-bold text-ink-0">{order.items.length} item{order.items.length !== 1 ? "s" : ""}</div>
-                        <div className="text-xs font-medium text-ink-6 truncate max-w-[180px] mt-0.5">
+                      <td>
+                        <div className="nx-cell-strong">{order.items.length} item{order.items.length !== 1 ? "s" : ""}</div>
+                        <div className="nx-cell-meta truncate" style={{ maxWidth: 180 }}>
                           {order.items[0]?.title || "Sin items"}
                         </div>
                       </td>
-                      <td className="px-6 py-5">
+                      <td>
                         {order.channel === 'Storefront' ? (
-                           <div className="inline-flex items-center gap-1.5 h-6 px-2 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-1)] text-[10px] font-medium uppercase tracking-[0.14em] text-ink-3 w-fit">
+                           <span className="nx-chip" style={{ pointerEvents: "none", height: 22, fontSize: 11 }}>
                               <ShoppingBag className="w-3 h-3" strokeWidth={1.75} /> Tienda
-                           </div>
+                           </span>
                         ) : (
-                           <span className="text-xs font-bold text-ink-6 bg-[var(--surface-2)] px-2 py-1 rounded-full uppercase tracking-wider">{order.channel}</span>
+                           <span className="nx-cell-meta">{order.channel}</span>
                         )}
                       </td>
-                      <td className="px-6 py-5"><PaymentStatusBadge status={order.paymentStatus} /></td>
-                      <td className="px-6 py-5"><OrderStatusBadge status={order.status} /></td>
-                      <td className="px-6 py-5">
+                      <td><PaymentStatusBadge status={order.paymentStatus} /></td>
+                      <td><OrderStatusBadge status={order.status} /></td>
+                      <td>
                         {nextAction ? (
                           <span
-                            className={`inline-flex items-center gap-1.5 h-6 px-2 rounded-full text-[11px] font-semibold ${
+                            className={`inline-flex items-center gap-1.5 h-[22px] px-2 rounded-full text-[11px] font-medium ${
                               nextAction.urgent
                                 ? "bg-[color:var(--signal-danger)]/10 text-[color:var(--signal-danger)]"
-                                : "bg-[var(--surface-2)] text-ink-0"
+                                : "bg-[var(--studio-canvas)] text-ink-1"
                             }`}
                           >
                             {nextAction.urgent ? (
@@ -357,10 +412,10 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
                             {nextAction.label}
                           </span>
                         ) : (
-                          <span className="text-[12px] font-medium text-ink-6">—</span>
+                          <span className="nx-cell-meta">—</span>
                         )}
                       </td>
-                      <td className="px-6 py-5 text-right font-semibold text-ink-0 tabular-nums tracking-[-0.01em] text-[15px]">${order.total.toLocaleString('es-AR')}</td>
+                      <td className="nx-cell-num nx-cell-strong">${order.total.toLocaleString('es-AR')}</td>
                     </tr>
                   )})
                 )}
@@ -368,67 +423,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
             </table>
           )}
         </div>
-        
-        {/* Pagination */}
-        {filteredOrders.length > 0 && (
-          <div className="px-6 py-4 border-t border-[color:var(--hairline)] bg-[var(--surface-1)]/90 flex items-center justify-between">
-            <span className="text-xs text-ink-6 font-bold uppercase tracking-wider block">
-              Mostrando <b className="text-ink-0 px-1">{filteredOrders.length}</b> de {orders.length}
-            </span>
-            <div className="flex gap-2">
-              <button disabled className="btn-secondary px-4 py-2 text-[13px] font-bold opacity-50 cursor-not-allowed">Anterior</button>
-              <button className="btn-secondary px-4 py-2 text-[13px] font-bold">Siguiente</button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Floating Bulk Actions Toolbar ──────────────────────────────────
-       *
-       * Previous iteration had three buttons (Preparar / Etiquetas /
-       * Cancelar) with NO onClick. That read as automation that doesn't
-       * exist. Replaced here with a single honest action — "Marcar
-       * preparando" — that actually calls bulkUpdateFulfillment on the
-       * server. Eligibility is computed from the same work-queue rules
-       * the row chip uses; if nothing in the selection can transition
-       * to preparing, the button is disabled with an explicit hint. */}
-      {selectedRows.length > 0 && (
-        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-ink-0 text-ink-12 px-2 py-2 rounded-full shadow-[var(--shadow-overlay)] flex items-center gap-1 animate-in slide-in-from-bottom-5 fade-in duration-[var(--dur-base)] z-30">
-           <div className="px-3 border-r border-ink-12/15">
-             <span className="tabular text-[13px] font-medium">{selectedRows.length} seleccionados</span>
-             {bulkPreparingEligibleIds.length !== selectedRows.length && (
-               <span className="ml-2 text-[11px] text-ink-12/50">
-                 {bulkPreparingEligibleIds.length} elegibles
-               </span>
-             )}
-           </div>
-           <div className="flex items-center gap-1 px-1">
-             <button
-               type="button"
-               onClick={handleBulkMarkPreparing}
-               disabled={bulkPending || bulkPreparingEligibleIds.length === 0}
-               title={
-                 bulkPreparingEligibleIds.length === 0
-                   ? "Seleccioná pedidos pagados y sin despacho iniciado."
-                   : `Marcar ${bulkPreparingEligibleIds.length} como preparando`
-               }
-               className="inline-flex items-center gap-2 px-3 h-9 text-[13px] font-medium hover:bg-ink-12/10 rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-             >
-               <Package className="w-4 h-4" strokeWidth={1.75} />
-               {bulkPending ? "Actualizando…" : "Marcar preparando"}
-             </button>
-             {bulkFeedback && (
-               <span className="ml-2 text-[11px] text-ink-12/75 px-2">{bulkFeedback}</span>
-             )}
-           </div>
-           <button 
-              onClick={() => setSelectedRows([])}
-              className="p-2 mr-1 hover:bg-ink-12/10 rounded-full transition-colors shrink-0 text-ink-12/50 hover:text-ink-12"
-           >
-             <X className="w-4 h-4" />
-           </button>
-        </div>
-      )}
+      </NexoraTableShell>
 
       {/* Slide-in Drawer Component */}
       <OrderDrawer 

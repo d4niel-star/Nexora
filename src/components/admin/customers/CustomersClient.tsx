@@ -2,14 +2,19 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, ChevronDown, Filter, AlertTriangle, Users, ExternalLink } from "lucide-react";
-import { cn, formatCurrency } from "@/lib/utils";
+import { ExternalLink } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 import { CustomerBadge } from "./CustomerBadge";
 import type { AggregatedCustomer } from "@/lib/customers/queries";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
-import { AdminToolbar } from "@/components/admin/primitives/AdminToolbar";
-import { AdminPillTabs, type AdminPillTab } from "@/components/admin/primitives/AdminPillTabs";
+import {
+  NexoraPageHeader,
+  NexoraTabs,
+  NexoraTableShell,
+  NexoraCmdBar,
+  NexoraSearch,
+  NexoraActions,
+  NexoraEmpty,
+} from "@/components/admin/nexora";
 
 type TabValue = "all" | "new" | "recurring" | "vip" | "inactive" | "risk";
 
@@ -60,69 +65,65 @@ export function CustomersClient({ initialCustomers }: { initialCustomers: Aggreg
     return name.substring(0, 2).toUpperCase() || "--";
   }
 
-  const pillTabs: AdminPillTab<TabValue>[] = tabs.map((t) => ({
-    value: t.value,
-    label: t.label,
-    count: t.count,
-    warning: t.value === "risk" && t.count > 0,
-  }));
+  const isFiltered = Boolean(searchQuery) || activeTab !== "all";
 
   return (
-    <div className="animate-in fade-in space-y-6 pb-32 duration-700">
-      <AdminPageHeader
-        eyebrow="Clientes"
+    <div className="animate-in fade-in space-y-5 pb-16 duration-300">
+      <NexoraPageHeader
         title="Clientes"
         subtitle="Base agregada de clientes según órdenes abonadas en la plataforma."
       />
 
-      <div className="admin-table-frame relative">
-        <AdminPillTabs
-          tabs={pillTabs}
-          active={activeTab}
-          onChange={(v) => setActiveTab(v)}
-        />
+      <NexoraTabs
+        tabs={tabs.map((t) => ({ value: t.value, label: t.label, count: t.count }))}
+        active={activeTab}
+        onChange={setActiveTab}
+      />
 
-        <AdminToolbar
-          search={{
-            value: searchQuery,
-            onChange: setSearchQuery,
-            placeholder: "Buscar por nombre o email…",
-          }}
-          actions={
-            <span className="text-[11.5px] tabular-nums text-ink-5">
-              {filteredCustomers.length} de {initialCustomers.length} clientes
+      <NexoraTableShell>
+        <NexoraCmdBar>
+          <NexoraSearch
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Buscar por nombre o email…"
+          />
+          <NexoraActions>
+            <span className="nx-cmd-bar__count">
+              {filteredCustomers.length} de {initialCustomers.length}
             </span>
-          }
-        />
+          </NexoraActions>
+        </NexoraCmdBar>
 
-        <div className="min-h-[400px] overflow-x-auto">
+        <div className="overflow-x-auto">
           {filteredCustomers.length === 0 ? (
-            <EmptyState
-              icon={Users}
-              title={
-                searchQuery || activeTab !== "all"
-                  ? "Sin resultados para este filtro"
-                  : "Aún no hay clientes"
-              }
-              description={
-                searchQuery || activeTab !== "all"
+            <NexoraEmpty
+              title={isFiltered ? "Sin resultados" : "Aún no hay clientes"}
+              body={
+                isFiltered
                   ? "Ajustá la búsqueda o cambiá de segmento para volver a ver toda la base."
-                  : "La base de clientes se arma automáticamente con cada pedido pagado. Traé tráfico al storefront para verla crecer."
+                  : "La base se arma automáticamente con cada pedido pagado."
               }
-              action={
-                searchQuery || activeTab !== "all"
-                  ? {
-                      label: "Limpiar filtros",
-                      onClick: () => {
-                        setSearchQuery("");
-                        setActiveTab("all");
-                      },
-                    }
-                  : { label: "Ver pedidos", href: "/admin/orders" }
+              actions={
+                isFiltered ? (
+                  <button
+                    type="button"
+                    className="nx-action nx-action--sm"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setActiveTab("all");
+                    }}
+                  >
+                    Limpiar filtros
+                  </button>
+                ) : (
+                  <Link href="/admin/orders" className="nx-action nx-action--sm">
+                    Ver pedidos
+                  </Link>
+                )
               }
             />
           ) : (
-            <table className="admin-table min-w-[1000px]">
+            <table className="nx-table">
               <thead>
                 <tr>
                   <th>Cliente</th>
@@ -146,41 +147,34 @@ export function CustomersClient({ initialCustomers }: { initialCustomers: Aggreg
                 {filteredCustomers.map((c) => (
                   <tr
                     key={c.id}
-                    className="admin-table-row group cursor-pointer"
+                    style={{ cursor: "pointer" }}
                     onClick={() => {
-                      // Programmatic navigation to keep <tr> semantics
-                      // (nested <a> inside tbody rows is invalid HTML).
                       if (typeof window !== "undefined") {
                         window.location.href = `/admin/orders?customer=${encodeURIComponent(c.email)}`;
                       }
                     }}
                   >
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-4">
-                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--r-sm)] bg-[var(--surface-2)] text-xs font-semibold uppercase text-ink-0">
+                    <td>
+                      <div className="flex items-center gap-3">
+                         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[var(--studio-canvas)] text-[11px] font-semibold uppercase text-ink-1">
                            {getInitials(c.name)}
                          </div>
-                         <div>
-                           <p className="text-sm font-semibold text-ink-0 leading-tight">{c.name}</p>
-                           <p className="text-xs font-medium text-ink-5 mt-0.5">{c.email}</p>
+                         <div className="min-w-0">
+                           <p className="nx-cell-strong">{c.name}</p>
+                           <p className="nx-cell-meta truncate">{c.email}</p>
                          </div>
                       </div>
                     </td>
-                    <td className="px-6 py-5 text-sm font-medium text-ink-4">{c.channel}</td>
-                    <td className="px-6 py-5 text-right font-semibold tabular-nums text-ink-0">{c.ordersCount}</td>
-                    {/* Última compra — the thead has always declared this column
-                        but tbody was missing the cell, so every downstream
-                        column rendered under the wrong header. Real
-                        lastPurchaseAt was already fetched by
-                        getAggregatedCustomers; we just surface it now. */}
-                    <td className="px-6 py-5 text-sm font-medium tabular-nums text-ink-4">
+                    <td className="nx-cell-meta">{c.channel}</td>
+                    <td className="nx-cell-num nx-cell-strong">{c.ordersCount}</td>
+                    <td className="nx-cell-meta" style={{ fontVariantNumeric: "tabular-nums" }}>
                       {dateFormatter.format(new Date(c.lastPurchaseAt))}
                     </td>
-                    <td className="px-6 py-5 text-right text-sm font-medium tabular-nums text-ink-4">{formatCurrency(c.averageTicket)}</td>
-                    <td className="px-6 py-5 text-right text-[15px] font-semibold tracking-tight tabular-nums text-ink-0">{formatCurrency(c.totalSpent)}</td>
-                    <td className="px-6 py-5"><CustomerBadge tone={c.segment} /></td>
-                    <td className="px-6 py-5"><CustomerBadge tone={c.lifecycleStatus === "active" ? "active" : c.lifecycleStatus} /></td>
-                    <td className="px-6 py-5 text-right">
+                    <td className="nx-cell-num nx-cell-meta">{formatCurrency(c.averageTicket)}</td>
+                    <td className="nx-cell-num nx-cell-strong">{formatCurrency(c.totalSpent)}</td>
+                    <td><CustomerBadge tone={c.segment} /></td>
+                    <td><CustomerBadge tone={c.lifecycleStatus === "active" ? "active" : c.lifecycleStatus} /></td>
+                    <td style={{ textAlign: "right" }}>
                       <Link
                         href={`/admin/orders?customer=${encodeURIComponent(c.email)}`}
                         onClick={(e) => e.stopPropagation()}
@@ -197,12 +191,7 @@ export function CustomersClient({ initialCustomers }: { initialCustomers: Aggreg
             </table>
           )}
         </div>
-        {filteredCustomers.length > 0 && (
-          <div className="px-6 py-4 border-t border-[color:var(--hairline)] bg-[var(--surface-1)] text-xs font-medium uppercase tracking-wider text-ink-5">
-            Mostrando <span className="text-ink-0 px-0.5">{filteredCustomers.length}</span> clientes
-          </div>
-        )}
-      </div>
+      </NexoraTableShell>
     </div>
   );
 }

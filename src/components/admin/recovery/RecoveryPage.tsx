@@ -16,7 +16,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 import { cn, formatCurrency } from "@/lib/utils";
-import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
+import { NexoraPageHeader, NexoraStatRow } from "@/components/admin/nexora";
 import type {
   AbandonedCartRow,
   InactiveCustomerRow,
@@ -381,77 +381,53 @@ export function RecoveryPage({ snapshot }: RecoveryPageProps) {
     summary.inactiveCustomersCount > 0 || summary.reorderCandidatesCount > 0;
 
   return (
-    <div className="animate-in fade-in space-y-12 pb-32 duration-700">
-      {/* ── Header ─────────────────────────────────────────────────── */}
-      <header className="flex flex-col gap-4">
-        <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.2em] text-ink-5">
-          <Recycle className="h-3.5 w-3.5" strokeWidth={1.75} />
-          Ventas · Recuperación
-        </div>
-        <AdminPageHeader
-          eyebrow="Recuperación · ciclo de vida"
-          title="Dinero y clientes para recuperar"
-          subtitle="Pagos pendientes, carritos abandonados, clientes inactivos y oportunidades de recompra. Acción concreta sobre datos reales."
-        />
-        <div className="flex flex-col gap-1 self-start text-right">
-          <p className="text-[10.5px] font-medium uppercase tracking-[0.18em] text-ink-5">
-            Valor recuperable
-          </p>
-          <p className="tabular text-[26px] font-semibold leading-none tracking-[-0.02em] text-ink-0">
-            {totalRecoverable}
-          </p>
-          <p className="text-[11.5px] text-ink-5">
-            Suma de pagos pendientes, fallidos y carritos parados.
-          </p>
-        </div>
+    <div className="animate-in fade-in space-y-8 pb-16 duration-300">
+      <NexoraPageHeader
+        title="Recuperación"
+        subtitle="Dinero y clientes para recuperar hoy: pagos pendientes, carritos parados, inactivos y candidatos a recompra."
+        status={{
+          label: `Recuperable: ${totalRecoverable}`,
+          tone: summary.pendingPaymentsCount + summary.failedPaymentsCount > 0 ? "warning" : "neutral",
+        }}
+      />
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <SummaryTile
-            label="Pagos pendientes"
-            value={String(summary.pendingPaymentsCount)}
-            caption={
+      <NexoraStatRow
+        cols={4}
+        stats={[
+          {
+            label: "Pagos pendientes",
+            value: String(summary.pendingPaymentsCount),
+            hint:
               summary.pendingPaymentsValue > 0
                 ? `${formatCurrency(summary.pendingPaymentsValue, summary.currency)} en riesgo`
-                : "Sin pagos sin confirmar"
-            }
-            icon={Clock}
-            tone={summary.pendingPaymentsCount > 0 ? "warning" : "muted"}
-          />
-          <SummaryTile
-            label="Pagos caídos"
-            value={String(summary.failedPaymentsCount)}
-            caption={
+                : "Sin pagos sin confirmar",
+          },
+          {
+            label: "Pagos caídos",
+            value: String(summary.failedPaymentsCount),
+            hint:
               summary.failedPaymentsValue > 0
                 ? `${formatCurrency(summary.failedPaymentsValue, summary.currency)} a reintentar`
-                : "Sin pagos rechazados"
-            }
-            icon={XCircle}
-            tone={summary.failedPaymentsCount > 0 ? "danger" : "muted"}
-          />
-          <SummaryTile
-            label="Carritos parados"
-            value={String(summary.abandonedCartsCount)}
-            caption={
+                : "Sin pagos rechazados",
+          },
+          {
+            label: "Carritos parados",
+            value: String(summary.abandonedCartsCount),
+            hint:
               summary.abandonedCartsValue > 0
                 ? `${formatCurrency(summary.abandonedCartsValue, summary.currency)} en juego`
-                : "Sin carritos abandonados"
-            }
-            icon={ShoppingCart}
-            tone={summary.abandonedCartsCount > 0 ? "warning" : "muted"}
-          />
-          <SummaryTile
-            label="Clientes para recompra"
-            value={String(summary.reorderCandidatesCount)}
-            caption={
+                : "Sin carritos abandonados",
+          },
+          {
+            label: "Para recompra",
+            value: String(summary.reorderCandidatesCount),
+            hint:
               summary.reorderCandidatesCount > 0
-                ? `${summary.inactiveCustomersCount} inactivos · listos para mensaje`
-                : "Sin candidatos en este momento"
-            }
-            icon={Users}
-            tone={summary.reorderCandidatesCount > 0 ? "neutral" : "muted"}
-          />
-        </div>
-      </header>
+                ? `${summary.inactiveCustomersCount} inactivos también`
+                : "Sin candidatos hoy",
+          },
+        ]}
+      />
 
       {/* ── Pagos pendientes ───────────────────────────────────────── */}
       <section className="space-y-4">

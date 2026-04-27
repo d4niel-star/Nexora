@@ -1,71 +1,54 @@
 import type { ReactNode } from "react";
-import { cn } from "@/lib/utils";
+import { NexoraPageHeader } from "@/components/admin/nexora/NexoraPageHeader";
 
-// ─── AdminPageHeader v3 ──────────────────────────────────────────────────
-// Single rhythm shared by every admin route. The previous version rendered
-// a numbered editorial section-rule ("01 / Sección · ─────") that pushed
-// every admin page into a magazine layout. v3 ships the clean Shopify-
-// style stack:
+// ─── AdminPageHeader · Studio v4 wrapper ────────────────────────────────
 //
-//   ┌──────────────────────────────────────────────────────────────┐
-//   │ EYEBROW · uppercase                          [actions]        │
-//   │ Título display                                                │
-//   │ Subtítulo descriptivo, max 64ch                               │
-//   ├──────────────────────────────────────────────────────────────┤
-//   │ (children, rare)                                              │
-//   └──────────────────────────────────────────────────────────────┘
+// This component now exists ONLY as a back-compat shim that delegates to
+// `NexoraPageHeader` (Studio v4). The previous v3 stack (uppercase
+// eyebrow + 30px display title + subtitle paragraph + bottom hairline
+// + actions cluster on the right) has been retired in favour of a
+// compact single-row inline header.
 //
-// • `index` is preserved on the props for back-compat but is now ignored
-//   visually. Old call-sites passing `index="01"` keep working without
-//   changes; they simply lose the giant numeric anchor that no longer
-//   matches the new admin language.
-// • Actions slot floats right at md+, wraps below at small viewports.
-// • `quiet` removes the hairline; used in drawers / nested surfaces.
+// Migration policy: every existing call site keeps working without
+// touching props. `eyebrow`, `index`, `quiet` and `children` are
+// accepted for source compatibility but no longer rendered — Studio v4
+// is intentionally flatter and shorter, so these legacy slots have no
+// place in the new visual language.
+//
+// New code should import `NexoraPageHeader` directly from
+// `@/components/admin/nexora` instead of going through this shim.
 
 interface AdminPageHeaderProps {
-  /** @deprecated Kept for back-compat; v3 ignores it visually. */
+  /** @deprecated Kept for back-compat; Studio v4 ignores it. */
   index?: string;
-  /** Eyebrow text (e.g. "Comando comercial", "Pedidos"). */
-  eyebrow: string;
-  /** Page title — kept short, displayed in display type. */
+  /** @deprecated Kept for back-compat; Studio v4 ignores it. */
+  eyebrow?: string;
+  /** Page title — kept short, displayed inline. */
   title: string;
-  /** Optional subtitle, capped to ~64ch by the underlying utility. */
+  /** Optional one-line description shown below the row. */
   subtitle?: string;
   /** Right-aligned action cluster (CTA buttons, filters, etc). */
   actions?: ReactNode;
-  /** Hide the bottom hairline (used inside drawers / dialogs). */
+  /** @deprecated Studio v4 always ships the same hairline rhythm. */
   quiet?: boolean;
-  /** Additional content below the header but above the page body. */
+  /** @deprecated Studio v4 does not render arbitrary children inside the
+   *  header. Move them into the page body. */
   children?: ReactNode;
   className?: string;
 }
 
 export function AdminPageHeader({
-  eyebrow,
   title,
   subtitle,
   actions,
-  quiet = false,
-  children,
   className,
 }: AdminPageHeaderProps) {
   return (
-    <header
-      className={cn("admin-page-header", className)}
-      data-quiet={quiet ? "true" : undefined}
-    >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex min-w-0 flex-col gap-1.5">
-          <span className="admin-page-eyebrow">{eyebrow}</span>
-          <h1 className="admin-page-title">{title}</h1>
-          {subtitle && <p className="admin-page-subtitle">{subtitle}</p>}
-        </div>
-        {actions && (
-          <div className="flex flex-wrap items-center gap-2">{actions}</div>
-        )}
-      </div>
-
-      {children}
-    </header>
+    <NexoraPageHeader
+      title={title}
+      subtitle={subtitle}
+      actions={actions}
+      className={className}
+    />
   );
 }

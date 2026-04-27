@@ -306,11 +306,11 @@ export function AdminShell({
 
   const sidebarContent = (
     <>
-      {/* Header — logo on dark */}
-      <div className="flex h-14 items-center justify-between border-b border-[color:var(--sidebar-hairline)] px-5">
-        <div className="flex items-center gap-2.5">
-          <NexoraLogo className="h-[22px] w-[22px]" dark />
-          <span className="font-semibold text-[17px] leading-none tracking-[-0.03em] text-[var(--sidebar-fg-active)]">
+      {/* Header — logo on dark, slimmer */}
+      <div className="flex h-12 items-center justify-between px-4">
+        <div className="flex items-center gap-2">
+          <NexoraLogo className="h-[18px] w-[18px]" dark />
+          <span className="font-semibold text-[14.5px] leading-none tracking-[-0.02em] text-white">
             nexora
           </span>
         </div>
@@ -318,14 +318,14 @@ export function AdminShell({
           aria-label="Cerrar menú"
           type="button"
           onClick={closeSidebar}
-          className="inline-flex h-11 w-11 items-center justify-center rounded-full text-[var(--sidebar-fg)] transition-colors hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-fg-active)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus-on-dark)] md:hidden"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-md text-white/65 transition-colors hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus-on-dark)] md:hidden"
         >
           <X className="h-4 w-4" strokeWidth={1.75} />
         </button>
       </div>
 
-      {/* Primary navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-5" aria-label="Navegación principal">
+      {/* Primary navigation — denser, no separators */}
+      <nav className="flex-1 overflow-y-auto px-2.5 py-2" aria-label="Navegación principal">
         <ul className="flex flex-col gap-0.5">
           {primaryNav.map((entry) =>
             entry.kind === "leaf" ? (
@@ -350,7 +350,7 @@ export function AdminShell({
       </nav>
 
       {/* ─── Pinned bottom area: Configuración ─── */}
-      <div className="border-t border-[color:var(--sidebar-hairline)] px-3 py-3">
+      <div className="px-2.5 py-2">
         <ul className="flex flex-col gap-0.5">
           <SidebarLeaf
             leaf={settingsLeaf}
@@ -362,13 +362,16 @@ export function AdminShell({
     </>
   );
 
+  // ─── Nexora Studio v4 shell ──────────────────────────────────────────
+  // Replaces the v3 "navy frame + floating paper". The chrome is now:
+  //   • navy sidebar full-height, edge-to-edge on the left
+  //   • light topbar (paper) with a single hairline border-bottom
+  //   • paper canvas edge-to-edge, no rounded floating wrapper
+  //   • 14px content padding instead of 24/32 so the workspace breathes
+  //     without feeling cramped
+  // The store-ai editor stays full-bleed because it owns its own canvas.
   return (
-    // Outer wrapper is the navy frame: sidebar and topbar (both already
-    // navy) read as a single continuous brand chrome instead of panels
-    // pasted onto a grey page. The light canvas now lives inside a
-    // floating paper with rounded corners, the way Linear / Vercel /
-    // Raycast structure their admin shells.
-    <div className="flex h-screen bg-[var(--shell-dark)] font-sans text-ink-0">
+    <div className="flex h-screen bg-[var(--studio-canvas)] font-sans text-ink-0">
       {/* Mobile sidebar overlay */}
       {sidebarOpen ? (
         <div
@@ -381,40 +384,40 @@ export function AdminShell({
       {/* Mobile sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-[var(--sidebar-bg)] transition-transform duration-[var(--dur-slow)] ease-[var(--ease-out)] md:hidden",
+          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-[var(--studio-sidebar-bg)] transition-transform duration-[var(--dur-slow)] ease-[var(--ease-out)] md:hidden",
           sidebarOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
         {sidebarContent}
       </aside>
 
-      {/* Desktop sidebar */}
-      <aside className="hidden w-60 flex-col bg-[var(--sidebar-bg)] md:flex">
+      {/* Desktop sidebar — flat navy column, no rounded paper around it */}
+      <aside className="hidden w-[228px] flex-col bg-[var(--studio-sidebar-bg)] md:flex">
         {sidebarContent}
       </aside>
 
-      {/* Main column — transparent so the navy frame shows through; the
-          floating paper inside the content area carries the light canvas. */}
-      <main className="flex flex-1 flex-col overflow-hidden">
-        {/* Topbar — no border-b: the navy frame flows continuously into
-            the gutter, so a separator hairline reads as visual noise. */}
-        <div className="flex h-14 shrink-0 items-center justify-between bg-[var(--chrome-bg)] px-4 md:px-8">
+      {/* Main column — paper canvas edge-to-edge */}
+      <main className="flex flex-1 flex-col overflow-hidden bg-[var(--studio-canvas)]">
+        {/* Topbar — paper bg, single hairline border-bottom (Shopify-clear) */}
+        <div className="flex h-12 shrink-0 items-center justify-between border-b border-[color:var(--studio-line)] bg-[var(--studio-paper)] px-3 md:px-5">
           <div className="flex items-center gap-3">
             <button
               aria-label="Abrir menú"
               type="button"
               onClick={() => setSidebarOpen(true)}
-              className="-ml-1 inline-flex h-11 w-11 items-center justify-center rounded-full text-[var(--chrome-fg-muted)] transition-colors hover:bg-[var(--chrome-hover)] hover:text-[var(--chrome-fg)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus-on-dark)] md:hidden"
+              className="-ml-1 inline-flex h-9 w-9 items-center justify-center rounded-md text-ink-4 transition-colors hover:bg-[var(--studio-row-hover)] hover:text-ink-0 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)] md:hidden"
             >
-              <Menu className="h-5 w-5" strokeWidth={1.75} />
+              <Menu className="h-4 w-4" strokeWidth={1.75} />
             </button>
-            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--chrome-fg-muted)]">
-              Tienda activa
-            </span>
-            <span className="hidden h-3 w-px bg-[color:var(--chrome-border)] sm:block" />
-            <span className="hidden text-[13px] font-medium text-[var(--chrome-fg)] sm:block">
-              {storeName}
-            </span>
+            {/* Store badge — single line, no eyebrow chrome */}
+            <div className="flex items-center gap-2">
+              <span className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-[var(--brand)] text-[10px] font-semibold text-white">
+                {storeInitials}
+              </span>
+              <span className="text-[12.5px] font-medium text-ink-1">
+                {storeName}
+              </span>
+            </div>
           </div>
           <TopbarUserMenu
             storeName={storeName}
@@ -423,40 +426,18 @@ export function AdminShell({
           />
         </div>
 
-        {/* Dunning banner — persistent, sits in the navy frame above the
-            floating paper so it stays visually attached to the chrome. */}
+        {/* Dunning banner */}
         {dunningBanner}
 
-        {/* Content area.
-            • The store-ai/editor route is full-bleed (its own copilot UI)
-              and skips the paper entirely.
-            • Every other route renders the canvas inside a floating
-              "paper": even navy gutter on every side, all four corners
-              rounded (var(--r-xl) = 16px), hairline border, shadow-
-              elevated for the lifted feel. The canvas keeps its
-              --admin-canvas tone so cards still read on the canonical
-              Nexora surface; only the wrapper changes. */}
+        {/* Content area — edge-to-edge paper canvas, no floating wrapper */}
         {pathname.startsWith("/admin/store-ai/editor") ? (
           <div className="flex-1 overflow-auto">
             <div className="h-full">{children}</div>
           </div>
         ) : (
-          // Floating paper: all four corners rounded, even gutter on every
-          // side so the navy frame breathes uniformly. shadow-elevated
-          // gives the paper a premium "lifted" feel against the navy.
-          <div className="flex-1 overflow-hidden p-2 md:p-3">
-            <div
-              className="h-full overflow-auto rounded-[var(--r-xl)] bg-[var(--admin-canvas)] shadow-[var(--shadow-elevated)]"
-            >
-              {pathname.startsWith("/admin/store-ai/themes") ? (
-                <div className="mx-auto max-w-[1440px] px-4 py-8 md:px-10 md:py-12">
-                  {children}
-                </div>
-              ) : (
-                <div className="mx-auto max-w-[1400px] px-4 py-8 md:px-10 md:py-12">
-                  {children}
-                </div>
-              )}
+          <div className="flex-1 overflow-auto bg-[var(--studio-canvas)]">
+            <div className="mx-auto w-full max-w-[1280px] px-5 py-6 md:px-8 md:py-8">
+              {children}
             </div>
           </div>
         )}
@@ -490,30 +471,23 @@ function SidebarLeaf({ leaf, pathname, onNavigate, nested = false }: SidebarLeaf
   const active = isLeafActive(leaf, pathname);
   const Icon = leaf.icon;
   return (
-    <li className="relative">
-      {active && (
-        <span
-          aria-hidden
-          className="absolute left-0 top-1/2 h-5 -translate-y-1/2 rounded-r-full bg-[var(--sidebar-fg-active)]"
-          style={{ width: 3 }}
-        />
-      )}
+    <li>
       <Link
         href={leaf.href}
         onClick={onNavigate}
         aria-current={active ? "page" : undefined}
         className={cn(
-          "flex items-center gap-2.5 rounded-[var(--r-sm)] py-2 text-[13px] transition-colors outline-none focus-visible:shadow-[var(--shadow-focus-on-dark)]",
-          nested ? "pl-9 pr-3" : "px-3",
+          "flex items-center gap-2 rounded-md py-1.5 text-[12.5px] transition-colors outline-none focus-visible:shadow-[var(--shadow-focus-on-dark)]",
+          nested ? "pl-8 pr-2.5" : "px-2.5",
           active
-            ? "bg-[var(--sidebar-active-bg)] font-medium text-[var(--sidebar-fg-active)]"
-            : "text-[var(--sidebar-fg)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-fg-active)]",
+            ? "bg-white/10 font-medium text-white"
+            : "text-white/65 hover:bg-white/5 hover:text-white",
         )}
       >
         <Icon
           className={cn(
-            "h-4 w-4 shrink-0",
-            active ? "text-[var(--sidebar-fg-active)]" : "text-[var(--sidebar-fg)]",
+            "h-3.5 w-3.5 shrink-0",
+            active ? "text-white" : "text-white/55",
           )}
           strokeWidth={1.75}
         />
@@ -537,40 +511,32 @@ function SidebarGroup({ group, pathname, expanded, onToggle, onNavigate }: Sideb
   const panelId = `sidebar-group-${group.id}`;
 
   return (
-    <li className="relative">
-      {active && !expanded && (
-        <span
-          aria-hidden
-          className="absolute left-0 top-1/2 h-5 -translate-y-1/2 rounded-r-full bg-[var(--sidebar-fg-active)]"
-          style={{ width: 3 }}
-        />
-      )}
+    <li>
       <button
         type="button"
         onClick={() => onToggle(group.id)}
         aria-expanded={expanded}
         aria-controls={panelId}
         className={cn(
-          "flex w-full items-center gap-2.5 rounded-[var(--r-sm)] px-3 py-2 text-[13px] transition-colors outline-none focus-visible:shadow-[var(--shadow-focus-on-dark)]",
+          "flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-[12.5px] transition-colors outline-none focus-visible:shadow-[var(--shadow-focus-on-dark)]",
           active
-            ? "font-medium text-[var(--sidebar-fg-active)]"
-            : "text-[var(--sidebar-fg)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-fg-active)]",
-          active && !expanded ? "bg-[var(--sidebar-active-bg)]" : "",
+            ? "font-medium text-white"
+            : "text-white/65 hover:bg-white/5 hover:text-white",
         )}
       >
         <Icon
           className={cn(
-            "h-4 w-4 shrink-0",
-            active ? "text-[var(--sidebar-fg-active)]" : "text-[var(--sidebar-fg)]",
+            "h-3.5 w-3.5 shrink-0",
+            active ? "text-white" : "text-white/55",
           )}
           strokeWidth={1.75}
         />
         <span className="flex-1 truncate text-left">{group.label}</span>
         <ChevronRight
           className={cn(
-            "h-3.5 w-3.5 shrink-0 transition-transform duration-[var(--dur-fast)]",
+            "h-3 w-3 shrink-0 transition-transform duration-[var(--dur-fast)]",
             expanded ? "rotate-90" : "rotate-0",
-            active ? "text-[var(--sidebar-fg-active)]" : "text-[var(--sidebar-fg)]",
+            active ? "text-white" : "text-white/40",
           )}
           strokeWidth={2}
         />

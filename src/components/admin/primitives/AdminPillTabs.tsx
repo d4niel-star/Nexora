@@ -3,18 +3,20 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-// ─── AdminPillTabs ───────────────────────────────────────────────────────
-// Pill-shaped tabs on a hairline strip. Replaces the previous
-// border-bottom underline pattern (`border-b-2 border-ink-0`) used in
-// catalog, orders, store, and settings. Every tab is a `rounded-full`
-// chip with a subtle hover; the active tab fills with `--brand` + white
-// text, providing a clear focal point without the editorial underline.
+// ─── AdminPillTabs · Studio v4 wrapper ─────────────────────────────────
+//
+// Back-compat shim. The pill (rounded-full / brand-fill) tabs are
+// retired in favour of sober underline tabs (`.nx-tabs` + `.nx-tab`),
+// which are denser and Shopify-clear. The shim keeps the same API so
+// existing call sites work untouched; legacy props (`warning`,
+// `disabled`, `size`) are silently ignored when they no longer make
+// sense in v4.
 
 export interface AdminPillTab<T extends string = string> {
   value: T;
   label: ReactNode;
   count?: number | null;
-  /** Mark a special / warning tab (e.g. "Con problemas"). */
+  /** @deprecated Studio v4 doesn't render warning-tinted tabs. */
   warning?: boolean;
   disabled?: boolean;
 }
@@ -24,6 +26,7 @@ interface AdminPillTabsProps<T extends string = string> {
   active: T;
   onChange: (next: T) => void;
   className?: string;
+  /** @deprecated Studio v4 ships a single density. */
   size?: "sm" | "md";
 }
 
@@ -32,13 +35,9 @@ export function AdminPillTabs<T extends string = string>({
   active,
   onChange,
   className,
-  size = "md",
 }: AdminPillTabsProps<T>) {
   return (
-    <div
-      role="tablist"
-      className={cn("admin-pill-tabs", `admin-pill-tabs--${size}`, className)}
-    >
+    <div role="tablist" className={cn("nx-tabs", className)}>
       {tabs.map((tab) => {
         const isActive = tab.value === active;
         return (
@@ -47,19 +46,15 @@ export function AdminPillTabs<T extends string = string>({
             type="button"
             role="tab"
             aria-selected={isActive}
+            data-active={isActive ? "true" : undefined}
             disabled={tab.disabled}
             onClick={() => !tab.disabled && onChange(tab.value)}
-            className={cn(
-              "admin-pill-tab",
-              isActive && "admin-pill-tab--active",
-              tab.warning && "admin-pill-tab--warning",
-              tab.disabled && "admin-pill-tab--disabled",
-            )}
+            className="nx-tab"
           >
-            <span>{tab.label}</span>
-            {tab.count !== null && tab.count !== undefined && tab.count > 0 && (
-              <span className="admin-pill-tab-count">{tab.count}</span>
-            )}
+            {tab.label}
+            {tab.count !== null && tab.count !== undefined && tab.count > 0 ? (
+              <span className="nx-tab__count">{tab.count}</span>
+            ) : null}
           </button>
         );
       })}

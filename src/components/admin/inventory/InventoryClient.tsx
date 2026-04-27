@@ -10,10 +10,15 @@ import { StockStatusBadge } from "@/components/admin/inventory/StockBadge";
 import { VariantRiskPanel } from "@/components/admin/inventory/VariantRiskPanel";
 import type { VariantIntelligenceReport } from "@/types/variant-intelligence";
 import Link from "next/link";
-import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
-import { AdminToolbar } from "@/components/admin/primitives/AdminToolbar";
-import { AdminPillTabs, type AdminPillTab } from "@/components/admin/primitives/AdminPillTabs";
-import { AdminEmptyState } from "@/components/admin/primitives/AdminEmptyState";
+import {
+  NexoraPageHeader,
+  NexoraTabs,
+  NexoraTableShell,
+  NexoraCmdBar,
+  NexoraSearch,
+  NexoraActions,
+  NexoraEmpty,
+} from "@/components/admin/nexora";
 
 type TabValue = "all" | "low_stock" | "out_of_stock" | "reserved" | "variant_risk";
 
@@ -136,59 +141,44 @@ export function InventoryClient({ items, variantIntel, focusVariantId, focusActi
 
   const outOfStockCount = items.filter((i) => i.status === "out_of_stock").length;
 
-  const pillTabs: AdminPillTab<TabValue>[] = tabs.map((t) => ({
-    value: t.value,
-    label: t.label,
-    count: t.count ?? null,
-    warning: (t.value === "out_of_stock" || t.value === "variant_risk") && (t.count ?? 0) > 0,
-  }));
-
   return (
-    <div className="space-y-6 animate-in fade-in duration-700 pb-32">
-      <AdminPageHeader
-        eyebrow="Inventario"
+    <div className="space-y-5 animate-in fade-in duration-300 pb-16">
+      <NexoraPageHeader
         title="Inventario"
         subtitle="Stock real por variante. Ajustá ingresos, mermas o conteos físicos en cualquier momento."
-        actions={
-          outOfStockCount > 0 ? (
-            <span className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-[color:var(--signal-danger)]/30 bg-[color:var(--signal-danger)]/10 text-[color:var(--signal-danger)] text-[11.5px] font-semibold">
-              <AlertCircle className="w-3.5 h-3.5" strokeWidth={1.75} /> {outOfStockCount} agotado{outOfStockCount > 1 ? "s" : ""}
-            </span>
-          ) : undefined
+        status={
+          outOfStockCount > 0
+            ? { label: `${outOfStockCount} agotado${outOfStockCount > 1 ? "s" : ""}`, tone: "danger" }
+            : undefined
         }
       />
 
-      {/* Main panel — pill tabs + new toolbar + admin-table */}
-      <section className="admin-table-frame relative">
-        <AdminPillTabs
-          tabs={pillTabs}
-          active={activeTab}
-          onChange={(v) => setActiveTab(v)}
-        />
+      <NexoraTabs
+        tabs={tabs.map((t) => ({ value: t.value, label: t.label, count: t.count ?? undefined }))}
+        active={activeTab}
+        onChange={setActiveTab}
+      />
 
-        {/* Variant Risk Panel (separate view) */}
-        {activeTab === "variant_risk" ? (
-          <VariantRiskPanel report={variantIntel} onAdjustStock={handleVariantAdjust} focusVariantId={focusVariantId} focusAction={(focusAction as "adjust" | "reorder" | null)} />
-        ) : (
-        <>
-        <AdminToolbar
-          search={{
-            value: searchQuery,
-            onChange: setSearchQuery,
-            placeholder: "Buscar por SKU, producto o variante…",
-          }}
-          actions={
-            <span className="text-[11.5px] tabular-nums text-ink-5">
-              {filteredItems.length} de {items.length} variante
-              {items.length !== 1 ? "s" : ""}
+      {/* Variant Risk Panel (separate view) */}
+      {activeTab === "variant_risk" ? (
+        <VariantRiskPanel report={variantIntel} onAdjustStock={handleVariantAdjust} focusVariantId={focusVariantId} focusAction={(focusAction as "adjust" | "reorder" | null)} />
+      ) : (
+      <NexoraTableShell>
+        <NexoraCmdBar>
+          <NexoraSearch
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Buscar por SKU, producto o variante…"
+          />
+          <NexoraActions>
+            <span className="nx-cmd-bar__count">
+              {filteredItems.length} de {items.length}
             </span>
-          }
-        />
+          </NexoraActions>
+        </NexoraCmdBar>
 
-        {/* Table */}
-        <div className="min-h-[400px]">
-          <div className="overflow-x-auto">
-            <table className="admin-table whitespace-nowrap">
+        <div className="overflow-x-auto">
+            <table className="nx-table">
               <thead>
                 <tr>
                   <th style={{ width: "3rem" }}>
@@ -211,16 +201,15 @@ export function InventoryClient({ items, variantIntel, focusVariantId, focusActi
               <tbody>
                 {filteredItems.length === 0 ? (
                   <tr>
-                    <td colSpan={8} style={{ padding: "1.5rem" }}>
-                      <AdminEmptyState
-                        icon={PackageOpen}
-                        tone="neutral"
-                        title="No hay inventario aquí."
+                    <td colSpan={8} style={{ padding: 0 }}>
+                      <NexoraEmpty
+                        title="Sin inventario aquí"
                         body="No hay variantes que coincidan con estos filtros."
-                        primary={
+                        actions={
                           <button
+                            type="button"
                             onClick={() => { setSearchQuery(""); setActiveTab("all"); }}
-                            className="inline-flex h-8 items-center rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-paper)] px-3 text-[12px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)]"
+                            className="nx-action nx-action--sm"
                           >
                             Limpiar filtros
                           </button>
@@ -234,7 +223,8 @@ export function InventoryClient({ items, variantIntel, focusVariantId, focusActi
                     return (
                       <tr
                         key={item.variantId}
-                        className={`admin-table-row group ${isSelected ? "admin-table-row--selected" : ""}`}
+                        data-selected={isSelected ? "true" : undefined}
+                        className="group"
                       >
                         <td className="px-6 py-5" onClick={(e) => e.stopPropagation()}>
                           <input
@@ -311,20 +301,9 @@ export function InventoryClient({ items, variantIntel, focusVariantId, focusActi
                 )}
               </tbody>
             </table>
-          </div>
         </div>
-
-        {/* Footer Count */}
-        {filteredItems.length > 0 && (
-          <div className="px-6 py-3 border-t border-[color:var(--hairline)] bg-[var(--surface-1)] flex items-center justify-between">
-            <span className="text-[10px] text-ink-5 font-medium uppercase tracking-[0.14em] block">
-              Resultados: <b className="text-ink-0 px-1 font-semibold">{filteredItems.length}</b> variantes
-            </span>
-          </div>
-        )}
-        </>
-        )}
-      </section>
+      </NexoraTableShell>
+      )}
 
       {/* Adjust Stock Modal */}
       {adjustTarget && (

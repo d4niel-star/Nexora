@@ -183,6 +183,26 @@
   --sidebar-hover: rgba(255, 255, 255, 0.06);
   --sidebar-active-bg: rgba(255, 255, 255, 0.08);
 
+  /* ═════════════════════════════════════════════════════════════════════════
+     Nexora Studio v4 — Admin shell tokens
+     ─────────────────────────────────────
+     Replaces the v3 "navy frame + floating paper". Studio is a flat,
+     Shopify-clear chrome:
+       · sidebar: solid navy, edge-to-edge (no rounded paper around it)
+       · topbar: paper, single hairline bottom (no navy chrome)
+       · canvas: paper edge-to-edge (no admin-canvas grey backdrop)
+       · lines: subtle ink-on-paper hairlines
+       · row-hover: 3% ink wash for tables and lists
+     ═════════════════════════════════════════════════════════════════════════ */
+  --studio-canvas: #f7f8fa;
+  --studio-paper: #ffffff;
+  --studio-paper-soft: #fafbfc;
+  --studio-line: rgba(0, 0, 32, 0.08);
+  --studio-line-strong: rgba(0, 0, 32, 0.14);
+  --studio-row-hover: rgba(0, 0, 32, 0.035);
+  --studio-row-selected: rgba(0, 0, 32, 0.05);
+  --studio-sidebar-bg: #000020;
+
   /* ─── Back-compat tokens ─── */
   --color-background: var(--admin-canvas);
   --color-foreground: var(--ink-0);
@@ -1256,6 +1276,438 @@ input[type="radio"]:focus-visible {
 }
 .admin-table tbody tr.admin-table-row--selected {
   background-color: color-mix(in srgb, var(--brand) 5%, var(--surface-paper));
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Nexora Studio v4 — Admin primitives (Shopify-clear, flat)
+   ─────────────────────────────────────────────────────────
+   Net-new primitives that replace the v3 admin compositions. These are
+   intentionally flat: hairline borders, no shadow, no rounded panels
+   inside the canvas. The visual language is one of clarity and density,
+   not lifted cards.
+
+     · .nx-page-header   compact inline page title row (replaces big stack)
+     · .nx-stat-row      flat horizontal KPI band, hairline-divided
+     · .nx-panel         flat panel with hairline border, no shadow
+     · .nx-table-shell   table wrapper, hairline border, no shadow
+     · .nx-table         table itself, dense rows, sober hover
+     · .nx-cmd-bar       command bar (search + filters + actions),
+                         joins seamlessly with .nx-table-shell below it
+     · .nx-chip          filter pill chip
+     · .nx-action        outline ghost button
+     · .nx-action--primary  solid brand-navy CTA
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── nx-page-header ──────────────────────────────────────────────────── */
+.nx-page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--studio-line);
+}
+.nx-page-header__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 32px;
+}
+.nx-page-header__main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.nx-page-header__title {
+  font-size: 20px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink-0);
+  margin: 0;
+}
+.nx-page-header__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 500;
+  background: rgba(0, 0, 32, 0.04);
+  color: var(--ink-2);
+}
+.nx-page-header__status--success {
+  background: rgba(46, 132, 89, 0.10);
+  color: #2e8459;
+}
+.nx-page-header__status--warning {
+  background: rgba(184, 105, 30, 0.10);
+  color: #b8691e;
+}
+.nx-page-header__status--danger {
+  background: rgba(176, 53, 53, 0.10);
+  color: #b03535;
+}
+.nx-page-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.nx-page-header__sub {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-5);
+  max-width: 720px;
+}
+
+/* ── nx-action ───────────────────────────────────────────────────────── */
+.nx-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 6px;
+  border: 1px solid var(--studio-line-strong);
+  background: var(--studio-paper);
+  color: var(--ink-1);
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 120ms, border-color 120ms;
+}
+.nx-action:hover { background: var(--studio-row-hover); }
+.nx-action:disabled { opacity: 0.5; cursor: not-allowed; }
+.nx-action--primary {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #ffffff;
+}
+.nx-action--primary:hover { background: var(--brand-hover, #00003d); }
+.nx-action--ghost {
+  border-color: transparent;
+  background: transparent;
+}
+.nx-action--ghost:hover { background: var(--studio-row-hover); }
+.nx-action--sm { height: 28px; padding: 0 10px; font-size: 12px; }
+
+/* ── nx-stat-row (flat, hairline-divided) ────────────────────────────── */
+.nx-stat-row {
+  display: grid;
+  grid-template-columns: repeat(var(--nx-cols, 4), minmax(0, 1fr));
+  border: 1px solid var(--studio-line);
+  border-radius: 8px;
+  background: var(--studio-paper);
+  overflow: hidden;
+}
+.nx-stat {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-left: 1px solid var(--studio-line);
+}
+.nx-stat:first-child { border-left: none; }
+.nx-stat__label {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--ink-5);
+}
+.nx-stat__value {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink-0);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+.nx-stat__row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.nx-stat__delta {
+  font-size: 11.5px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.nx-stat__delta--up { color: #2e8459; }
+.nx-stat__delta--down { color: #b03535; }
+.nx-stat__delta--neutral { color: var(--ink-5); }
+.nx-stat__hint {
+  font-size: 11.5px;
+  color: var(--ink-6);
+}
+.nx-stat--clickable {
+  cursor: pointer;
+  transition: background 120ms;
+}
+.nx-stat--clickable:hover { background: var(--studio-row-hover); }
+@media (max-width: 768px) {
+  .nx-stat-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .nx-stat:nth-child(odd) { border-left: none; }
+}
+
+/* ── nx-panel (flat) ─────────────────────────────────────────────────── */
+.nx-panel {
+  border: 1px solid var(--studio-line);
+  border-radius: 8px;
+  background: var(--studio-paper);
+}
+.nx-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--studio-line);
+}
+.nx-panel__title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink-0);
+  letter-spacing: -0.005em;
+}
+.nx-panel__sub {
+  font-size: 12px;
+  color: var(--ink-5);
+  margin-top: 2px;
+}
+.nx-panel__body { padding: 16px; }
+.nx-panel__body--flush { padding: 0; }
+.nx-panel__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--studio-line);
+  background: var(--studio-paper-soft);
+}
+
+/* ── nx-cmd-bar + nx-table (joined as one component) ─────────────────── */
+.nx-table-shell {
+  border: 1px solid var(--studio-line);
+  border-radius: 8px;
+  background: var(--studio-paper);
+  overflow: hidden;
+}
+.nx-cmd-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--studio-line);
+  background: var(--studio-paper);
+  flex-wrap: wrap;
+}
+.nx-cmd-bar__search {
+  position: relative;
+  flex: 1 1 220px;
+  min-width: 180px;
+  max-width: 360px;
+}
+.nx-cmd-bar__search input {
+  width: 100%;
+  height: 32px;
+  padding: 0 10px 0 30px;
+  border: 1px solid var(--studio-line-strong);
+  border-radius: 6px;
+  background: var(--studio-paper);
+  font-size: 12.5px;
+  color: var(--ink-0);
+  outline: none;
+  transition: border-color 120ms, box-shadow 120ms;
+}
+.nx-cmd-bar__search input:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(0, 0, 32, 0.08);
+}
+.nx-cmd-bar__search input::placeholder { color: var(--ink-6); }
+.nx-cmd-bar__search-icon {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink-5);
+  pointer-events: none;
+}
+.nx-cmd-bar__filters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.nx-cmd-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+.nx-cmd-bar__count {
+  font-size: 12px;
+  color: var(--ink-5);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Filter chip (pill) */
+.nx-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--studio-line-strong);
+  background: var(--studio-paper);
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 120ms, border-color 120ms, color 120ms;
+}
+.nx-chip:hover { background: var(--studio-row-hover); }
+.nx-chip[aria-pressed="true"],
+.nx-chip[data-active="true"] {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #ffffff;
+}
+.nx-chip__count {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+  font-size: 11px;
+}
+.nx-chip[aria-pressed="true"] .nx-chip__count,
+.nx-chip[data-active="true"] .nx-chip__count { opacity: 0.85; }
+
+/* Bulk action bar (above table when rows are selected) */
+.nx-bulk-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--studio-line);
+  background: rgba(0, 0, 32, 0.04);
+}
+.nx-bulk-bar__label {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-1);
+}
+.nx-bulk-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* The table itself */
+.nx-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--studio-paper);
+}
+.nx-table thead th {
+  height: 36px;
+  padding: 0 12px;
+  text-align: left;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--ink-5);
+  background: var(--studio-paper-soft);
+  border-bottom: 1px solid var(--studio-line);
+  white-space: nowrap;
+}
+.nx-table tbody td {
+  padding: 12px;
+  font-size: 13px;
+  color: var(--ink-1);
+  border-bottom: 1px solid var(--studio-line);
+  vertical-align: middle;
+}
+.nx-table tbody tr:last-child td { border-bottom: none; }
+.nx-table tbody tr {
+  transition: background 100ms;
+}
+.nx-table tbody tr:hover { background: var(--studio-row-hover); }
+.nx-table tbody tr[data-selected="true"] { background: var(--studio-row-selected); }
+.nx-table thead th:first-child,
+.nx-table tbody td:first-child { padding-left: 16px; }
+.nx-table thead th:last-child,
+.nx-table tbody td:last-child { padding-right: 16px; }
+.nx-table .nx-cell-strong { font-weight: 500; color: var(--ink-0); }
+.nx-table .nx-cell-meta { color: var(--ink-5); font-size: 12px; }
+.nx-table .nx-cell-num { font-variant-numeric: tabular-nums; text-align: right; }
+
+/* Empty state inside a table or panel */
+.nx-empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--ink-5);
+}
+.nx-empty__title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink-1);
+  margin-bottom: 4px;
+}
+.nx-empty__body {
+  font-size: 12.5px;
+  color: var(--ink-5);
+  max-width: 320px;
+  margin: 0 auto 12px;
+}
+
+/* ── nx-tabs (segmented, sober) ──────────────────────────────────────── */
+.nx-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  border-bottom: 1px solid var(--studio-line);
+  margin-bottom: 16px;
+}
+.nx-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-5);
+  cursor: pointer;
+  background: transparent;
+  transition: color 120ms, border-color 120ms;
+}
+.nx-tab:hover { color: var(--ink-2); }
+.nx-tab[aria-selected="true"],
+.nx-tab[data-active="true"] {
+  color: var(--ink-0);
+  border-bottom-color: var(--brand);
+}
+.nx-tab__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(0, 0, 32, 0.06);
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

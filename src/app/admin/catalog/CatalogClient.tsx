@@ -11,10 +11,8 @@ import {
   Loader2,
   Package,
   Plus,
-  Search as SearchIcon,
   Trash2,
   Upload,
-  X as XIcon,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -29,11 +27,18 @@ import { buildVariantHref } from "@/lib/navigation/hrefs";
 import { ProductStatusBadge } from "../../../components/admin/catalog/ProductStatusBadge";
 import { ProductDrawer } from "../../../components/admin/catalog/ProductDrawer";
 import { ManualProductModal } from "../../../components/admin/catalog/ManualProductModal";
-import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
-import { AdminPanel } from "@/components/admin/primitives/AdminPanel";
-import { AdminToolbar } from "@/components/admin/primitives/AdminToolbar";
-import { AdminPillTabs, type AdminPillTab } from "@/components/admin/primitives/AdminPillTabs";
-import { AdminEmptyState } from "@/components/admin/primitives/AdminEmptyState";
+import {
+  NexoraPageHeader,
+  NexoraTableShell,
+  NexoraCmdBar,
+  NexoraSearch,
+  NexoraFilters,
+  NexoraActions,
+  NexoraChip,
+  NexoraBulkBar,
+  NexoraEmpty,
+  NexoraTabs,
+} from "@/components/admin/nexora";
 
 // ─── Catalog admin surface ────────────────────────────────────────────────
 //
@@ -274,100 +279,159 @@ export default function CatalogClient({
     URL.revokeObjectURL(url);
   };
 
-  // Map legacy tabs to AdminPillTab shape (warning replaces isSpecial).
-  const pillTabs: AdminPillTab<TabValue>[] = tabs.map((t) => ({
-    value: t.value,
-    label: t.label,
-    count: t.count,
-    warning: t.isSpecial,
-  }));
-
   return (
-    <div className="space-y-6 pb-24">
-      {/* Header */}
+    <div className="space-y-5 pb-16">
+      {/* Header — compact inline (Studio v4) */}
       {!hideHeader && (
-        <AdminPageHeader
-          eyebrow="Catálogo"
-          title="Catálogo"
+        <NexoraPageHeader
+          title="Productos"
           subtitle="Administrá tus productos, ajustá precios, controlá publicación y exportá tu catálogo."
           actions={
-            <div className="flex items-center gap-2">
+            <>
               <button
+                type="button"
                 onClick={handleExportCsv}
                 disabled={filtered.length === 0}
-                className="inline-flex h-10 items-center gap-2 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-paper)] px-4 text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] disabled:cursor-not-allowed disabled:opacity-50"
+                className="nx-action"
                 title={filtered.length === 0 ? "Nada para exportar" : "Exportar CSV"}
               >
                 Exportar CSV
               </button>
               <button
+                type="button"
                 onClick={() => setManualOpen(true)}
-                className="inline-flex h-10 items-center gap-2 rounded-full bg-[var(--brand)] px-4 text-[13px] font-medium text-white transition-colors hover:bg-[var(--brand-hover)]"
+                className="nx-action nx-action--primary"
               >
                 <Plus className="h-4 w-4" strokeWidth={2} />
-                Agregar manual
+                Agregar producto
               </button>
-            </div>
+            </>
           }
         />
       )}
 
-      {/* Main panel — pill tabs + new toolbar + table */}
-      <section className="admin-table-frame">
-        <AdminPillTabs
-          tabs={pillTabs}
-          active={activeTab}
-          onChange={(v) => setActiveTab(v)}
-        />
+      {/* Status tabs — sober underline tabs */}
+      <NexoraTabs
+        tabs={tabs.map((t) => ({
+          value: t.value,
+          label: t.label,
+          count: t.count,
+        }))}
+        active={activeTab}
+        onChange={setActiveTab}
+      />
 
-        <AdminToolbar
-          search={{
-            value: searchQuery,
-            onChange: setSearchQuery,
-            placeholder: "Buscar por nombre o categoría…",
-          }}
-          filters={
-            searchQuery && (
-              <span className="inline-flex h-7 items-center gap-1 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-paper)] px-2.5 text-[11px] font-medium text-ink-5">
-                <FilterIcon className="h-3 w-3" /> filtrado
+      {/* Single hairline-frame DataBoard: cmd bar + bulk bar + table */}
+      <NexoraTableShell>
+        <NexoraCmdBar>
+          <NexoraSearch
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Buscar por nombre o categoría…"
+          />
+          {searchQuery ? (
+            <NexoraFilters>
+              <span className="nx-chip" data-active>
+                <FilterIcon className="h-3 w-3" />
+                {filtered.length} resultado{filtered.length === 1 ? "" : "s"}
               </span>
-            )
-          }
-          actions={
-            <span className="text-[11.5px] tabular-nums text-ink-5">
-              {filtered.length} de {products.length} producto
-              {products.length !== 1 ? "s" : ""}
+            </NexoraFilters>
+          ) : null}
+          <NexoraActions>
+            <span className="nx-cmd-bar__count">
+              {filtered.length} de {products.length}
             </span>
-          }
-        />
+          </NexoraActions>
+        </NexoraCmdBar>
 
+        {/* Bulk action strip — fused with the table, no floating bar */}
+        <NexoraBulkBar
+          selected={selectedRows.length}
+          onClear={() => setSelectedRows([])}
+        >
+          <button
+            type="button"
+            className="nx-action nx-action--sm"
+            onClick={() => runBulkStatus("active")}
+            disabled={isBulkPending}
+          >
+            <Upload className="h-3.5 w-3.5" /> Activar
+          </button>
+          <button
+            type="button"
+            className="nx-action nx-action--sm"
+            onClick={() => runBulkStatus("archived")}
+            disabled={isBulkPending}
+          >
+            <Archive className="h-3.5 w-3.5" /> Archivar
+          </button>
+          <button
+            type="button"
+            onClick={runBulkDelete}
+            disabled={isBulkPending}
+            className={cn(
+              "nx-action nx-action--sm",
+              bulkConfirmDelete && "nx-action--primary",
+            )}
+            style={
+              bulkConfirmDelete
+                ? {
+                    background: "var(--signal-danger)",
+                    borderColor: "var(--signal-danger)",
+                  }
+                : undefined
+            }
+            title={bulkConfirmDelete ? "Confirmar eliminación" : "Eliminar"}
+          >
+            {isBulkPending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Trash2 className="h-3.5 w-3.5" />
+            )}
+            {bulkConfirmDelete ? "Confirmar" : "Eliminar"}
+          </button>
+        </NexoraBulkBar>
+        {bulkError ? (
+          <div
+            style={{
+              padding: "8px 12px",
+              borderBottom: "1px solid var(--studio-line)",
+              background: "rgba(176, 53, 53, 0.08)",
+              color: "#b03535",
+              fontSize: 12,
+              fontWeight: 500,
+            }}
+          >
+            {bulkError}
+          </div>
+        ) : null}
 
         {/* Table */}
         <div className="overflow-x-auto">
-          <table className="admin-table">
+          <table className="nx-table">
             <thead>
               <tr>
-                <th style={{ width: "3rem" }}>
+                <th style={{ width: 36 }}>
                   <input
                     type="checkbox"
                     checked={everyVisibleSelected}
                     onChange={(e) => handleSelectAll(e.target.checked)}
-                    className="h-4 w-4 cursor-pointer accent-ink-0"
+                    className="h-4 w-4 cursor-pointer accent-[var(--brand)]"
                     aria-label="Seleccionar todo"
                   />
                 </th>
-                <Th>Producto</Th>
-                <Th>Salud</Th>
-                <Th>Precio</Th>
-                <Th>Estado</Th>
-                <Th align="right">Stock</Th>
-                <Th align="right">Acciones</Th>
+                <th>Producto</th>
+                <th>Salud</th>
+                <th>Precio</th>
+                <th>Estado</th>
+                <th style={{ textAlign: "right" }}>Stock</th>
+                <th style={{ textAlign: "right" }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ padding: "1.5rem" }}>
+                  <td colSpan={7} style={{ padding: 0 }}>
                     <EmptyState
                       hasSearch={searchQuery.length > 0}
                       onClear={() => {
@@ -385,26 +449,38 @@ export default function CatalogClient({
                     <tr
                       key={product.id}
                       onClick={() => setSelectedProduct(product)}
-                      className={cn(
-                        "admin-table-row cursor-pointer",
-                        isSelected && "admin-table-row--selected",
-                      )}
+                      data-selected={isSelected ? "true" : undefined}
+                      style={{ cursor: "pointer" }}
                     >
-                      <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}>
+                      <td onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           checked={isSelected}
                           onChange={(e) => toggleRow(product.id, e.target.checked)}
-                          className="h-4 w-4 cursor-pointer accent-ink-0"
+                          className="h-4 w-4 cursor-pointer accent-[var(--brand)]"
                           aria-label={`Seleccionar ${product.title}`}
                         />
                       </td>
-                      <td className="px-5 py-4">
+                      <td>
                         <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 shrink-0 overflow-hidden rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)]">
+                          <div
+                            style={{
+                              height: 36,
+                              width: 36,
+                              flexShrink: 0,
+                              borderRadius: 6,
+                              border: "1px solid var(--studio-line)",
+                              background: "var(--studio-canvas)",
+                              overflow: "hidden",
+                            }}
+                          >
                             {product.image ? (
                               // eslint-disable-next-line @next/next/no-img-element
-                              <img src={product.image} alt={product.title} className="h-full w-full object-cover" />
+                              <img
+                                src={product.image}
+                                alt={product.title}
+                                style={{ height: "100%", width: "100%", objectFit: "cover" }}
+                              />
                             ) : (
                               <div className="flex h-full w-full items-center justify-center text-ink-6">
                                 <Package className="h-4 w-4" strokeWidth={1.5} />
@@ -412,15 +488,15 @@ export default function CatalogClient({
                             )}
                           </div>
                           <div className="min-w-0">
-                            <p className="truncate text-[13px] font-medium text-ink-0">{product.title}</p>
-                            <p className="text-[11px] text-ink-5">
+                            <p className="nx-cell-strong truncate">{product.title}</p>
+                            <p className="nx-cell-meta">
                               {product.category || "Sin categoría"} · {product.variants.length} variante
                               {product.variants.length !== 1 ? "s" : ""}
                             </p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-5 py-4">
+                      <td>
                         <SignalChips
                           signals={product.signals}
                           providerName={product.providerName}
@@ -431,14 +507,15 @@ export default function CatalogClient({
                           variantUrgentReorderId={product.variantUrgentReorderId}
                         />
                       </td>
-                      <td className="px-5 py-4">
-                        <p className="tabular-nums text-[13px] font-semibold text-ink-0">
+                      <td>
+                        <p className="nx-cell-strong" style={{ fontVariantNumeric: "tabular-nums" }}>
                           ${product.price.toLocaleString("es-AR")}
                         </p>
                         {product.costReal ? (
                           <p
+                            style={{ fontVariantNumeric: "tabular-nums", fontSize: 11 }}
                             className={cn(
-                              "tabular-nums text-[10px] font-medium",
+                              "font-medium",
                               product.margin >= 0.2
                                 ? "text-[color:var(--signal-success)]"
                                 : product.margin >= 0.05
@@ -449,20 +526,24 @@ export default function CatalogClient({
                             margen {Math.round(product.margin * 100)}%
                           </p>
                         ) : (
-                          <p className="text-[10px] font-medium text-[color:var(--signal-danger)]">sin costo real</p>
+                          <p className="text-[11px] font-medium text-[color:var(--signal-danger)]">
+                            sin costo real
+                          </p>
                         )}
                       </td>
-                      <td className="px-5 py-4">
+                      <td>
                         <ProductStatusBadge status={product.status} />
                       </td>
-                      <td className="px-5 py-4 text-right tabular-nums text-[13px]">
+                      <td className="nx-cell-num">
                         {product.totalStock > 0 ? (
                           <span className="font-medium text-ink-0">{product.totalStock} u.</span>
                         ) : (
-                          <span className="font-medium text-[color:var(--signal-danger)]">Agotado</span>
+                          <span className="font-medium text-[color:var(--signal-danger)]">
+                            Agotado
+                          </span>
                         )}
                       </td>
-                      <td className="px-5 py-4 text-right">
+                      <td style={{ textAlign: "right" }}>
                         <div className="flex items-center justify-end gap-1">
                           {actionFeedback?.id === product.id ? (
                             <span className="text-[11px] font-medium text-[color:var(--signal-success)]">
@@ -478,7 +559,7 @@ export default function CatalogClient({
                                   }}
                                   disabled={actioningId === product.id}
                                   title="Publicar producto"
-                                  className="inline-flex h-7 items-center gap-1 rounded-[var(--r-xs)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-2 text-[11px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] disabled:opacity-50"
+                                  className="nx-action nx-action--sm"
                                 >
                                   {actioningId === product.id ? (
                                     <Loader2 className="h-3 w-3 animate-spin" />
@@ -494,7 +575,8 @@ export default function CatalogClient({
                                   setSelectedProduct(product);
                                 }}
                                 title="Ver detalle"
-                                className="rounded-[var(--r-xs)] border border-transparent p-1.5 text-ink-5 transition-colors hover:border-[color:var(--hairline)] hover:bg-[var(--surface-2)] hover:text-ink-0"
+                                className="nx-action nx-action--ghost nx-action--sm"
+                                aria-label="Ver detalle"
                               >
                                 <Edit className="h-3.5 w-3.5" />
                               </button>
@@ -509,79 +591,7 @@ export default function CatalogClient({
             </tbody>
           </table>
         </div>
-
-        {/* Footer count */}
-        {filtered.length > 0 && (
-          <div className="border-t border-[color:var(--hairline)] bg-[var(--surface-1)] px-5 py-2.5 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">
-            <span className="tabular-nums">
-              <b className="text-ink-0">{filtered.length}</b> de {products.length} producto{products.length !== 1 ? "s" : ""}
-              {selectedRows.length > 0 && (
-                <>
-                  <span className="mx-2 text-ink-7">·</span>
-                  <b className="text-ink-0">{selectedRows.length}</b> seleccionado
-                  {selectedRows.length !== 1 ? "s" : ""}
-                </>
-              )}
-            </span>
-          </div>
-        )}
-      </section>
-
-      {/* Floating bulk action bar */}
-      {selectedRows.length > 0 && (
-        <div className="fixed bottom-8 left-1/2 z-30 -translate-x-1/2 animate-in slide-in-from-bottom-5 fade-in duration-200">
-          <div className="flex items-center overflow-hidden rounded-[var(--r-md)] bg-ink-0 text-ink-12 shadow-[var(--shadow-overlay)]">
-            <div className="flex items-center gap-2 border-r border-ink-12/15 px-4 py-2.5">
-              <span className="tabular-nums text-[13px] font-medium">{selectedRows.length} seleccionados</span>
-              <button
-                onClick={() => setSelectedRows([])}
-                disabled={isBulkPending}
-                className="rounded-[var(--r-xs)] p-1 text-ink-12/60 transition-colors hover:bg-ink-12/10 hover:text-ink-12 disabled:opacity-50"
-                aria-label="Limpiar selección"
-              >
-                <XIcon className="h-3.5 w-3.5" />
-              </button>
-            </div>
-            <div className="flex items-center gap-1 px-1.5 py-1.5">
-              <button
-                onClick={() => runBulkStatus("active")}
-                disabled={isBulkPending}
-                className="inline-flex h-8 items-center gap-1.5 rounded-[var(--r-xs)] px-2.5 text-[12px] font-medium transition-colors hover:bg-ink-12/10 disabled:opacity-50"
-                title="Activar / publicar seleccionados"
-              >
-                <Upload className="h-3.5 w-3.5" /> Activar
-              </button>
-              <button
-                onClick={() => runBulkStatus("archived")}
-                disabled={isBulkPending}
-                className="inline-flex h-8 items-center gap-1.5 rounded-[var(--r-xs)] px-2.5 text-[12px] font-medium transition-colors hover:bg-ink-12/10 disabled:opacity-50"
-                title="Archivar seleccionados"
-              >
-                <Archive className="h-3.5 w-3.5" /> Archivar
-              </button>
-              <button
-                onClick={runBulkDelete}
-                disabled={isBulkPending}
-                className={cn(
-                  "inline-flex h-8 items-center gap-1.5 rounded-[var(--r-xs)] px-2.5 text-[12px] font-medium transition-colors disabled:opacity-50",
-                  bulkConfirmDelete
-                    ? "bg-[color:var(--signal-danger)] text-ink-12 hover:bg-[color:var(--signal-danger)]"
-                    : "text-ink-12/70 hover:bg-ink-12/10 hover:text-[color:var(--signal-danger)]",
-                )}
-                title={bulkConfirmDelete ? "Confirmar eliminación" : "Eliminar seleccionados"}
-              >
-                {isBulkPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-                {bulkConfirmDelete ? "Confirmar" : "Eliminar"}
-              </button>
-            </div>
-          </div>
-          {bulkError && (
-            <div className="mt-2 rounded-[var(--r-xs)] bg-[color:var(--signal-danger)] px-3 py-1.5 text-center text-[11px] font-medium text-ink-12 shadow-[var(--shadow-overlay)]">
-              {bulkError}
-            </div>
-          )}
-        </div>
-      )}
+      </NexoraTableShell>
 
       {/* Drawers / Modals */}
       <ProductDrawer
@@ -602,25 +612,6 @@ export default function CatalogClient({
 
 // ─── Subcomponents ────────────────────────────────────────────────────────
 
-function Th({
-  children,
-  align = "left",
-}: {
-  children: React.ReactNode;
-  align?: "left" | "right";
-}) {
-  return (
-    <th
-      className={cn(
-        "px-5 py-3 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5",
-        align === "right" && "text-right",
-      )}
-    >
-      {children}
-    </th>
-  );
-}
-
 function EmptyState({
   hasSearch,
   onClear,
@@ -632,16 +623,11 @@ function EmptyState({
 }) {
   if (hasSearch) {
     return (
-      <AdminEmptyState
-        icon={SearchIcon}
-        tone="neutral"
+      <NexoraEmpty
         title="Sin resultados"
         body="Probá con otro nombre o limpiá los filtros aplicados."
-        primary={
-          <button
-            onClick={onClear}
-            className="inline-flex h-8 items-center rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-paper)] px-3 text-[12px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)]"
-          >
+        actions={
+          <button type="button" onClick={onClear} className="nx-action nx-action--sm">
             Limpiar filtros
           </button>
         }
@@ -650,17 +636,12 @@ function EmptyState({
   }
 
   return (
-    <AdminEmptyState
-      icon={Package}
-      tone="info"
-      title="No tenés productos en esta vista"
+    <NexoraEmpty
+      title="Sin productos en esta vista"
       body="Agregá tu primer producto manualmente o importá desde un proveedor para empezar a vender."
-      primary={
-        <button
-          onClick={onAdd}
-          className="inline-flex h-8 items-center gap-1.5 rounded-full bg-[var(--brand)] px-3 text-[12px] font-medium text-white transition-colors hover:bg-[var(--brand-hover)]"
-        >
-          <Plus className="h-3.5 w-3.5" strokeWidth={2} /> Agregar producto manual
+      actions={
+        <button type="button" onClick={onAdd} className="nx-action nx-action--primary nx-action--sm">
+          <Plus className="h-3.5 w-3.5" strokeWidth={2} /> Agregar producto
         </button>
       }
     />

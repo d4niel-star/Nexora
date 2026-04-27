@@ -1,75 +1,51 @@
 import type { ComponentType, ReactNode } from "react";
-import { cn } from "@/lib/utils";
+import { NexoraEmpty } from "@/components/admin/nexora/NexoraTable";
 
-// ─── AdminEmptyState ─────────────────────────────────────────────────────
-// Compact, contextual empty state. Replaces the previous 360px-tall
-// dashed-border placeholders that dominated whole pages whenever a
-// table or list happened to be empty. The new pattern is a balanced
-// inline block:
+// ─── AdminEmptyState · Studio v4 wrapper ───────────────────────────────
 //
-//   [icon]  Title
-//           Body line — short and useful.
-//           [Primary CTA] [Secondary CTA]
-//
-// • `icon` accepts any Lucide component.
-// • `tone` switches the icon tint: "neutral" (default), "success",
-//   "warning", "info".
-// • `compact` removes outer padding so the empty state can sit inside
-//   a table cell.
+// Back-compat shim that delegates to `.nx-empty`. The old icon-led
+// horizontal block (with tone-tinted icon chip) is retired in favour
+// of a centered, icon-less micro empty state. `icon` and `tone` are
+// accepted for source compatibility but no longer rendered — Studio v4
+// keeps empty states small and contextual.
 
 type Tone = "neutral" | "success" | "warning" | "info";
 
 interface AdminEmptyStateProps {
+  /** @deprecated Studio v4 doesn't render an icon chip. */
   icon?: ComponentType<{ className?: string; strokeWidth?: number }>;
   title: ReactNode;
   body?: ReactNode;
   primary?: ReactNode;
   secondary?: ReactNode;
+  /** @deprecated Studio v4 doesn't tint the empty state. */
   tone?: Tone;
+  /** @deprecated Studio v4 ships a single density. */
   compact?: boolean;
   className?: string;
 }
 
-const TONE_MAP: Record<Tone, string> = {
-  neutral: "admin-empty-icon admin-empty-icon--neutral",
-  success: "admin-empty-icon admin-empty-icon--success",
-  warning: "admin-empty-icon admin-empty-icon--warning",
-  info: "admin-empty-icon admin-empty-icon--info",
-};
-
 export function AdminEmptyState({
-  icon: Icon,
   title,
   body,
   primary,
   secondary,
-  tone = "neutral",
-  compact = false,
-  className,
 }: AdminEmptyStateProps) {
+  // The NexoraEmpty signature only takes string title/body; convert
+  // ReactNode by stringifying when possible. In practice every call
+  // site uses plain strings so this is safe.
   return (
-    <div
-      className={cn(
-        "admin-empty-block",
-        compact && "admin-empty-block--compact",
-        className,
-      )}
-    >
-      {Icon && (
-        <div className={TONE_MAP[tone]}>
-          <Icon className="h-4 w-4" strokeWidth={1.75} />
-        </div>
-      )}
-      <div className="admin-empty-text">
-        <p className="admin-empty-title">{title}</p>
-        {body && <p className="admin-empty-body">{body}</p>}
-        {(primary || secondary) && (
-          <div className="admin-empty-actions">
+    <NexoraEmpty
+      title={String(title)}
+      body={typeof body === "string" ? body : undefined}
+      actions={
+        primary || secondary ? (
+          <>
             {primary}
             {secondary}
-          </div>
-        )}
-      </div>
-    </div>
+          </>
+        ) : undefined
+      }
+    />
   );
 }

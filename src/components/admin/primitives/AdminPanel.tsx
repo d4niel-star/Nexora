@@ -1,28 +1,22 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-// ─── AdminPanel ──────────────────────────────────────────────────────────
-// Canonical admin "section card". Replaces the ad-hoc combinations of
-// `rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 shadow-[var(--shadow-card)]`
-// scattered across 30+ admin hubs. Composition:
+// ─── AdminPanel · Studio v4 wrapper ─────────────────────────────────────
 //
-//   ┌──────────────────────────────────────────────────────────┐
-//   │ EYEBROW                              [actions slot]       │
-//   │ Title (display)                                           │
-//   │ Optional descriptor                                       │
-//   ├──────────────────────────────────────────────────────────┤
-//   │ children                                                  │
-//   ├──────────────────────────────────────────────────────────┤  ← optional
-//   │ footer                                                    │
-//   └──────────────────────────────────────────────────────────┘
+// Back-compat shim that renders a flat `.nx-panel`. The old v3 panel
+// (rounded-md card on surface-0 with shadow-card) is gone. Studio v4
+// panels are pure hairline frames with no shadow and a denser header.
 //
-// • `tone` switches the visual register: "plain" (default, paper bg
-//   + hairline) is for content panels, "raised" (paper + soft shadow)
-//   is for hero/section cards, "tinted" (surface-2) is for dim
-//   secondary panels.
-// • `dense` removes the body padding so the panel can host its own
-//   tables/lists with their own paddings (used by AdminTable).
-// • `padded` overrides body padding for forms.
+// The shim accepts every legacy prop:
+//   · `eyebrow`  → small uppercase tag in the header.
+//   · `title`    → bold panel title.
+//   · `description` → optional sub-line.
+//   · `actions`  → right-aligned action slot.
+//   · `dense`    → removes body padding (use when embedding tables).
+//   · `padded`   → body padding size (sm/md/lg).
+//   · `tone`     → visually flat across the board now (kept for source
+//     compat). The `raised` tone no longer adds a shadow because the
+//     v4 language is intentionally flat.
 
 type Tone = "plain" | "raised" | "tinted";
 
@@ -32,6 +26,7 @@ interface AdminPanelProps {
   description?: ReactNode;
   actions?: ReactNode;
   footer?: ReactNode;
+  /** @deprecated Studio v4 ships a single flat tone. */
   tone?: Tone;
   dense?: boolean;
   padded?: "sm" | "md" | "lg";
@@ -41,15 +36,9 @@ interface AdminPanelProps {
 }
 
 const PADDING_MAP: Record<NonNullable<AdminPanelProps["padded"]>, string> = {
-  sm: "p-4",
-  md: "p-5 sm:p-6",
-  lg: "p-6 sm:p-8",
-};
-
-const TONE_MAP: Record<Tone, string> = {
-  plain: "admin-panel admin-panel--plain",
-  raised: "admin-panel admin-panel--raised",
-  tinted: "admin-panel admin-panel--tinted",
+  sm: "p-3",
+  md: "p-4",
+  lg: "p-5 sm:p-6",
 };
 
 export function AdminPanel({
@@ -58,7 +47,6 @@ export function AdminPanel({
   description,
   actions,
   footer,
-  tone = "plain",
   dense = false,
   padded = "md",
   children,
@@ -68,34 +56,42 @@ export function AdminPanel({
   const hasHeader = Boolean(eyebrow || title || description || actions);
 
   return (
-    <section className={cn(TONE_MAP[tone], className)}>
+    <section className={cn("nx-panel", className)}>
       {hasHeader && (
-        <header className="admin-panel-header">
-          <div className="admin-panel-header-text">
-            {eyebrow && (
-              <span className="admin-panel-eyebrow">{eyebrow}</span>
-            )}
-            {title && <h2 className="admin-panel-title">{title}</h2>}
-            {description && (
-              <p className="admin-panel-description">{description}</p>
-            )}
+        <header className="nx-panel__header">
+          <div>
+            {eyebrow ? (
+              <span
+                style={{
+                  display: "block",
+                  fontSize: 10.5,
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.14em",
+                  color: "var(--ink-5)",
+                  marginBottom: 4,
+                }}
+              >
+                {eyebrow}
+              </span>
+            ) : null}
+            {title ? <h2 className="nx-panel__title">{title}</h2> : null}
+            {description ? <p className="nx-panel__sub">{description}</p> : null}
           </div>
-          {actions && (
-            <div className="admin-panel-actions">{actions}</div>
-          )}
+          {actions ? <div style={{ display: "flex", gap: 6 }}>{actions}</div> : null}
         </header>
       )}
 
       <div
         className={cn(
-          dense ? "" : PADDING_MAP[padded],
+          dense ? "nx-panel__body--flush" : PADDING_MAP[padded],
           bodyClassName,
         )}
       >
         {children}
       </div>
 
-      {footer && <footer className="admin-panel-footer">{footer}</footer>}
+      {footer ? <div className="nx-panel__footer">{footer}</div> : null}
     </section>
   );
 }

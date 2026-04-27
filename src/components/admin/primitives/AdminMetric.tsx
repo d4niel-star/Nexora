@@ -1,21 +1,20 @@
 import type { ReactNode } from "react";
-import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// ─── AdminMetric ─────────────────────────────────────────────────────────
-// Dense KPI tile for analytics rows. Replaces the previous `metric-tile`
-// (which was 132px tall, very airy) with a denser, premium tile that
-// fits 4–6 across without crowding:
+// ─── AdminMetric · Studio v4 wrapper ────────────────────────────────────
 //
-//   LABEL UPPERCASE 11px            ┌──────┐
-//   $ 184.420            ↑ 12,4%   │spark │
-//                                  └──────┘
+// Back-compat shim that renders a single Studio v4 stat tile. The old
+// .admin-metric-tile look (132px / shadow / hover-elevation) is gone —
+// a tile here is now visually identical to a single .nx-stat from
+// `NexoraStatRow`, just standalone.
 //
-// • `delta` accepts a numeric percent: positive renders ↑ + success,
-//   negative renders ↓ + danger, zero/null renders ─ + neutral.
-// • `trend` accepts an inline ReactNode (sparkline, mini-chart…).
-// • `tone` overrides the value color regardless of delta.
-// • `href` makes the whole tile a link with hover affordance.
+// We render a one-cell `.nx-stat-row` wrapper so spacing, typography
+// and click affordance match the new flat KPI band exactly. `tone`,
+// `delta` and `trend` are accepted for source compatibility:
+//   · `delta` is rendered as a colored inline % next to the value.
+//   · `trend` is rendered next to the value (e.g. inline sparkline).
+//   · `tone` is intentionally not honored; Studio v4 expresses tone
+//     through hint/delta colors, not full-tile tinting.
 
 type Tone = "neutral" | "accent" | "warning" | "danger" | "success";
 
@@ -26,20 +25,14 @@ interface AdminMetricProps {
   deltaSuffix?: string;
   hint?: ReactNode;
   trend?: ReactNode;
+  /** @deprecated Studio v4 doesn't tint the whole tile. */
   tone?: Tone;
   href?: string;
   onClick?: () => void;
   className?: string;
+  /** @deprecated Studio v4 ships a single density. */
   size?: "sm" | "md";
 }
-
-const TONE_MAP: Record<Tone, string> = {
-  neutral: "text-ink-0",
-  accent: "text-[color:var(--accent-700)]",
-  warning: "text-[color:var(--signal-warning)]",
-  danger: "text-[color:var(--signal-danger)]",
-  success: "text-[color:var(--signal-success)]",
-};
 
 export function AdminMetric({
   label,
@@ -48,50 +41,62 @@ export function AdminMetric({
   deltaSuffix = "%",
   hint,
   trend,
-  tone = "neutral",
   href,
   onClick,
   className,
-  size = "md",
 }: AdminMetricProps) {
   const isInteractive = Boolean(href || onClick);
-  const Tag = href ? ("a" as const) : ("div" as const);
+  const innerStyle = { ["--nx-cols" as string]: "1" };
 
-  return (
-    <Tag
-      href={href}
-      onClick={onClick}
-      className={cn(
-        "admin-metric-tile",
-        `admin-metric-tile--${size}`,
-        isInteractive && "admin-metric-tile--interactive",
-        className,
-      )}
-    >
-      <p className="admin-metric-label">{label}</p>
-      <div className="admin-metric-row">
-        <p className={cn("admin-metric-value tabular", TONE_MAP[tone])}>
-          {value}
-        </p>
-        {trend && <div className="admin-metric-trend">{trend}</div>}
-      </div>
-      {(delta !== undefined && delta !== null) || hint ? (
-        <div className="admin-metric-meta">
-          {delta !== undefined && delta !== null && (
-            <DeltaPill value={delta} suffix={deltaSuffix} />
-          )}
-          {hint && <span className="admin-metric-hint">{hint}</span>}
+  const inner = (
+    <div className="nx-stat-row" style={innerStyle}>
+      {isInteractive ? (
+        <button
+          type="button"
+          onClick={onClick}
+          className={cn("nx-stat", "nx-stat--clickable", className)}
+          style={{ textAlign: "left" }}
+        >
+          <span className="nx-stat__label">{label}</span>
+          <span className="nx-stat__row">
+            <span className="nx-stat__value">{value}</span>
+            {delta !== undefined && delta !== null ? (
+              <DeltaText value={delta} suffix={deltaSuffix} />
+            ) : null}
+            {trend ? <span style={{ marginLeft: 4 }}>{trend}</span> : null}
+          </span>
+          {hint ? <span className="nx-stat__hint">{hint}</span> : null}
+        </button>
+      ) : (
+        <div className={cn("nx-stat", className)}>
+          <span className="nx-stat__label">{label}</span>
+          <span className="nx-stat__row">
+            <span className="nx-stat__value">{value}</span>
+            {delta !== undefined && delta !== null ? (
+              <DeltaText value={delta} suffix={deltaSuffix} />
+            ) : null}
+            {trend ? <span style={{ marginLeft: 4 }}>{trend}</span> : null}
+          </span>
+          {hint ? <span className="nx-stat__hint">{hint}</span> : null}
         </div>
-      ) : null}
-    </Tag>
+      )}
+    </div>
   );
+
+  if (href && !onClick) {
+    return (
+      <a href={href} style={{ textDecoration: "none" }}>
+        {inner}
+      </a>
+    );
+  }
+  return inner;
 }
 
-function DeltaPill({ value, suffix }: { value: number; suffix: string }) {
+function DeltaText({ value, suffix }: { value: number; suffix: string }) {
   if (value === 0) {
     return (
-      <span className="admin-metric-delta admin-metric-delta--neutral">
-        <Minus className="h-3 w-3" strokeWidth={2} />
+      <span className="nx-stat__delta nx-stat__delta--neutral">
         0{suffix}
       </span>
     );
@@ -100,17 +105,11 @@ function DeltaPill({ value, suffix }: { value: number; suffix: string }) {
   return (
     <span
       className={cn(
-        "admin-metric-delta",
-        positive
-          ? "admin-metric-delta--up"
-          : "admin-metric-delta--down",
+        "nx-stat__delta",
+        positive ? "nx-stat__delta--up" : "nx-stat__delta--down",
       )}
     >
-      {positive ? (
-        <ArrowUpRight className="h-3 w-3" strokeWidth={2} />
-      ) : (
-        <ArrowDownRight className="h-3 w-3" strokeWidth={2} />
-      )}
+      {positive ? "+" : "−"}
       {Math.abs(value).toFixed(1).replace(/\.0$/, "")}
       {suffix}
     </span>
