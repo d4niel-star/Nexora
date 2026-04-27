@@ -56,3 +56,4 @@ next-env.d.ts
 # User-uploaded store assets (tenant-scoped). Regenerated per-deploy.
 # In Render production these must be persisted via Cloudinary/S3 instead.
 /public/uploads
+tmp.html

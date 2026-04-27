@@ -84,16 +84,16 @@ export default function RegisterPage() {
       eyebrow="Cuenta nueva"
       brandTitle={
         <>
-          Empezá con una
+          Empezá tu tienda
           <br />
-          base más ordenada.
+          en minutos.
         </>
       }
-      brandBody="Configurás tu empresa en pocos minutos. Mercado Pago, dominio propio y catálogo real desde el primer día. Sin tarjeta, sin compromiso anual."
+      brandBody="Mercado Pago, dominio propio y catálogo real desde el primer día. Sin tarjeta, sin compromiso anual."
       brandPoints={[
-        "Total calculado en servidor · stock confirmado antes del cobro.",
-        "150 a 3.000 créditos IA por mes según plan.",
-        "Datos cifrados en reposo · backups diarios automáticos.",
+        "Storefront editable + checkout argentino listos para vender.",
+        "150 a 3.000 créditos de IA por mes según plan.",
+        "14 días gratis · cancelás cuando quieras.",
       ]}
       formTitle="Creá tu cuenta."
       formSubtitle="Configurá tu empresa y entrá a Nexora en pocos minutos."

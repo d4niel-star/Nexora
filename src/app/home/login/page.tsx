@@ -25,16 +25,16 @@ export default function LoginPage() {
       eyebrow="Acceso"
       brandTitle={
         <>
-          Tu operación
+          Tu tienda,
           <br />
-          en una sola base.
+          en una sola pantalla.
         </>
       }
-      brandBody="Ingresá a la consola Nexora. Catálogo, ventas, ads, logística y proveedores en la misma pantalla, leyendo el mismo dato real."
+      brandBody="Ingresá a la consola Nexora. Catálogo, ventas, pagos, envíos y crecimiento en el mismo lugar, sobre tus datos reales."
       brandPoints={[
-        "Sin pegamento entre apps. Sin verdades paralelas.",
-        "Total calculado en servidor. Stock confirmado antes del cobro.",
-        "Sesión cifrada · multi-tienda en planes Scale.",
+        "Pedidos, stock y pagos sincronizados en tiempo real.",
+        "Mercado Pago, Andreani y Correo Argentino integrados.",
+        "Tienda IA proponiendo acciones todos los días.",
       ]}
       formTitle="Ingresá a tu cuenta."
       formSubtitle="Acceso a la plataforma operativa Nexora."

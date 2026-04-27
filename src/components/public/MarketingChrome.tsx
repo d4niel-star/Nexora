@@ -39,7 +39,7 @@ export function MarketingChrome({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-[var(--surface-1)] text-ink-0 selection:bg-ink-0 selection:text-ink-12">
+    <div className="public-canvas flex min-h-screen flex-col selection:bg-ink-0 selection:text-ink-12">
       <PublicHeader />
       <main className="flex-1">{children}</main>
       <PublicFooter />

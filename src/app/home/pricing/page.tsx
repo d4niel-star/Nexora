@@ -68,30 +68,34 @@ export default function PricingPage() {
   return (
     <>
       {/* ─── Hero ───────────────────────────────────────────────────── */}
-      <section className="relative isolate overflow-hidden border-b border-[color:var(--hairline)] bg-[var(--surface-paper)]">
-        <div aria-hidden className="canvas-grid absolute inset-0 -z-10 opacity-50" />
-        <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-24">
+      <section className="relative isolate overflow-hidden">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 -top-24 -z-10 h-[300px] bg-[radial-gradient(50%_50%_at_50%_0%,rgba(0,0,32,0.06)_0%,transparent_70%)]"
+        />
+        <div className="mx-auto max-w-7xl px-5 pt-16 pb-12 sm:px-8 sm:pt-20 sm:pb-14">
           <PageReveal>
-            <div className="section-rule">
-              <span>00</span>
-              <span>Planes · ARS · sin compromiso anual</span>
+            <div className="text-center">
+              <span className="shop-eyebrow">
+                <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-[color:var(--signal-success)]" />
+                Planes en ARS · sin compromiso anual
+              </span>
+              <h1 className="shop-h1 mx-auto mt-6 max-w-[18ch]">
+                Un precio claro.{" "}
+                <span className="quiet">Para cada etapa.</span>
+              </h1>
+              <p className="shop-lead mx-auto mt-6">
+                Facturación mensual en ARS. Sin tarjeta para empezar.
+                Escalá cuando tu operación lo necesite.
+              </p>
             </div>
-            <h1 className="mt-10 max-w-[20ch] text-[44px] font-semibold leading-[1.04] tracking-[-0.04em] text-ink-0 sm:text-[64px]">
-              Una estructura clara.
-              <br />
-              <span className="text-ink-5">Un precio proporcional.</span>
-            </h1>
-            <p className="mt-8 max-w-2xl text-[16px] leading-[1.65] text-ink-4">
-              Facturación mensual en ARS. Sin tarjeta para empezar, sin
-              compromiso anual. Escalá cuando tu operación lo necesite.
-            </p>
           </PageReveal>
         </div>
       </section>
 
       {/* ─── Plans ──────────────────────────────────────────────────── */}
-      <section className="bg-[var(--surface-1)]">
-        <div className="mx-auto max-w-7xl px-5 pb-24 pt-16 sm:px-8 sm:pb-32 sm:pt-20">
+      <section>
+        <div className="mx-auto max-w-7xl px-5 pb-24 pt-4 sm:px-8 sm:pb-32 sm:pt-6">
           <StaggerGroup className="grid grid-cols-1 gap-5 lg:grid-cols-3 lg:gap-6">
             {PLAN_DEFINITIONS.map((plan) => {
               const meta = PLAN_FEATURES[plan.code];

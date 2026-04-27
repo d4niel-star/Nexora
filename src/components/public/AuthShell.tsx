@@ -96,13 +96,14 @@ export function AuthShell({
           )}
         </div>
 
-        {/* Footer: small operational chip rail. */}
+        {/* Footer: integration mention only. The old "Sistema operativo ·
+            ecommerce 2027" eyebrow tagline was removed — it read as a
+            manifesto and pushed the brand into editorial territory the
+            marketing v3 explicitly walks away from. */}
         <div className="relative z-10 mt-12 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-[color:var(--chrome-border)] pt-6 text-[11px] text-[var(--chrome-fg-muted)]">
-          <span className="font-semibold uppercase tracking-[0.18em]">
-            Sistema operativo · ecommerce 2027
+          <span className="font-medium">
+            Mercado Pago · Andreani · Correo Argentino · Meta · TikTok · Google
           </span>
-          <span aria-hidden className="hidden h-3 w-px bg-[color:var(--chrome-border)] sm:block" />
-          <span>Mercado Pago · Andreani · Correo Argentino · Meta · TikTok · Google</span>
         </div>
       </aside>
 

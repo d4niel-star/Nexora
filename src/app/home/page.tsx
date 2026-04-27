@@ -4,270 +4,417 @@ import {
   ArrowUpRight,
   BarChart3,
   Boxes,
+  Check,
   CircleDollarSign,
+  HeartHandshake,
   Layers,
+  MapPin,
   Megaphone,
   Network,
+  ShieldCheck,
   ShoppingCart,
   Sparkles,
+  Store,
   TrendingUp,
   Truck,
+  Wallet,
+  Zap,
 } from "lucide-react";
-import { NexoraDiagram } from "@/components/public/NexoraDiagram";
+import { CommerceOpsPreview } from "@/components/public/CommerceOpsPreview";
+import { AIGrowthPreview } from "@/components/public/AIGrowthPreview";
 import { PageReveal, Reveal, StaggerGroup, StaggerItem } from "@/components/public/PublicMotion";
 
-// ─── Nexora 2027 Home ─────────────────────────────────────────────────────
-// This is a structural rebuild of the marketing landing. The previous home
-// was a polished SaaS template — asymmetric hero with a fake admin
-// screenshot on the right, four stacked feature grids, generic copy
-// ("Tu marca adelante / Tu operación en orden"). It looked like every
-// other ecommerce platform launching in 2025.
+// ─── Nexora 2027 Home — v3 (clean SaaS, Shopify-clear) ────────────────────
 //
-// The 2027 rewrite trades that template for an editorial composition:
+// This is the second structural rebuild of the marketing landing. The v2
+// "editorial" home (text-jumbo headline + canvas-grid backdrop +
+// numbered section-rule + NexoraDiagram + navy CTA closer) read as a
+// monumental tech manifesto, not as a product. v3 throws all of that
+// away and ships a clean SaaS landing inspired by the *clarity* of
+// Shopify-class home pages — without literally cloning Shopify:
 //
-//   1. Type-first hero. No screenshot beside the headline. The headline
-//      *is* the visual anchor, set in the new .text-jumbo display style
-//      against a hairline canvas grid.
+//   1. Light warm canvas (#f6f4ef paper). NO grid backdrop dominating
+//      the page. The architectural feel comes from the hairline edges
+//      of the white product cards, not from a checkered background.
 //
-//   2. Architectural diagram (NexoraDiagram) sits in its own honest
-//      section, framed as "what Nexora actually is" — a single core that
-//      connects catalog/stock/proveedores with storefront/checkout/ads.
-//      Replaces the dashboard mockup that read as fake.
+//   2. Split hero: short, balanced H1 on the left + a real-looking
+//      Nexora dashboard mock on the right (CommerceOpsPreview). The
+//      mock is the visual anchor; the headline supports it instead of
+//      being the entire visual.
 //
-//   3. Bento capabilities: a 12-col asymmetric grid (one hero card +
-//      smaller paired cards) instead of the flat 3-col strip. Reads as
-//      designed, not as a feature dump.
+//   3. Trust strip with the actual integrations — Mercado Pago, Andreani,
+//      Correo Argentino, Meta, TikTok, Google — as quiet inline chips.
 //
-//   4. Numbered workflow rail: horizontal steps separated by hairlines,
-//      each anchored by a numeric index — same rhythm as the new
-//      .section-rule and .eyebrow-label primitives elsewhere.
+//   4. "Toda la operación" — three feature cards (Vendé / Operá / Crecé)
+//      with concrete copy, not abstract "operating system" pitches.
 //
-//   5. Closing: a single high-density manifesto block on a navy panel,
-//      mirroring the auth split-shell so the landing and the auth
-//      experience read as one continuous brand surface.
+//   5. AIGrowthPreview — full-width feature with a real-looking AI panel
+//      (chat thread + recommendations + pixels). This is mockup #2, the
+//      "automation/AI/growth" view the user explicitly asked for.
 //
-// Every "ejemplo" / "demo" label is intentionally explicit — Nexora has no
-// production traction yet and the home should not imply otherwise.
+//   6. Modules grid (#modulos) — 6 honest cards: catálogo, inventario,
+//      storefront, checkout, marketplace, logística.
+//
+//   7. 3-step "Cómo empezar" — clean horizontal cards, numbers tucked
+//      away in a small chip, NOT the giant numbered rail.
+//
+//   8. Trust block — 4 explicit benefits (sin comisión por venta · MP
+//      listo · soporte humano · Argentina).
+//
+//   9. Light CTA panel + 4-col footer (PublicFooter v3). NO navy grid
+//      closer.
+//
+// Mocks render as real HTML/CSS components, not SVG diagrams or external
+// assets — they look like actual Nexora screens, scaled.
 
-const CAPABILITIES = [
+const FEATURE_CARDS = [
+  {
+    icon: Store,
+    title: "Vendé",
+    body: "Storefront editable, checkout argentino y carrito en menos de un día. Diseño propio sin escribir CSS.",
+    bullets: ["Themes editables", "Dominio propio", "Mobile-first"],
+  },
   {
     icon: Layers,
-    title: "Catálogo unificado",
-    description:
-      "Productos, variantes, costos y stock viven en una sola base. Sin importadores rotos, sin duplicados.",
-    span: "lg:col-span-7",
+    title: "Operá",
+    body: "Catálogo, inventario, pedidos y proveedores sincronizados en tiempo real, en una sola pantalla.",
+    bullets: ["Multi-bodega", "Stock confirmado", "Importación masiva"],
+  },
+  {
+    icon: TrendingUp,
+    title: "Crecé",
+    body: "Ads conectados al catálogo, recomendaciones IA y recuperación automática trabajando juntos.",
+    bullets: ["Tienda IA · copilot", "Meta · TikTok · Google", "Recuperación automática"],
+  },
+] as const;
+
+const MODULES = [
+  {
+    icon: Layers,
+    title: "Catálogo",
+    body: "Productos, variantes, costos y precios desde una base unificada.",
+  },
+  {
+    icon: Boxes,
+    title: "Inventario",
+    body: "Stock en tiempo real, multi-bodega y alertas de quiebre.",
   },
   {
     icon: ShoppingCart,
-    title: "Checkout validado",
-    description:
-      "Mercado Pago integrado, total calculado en servidor, stock confirmado antes del pago.",
-    span: "lg:col-span-5",
-  },
-  {
-    icon: Megaphone,
-    title: "Ads conectados al catálogo real",
-    description:
-      "Meta, TikTok y Google leen tu catálogo, no un píxel suelto. Decisiones con datos del negocio.",
-    span: "lg:col-span-5",
+    title: "Checkout",
+    body: "Mercado Pago, total calculado en servidor, stock validado antes del pago.",
   },
   {
     icon: Truck,
-    title: "Logística operativa",
-    description:
-      "Cotización, etiquetas y tracking en el mismo flujo. Correo Argentino, Andreani y carriers propios.",
-    span: "lg:col-span-7",
+    title: "Envíos",
+    body: "Andreani, Correo Argentino y carriers propios con cotización en línea.",
+  },
+  {
+    icon: Megaphone,
+    title: "Marketing",
+    body: "Meta, TikTok y Google Ads conectados al catálogo y a los píxeles reales.",
+  },
+  {
+    icon: Network,
+    title: "Proveedores",
+    body: "Sourcing con catálogo B2B, integraciones y predicción de stock.",
   },
 ] as const;
 
-const WORKFLOW = [
+const STEPS = [
   {
-    index: "01",
+    n: "01",
     title: "Conectá tu base",
-    description:
-      "Importás productos, variantes y stock. Mercado Pago listo en minutos, dominio propio cuando estés.",
+    body: "Importá productos, variantes y stock. Mercado Pago listo en minutos.",
   },
   {
-    index: "02",
-    title: "Activá módulos",
-    description:
-      "Storefront, checkout, ads y comunicación se prenden bajo el mismo contrato operativo.",
+    n: "02",
+    title: "Lanzá tu storefront",
+    body: "Elegí tu tema, sumá tu dominio y publicá tu tienda en horas.",
   },
   {
-    index: "03",
-    title: "Operá con criterio",
-    description:
-      "Decidís sobre datos reales: stock, ingresos, conversión y comportamiento de cliente.",
+    n: "03",
+    title: "Vendé y crecé",
+    body: "Pedidos, ads y recuperación trabajando solos sobre tus datos reales.",
   },
 ] as const;
 
-// Reference numbers shown on the home strip. They are NOT customer
-// metrics — they are operational shapes (e.g. "<60s p95 checkout") that
-// describe how the platform is built. Every label is prefixed with
-// "Referencia" / "Objetivo" so nothing reads as a customer claim.
-const REFERENCES = [
-  { value: "1", label: "Núcleo de datos", meta: "Una sola base · sin duplicación" },
-  { value: "<60s", label: "Checkout objetivo", meta: "p95 sostenido · validado en servidor" },
-  { value: "100%", label: "Stock confirmado", meta: "Antes del cobro · no después" },
-  { value: "0", label: "Píxeles huérfanos", meta: "Ads leen catálogo real" },
+const TRUST_LOGOS = [
+  "Mercado Pago",
+  "Andreani",
+  "Correo Argentino",
+  "Meta",
+  "TikTok",
+  "Google",
 ] as const;
 
-const PILLARS = [
-  { icon: BarChart3, label: "Estadísticas operativas" },
-  { icon: TrendingUp, label: "Conversión y embudo" },
-  { icon: Boxes, label: "Inventario auditable" },
-  { icon: Network, label: "Sourcing con proveedores" },
-  { icon: CircleDollarSign, label: "Margen real por SKU" },
-  { icon: Sparkles, label: "Tienda IA · copilot" },
+const BENEFITS = [
+  {
+    icon: Wallet,
+    title: "0% comisión por venta",
+    body: "Pagás un plan fijo. Lo que vendés es tuyo. Sin sorpresas a fin de mes.",
+  },
+  {
+    icon: Zap,
+    title: "Listo en minutos",
+    body: "Mercado Pago integrado y un theme funcional desde el primer día.",
+  },
+  {
+    icon: HeartHandshake,
+    title: "Soporte humano",
+    body: "Equipo argentino que entiende tu operación. Email y WhatsApp.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Datos seguros",
+    body: "Sesiones cifradas, backups automáticos y exportación de datos siempre.",
+  },
 ] as const;
 
 export default function MarketingLandingPage() {
   return (
     <>
-      {/* ─── 01 / Hero ──────────────────────────────────────────────────
-          Type-first hero, no screenshot beside it. The canvas grid
-          backdrop and the bottom hairline anchor the architectural feel
-          we want the brand to read as. */}
-      <section className="relative isolate overflow-hidden border-b border-[color:var(--hairline)] bg-[var(--surface-paper)]">
-        <div aria-hidden className="canvas-grid absolute inset-0 -z-10 opacity-60" />
+      {/* ───── HERO · split with real dashboard mock ─────────────────── */}
+      <section className="relative isolate overflow-hidden">
+        {/* Soft brand glow at the top, NOT a checkered grid. The page
+            inherits the warm paper canvas from MarketingChrome. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 -top-40 -z-10 h-[480px] bg-[radial-gradient(60%_50%_at_50%_0%,rgba(0,0,32,0.10)_0%,transparent_70%)]"
+          className="pointer-events-none absolute inset-x-0 -top-32 -z-10 h-[420px] bg-[radial-gradient(50%_50%_at_50%_0%,rgba(0,0,32,0.07)_0%,transparent_70%)]"
         />
 
-        <div className="mx-auto flex max-w-7xl flex-col px-5 pb-20 pt-20 sm:px-8 sm:pb-28 sm:pt-28">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-5 pb-16 pt-12 sm:px-8 sm:pb-24 sm:pt-16 lg:grid-cols-[1.05fr_1fr] lg:gap-14">
           <PageReveal>
-            <div className="section-rule">
-              <span>01</span>
-              <span>Sistema operativo · ecommerce 2027</span>
-            </div>
+            <span className="shop-eyebrow">
+              <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-[color:var(--signal-success)]" />
+              Plataforma de comercio · Argentina
+            </span>
 
-            <h1 className="text-jumbo mt-10 max-w-[18ch]">
-              Una sola base
+            <h1 className="shop-h1 mt-6 max-w-[18ch]">
+              El sistema de comercio
               <br />
-              para vender, cobrar
-              <br />
-              <span className="text-jumbo-quiet">y crecer.</span>
+              para tu marca.{" "}
+              <span className="quiet">Vendé, cobrá y crecé desde una sola base.</span>
             </h1>
 
-            <p className="mt-10 max-w-2xl text-[17px] leading-[1.6] text-ink-4 sm:text-[18px]">
-              Nexora es la capa operativa que une catálogo, storefront,
-              checkout, logística, ads e IA sobre un mismo dato real. Construido
-              para marcas que quieren decidir, no que quieren parecer.
+            <p className="shop-lead mt-7">
+              Catálogo, ventas, pagos, envíos, ads e IA en una plataforma diseñada
+              en Argentina y lista para escalar. Sin agencias, sin pegamento entre apps.
             </p>
 
-            <div className="mt-12 flex flex-wrap items-center gap-3">
+            <div className="mt-9 flex flex-wrap items-center gap-3">
               <Link
                 href="/home/register"
-                className="group inline-flex h-12 min-w-[200px] items-center justify-center gap-2 rounded-full bg-ink-0 px-7 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2 active:translate-y-px focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+                className="group inline-flex h-12 min-w-[200px] items-center justify-center gap-2 rounded-full bg-[var(--brand)] px-7 text-[14px] font-medium text-white transition-colors hover:bg-[var(--brand-hover)] active:translate-y-px focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
               >
-                Crear cuenta
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={1.75} />
+                Probar gratis
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
               </Link>
               <Link
                 href="/home/pricing"
-                className="inline-flex h-12 min-w-[160px] items-center justify-center gap-2 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-paper)] px-7 text-[14px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+                className="inline-flex h-12 min-w-[140px] items-center justify-center gap-2 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-paper)] px-6 text-[14px] font-medium text-ink-0 transition-colors hover:bg-[rgba(0,0,32,0.04)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
               >
                 Ver planes
               </Link>
-              <span className="ml-1 text-[12px] text-ink-5">
-                Sin tarjeta · sin compromiso anual
+            </div>
+
+            <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[12.5px] text-ink-5">
+              <span className="inline-flex items-center gap-1.5">
+                <Check className="h-3.5 w-3.5 text-[color:var(--signal-success)]" strokeWidth={2.5} />
+                14 días gratis
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Check className="h-3.5 w-3.5 text-[color:var(--signal-success)]" strokeWidth={2.5} />
+                Sin tarjeta
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Check className="h-3.5 w-3.5 text-[color:var(--signal-success)]" strokeWidth={2.5} />
+                Setup en minutos
               </span>
             </div>
           </PageReveal>
 
-          {/* Pillar marquee — reads as "what's inside" without committing
-              to a feature grid. Six tiny chips, single line, hairline-only. */}
-          <div className="mt-20 flex flex-wrap items-center gap-x-7 gap-y-3 border-t border-[color:var(--hairline)] pt-8 sm:gap-x-10">
-            {PILLARS.map(({ icon: Icon, label }) => (
-              <span key={label} className="inline-flex items-center gap-2 text-[12px] text-ink-5">
-                <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
-                {label}
+          {/* ── Mockup 1: CommerceOpsPreview ── */}
+          <Reveal className="relative">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -inset-6 -z-10 rounded-[28px] bg-[radial-gradient(50%_60%_at_50%_50%,rgba(63,79,154,0.18)_0%,transparent_70%)]"
+            />
+            <CommerceOpsPreview className="w-full" />
+            <p className="mt-3 text-center text-[11px] text-ink-6">
+              Vista previa de la consola Nexora · datos de ejemplo
+            </p>
+          </Reveal>
+        </div>
+
+        {/* Trust strip — quiet integrations row, NOT a feature grid. */}
+        <div className="border-y border-[color:var(--hairline)] bg-[rgba(0,0,32,0.02)]">
+          <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-8 gap-y-3 px-5 py-6 sm:px-8">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-6">
+              Integrado con
+            </span>
+            {TRUST_LOGOS.map((logo) => (
+              <span key={logo} className="text-[12.5px] font-medium text-ink-3">
+                {logo}
               </span>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ─── 02 / What Nexora is — diagram ─────────────────────────────
-          The diagram is the *honest* visual anchor: a single core
-          connected to catalog/stock/proveedores on the left and
-          storefront/checkout/ads on the right. */}
-      <section className="bg-[var(--surface-1)]">
-        <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
-          <Reveal>
-            <div className="section-rule">
-              <span>02</span>
-              <span>Qué es Nexora</span>
-            </div>
-            <div className="mt-10 grid grid-cols-1 items-start gap-12 lg:grid-cols-[5fr_7fr] lg:gap-16">
-              <div className="max-w-md">
-                <h2 className="text-[34px] font-semibold leading-[1.05] tracking-[-0.035em] text-ink-0 sm:text-[44px]">
-                  Una sola capa
-                  <br />
-                  para todo el negocio.
-                </h2>
-                <p className="mt-6 text-[15px] leading-[1.65] text-ink-5">
-                  El catálogo, el stock y los proveedores alimentan un núcleo
-                  operativo único. Storefront, checkout y ads consumen ese
-                  mismo núcleo. Sin pegamento entre apps. Sin verdades
-                  paralelas.
-                </p>
-                <ul className="mt-8 space-y-3 text-[14px] leading-[1.55] text-ink-3">
-                  <li className="flex items-start gap-2.5">
-                    <span aria-hidden className="mt-2 h-1 w-1 shrink-0 rounded-full bg-ink-3" />
-                    <span>Un solo dato real para todas las decisiones.</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <span aria-hidden className="mt-2 h-1 w-1 shrink-0 rounded-full bg-ink-3" />
-                    <span>Cero integraciones rotas, cero plugins de terceros bisagra.</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <span aria-hidden className="mt-2 h-1 w-1 shrink-0 rounded-full bg-ink-3" />
-                    <span>Construido en server-first: total se calcula en backend, stock se confirma antes del pago.</span>
-                  </li>
+      {/* ───── FEATURES · 3 cards (Vendé / Operá / Crecé) ────────────── */}
+      <section className="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-24">
+        <Reveal>
+          <span className="shop-eyebrow">Toda la operación</span>
+          <h2 className="shop-h2 mt-6 max-w-[20ch]">
+            Una plataforma completa.{" "}
+            <span className="text-ink-5">Vos sólo te enfocás en vender.</span>
+          </h2>
+        </Reveal>
+
+        <StaggerGroup className="mt-12 grid grid-cols-1 gap-5 lg:grid-cols-3">
+          {FEATURE_CARDS.map(({ icon: Icon, title, body, bullets }) => (
+            <StaggerItem key={title}>
+              <article className="shop-card flex h-full flex-col gap-5 p-7 sm:p-8">
+                <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[var(--brand)] text-white">
+                  <Icon className="h-4.5 w-4.5" strokeWidth={2} />
+                </span>
+                <div>
+                  <h3 className="text-[22px] font-semibold tracking-[-0.025em] text-ink-0">
+                    {title}
+                  </h3>
+                  <p className="mt-2 text-[14px] leading-[1.6] text-ink-5">{body}</p>
+                </div>
+                <ul className="mt-auto flex flex-col gap-2 border-t border-[color:var(--hairline)] pt-4">
+                  {bullets.map((b) => (
+                    <li key={b} className="flex items-center gap-2 text-[13px] text-ink-2">
+                      <Check className="h-3.5 w-3.5 text-[color:var(--signal-success)]" strokeWidth={2.5} />
+                      {b}
+                    </li>
+                  ))}
                 </ul>
-              </div>
-              <div className="rounded-[var(--r-xl)] border border-[color:var(--card-border)] bg-[var(--surface-paper)] p-2 shadow-[var(--shadow-elevated)]">
-                <NexoraDiagram className="aspect-[6/4.2] w-full rounded-[var(--r-lg)]" />
-              </div>
+              </article>
+            </StaggerItem>
+          ))}
+        </StaggerGroup>
+      </section>
+
+      {/* ───── AI / GROWTH · full-width with mockup #2 ───────────────── */}
+      <section className="border-y border-[color:var(--hairline)] bg-[#efece4]">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-5 py-20 sm:px-8 sm:py-24 lg:grid-cols-[1fr_1.15fr] lg:gap-14">
+          <Reveal>
+            <span className="shop-eyebrow">
+              <Sparkles className="h-3.5 w-3.5" strokeWidth={2} />
+              Tienda IA · copilot
+            </span>
+            <h2 className="shop-h2 mt-6 max-w-[18ch]">
+              Una IA que conoce tu tienda.{" "}
+              <span className="text-ink-5">Y sabe qué hacer.</span>
+            </h2>
+            <p className="shop-lead mt-6">
+              Nexora IA aprende de tus datos reales — pedidos, stock, campañas — y
+              propone acciones concretas. Vos decidís, Nexora ejecuta.
+            </p>
+
+            <ul className="mt-7 flex flex-col gap-3 text-[14px] text-ink-2">
+              <li className="flex items-start gap-2">
+                <ArrowUpRight className="mt-0.5 h-4 w-4 text-[var(--brand)]" strokeWidth={2} />
+                Recuperación automática por email y WhatsApp.
+              </li>
+              <li className="flex items-start gap-2">
+                <ArrowUpRight className="mt-0.5 h-4 w-4 text-[var(--brand)]" strokeWidth={2} />
+                Recomendaciones de campañas Meta · TikTok · Google sobre datos reales.
+              </li>
+              <li className="flex items-start gap-2">
+                <ArrowUpRight className="mt-0.5 h-4 w-4 text-[var(--brand)]" strokeWidth={2} />
+                Píxeles conectados, atribución sin huérfanos, decisiones con criterio.
+              </li>
+            </ul>
+
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link
+                href="/home/register"
+                className="group inline-flex h-11 items-center gap-1.5 rounded-full bg-[var(--brand)] px-5 text-[13.5px] font-medium text-white transition-colors hover:bg-[var(--brand-hover)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+              >
+                Probar Tienda IA
+                <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
+              </Link>
             </div>
+          </Reveal>
+
+          <Reveal className="relative">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -inset-4 -z-10 rounded-[28px] bg-[radial-gradient(50%_60%_at_50%_50%,rgba(63,79,154,0.20)_0%,transparent_70%)]"
+            />
+            <AIGrowthPreview />
+            <p className="mt-3 text-center text-[11px] text-ink-6">
+              Vista previa del copilot Nexora IA · datos de ejemplo
+            </p>
           </Reveal>
         </div>
       </section>
 
-      {/* ─── 03 / Capabilities — bento ────────────────────────────────── */}
-      <section className="bg-[var(--surface-paper)]">
-        <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
+      {/* ───── MODULES · 6-card grid ─────────────────────────────────── */}
+      <section
+        id="modulos"
+        className="mx-auto max-w-7xl scroll-mt-24 px-5 py-20 sm:px-8 sm:py-24"
+      >
+        <Reveal>
+          <span className="shop-eyebrow">Módulos</span>
+          <h2 className="shop-h2 mt-6 max-w-[22ch]">
+            Todo lo que necesitás.{" "}
+            <span className="text-ink-5">Nada que sobre.</span>
+          </h2>
+          <p className="shop-lead mt-6">
+            Cada módulo está pensado para vivir junto al resto: catálogo, stock,
+            ventas, pagos, envíos y crecimiento, todos sobre un mismo dato real.
+          </p>
+        </Reveal>
+
+        <StaggerGroup className="mt-12 grid grid-cols-1 gap-px overflow-hidden rounded-[var(--r-xl)] border border-[color:var(--card-border)] bg-[color:var(--hairline)] sm:grid-cols-2 lg:grid-cols-3">
+          {MODULES.map(({ icon: Icon, title, body }) => (
+            <StaggerItem key={title}>
+              <div className="flex h-full flex-col gap-3 bg-[var(--surface-paper)] p-6 sm:p-7">
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[rgba(0,0,32,0.05)] text-ink-1">
+                  <Icon className="h-4 w-4" strokeWidth={1.75} />
+                </span>
+                <h3 className="text-[16px] font-semibold tracking-[-0.02em] text-ink-0">
+                  {title}
+                </h3>
+                <p className="text-[13.5px] leading-[1.55] text-ink-5">{body}</p>
+              </div>
+            </StaggerItem>
+          ))}
+        </StaggerGroup>
+      </section>
+
+      {/* ───── HOW IT WORKS · 3-step rail (clean cards) ──────────────── */}
+      <section className="border-t border-[color:var(--hairline)] bg-[#f1ede5]">
+        <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-24">
           <Reveal>
-            <div className="section-rule">
-              <span>03</span>
-              <span>Lo que hacés todos los días</span>
-            </div>
-            <h2 className="mt-10 max-w-[20ch] text-[34px] font-semibold leading-[1.05] tracking-[-0.035em] text-ink-0 sm:text-[44px]">
-              Módulos diseñados
-              <br />
-              para operar.
+            <span className="shop-eyebrow">Cómo empezar</span>
+            <h2 className="shop-h2 mt-6 max-w-[22ch]">
+              De catálogo a venta{" "}
+              <span className="text-ink-5">en 3 pasos.</span>
             </h2>
           </Reveal>
 
-          <StaggerGroup className="bento mt-12">
-            {CAPABILITIES.map(({ icon: Icon, title, description, span }) => (
-              <StaggerItem key={title} className={`${span} col-span-12`}>
-                <article className="group flex h-full flex-col justify-between gap-8 rounded-[var(--r-xl)] border border-[color:var(--card-border)] bg-[var(--surface-1)] p-7 transition-[border-color,background-color] hover:border-[color:var(--card-border-strong)] hover:bg-[var(--surface-2)] sm:p-9">
-                  <div className="flex items-start justify-between gap-4">
-                    <span className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[color:var(--hairline)] bg-[var(--surface-paper)] text-ink-0">
-                      <Icon className="h-4 w-4" strokeWidth={1.75} />
+          <StaggerGroup className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-3">
+            {STEPS.map(({ n, title, body }) => (
+              <StaggerItem key={n}>
+                <article className="shop-card flex h-full flex-col gap-5 p-6 sm:p-7">
+                  <div className="flex items-center justify-between">
+                    <span className="inline-flex h-7 items-center rounded-full bg-[rgba(0,0,32,0.06)] px-2.5 text-[11px] font-semibold tracking-[0.04em] text-ink-1">
+                      Paso {n}
                     </span>
-                    <ArrowUpRight className="h-4 w-4 text-ink-6 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" strokeWidth={1.75} />
+                    <ArrowRight className="h-3.5 w-3.5 text-ink-6" strokeWidth={2} />
                   </div>
                   <div>
-                    <h3 className="text-[20px] font-semibold leading-[1.2] tracking-[-0.02em] text-ink-0 sm:text-[22px]">
+                    <h3 className="text-[18px] font-semibold tracking-[-0.02em] text-ink-0">
                       {title}
                     </h3>
-                    <p className="mt-3 max-w-md text-[14px] leading-[1.6] text-ink-5">
-                      {description}
-                    </p>
+                    <p className="mt-2 text-[13.5px] leading-[1.6] text-ink-5">{body}</p>
                   </div>
                 </article>
               </StaggerItem>
@@ -276,123 +423,76 @@ export default function MarketingLandingPage() {
         </div>
       </section>
 
-      {/* ─── 04 / Reference numbers ─────────────────────────────────────
-          Operational shapes, not customer metrics. Every label is
-          prefixed with "Referencia" / "Objetivo" so nothing reads as a
-          fabricated outcome. */}
-      <section className="bg-[var(--surface-1)]">
-        <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
-          <Reveal>
-            <div className="section-rule">
-              <span>04</span>
-              <span>Cómo está construido · referencia</span>
-            </div>
-          </Reveal>
-          <StaggerGroup className="mt-12 grid grid-cols-2 gap-px overflow-hidden rounded-[var(--r-xl)] border border-[color:var(--card-border)] bg-[color:var(--hairline)] sm:grid-cols-4">
-            {REFERENCES.map((ref) => (
-              <StaggerItem key={ref.label}>
-                <div className="flex h-full flex-col gap-2 bg-[var(--surface-paper)] p-7">
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-6">
-                    Referencia
-                  </span>
-                  <p className="tabular text-[42px] font-semibold leading-none tracking-[-0.04em] text-ink-0 sm:text-[52px]">
-                    {ref.value}
-                  </p>
-                  <p className="text-[13px] font-semibold tracking-[-0.01em] text-ink-0">
-                    {ref.label}
-                  </p>
-                  <p className="text-[12px] leading-[1.5] text-ink-5">{ref.meta}</p>
-                </div>
-              </StaggerItem>
-            ))}
-          </StaggerGroup>
-        </div>
+      {/* ───── BENEFITS · 4 cards (confianza) ───────────────────────── */}
+      <section className="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-24">
+        <Reveal>
+          <span className="shop-eyebrow">Por qué Nexora</span>
+          <h2 className="shop-h2 mt-6 max-w-[22ch]">
+            Diseñado para marcas que quieren{" "}
+            <span className="text-ink-5">vender en serio.</span>
+          </h2>
+        </Reveal>
+
+        <StaggerGroup className="mt-12 grid grid-cols-1 gap-px overflow-hidden rounded-[var(--r-xl)] border border-[color:var(--card-border)] bg-[color:var(--hairline)] sm:grid-cols-2 lg:grid-cols-4">
+          {BENEFITS.map(({ icon: Icon, title, body }) => (
+            <StaggerItem key={title}>
+              <div className="flex h-full flex-col gap-3 bg-[var(--surface-paper)] p-6 sm:p-7">
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[var(--brand)] text-white">
+                  <Icon className="h-4 w-4" strokeWidth={2} />
+                </span>
+                <h3 className="text-[15px] font-semibold tracking-[-0.02em] text-ink-0">
+                  {title}
+                </h3>
+                <p className="text-[13px] leading-[1.55] text-ink-5">{body}</p>
+              </div>
+            </StaggerItem>
+          ))}
+        </StaggerGroup>
       </section>
 
-      {/* ─── 05 / Workflow — numbered horizontal rail ─────────────────── */}
-      <section className="bg-[var(--surface-paper)]">
-        <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
-          <Reveal>
-            <div className="section-rule">
-              <span>05</span>
-              <span>Cómo arrancás</span>
-            </div>
-            <h2 className="mt-10 max-w-[22ch] text-[34px] font-semibold leading-[1.05] tracking-[-0.035em] text-ink-0 sm:text-[44px]">
-              De catálogo a venta
-              <br />
-              en tres pasos claros.
-            </h2>
-          </Reveal>
-
-          <StaggerGroup className="mt-12 grid grid-cols-1 gap-0 border-t border-[color:var(--hairline)] md:grid-cols-3 md:divide-x md:divide-[color:var(--hairline)]">
-            {WORKFLOW.map((step) => (
-              <StaggerItem key={step.index}>
-                <div className="flex h-full flex-col gap-6 px-1 py-8 md:px-7 md:py-10">
-                  <div className="flex items-center justify-between">
-                    <span className="tabular text-[34px] font-semibold leading-none tracking-[-0.04em] text-ink-0">
-                      {step.index}
-                    </span>
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-6">
-                      Paso
-                    </span>
-                  </div>
-                  <div className="h-px w-12 bg-ink-3" aria-hidden />
-                  <div>
-                    <h3 className="text-[18px] font-semibold tracking-[-0.02em] text-ink-0">
-                      {step.title}
-                    </h3>
-                    <p className="mt-3 text-[14px] leading-[1.6] text-ink-5">
-                      {step.description}
-                    </p>
-                  </div>
-                </div>
-              </StaggerItem>
-            ))}
-          </StaggerGroup>
-        </div>
-      </section>
-
-      {/* ─── 06 / Final manifesto + CTA on navy ────────────────────────
-          Mirrors the auth split-shell brand panel: same tokens, same
-          grid backdrop. The landing closes on the same surface the
-          user steps into when they sign up. */}
-      <section className="relative isolate overflow-hidden bg-[var(--shell-dark)]">
-        <div aria-hidden className="canvas-grid-on-dark absolute inset-0 -z-10 opacity-60" />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(60%_60%_at_80%_100%,rgba(63,79,154,0.40)_0%,transparent_60%)]"
-        />
-        <div className="mx-auto max-w-7xl px-5 py-24 sm:px-8 sm:py-32">
+      {/* ───── FINAL CTA · light card, navy button (no grid bg) ──────── */}
+      <section className="px-5 pb-20 sm:px-8 sm:pb-24">
+        <div className="mx-auto max-w-7xl">
           <PageReveal>
-            <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--chrome-fg-muted)]">
-              <span aria-hidden className="h-px w-4 bg-[color:var(--chrome-fg-muted)]" />
-              06
-              <span aria-hidden className="h-px w-4 bg-[color:var(--chrome-fg-muted)]" />
-              Empezá
-            </span>
-            <h2 className="mt-8 max-w-[18ch] text-[40px] font-semibold leading-[1.04] tracking-[-0.04em] text-white sm:text-[64px]">
-              Menos ruido.
-              <br />
-              <span className="text-[var(--chrome-fg-muted)]">Más criterio operativo.</span>
-            </h2>
-            <p className="mt-8 max-w-xl text-[15px] leading-[1.65] text-[var(--chrome-fg-muted)]">
-              Una base más clara para vender, cobrar y ordenar tu operación
-              desde el primer día. Sin compromiso anual, sin agencia.
-            </p>
-            <div className="mt-12 flex flex-wrap items-center gap-3">
-              <Link
-                href="/home/register"
-                className="group inline-flex h-12 min-w-[200px] items-center justify-center gap-2 rounded-full bg-white px-7 text-[14px] font-medium text-[var(--brand)] transition-colors hover:bg-[var(--ink-11)] active:translate-y-px focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus-on-dark)]"
-              >
-                Empezar con Nexora
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={1.75} />
-              </Link>
-              <Link
-                href="/home/pricing"
-                className="inline-flex h-12 min-w-[160px] items-center justify-center gap-2 rounded-full border border-[color:var(--chrome-border)] bg-transparent px-7 text-[14px] font-medium text-white transition-colors hover:bg-[var(--chrome-hover)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus-on-dark)]"
-              >
-                Ver planes
-              </Link>
+            <div className="shop-card relative overflow-hidden p-10 sm:p-14">
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -right-32 -top-24 h-72 w-72 rounded-full bg-[radial-gradient(50%_50%_at_50%_50%,rgba(63,79,154,0.18)_0%,transparent_70%)]"
+              />
+              <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-[1.4fr_1fr]">
+                <div>
+                  <span className="shop-eyebrow">
+                    <MapPin className="h-3.5 w-3.5" strokeWidth={2} />
+                    Hecho en Argentina
+                  </span>
+                  <h2 className="shop-h2 mt-5 max-w-[22ch]">
+                    Empezá hoy.{" "}
+                    <span className="text-ink-5">Sin riesgo, sin compromiso.</span>
+                  </h2>
+                  <p className="shop-lead mt-5">
+                    14 días gratis para probar la plataforma completa. Si te quedás,
+                    elegís el plan que se ajuste a tu operación.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-3">
+                  <Link
+                    href="/home/register"
+                    className="group inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[var(--brand)] px-7 text-[14px] font-medium text-white transition-colors hover:bg-[var(--brand-hover)] active:translate-y-px focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+                  >
+                    Crear mi tienda gratis
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
+                  </Link>
+                  <Link
+                    href="/home/pricing"
+                    className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-paper)] px-6 text-[14px] font-medium text-ink-0 transition-colors hover:bg-[rgba(0,0,32,0.04)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+                  >
+                    Comparar planes
+                  </Link>
+                  <p className="mt-1 text-center text-[12px] text-ink-5">
+                    Sin tarjeta · Cancelás cuando quieras
+                  </p>
+                </div>
+              </div>
             </div>
           </PageReveal>
         </div>
