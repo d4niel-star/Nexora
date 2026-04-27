@@ -96,7 +96,7 @@ export function QuoteCalculator({
       </header>
 
       {!hasOrigin ? (
-        <div className="mb-4 flex items-start gap-2 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-4 py-3 text-[12px] text-[color:var(--signal-warning)]">
+        <div className="mb-4 flex items-start gap-2 rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-4 py-3 text-[12px] text-[color:var(--signal-warning)]">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} />
           Cargá el código postal de origen en{" "}
           <a
@@ -110,7 +110,7 @@ export function QuoteCalculator({
       ) : null}
 
       {!hasAnyConnected ? (
-        <div className="mb-4 flex items-start gap-2 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-4 py-3 text-[12px] text-ink-5">
+        <div className="mb-4 flex items-start gap-2 rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-4 py-3 text-[12px] text-ink-5">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} />
           Conectá al menos una cuenta de carrier (Correo Argentino o Andreani)
           para habilitar la cotización.
@@ -222,7 +222,7 @@ export function QuoteCalculator({
           <button
             type="submit"
             disabled={disabled || pending}
-            className="inline-flex h-10 items-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-5 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+            className="inline-flex h-10 items-center gap-2 rounded-[var(--r-lg)] bg-ink-0 px-5 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
           >
             {pending ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={1.75} />
@@ -242,7 +242,7 @@ export function QuoteCalculator({
 function QuoteResults({ result }: { result: QuoteActionResult }) {
   if (!result.ok) {
     return (
-      <div className="mt-4 flex items-start gap-2 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-4 py-3 text-[12px] text-[color:var(--signal-danger)]">
+      <div className="mt-4 flex items-start gap-2 rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-4 py-3 text-[12px] text-[color:var(--signal-danger)]">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} />
         {result.message ?? "No se pudo cotizar."}
       </div>
@@ -250,7 +250,7 @@ function QuoteResults({ result }: { result: QuoteActionResult }) {
   }
   if (result.rows.length === 0) {
     return (
-      <div className="mt-4 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-4 py-3 text-[12px] text-ink-5">
+      <div className="mt-4 rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-4 py-3 text-[12px] text-ink-5">
         Sin resultados.
       </div>
     );
@@ -266,7 +266,7 @@ function QuoteResults({ result }: { result: QuoteActionResult }) {
 
 function CarrierResultBlock({ row }: { row: QuoteRowResult }) {
   return (
-    <div className="rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] p-4">
+    <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-1)] p-4">
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-[13px] font-semibold text-ink-0">{row.carrierName}</h3>
         {row.ok ? (
@@ -343,5 +343,5 @@ function numOrUndefined(v: string): number | undefined {
 }
 
 const inputCls =
-  "block w-full rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 py-2 text-[13px] text-ink-0 placeholder:text-ink-6 focus:outline-none focus:ring-2 focus:ring-[color:var(--accent-400)] disabled:opacity-50";
+  "block w-full rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 py-2 text-[13px] text-ink-0 placeholder:text-ink-6 focus:outline-none focus:shadow-[var(--shadow-focus)] focus:border-[color:var(--hairline-strong)] disabled:opacity-50";
 const selectCls = inputCls;

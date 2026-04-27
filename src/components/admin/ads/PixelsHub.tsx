@@ -172,7 +172,7 @@ function ProviderPixelCard({
       <header className="flex items-start justify-between p-5 border-b border-[color:var(--hairline)] gap-3">
         <div className="flex items-center gap-3">
           <span
-            className="h-9 w-9 rounded-[var(--r-sm)] flex items-center justify-center ring-1 ring-inset ring-[color:var(--hairline)]"
+            className="h-9 w-9 rounded-[var(--r-lg)] flex items-center justify-center ring-1 ring-inset ring-[color:var(--hairline)]"
             style={{
               backgroundColor: `color-mix(in srgb, ${meta.accent} 14%, transparent)`,
               color: meta.accent,
@@ -249,7 +249,7 @@ function ProviderPixelCard({
                 onChange={(e) =>
                   setValues((v) => ({ ...v, [field.key]: e.target.value }))
                 }
-                className="w-full h-10 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 text-[13px] font-mono text-ink-0 placeholder:text-ink-7 focus:outline-none focus:ring-2 focus:ring-[color:var(--accent-500)]/40 focus:border-[color:var(--accent-500)] transition-all"
+                className="w-full h-10 rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 text-[13px] font-mono text-ink-0 placeholder:text-ink-7 focus:outline-none focus:shadow-[var(--shadow-focus)] focus:border-[color:var(--hairline-strong)] transition-all"
               />
               <p className="text-[11px] text-ink-6 leading-[1.4]">{field.helper}</p>
             </div>
@@ -263,7 +263,7 @@ function ProviderPixelCard({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
               transition={{ duration: 0.18 }}
-              className={`rounded-[var(--r-sm)] border p-2.5 text-[11.5px] flex items-start gap-1.5 ${
+              className={`rounded-[var(--r-lg)] border p-2.5 text-[11.5px] flex items-start gap-1.5 ${
                 feedback.tone === "err"
                   ? "border-[color:color-mix(in_srgb,var(--signal-danger)_30%,transparent)] bg-[color:color-mix(in_srgb,var(--signal-danger)_8%,transparent)] text-[color:var(--signal-danger)]"
                   : "border-[color:color-mix(in_srgb,var(--signal-success)_30%,transparent)] bg-[color:color-mix(in_srgb,var(--signal-success)_8%,transparent)] text-[color:var(--signal-success)]"

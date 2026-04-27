@@ -396,7 +396,7 @@ function TemplateCard({
             </div>
           </div>
           {/* Hero mockup */}
-          <div className="rounded-b-[2px] border-x border-b border-black/5 bg-white/85 px-3 py-2.5">
+          <div className="rounded-b-[2px] border-x border-b border-[color:var(--hairline)] bg-[var(--surface-paper)] px-3 py-2.5">
             <p
               className="text-[10px] font-bold leading-[1.2] line-clamp-1"
               style={{ color: primaryColor, fontFamily: fontStack }}
@@ -446,8 +446,8 @@ function TemplateCard({
             </p>
           </div>
           <div className="flex items-center gap-0.5 shrink-0">
-            <div className="h-3 w-3 rounded-[1px] border border-black/10" style={{ backgroundColor: primaryColor }} />
-            <div className="h-3 w-3 rounded-[1px] border border-black/10" style={{ backgroundColor: secondaryColor }} />
+            <div className="h-3 w-3 rounded-full border border-[color:var(--hairline)]" style={{ backgroundColor: primaryColor }} />
+            <div className="h-3 w-3 rounded-full border border-[color:var(--hairline)]" style={{ backgroundColor: secondaryColor }} />
           </div>
         </div>
         <p className="mt-1.5 text-[11px] leading-[1.5] text-ink-5 line-clamp-2">{template.description}</p>

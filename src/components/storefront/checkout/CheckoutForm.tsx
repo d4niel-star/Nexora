@@ -338,7 +338,7 @@ export function CheckoutForm({
                       type="radio"
                       value={method.id}
                       onChange={() => handleShippingChange(method.id)}
-                      className="h-4 w-4 border-[color:var(--hairline-strong)] text-ink-0 focus:ring-[var(--accent-500)] focus:ring-offset-0"
+                      className="h-4 w-4 border-[color:var(--hairline-strong)] text-ink-0 focus:shadow-[var(--shadow-focus)]"
                     />
                     <div className="min-w-0 flex-1">
                       <p className="text-[14px] font-medium text-ink-0">

@@ -45,7 +45,7 @@ export function WhatsAppFloatingButton({
         // Transitions
         "transition-all duration-300 hover:scale-105 hover:shadow-[0_6px_28px_rgba(37,211,102,0.40)] active:scale-95",
         // Focus
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2",
+        "focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
         // Position: raised on mobile to clear product-page sticky CTA bar
         position === "bottom-right"
           ? "right-4 bottom-[calc(76px+env(safe-area-inset-bottom))] sm:right-6 sm:bottom-6 lg:bottom-6"

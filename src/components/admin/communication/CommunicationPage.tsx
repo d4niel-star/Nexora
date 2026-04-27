@@ -427,7 +427,7 @@ export function CommunicationPage({ initialSettings, embedded = false }: Props) 
                     <div className="relative h-32 rounded-[var(--r-md)] bg-[var(--surface-2)] border border-[color:var(--hairline)]">
                       <div
                         className={cn(
-                          "absolute bottom-3 flex items-center gap-2 rounded-full bg-green-500 px-4 py-2.5 shadow-lg",
+                          "absolute bottom-3 flex items-center gap-2 rounded-full bg-[color:var(--signal-success)] px-4 py-2.5 shadow-[var(--shadow-soft)]",
                           settings.whatsapp.buttonPosition === "bottom-right"
                             ? "right-3"
                             : "left-3",
@@ -731,7 +731,7 @@ function EmailToggleRow({
       >
         <span
           className={cn(
-            "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform duration-200",
+            "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-[var(--surface-paper)] shadow-[var(--shadow-card)] ring-0 transition-transform duration-200",
             checked ? "translate-x-5" : "translate-x-0",
           )}
         />

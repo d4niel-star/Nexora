@@ -415,7 +415,7 @@ function GalleryCard({
           </div>
 
           {/* Content area — shows hero + block structure */}
-          <div className="rounded-b-[3px] border-x border-b border-black/5 bg-white/90">
+          <div className="rounded-b-[3px] border-x border-b border-[color:var(--hairline)] bg-[var(--surface-paper)]">
             {/* Hero section */}
             <div className="px-3 pt-3 pb-2">
               <p
@@ -437,13 +437,13 @@ function GalleryCard({
                   {(heroBlock?.settings?.primaryActionLabel as string) ?? "CTA"}
                 </span>
                 {(heroBlock?.settings?.secondaryActionLabel as string) && (
-                  <span className="h-3.5 w-6 rounded-[2px] border border-black/10" />
+                  <span className="h-3.5 w-6 rounded-full border border-[color:var(--hairline)]" />
                 )}
               </div>
             </div>
 
             {/* Block structure indicators */}
-            <div className="border-t border-black/5 px-3 py-2 space-y-1.5">
+            <div className="border-t border-[color:var(--hairline)] px-3 py-2 space-y-1.5">
               {blockIndicators.map(({ type, index }) => (
                 <BlockPreviewIndicator
                   key={index}
@@ -481,8 +481,8 @@ function GalleryCard({
           </div>
           {/* Color palette mini swatches */}
           <div className="flex items-center gap-1 shrink-0">
-            <div className="h-3.5 w-3.5 rounded-[2px] border border-black/10" style={{ backgroundColor: primaryColor }} />
-            <div className="h-3.5 w-3.5 rounded-[2px] border border-black/10" style={{ backgroundColor: secondaryColor }} />
+            <div className="h-3.5 w-3.5 rounded-full border border-[color:var(--hairline)]" style={{ backgroundColor: primaryColor }} />
+            <div className="h-3.5 w-3.5 rounded-full border border-[color:var(--hairline)]" style={{ backgroundColor: secondaryColor }} />
           </div>
         </div>
         <p className="mt-1.5 text-[11px] leading-[1.5] text-ink-5 line-clamp-2">
@@ -606,7 +606,7 @@ function BlockPreviewIndicator({
     case "newsletter":
       return (
         <div className="flex items-center gap-1">
-          <div className="h-2 flex-1 rounded-[1px] border border-black/8" />
+          <div className="h-2 flex-1 rounded-full border border-[color:var(--hairline)]" />
           <div className="h-2 w-5 rounded-[1px]" style={{ backgroundColor: primaryColor }} />
         </div>
       );

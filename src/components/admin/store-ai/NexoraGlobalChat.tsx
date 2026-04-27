@@ -73,7 +73,6 @@ export function NexoraGlobalChat({ memoryScope }: { memoryScope?: AssistantMemor
   const [ctx, setCtx] = useState<CoreContext>(() => createCoreContext(pathname));
 
   const ctxRef = useRef(ctx);
-  ctxRef.current = ctx;
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const memoryRecoveredThisSession = useRef(false);
@@ -81,8 +80,8 @@ export function NexoraGlobalChat({ memoryScope }: { memoryScope?: AssistantMemor
 
   // Keep currentRoute fresh; the assistant uses it as a soft hint.
   useEffect(() => {
-    setCtx((prev) => ({ ...prev, currentRoute: pathname }));
-  }, [pathname]);
+    ctxRef.current = { ...ctx, currentRoute: pathname };
+  }, [ctx, pathname]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -225,10 +224,10 @@ export function NexoraGlobalChat({ memoryScope }: { memoryScope?: AssistantMemor
         type="button"
         onClick={() => setIsOpen((o) => !o)}
         className={cn(
-          "fixed bottom-5 right-5 z-[70] flex h-11 w-11 items-center justify-center rounded-full shadow-lg transition-all duration-300 focus-visible:outline-none",
+          "fixed bottom-5 right-5 z-[70] flex h-11 w-11 items-center justify-center rounded-full shadow-[var(--shadow-overlay)] transition-all duration-300 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
           isOpen
-            ? "bg-white border border-gray-200 text-gray-700"
-            : "bg-gray-900 text-white hover:bg-gray-800",
+            ? "border border-[color:var(--hairline)] bg-[var(--surface-paper)] text-ink-3"
+            : "bg-[var(--brand)] text-[var(--brand-ink)] hover:bg-[var(--brand-hover)]",
         )}
         aria-label={isOpen ? "Cerrar Nexora IA" : "Abrir Nexora IA"}
       >
@@ -244,16 +243,16 @@ export function NexoraGlobalChat({ memoryScope }: { memoryScope?: AssistantMemor
         <div
           role="dialog"
           aria-label="Nexora IA"
-          className="fixed bottom-18 right-5 z-[70] flex w-[380px] max-h-[min(560px,calc(100vh-110px))] flex-col rounded-xl border border-gray-200 bg-white shadow-2xl animate-in slide-in-from-bottom-3 fade-in duration-250"
+          className="fixed bottom-18 right-5 z-[70] flex w-[380px] max-w-[calc(100vw-40px)] max-h-[min(560px,calc(100vh-110px))] flex-col overflow-hidden rounded-[var(--r-xl)] border border-[color:var(--card-border-strong)] bg-[var(--surface-0)] shadow-[var(--shadow-overlay)] animate-in slide-in-from-bottom-3 fade-in duration-250"
         >
-          <header className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+          <header className="flex items-center justify-between border-b border-[color:var(--hairline)] px-4 py-3">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gray-900 text-white">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--brand)] text-[var(--brand-ink)]">
                 <Sparkles className="h-3.5 w-3.5" strokeWidth={2} />
               </div>
               <div>
-                <p className="text-[12px] font-semibold text-gray-900">Nexora IA</p>
-                <p className="text-[9px] uppercase tracking-[0.12em] text-gray-400">
+                <p className="text-[12px] font-semibold text-ink-0">Nexora IA</p>
+                <p className="text-[9px] uppercase tracking-[0.12em] text-ink-6">
                   Asistente del admin · Ads
                 </p>
               </div>
@@ -261,7 +260,7 @@ export function NexoraGlobalChat({ memoryScope }: { memoryScope?: AssistantMemor
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-700"
+              className="btn-icon h-7 w-7 border-transparent bg-transparent text-ink-6 hover:bg-[var(--surface-2)] hover:text-ink-0"
               aria-label="Cerrar"
             >
               <X className="h-3.5 w-3.5" strokeWidth={1.75} />
@@ -274,7 +273,7 @@ export function NexoraGlobalChat({ memoryScope }: { memoryScope?: AssistantMemor
             ))}
             {isPending && (
               <div className="flex justify-start">
-                <div className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 text-[11px] text-gray-400">
+                <div className="flex items-center gap-2 rounded-full bg-[var(--surface-1)] px-3 py-2 text-[11px] text-ink-6">
                   <Loader2 className="h-3 w-3 animate-spin" strokeWidth={2} />
                   Pensando…
                 </div>
@@ -284,8 +283,8 @@ export function NexoraGlobalChat({ memoryScope }: { memoryScope?: AssistantMemor
           </div>
 
           {messages.length <= 2 && (
-            <div className="border-t border-gray-100 px-4 py-2">
-              <p className="mb-1.5 text-[9px] font-medium uppercase tracking-[0.12em] text-gray-400">
+            <div className="border-t border-[color:var(--hairline)] px-4 py-2">
+              <p className="mb-1.5 text-[9px] font-medium uppercase tracking-[0.12em] text-ink-6">
                 Probá algo
               </p>
               <div className="flex flex-wrap gap-1.5">
@@ -302,7 +301,7 @@ export function NexoraGlobalChat({ memoryScope }: { memoryScope?: AssistantMemor
                       setInput(s);
                       inputRef.current?.focus();
                     }}
-                    className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[10px] font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+                    className="rounded-full border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2.5 py-1 text-[10px] font-medium text-ink-5 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
                   >
                     {s}
                   </button>
@@ -311,7 +310,7 @@ export function NexoraGlobalChat({ memoryScope }: { memoryScope?: AssistantMemor
             </div>
           )}
 
-          <div className="border-t border-gray-100 px-4 py-3">
+          <div className="border-t border-[color:var(--hairline)] px-4 py-3">
             <div className="flex items-center gap-2">
               <input
                 ref={inputRef}
@@ -325,14 +324,14 @@ export function NexoraGlobalChat({ memoryScope }: { memoryScope?: AssistantMemor
                   }
                 }}
                 placeholder="Preguntame lo que quieras…"
-                className="flex-1 h-9 px-3 rounded-lg border border-gray-200 bg-gray-50 text-[12px] text-gray-900 outline-none placeholder:text-gray-400 focus:border-gray-400 focus:ring-1 focus:ring-gray-200"
+                className="flex-1 h-9 px-3 rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-1)] text-[12px] text-ink-0 outline-none placeholder:text-ink-6 focus:border-[color:var(--hairline-strong)] focus:shadow-[var(--shadow-focus)]"
                 disabled={isPending}
               />
               <button
                 type="button"
                 onClick={handleSend}
                 disabled={isPending || !input.trim()}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-900 text-white transition-colors hover:bg-gray-800 disabled:opacity-40"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-hover)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)] disabled:opacity-40"
               >
                 <Send className="h-3.5 w-3.5" strokeWidth={1.75} />
               </button>
@@ -368,27 +367,27 @@ function Bubble({
     <div className={cn("flex", isUser ? "justify-end" : "justify-start")}>
       <div
         className={cn(
-          "max-w-[90%] rounded-lg px-3 py-2 text-[12px] leading-[1.6]",
-          isUser && "bg-gray-900 text-white",
-          !isUser && tone === "ok" && "bg-gray-50 text-gray-900 border border-gray-100",
-          !isUser && tone === "err" && "bg-red-50 text-gray-900 border border-red-100",
-          !isUser && tone === "deny" && "bg-amber-50 text-gray-900 border border-amber-100",
-          !isUser && tone === "info" && "bg-gray-50 text-gray-900 border border-gray-100",
+          "max-w-[90%] rounded-[var(--r-lg)] px-3 py-2 text-[12px] leading-[1.6]",
+          isUser && "bg-[var(--brand)] text-[var(--brand-ink)]",
+          !isUser && tone === "ok" && "bg-[var(--surface-1)] text-ink-0 border border-[color:var(--hairline)]",
+          !isUser && tone === "err" && "bg-[color:color-mix(in_srgb,var(--signal-danger)_8%,transparent)] text-ink-0 border border-[color:color-mix(in_srgb,var(--signal-danger)_24%,transparent)]",
+          !isUser && tone === "deny" && "bg-[color:color-mix(in_srgb,var(--signal-warning)_9%,transparent)] text-ink-0 border border-[color:color-mix(in_srgb,var(--signal-warning)_24%,transparent)]",
+          !isUser && tone === "info" && "bg-[var(--surface-1)] text-ink-0 border border-[color:var(--hairline)]",
         )}
       >
         {!isUser && r?.kind === "ok" && (
           <div className="mb-1 flex items-center gap-1.5">
-            <CheckCircle2 className="h-3 w-3 text-emerald-500" strokeWidth={2} />
-            <span className="text-[10px] font-medium text-emerald-600">Listo</span>
+            <CheckCircle2 className="h-3 w-3 text-[color:var(--signal-success)]" strokeWidth={2} />
+            <span className="text-[10px] font-medium text-[color:var(--signal-success)]">Listo</span>
           </div>
         )}
         <div className="whitespace-pre-wrap">{msg.text}</div>
 
         {r?.bullets && r.bullets.length > 0 && (
-          <ul className="mt-2 space-y-0.5 text-[11px] text-gray-600">
+          <ul className="mt-2 space-y-0.5 text-[11px] text-ink-5">
             {r.bullets.map((b, i) => (
               <li key={i} className="flex gap-1.5">
-                <span className="text-gray-300">·</span>
+                <span className="text-ink-7">·</span>
                 <span>{b}</span>
               </li>
             ))}
@@ -400,10 +399,10 @@ function Bubble({
             type="button"
             onClick={() => onAction(r.action!.href!)}
             className={cn(
-              "mt-2 inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
+              "mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
               isUser
                 ? "bg-white/10 text-white hover:bg-white/20"
-                : "bg-gray-900 text-white hover:bg-gray-800",
+                : "bg-[var(--brand)] text-[var(--brand-ink)] hover:bg-[var(--brand-hover)]",
             )}
           >
             {r.action.label ?? "Abrir"}
@@ -412,7 +411,7 @@ function Bubble({
         )}
 
         {r?.nextSteps && r.nextSteps.length > 0 && (
-          <p className="mt-2 text-[10px] uppercase tracking-[0.1em] text-gray-400">
+          <p className="mt-2 text-[10px] uppercase tracking-[0.1em] text-ink-6">
             {r.nextSteps.join(" · ")}
           </p>
         )}

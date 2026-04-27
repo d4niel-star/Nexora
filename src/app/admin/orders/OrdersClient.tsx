@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
 import { Search, Filter, Package, X, ShoppingBag, CalendarDays, Zap, Truck, AlertTriangle } from "lucide-react";
 import { Order } from "../../../types/order";
@@ -20,8 +20,8 @@ interface OrdersClientProps {
 
 export default function OrdersClient({ orders, hideHeader = false, initialTab = 'action' }: OrdersClientProps) {
   const urlParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState<TabValue>(initialTab);
-  const [searchQuery, setSearchQuery] = useState("");
+
+  const fromCustomer = urlParams?.get("customer") ?? "";
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -33,13 +33,8 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
   // When the merchant arrives from /admin/customers?customer=<email>,
   // seed the search field so the table immediately narrows to that
   // customer's orders. One-shot: subsequent typing must not be clobbered.
-  useEffect(() => {
-    const fromCustomer = urlParams?.get("customer");
-    if (fromCustomer) {
-      setSearchQuery(fromCustomer);
-      setActiveTab("all");
-    }
-  }, [urlParams]);
+  const [activeTab, setActiveTab] = useState<TabValue>(fromCustomer ? "all" : initialTab);
+  const [searchQuery, setSearchQuery] = useState(fromCustomer);
 
   // Compute the next-action map once per render so the table, the tab
   // count and the KPI all agree (single source of truth).
@@ -144,7 +139,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700 pb-32">
+    <div className="space-y-7 animate-in fade-in duration-700 pb-32">
       
       {/* 1. Page Header */}
       {!hideHeader && (
@@ -164,7 +159,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
       {!hideHeader && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {/* Ventas reales is informational (money total), not a filter. */}
-          <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-5 py-4 shadow-[var(--shadow-soft)]">
+          <div className="elev-card rounded-[var(--r-lg)] px-5 py-4">
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-ink-6">Ventas reales</p>
             <p className="mt-1 text-[22px] font-semibold tracking-[-0.02em] text-ink-0 tabular-nums">${realRevenue.toLocaleString("es-AR")}</p>
             <p className="mt-1 text-xs font-medium text-ink-6">Solo pagos confirmados por webhook.</p>
@@ -178,7 +173,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
               setActiveTab("action");
               setSearchQuery("");
             }}
-            className="group text-left rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-5 py-4 shadow-[var(--shadow-soft)] transition-colors hover:bg-[var(--surface-2)] focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
+            className="elev-card-interactive group text-left rounded-[var(--r-lg)] px-5 py-4 focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
             aria-label="Ver pedidos pendientes de pago"
           >
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-ink-6">Pendientes de pago</p>
@@ -191,7 +186,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
               setActiveTab("action");
               setSearchQuery("");
             }}
-            className="group text-left rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-5 py-4 shadow-[var(--shadow-soft)] transition-colors hover:bg-[var(--surface-2)] focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
+            className="elev-card-interactive group text-left rounded-[var(--r-lg)] px-5 py-4 focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
             aria-label="Ver pedidos por preparar"
           >
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-ink-6">Por preparar</p>
@@ -202,7 +197,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
       )}
 
       {/* 2. Main Container (SaaS Data Grid) */}
-      <div className="bg-[var(--surface-0)] border rounded-[var(--r-lg)] border-[color:var(--hairline)] shadow-none overflow-hidden relative">
+      <div className="elev-card-strong overflow-hidden rounded-[var(--r-lg)] relative">
         
         {/* Tabs */}
         <div className="flex items-center gap-8 px-6 border-b border-[color:var(--hairline)] overflow-x-auto no-scrollbar">
@@ -210,13 +205,13 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
             <button
               key={tab.value}
               onClick={() => setActiveTab(tab.value)}
-              className={`relative py-4 text-[13px] font-bold whitespace-nowrap transition-colors flex items-center gap-2 group
+              className={`relative py-4 text-[13px] font-bold whitespace-nowrap transition-colors flex items-center gap-2 group focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]
                 ${activeTab === tab.value ? "text-ink-0" : "text-ink-6 hover:text-ink-0"}`
               }
             >
               {tab.label}
               {tab.count !== undefined && tab.count > 0 && (
-                <span className={`tabular inline-flex items-center h-5 px-1.5 rounded-[var(--r-xs)] text-[10px] uppercase tracking-[0.12em] font-medium transition-colors ${activeTab === tab.value ? 'bg-[var(--surface-2)] text-ink-0' : 'bg-transparent text-ink-6 group-hover:bg-[var(--surface-2)]'}`}>
+                <span className={`tabular inline-flex items-center h-5 px-2 rounded-full text-[10px] uppercase tracking-[0.12em] font-medium transition-colors ${activeTab === tab.value ? 'bg-[var(--surface-2)] text-ink-0' : 'bg-transparent text-ink-6 group-hover:bg-[var(--surface-2)]'}`}>
                   {tab.count}
                 </span>
               )}
@@ -236,11 +231,11 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
               placeholder="Buscar pedido, cliente, tracking..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-1.5 text-[13px] font-medium bg-transparent border border-transparent focus:outline-none text-ink-0 transition-all placeholder:text-ink-6"
+              className="w-full pl-9 pr-4 py-2 text-[13px] font-medium bg-[var(--surface-1)] border border-[color:var(--hairline)] focus:outline-none text-ink-0 transition-all placeholder:text-ink-6"
             />
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full xl:w-auto">
-            <label className="flex items-center gap-2 rounded-md border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3 py-1.5 text-[12px] font-bold text-ink-5">
+            <label className="flex items-center gap-2 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-paper)] px-3 py-1.5 text-[12px] font-bold text-ink-5">
               <CalendarDays className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Desde</span>
               <input
@@ -250,7 +245,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
                 className="bg-transparent text-[12px] font-semibold text-ink-0 outline-none"
               />
             </label>
-            <label className="flex items-center gap-2 rounded-md border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3 py-1.5 text-[12px] font-bold text-ink-5">
+            <label className="flex items-center gap-2 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-paper)] px-3 py-1.5 text-[12px] font-bold text-ink-5">
               <span className="hidden sm:inline">Hasta</span>
               <input
                 type="date"
@@ -261,7 +256,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
             </label>
             <button
               onClick={() => { setSearchQuery(""); setDateFrom(""); setDateTo(""); setActiveTab("all"); }}
-              className="w-full sm:w-auto px-3 py-1.5 text-[12px] font-bold text-ink-5 bg-[var(--surface-0)] border border-[color:var(--hairline)] rounded-md hover:bg-[var(--surface-2)] flex items-center justify-center gap-2 transition-colors"
+              className="btn-secondary w-full sm:w-auto px-3 py-1.5 text-[12px] font-bold flex items-center justify-center gap-2"
             >
               <Filter className="w-3.5 h-3.5" /> Limpiar
             </button>
@@ -287,7 +282,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
                       type="checkbox" 
                       onChange={handleSelectAll}
                       checked={selectedRows.length === filteredOrders.length && filteredOrders.length > 0}
-                      className="w-4 h-4 rounded border-[color:var(--hairline)] text-ink-0 focus:ring-ink-0 cursor-pointer" 
+                      className="w-4 h-4 rounded border-[color:var(--hairline)] text-ink-0 cursor-pointer" 
                     />
                   </th>
                   <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-ink-6">Pedido</th>
@@ -337,7 +332,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
                            type="checkbox" 
                            checked={isSelected}
                            onChange={(e) => handleSelectRow(e, order.id)}
-                           className="w-4 h-4 rounded border-[color:var(--hairline)] text-ink-0 focus:ring-ink-0 cursor-pointer" 
+                           className="w-4 h-4 rounded border-[color:var(--hairline)] text-ink-0 cursor-pointer" 
                          />
                       </td>
                       <td className="px-6 py-5 font-bold text-ink-0 text-sm tabular-nums tracking-tight">{order.number}</td>
@@ -354,11 +349,11 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
                       </td>
                       <td className="px-6 py-5">
                         {order.channel === 'Storefront' ? (
-                           <div className="inline-flex items-center gap-1.5 h-6 px-2 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] text-[10px] font-medium uppercase tracking-[0.14em] text-ink-3 w-fit">
+                           <div className="inline-flex items-center gap-1.5 h-6 px-2 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-1)] text-[10px] font-medium uppercase tracking-[0.14em] text-ink-3 w-fit">
                               <ShoppingBag className="w-3 h-3" strokeWidth={1.75} /> Tienda
                            </div>
                         ) : (
-                           <span className="text-xs font-bold text-ink-6 bg-[var(--surface-2)] px-2 py-1 rounded-md uppercase tracking-wider">{order.channel}</span>
+                           <span className="text-xs font-bold text-ink-6 bg-[var(--surface-2)] px-2 py-1 rounded-full uppercase tracking-wider">{order.channel}</span>
                         )}
                       </td>
                       <td className="px-6 py-5"><PaymentStatusBadge status={order.paymentStatus} /></td>
@@ -366,7 +361,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
                       <td className="px-6 py-5">
                         {nextAction ? (
                           <span
-                            className={`inline-flex items-center gap-1.5 h-6 px-2 rounded-[var(--r-xs)] text-[11px] font-semibold ${
+                            className={`inline-flex items-center gap-1.5 h-6 px-2 rounded-full text-[11px] font-semibold ${
                               nextAction.urgent
                                 ? "bg-[color:var(--signal-danger)]/10 text-[color:var(--signal-danger)]"
                                 : "bg-[var(--surface-2)] text-ink-0"
@@ -401,8 +396,8 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
               Mostrando <b className="text-ink-0 px-1">{filteredOrders.length}</b> de {orders.length}
             </span>
             <div className="flex gap-2">
-              <button disabled className="px-4 py-2 border border-[color:var(--hairline)] rounded-[var(--r-lg)] text-[13px] font-bold text-ink-7 bg-[var(--surface-0)] opacity-50 cursor-not-allowed">Anterior</button>
-              <button className="px-4 py-2 border border-[color:var(--hairline)] rounded-[var(--r-lg)] text-[13px] font-bold text-ink-0 bg-[var(--surface-0)] hover:bg-[var(--surface-2)] transition-colors shadow-[var(--shadow-soft)]">Siguiente</button>
+              <button disabled className="btn-secondary px-4 py-2 text-[13px] font-bold opacity-50 cursor-not-allowed">Anterior</button>
+              <button className="btn-secondary px-4 py-2 text-[13px] font-bold">Siguiente</button>
             </div>
           </div>
         )}
@@ -418,7 +413,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
        * the row chip uses; if nothing in the selection can transition
        * to preparing, the button is disabled with an explicit hint. */}
       {selectedRows.length > 0 && (
-        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-ink-0 text-ink-12 px-2 py-2 rounded-[var(--r-md)] shadow-[var(--shadow-overlay)] flex items-center gap-1 animate-in slide-in-from-bottom-5 fade-in duration-[var(--dur-base)] z-30">
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-ink-0 text-ink-12 px-2 py-2 rounded-full shadow-[var(--shadow-overlay)] flex items-center gap-1 animate-in slide-in-from-bottom-5 fade-in duration-[var(--dur-base)] z-30">
            <div className="px-3 border-r border-ink-12/15">
              <span className="tabular text-[13px] font-medium">{selectedRows.length} seleccionados</span>
              {bulkPreparingEligibleIds.length !== selectedRows.length && (
@@ -437,7 +432,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
                    ? "Seleccioná pedidos pagados y sin despacho iniciado."
                    : `Marcar ${bulkPreparingEligibleIds.length} como preparando`
                }
-               className="inline-flex items-center gap-2 px-3 h-9 text-[13px] font-medium hover:bg-ink-12/10 rounded-[var(--r-sm)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+               className="inline-flex items-center gap-2 px-3 h-9 text-[13px] font-medium hover:bg-ink-12/10 rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
              >
                <Package className="w-4 h-4" strokeWidth={1.75} />
                {bulkPending ? "Actualizando…" : "Marcar preparando"}
@@ -448,7 +443,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
            </div>
            <button 
               onClick={() => setSelectedRows([])}
-              className="p-2 mr-1 hover:bg-ink-12/10 rounded-[var(--r-sm)] transition-colors shrink-0 text-ink-12/50 hover:text-ink-12"
+              className="p-2 mr-1 hover:bg-ink-12/10 rounded-full transition-colors shrink-0 text-ink-12/50 hover:text-ink-12"
            >
              <X className="w-4 h-4" />
            </button>

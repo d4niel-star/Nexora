@@ -176,7 +176,7 @@ export function CarrierConnectionForm({
                   type="button"
                   onClick={handleValidate}
                   disabled={isPending}
-                  className="inline-flex h-9 items-center gap-2 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 text-[12px] font-medium text-ink-3 transition-colors hover:bg-[var(--surface-2)] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+                  className="inline-flex h-9 items-center gap-2 rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 text-[12px] font-medium text-ink-3 transition-colors hover:bg-[var(--surface-2)] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
                 >
                   {isPending ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={1.75} />
@@ -189,7 +189,7 @@ export function CarrierConnectionForm({
                   type="button"
                   onClick={handleDisconnect}
                   disabled={isPending}
-                  className="inline-flex h-9 items-center gap-2 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 text-[12px] font-medium text-[color:var(--signal-danger)] transition-colors hover:bg-[var(--surface-2)] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+                  className="inline-flex h-9 items-center gap-2 rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 text-[12px] font-medium text-[color:var(--signal-danger)] transition-colors hover:bg-[var(--surface-2)] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
                 >
                   <Unplug className="h-3.5 w-3.5" strokeWidth={1.75} />
                   Desconectar
@@ -248,7 +248,7 @@ export function CarrierConnectionForm({
                   <label
                     key={env}
                     className={[
-                      "inline-flex flex-1 cursor-pointer items-center justify-center rounded-[var(--r-sm)] border px-3 py-2 text-[12px] font-medium transition-colors",
+                      "inline-flex flex-1 cursor-pointer items-center justify-center rounded-[var(--r-lg)] border px-3 py-2 text-[12px] font-medium transition-colors",
                       environment === env
                         ? "border-[color:var(--hairline-strong)] bg-[var(--surface-2)] text-ink-0"
                         : "border-[color:var(--hairline)] bg-[var(--surface-1)] text-ink-5 hover:bg-[var(--surface-2)]",
@@ -277,7 +277,7 @@ export function CarrierConnectionForm({
                 onChange={(e) => setUsername(e.target.value)}
                 autoComplete="off"
                 spellCheck={false}
-                className="block w-full rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 py-2 text-[13px] text-ink-0 placeholder:text-ink-6 focus:outline-none focus:ring-2 focus:ring-[color:var(--accent-400)]"
+                className="block w-full rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 py-2 text-[13px] text-ink-0 placeholder:text-ink-6 focus:outline-none focus:shadow-[var(--shadow-focus)] focus:border-[color:var(--hairline-strong)]"
                 placeholder={
                   carrierId === "andreani"
                     ? "usuario_api@empresa.com"
@@ -301,7 +301,7 @@ export function CarrierConnectionForm({
                   onChange={(e) => setClientNumber(e.target.value)}
                   autoComplete="off"
                   spellCheck={false}
-                  className="block w-full rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 py-2 text-[13px] text-ink-0 placeholder:text-ink-6 focus:outline-none focus:ring-2 focus:ring-[color:var(--accent-400)]"
+                  className="block w-full rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 py-2 text-[13px] text-ink-0 placeholder:text-ink-6 focus:outline-none focus:shadow-[var(--shadow-focus)] focus:border-[color:var(--hairline-strong)]"
                   placeholder="00000123"
                   required
                 />
@@ -320,7 +320,7 @@ export function CarrierConnectionForm({
                 onChange={(e) => setContractNumber(e.target.value)}
                 autoComplete="off"
                 spellCheck={false}
-                className="block w-full rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 py-2 text-[13px] text-ink-0 placeholder:text-ink-6 focus:outline-none focus:ring-2 focus:ring-[color:var(--accent-400)]"
+                className="block w-full rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 py-2 text-[13px] text-ink-0 placeholder:text-ink-6 focus:outline-none focus:shadow-[var(--shadow-focus)] focus:border-[color:var(--hairline-strong)]"
                 placeholder="400006611"
               />
             </Field>
@@ -341,7 +341,7 @@ export function CarrierConnectionForm({
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"
-                className="block w-full rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] py-2 pl-3 pr-10 text-[13px] text-ink-0 placeholder:text-ink-6 focus:outline-none focus:ring-2 focus:ring-[color:var(--accent-400)]"
+                className="block w-full rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-1)] py-2 pl-3 pr-10 text-[13px] text-ink-0 placeholder:text-ink-6 focus:outline-none focus:shadow-[var(--shadow-focus)] focus:border-[color:var(--hairline-strong)]"
                 placeholder={hasStoredPassword ? "•••••••••• (guardada)" : "Tu contraseña"}
               />
               <button
@@ -363,7 +363,7 @@ export function CarrierConnectionForm({
             <div
               role="status"
               className={[
-                "flex items-start gap-2 rounded-[var(--r-sm)] border px-4 py-3 text-[12px] leading-[1.55]",
+                "flex items-start gap-2 rounded-[var(--r-lg)] border px-4 py-3 text-[12px] leading-[1.55]",
                 feedback.tone === "success"
                   ? "border-[color:var(--hairline)] bg-[var(--surface-1)] text-[color:var(--signal-success)]"
                   : "border-[color:var(--hairline)] bg-[var(--surface-1)] text-[color:var(--signal-danger)]",
@@ -382,7 +382,7 @@ export function CarrierConnectionForm({
             <button
               type="submit"
               disabled={isPending}
-              className="inline-flex h-10 items-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-5 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+              className="inline-flex h-10 items-center gap-2 rounded-[var(--r-lg)] bg-ink-0 px-5 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
             >
               {isPending ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={1.75} />
@@ -400,7 +400,7 @@ export function CarrierConnectionForm({
 
 function StatItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-4 py-3">
+    <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-4 py-3">
       <dt className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-5">
         {label}
       </dt>

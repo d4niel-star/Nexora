@@ -319,6 +319,8 @@
   --radius-2xl: var(--r-xl);
   --shadow-lg: var(--shadow-soft);
   --shadow-xl: var(--shadow-elevated);
+  --shadow-md: var(--shadow-soft);
+  --shadow-sm: var(--shadow-soft);
 
   --font-sans: var(--font-sans);
   --font-display: var(--font-display);
@@ -592,6 +594,36 @@ body {
 .btn-icon:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+input:not([type="checkbox"]):not([type="radio"]),
+textarea,
+select {
+  border-radius: var(--r-lg);
+}
+
+input:not([type="checkbox"]):not([type="radio"]):focus,
+textarea:focus,
+select:focus,
+input:not([type="checkbox"]):not([type="radio"]):focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+  border-color: var(--hairline-strong);
+  box-shadow: var(--shadow-focus);
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--brand);
+}
+
+input[type="checkbox"]:focus,
+input[type="radio"]:focus,
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
 }
 
 /* ─── Empty state card ─────────────────────────────────────────────────

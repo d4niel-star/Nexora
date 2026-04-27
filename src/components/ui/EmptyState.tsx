@@ -99,7 +99,7 @@ function EmptyStateButton({
   action: EmptyStateAction;
   isPrimary: boolean;
 }) {
-  const base = "inline-flex h-9 items-center gap-1.5 rounded-[var(--r-sm)] px-4 text-[13px] font-medium transition-colors focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none";
+  const base = "inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-[13px] font-medium transition-colors focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none";
   const primary = "bg-ink-0 text-ink-12 hover:bg-ink-2";
   const secondary = "border border-[color:var(--hairline)] bg-[var(--surface-0)] text-ink-0 hover:bg-[var(--surface-2)]";
   const cls = cn(base, action.primary ?? isPrimary ? primary : secondary);

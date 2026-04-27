@@ -193,7 +193,7 @@ export function CreateShipmentForm({
         </div>
 
         {/* Destination */}
-        <fieldset className="space-y-4 rounded-[var(--r-sm)] border border-[color:var(--hairline)] p-4">
+        <fieldset className="space-y-4 rounded-[var(--r-lg)] border border-[color:var(--hairline)] p-4">
           <legend className="px-1 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">
             Destinatario
           </legend>
@@ -317,7 +317,7 @@ export function CreateShipmentForm({
         </fieldset>
 
         {/* Service + package */}
-        <fieldset className="space-y-4 rounded-[var(--r-sm)] border border-[color:var(--hairline)] p-4">
+        <fieldset className="space-y-4 rounded-[var(--r-lg)] border border-[color:var(--hairline)] p-4">
           <legend className="px-1 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-5">
             Servicio y paquete
           </legend>
@@ -427,7 +427,7 @@ export function CreateShipmentForm({
           <button
             type="submit"
             disabled={disabled || pending}
-            className="inline-flex h-10 items-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-5 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+            className="inline-flex h-10 items-center gap-2 rounded-[var(--r-lg)] bg-ink-0 px-5 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
           >
             {pending ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={1.75} />
@@ -447,7 +447,7 @@ export function CreateShipmentForm({
 function ShipmentResultBlock({ result }: { result: CreateShipmentActionResult }) {
   if (!result.ok || !result.shipment) {
     return (
-      <div className="mt-5 flex items-start gap-2 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-4 py-3 text-[12px] text-[color:var(--signal-danger)]">
+      <div className="mt-5 flex items-start gap-2 rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-4 py-3 text-[12px] text-[color:var(--signal-danger)]">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} />
         {result.message}
       </div>
@@ -455,7 +455,7 @@ function ShipmentResultBlock({ result }: { result: CreateShipmentActionResult })
   }
   const s = result.shipment;
   return (
-    <div className="mt-5 space-y-3 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] p-4">
+    <div className="mt-5 space-y-3 rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-1)] p-4">
       <div className="flex items-start gap-2 text-[12px] text-[color:var(--signal-success)]">
         <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} />
         <p>{result.message}</p>
@@ -471,7 +471,7 @@ function ShipmentResultBlock({ result }: { result: CreateShipmentActionResult })
             href={s.labelDownloadUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-9 items-center gap-1.5 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3 text-[12px] font-medium text-ink-3 transition-colors hover:bg-[var(--surface-2)]"
+            className="inline-flex h-9 items-center gap-1.5 rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3 text-[12px] font-medium text-ink-3 transition-colors hover:bg-[var(--surface-2)]"
           >
             <Download className="h-3.5 w-3.5" strokeWidth={1.75} />
             Descargar etiqueta PDF
@@ -482,7 +482,7 @@ function ShipmentResultBlock({ result }: { result: CreateShipmentActionResult })
             href={s.trackingUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-9 items-center gap-1.5 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3 text-[12px] font-medium text-ink-3 transition-colors hover:bg-[var(--surface-2)]"
+            className="inline-flex h-9 items-center gap-1.5 rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3 text-[12px] font-medium text-ink-3 transition-colors hover:bg-[var(--surface-2)]"
           >
             <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.75} />
             Ver tracking público
@@ -514,7 +514,7 @@ function Banner({
   return (
     <div
       className={[
-        "mb-4 flex items-start gap-2 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-4 py-3 text-[12px]",
+        "mb-4 flex items-start gap-2 rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-4 py-3 text-[12px]",
         tone === "warning"
           ? "text-[color:var(--signal-warning)]"
           : "text-ink-5",
@@ -555,4 +555,4 @@ function numOrUndefined(v: string): number | undefined {
 }
 
 const inputCls =
-  "block w-full rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 py-2 text-[13px] text-ink-0 placeholder:text-ink-6 focus:outline-none focus:ring-2 focus:ring-[color:var(--accent-400)] disabled:opacity-50";
+  "block w-full rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 py-2 text-[13px] text-ink-0 placeholder:text-ink-6 focus:outline-none focus:shadow-[var(--shadow-focus)] focus:border-[color:var(--hairline-strong)] disabled:opacity-50";

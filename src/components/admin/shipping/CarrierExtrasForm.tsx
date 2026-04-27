@@ -71,7 +71,7 @@ export function CarrierExtrasForm({ carrierId, contractNumber }: Props) {
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder="400006611"
-            className="block w-full rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 py-2 text-[13px] text-ink-0 placeholder:text-ink-6 focus:outline-none focus:ring-2 focus:ring-[color:var(--accent-400)]"
+            className="block w-full rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 py-2 text-[13px] text-ink-0 placeholder:text-ink-6 focus:outline-none focus:shadow-[var(--shadow-focus)] focus:border-[color:var(--hairline-strong)]"
             disabled={pending}
           />
           <span className="block text-[11px] leading-[1.5] text-ink-5">
@@ -82,7 +82,7 @@ export function CarrierExtrasForm({ carrierId, contractNumber }: Props) {
         {feedback ? (
           <div
             className={[
-              "flex items-start gap-2 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-4 py-3 text-[12px] leading-[1.55]",
+              "flex items-start gap-2 rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-4 py-3 text-[12px] leading-[1.55]",
               feedback.tone === "success"
                 ? "text-[color:var(--signal-success)]"
                 : "text-[color:var(--signal-danger)]",
@@ -101,7 +101,7 @@ export function CarrierExtrasForm({ carrierId, contractNumber }: Props) {
           <button
             type="submit"
             disabled={pending}
-            className="inline-flex h-9 items-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-4 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+            className="inline-flex h-9 items-center gap-2 rounded-[var(--r-lg)] bg-ink-0 px-4 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
           >
             {pending ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={1.75} />

@@ -40,7 +40,7 @@ export default async function FiscalDashboardPage() {
                    : "Perfil fiscal incompleto. Para poder emitir comprobantes necesitás configurar la clave fiscal / punto de venta en ajustes."}
                </p>
                {profile && (
-                 <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[var(--surface-1)] border border-[color:var(--hairline)] text-[11px] font-mono text-ink-6">
+                 <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--surface-1)] border border-[color:var(--hairline)] text-[11px] font-mono text-ink-6">
                     CUIT: {profile.taxId} · PTO VTA: {profile.pointOfSale} · MODO: {profile.arcaMode}
                  </div>
                )}
@@ -57,7 +57,7 @@ export default async function FiscalDashboardPage() {
                <p className="text-ink-5 text-[13px] leading-relaxed mb-4">
                  Módulo AAIP/DefensaConsumidor activo. Las solicitudes de revocación impactan directamente en el flujo logístico de órdenes.
                </p>
-               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[var(--surface-1)] border border-[color:var(--hairline)] text-[11px] font-mono text-ink-6">
+               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--surface-1)] border border-[color:var(--hairline)] text-[11px] font-mono text-ink-6">
                   {requests.filter(r => r.status === "pending").length} SOLICITUDES PENDIENTES
                </div>
             </div>

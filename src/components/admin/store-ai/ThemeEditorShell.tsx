@@ -468,7 +468,7 @@ export function ThemeEditorShell({
           </div>
 
           <div className={cn("flex flex-1 overflow-hidden", device === "desktop" ? "p-2" : "items-center justify-center p-4")}>
-            <div className={cn("relative overflow-hidden border border-[color:var(--hairline)] bg-white shadow-[var(--shadow-overlay)] transition-all duration-300", device === "desktop" ? "h-full w-full rounded-[var(--r-md)]" : "h-[720px] w-[390px] max-h-full max-w-full rounded-[var(--r-lg)]")}>
+            <div className={cn("relative overflow-hidden border border-[color:var(--hairline)] bg-[var(--surface-paper)] shadow-[var(--shadow-overlay)] transition-all duration-300", device === "desktop" ? "h-full w-full rounded-[var(--r-lg)]" : "h-[720px] w-[390px] max-h-full max-w-full rounded-[var(--r-lg)]")}>
               {previewSrc ? (
                 <iframe key={`${previewSurface}-${previewKey}`} ref={iframeRef} src={previewSrc} onLoad={handleIframeLoad} className="h-full w-full border-0" title={`Preview ${currentSurface?.label ?? "storefront"}`} />
               ) : (

@@ -90,7 +90,7 @@ export function ThemeCurrentHero({ current, appliedTemplateFull }: Props) {
           {/* Mock storefront frame */}
           <div className="relative flex h-full flex-col items-center justify-center p-8">
             {/* Device frame — desktop */}
-            <div className="w-full max-w-md rounded-lg border border-[color:var(--hairline)] bg-[var(--surface-0)] shadow-[var(--shadow-card)] overflow-hidden">
+            <div className="w-full max-w-md rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] shadow-[var(--shadow-card)] overflow-hidden">
               {/* Mockup nav bar */}
               <div
                 className="flex items-center justify-between px-4 py-2.5 border-b border-[color:var(--hairline)]"
@@ -124,7 +124,7 @@ export function ThemeCurrentHero({ current, appliedTemplateFull }: Props) {
                 ) : null}
                 <div className="mt-4 flex items-center gap-2">
                   <span
-                    className="inline-flex h-7 items-center rounded-[var(--r-xs)] px-3 text-[10px] font-medium"
+                    className="inline-flex h-7 items-center rounded-full px-3 text-[10px] font-medium"
                     style={{
                       backgroundColor: primaryColor,
                       color: secondaryColor,
@@ -132,7 +132,7 @@ export function ThemeCurrentHero({ current, appliedTemplateFull }: Props) {
                   >
                     CTA principal
                   </span>
-                  <span className="h-7 w-16 rounded-[var(--r-xs)] border border-black/10" />
+                  <span className="h-7 w-16 rounded-full border border-[color:var(--hairline)]" />
                 </div>
               </div>
               {/* Content blocks mockup */}
