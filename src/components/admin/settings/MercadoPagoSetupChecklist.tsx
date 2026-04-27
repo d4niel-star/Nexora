@@ -157,7 +157,7 @@ function CopyableBlock({ value }: { value: string }) {
       <button
         type="button"
         onClick={handleCopy}
-        className="inline-flex h-7 items-center gap-1.5 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-2 text-[11px] font-medium text-ink-3 transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+        className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-0)] px-2.5 text-[11px] font-medium text-ink-3 transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
       >
         {copied ? (
           <>
@@ -193,7 +193,7 @@ function CopyableInline({ value }: { value: string }) {
       type="button"
       onClick={handleCopy}
       title="Copiar"
-      className="inline-flex items-center gap-1 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-1.5 py-0.5 font-mono text-[11px] text-ink-0 transition-colors hover:bg-[var(--surface-2)]"
+      className="inline-flex items-center gap-1 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2 py-0.5 font-mono text-[11px] text-ink-0 transition-colors hover:bg-[var(--surface-2)]"
     >
       {value}
       {copied ? (

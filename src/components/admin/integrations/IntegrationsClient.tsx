@@ -93,7 +93,7 @@ export function IntegrationsClient({ initialData, healthData }: { initialData: U
           <button
             type="button"
             onClick={() => setActiveTab("health")}
-            className="inline-flex h-9 items-center gap-2 rounded-[var(--r-sm)] border border-[color:var(--signal-warning)]/30 bg-[color:var(--signal-warning)]/10 px-3 text-[12px] font-medium text-[color:var(--signal-warning)] hover:bg-[color:var(--signal-warning)]/15 focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
+            className="inline-flex h-9 items-center gap-2 rounded-full border border-[color:var(--signal-warning)]/30 bg-[color:var(--signal-warning)]/10 px-3.5 text-[12px] font-medium text-[color:var(--signal-warning)] hover:bg-[color:var(--signal-warning)]/15 focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
           >
             <AlertTriangle className="h-3.5 w-3.5" strokeWidth={2} />
             {attentionCount} {attentionCount === 1 ? "integración requiere atención" : "integraciones requieren atención"}

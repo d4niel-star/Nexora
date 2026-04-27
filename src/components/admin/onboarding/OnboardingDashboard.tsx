@@ -105,7 +105,7 @@ function StepCard({ step }: { step: ActivationStep }) {
   return (
     <div
       className={cn(
-        "flex flex-col md:flex-row md:items-center justify-between p-5 rounded-xl border transition-all",
+        "flex flex-col md:flex-row md:items-center justify-between p-5 rounded-[var(--r-md)] border transition-all",
         isDone
           ? "bg-[var(--surface-2)] border-[color:var(--hairline)]"
           : isBlocked
@@ -153,7 +153,7 @@ function StepCard({ step }: { step: ActivationStep }) {
         ) : (
           <Link
             href={step.href}
-            className="inline-flex items-center gap-1.5 rounded-[var(--r-md)] bg-ink-0 px-4 py-2 text-[12px] font-semibold text-ink-12 transition-colors hover:bg-ink-2"
+            className="inline-flex items-center gap-1.5 rounded-full bg-ink-0 px-5 py-2 text-[12px] font-semibold text-ink-12 transition-colors hover:bg-ink-2"
           >
             {step.actionLabel}
             <ArrowRight className="h-3.5 w-3.5" />

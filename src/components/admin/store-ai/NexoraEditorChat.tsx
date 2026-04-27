@@ -375,7 +375,7 @@ export function NexoraEditorChat({
                 type="button"
                 onClick={handleSend}
                 disabled={isPending || !input.trim()}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--r-md)] bg-ink-0 text-ink-12 transition-colors hover:bg-ink-2 disabled:opacity-40"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ink-0 text-ink-12 transition-colors hover:bg-ink-2 disabled:opacity-40"
               >
                 <Send className="h-4 w-4" strokeWidth={1.75} />
               </button>

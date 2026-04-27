@@ -21,11 +21,11 @@ interface Props {
 const chipBase =
   "inline-flex items-center h-6 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2 text-[10px] font-medium uppercase tracking-[0.14em]";
 const primaryBtn =
-  "inline-flex items-center justify-center gap-2 h-10 px-4 rounded-[var(--r-sm)] bg-ink-0 text-[12px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]";
+  "inline-flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-ink-0 text-[12px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]";
 const secondaryBtn =
-  "inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[11px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] disabled:opacity-50 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]";
+  "inline-flex items-center justify-center gap-1.5 h-8 px-3.5 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[11px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] disabled:opacity-50 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]";
 const ghostBtn =
-  "inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-[var(--r-sm)] text-[11px] font-medium text-ink-5 transition-colors hover:bg-[var(--surface-2)] disabled:opacity-50 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]";
+  "inline-flex items-center justify-center gap-1.5 h-8 px-3.5 rounded-full text-[11px] font-medium text-ink-5 transition-colors hover:bg-[var(--surface-2)] disabled:opacity-50 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]";
 
 export function OfferList({ offers, planAllows }: Props) {
   const router = useRouter();

@@ -115,8 +115,8 @@ export function SettingsCategoryPanel({
         {actions.map((action, idx) => {
           const isPrimary = (action.variant ?? (idx === 0 ? "primary" : "secondary")) === "primary";
           const className = isPrimary
-            ? "inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-[var(--r-sm)] bg-ink-0 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
-            : "inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]";
+            ? "inline-flex items-center justify-center gap-1.5 h-10 px-5 rounded-full bg-ink-0 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+            : "inline-flex items-center justify-center gap-1.5 h-10 px-5 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]";
           return action.external ? (
             <a
               key={action.href + action.label}

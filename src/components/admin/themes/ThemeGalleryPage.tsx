@@ -173,7 +173,7 @@ export function ThemeGalleryPage({ current, templates }: Props) {
           <button
             type="button"
             onClick={scrollToImport}
-            className="inline-flex h-10 items-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-5 text-[12px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
+            className="inline-flex h-10 items-center gap-2 rounded-full bg-ink-0 px-5 text-[12px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
           >
             <Upload className="h-3.5 w-3.5" strokeWidth={1.75} />
             Importar temas
@@ -182,7 +182,7 @@ export function ThemeGalleryPage({ current, templates }: Props) {
             type="button"
             onClick={handleExport}
             disabled={isPending}
-            className="inline-flex h-10 items-center gap-2 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-4 text-[12px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] disabled:opacity-50"
+            className="inline-flex h-10 items-center gap-2 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-5 text-[12px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] disabled:opacity-50"
           >
             {busyId === "__export__" ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={1.75} />
@@ -291,7 +291,7 @@ export function ThemeGalleryPage({ current, templates }: Props) {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="inline-flex h-11 items-center justify-center gap-1.5 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-4 text-[12px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)]"
+            className="inline-flex h-11 items-center justify-center gap-1.5 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-5 text-[12px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)]"
           >
             <Upload className="h-3.5 w-3.5" strokeWidth={1.75} />
             Cargar archivo
@@ -300,7 +300,7 @@ export function ThemeGalleryPage({ current, templates }: Props) {
             type="button"
             onClick={handleImport}
             disabled={isPending || !importText.trim()}
-            className="inline-flex h-11 items-center justify-center gap-1.5 rounded-[var(--r-sm)] bg-ink-0 px-5 text-[12px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:opacity-50"
+            className="inline-flex h-11 items-center justify-center gap-1.5 rounded-full bg-ink-0 px-5 text-[12px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:opacity-50"
           >
             {isPending && busyId === "__import__" ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={1.75} />

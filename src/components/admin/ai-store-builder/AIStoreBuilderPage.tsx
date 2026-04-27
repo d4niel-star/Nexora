@@ -137,7 +137,7 @@ export function AIStoreBuilderPage({
     <div className="animate-in fade-in space-y-8 pb-32 duration-700 relative">
       {(isPending || isLoading) && (
          <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--surface-0)]/60 pointer-events-none">
-            <div className="inline-flex items-center gap-2.5 bg-ink-0 text-ink-12 px-4 h-10 rounded-[var(--r-sm)] shadow-[var(--shadow-overlay)]">
+            <div className="inline-flex items-center gap-2.5 bg-ink-0 text-ink-12 px-5 h-10 rounded-full shadow-[var(--shadow-overlay)]">
                <RefreshCw className="h-4 w-4 animate-spin" strokeWidth={1.75} />
                <span className="text-[13px] font-medium">Sincronizando…</span>
             </div>
@@ -157,7 +157,7 @@ export function AIStoreBuilderPage({
           </div>
           <div className="flex shrink-0 items-center gap-3">
             <ToolbarSelect icon={<AlertTriangle className="h-4 w-4" />} label="Escenario" onChange={(v) => setVisualScenario(v as VisualScenario)} options={["live", "empty", "error"]} value={visualScenario} />
-            <button className="inline-flex items-center gap-2 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] h-9 px-3.5 text-[12px] font-medium text-ink-0 hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)] transition-colors" onClick={handleSaveDraft} type="button">
+            <button className="inline-flex items-center gap-2 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] h-9 px-4 text-[12px] font-medium text-ink-0 hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)] transition-colors" onClick={handleSaveDraft} type="button">
               Guardar draft
             </button>
           </div>
@@ -265,7 +265,7 @@ function SummaryView({ onNavigate, project }: { onNavigate: (t: TabValue) => voi
             </div>
           </div>
           <div className="shrink-0">
-            <button className="inline-flex items-center gap-2 rounded-[var(--r-sm)] bg-ink-0 h-10 px-5 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" onClick={() => onNavigate(project.proposals.length > 0 ? "propuestas" : "configuracion")} type="button">
+            <button className="inline-flex items-center gap-2 rounded-full bg-ink-0 h-10 px-5 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" onClick={() => onNavigate(project.proposals.length > 0 ? "propuestas" : "configuracion")} type="button">
               {project.proposals.length > 0 ? "Ver propuestas" : "Empezar"}
               <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
             </button>
@@ -323,7 +323,7 @@ function ConfigView({ project, onChange, onSave, onNavigate }: { project: any, o
       </div>
 
       <div className="flex justify-end border-t border-[color:var(--hairline)] pt-6 gap-3">
-        <button className="inline-flex items-center gap-2 rounded-[var(--r-sm)] bg-ink-0 h-10 px-5 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" onClick={() => { onSave(); onNavigate("estilo"); }} type="button">
+        <button className="inline-flex items-center gap-2 rounded-full bg-ink-0 h-10 px-5 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" onClick={() => { onSave(); onNavigate("estilo"); }} type="button">
           Siguiente paso
           <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
         </button>
@@ -369,8 +369,8 @@ function StyleView({ project, onChange, onSave, onNavigate }: { project: any, on
       </div>
 
       <div className="flex justify-end border-t border-[color:var(--hairline)] pt-6 gap-3">
-        <button className="rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] h-10 px-5 text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)]" onClick={() => onNavigate("configuracion")} type="button">Atrás</button>
-        <button className="inline-flex items-center gap-2 rounded-[var(--r-sm)] bg-ink-0 h-10 px-5 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2" onClick={() => { onSave(); onNavigate("catalogo"); }} type="button">
+        <button className="rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] h-10 px-5 text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)]" onClick={() => onNavigate("configuracion")} type="button">Atrás</button>
+        <button className="inline-flex items-center gap-2 rounded-full bg-ink-0 h-10 px-5 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2" onClick={() => { onSave(); onNavigate("catalogo"); }} type="button">
           Siguiente paso
           <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
         </button>
@@ -395,8 +395,8 @@ function CatalogView({ project, onGenerate, onNavigate }: { project: any, onGene
       </div>
 
       <div className="flex justify-end border-t border-[color:var(--hairline)] pt-6 gap-3">
-        <button className="rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] h-10 px-5 text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)]" onClick={() => onNavigate("estilo")} type="button">Atrás</button>
-        <button className="inline-flex items-center gap-2 rounded-[var(--r-sm)] bg-ink-0 h-10 px-5 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2" onClick={onGenerate} type="button">
+        <button className="rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] h-10 px-5 text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)]" onClick={() => onNavigate("estilo")} type="button">Atrás</button>
+        <button className="inline-flex items-center gap-2 rounded-full bg-ink-0 h-10 px-5 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2" onClick={onGenerate} type="button">
           <Sparkles className="h-4 w-4" strokeWidth={1.75} />
           Generar propuestas
         </button>
@@ -448,8 +448,8 @@ function ProposalsView({ project, openDrawer, onSelect }: { project: any, openDr
                 </div>
                 
                 <div className="mt-auto pt-6 flex items-center gap-2">
-                  <button className="flex-1 inline-flex items-center justify-center h-10 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[12px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)]" onClick={() => openDrawer({ kind: "proposal", data: prop })} type="button">Detalles</button>
-                  <button className={cn("flex-1 inline-flex items-center justify-center h-10 rounded-[var(--r-sm)] text-[12px] font-medium transition-colors", isSelected ? "border border-[color:var(--hairline-strong)] bg-[var(--surface-1)] text-ink-0" : "bg-ink-0 text-ink-12 hover:bg-ink-2")} onClick={() => onSelect(prop.id)} type="button">
+                  <button className="flex-1 inline-flex items-center justify-center h-10 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[12px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)]" onClick={() => openDrawer({ kind: "proposal", data: prop })} type="button">Detalles</button>
+                  <button className={cn("flex-1 inline-flex items-center justify-center h-10 rounded-full text-[12px] font-medium transition-colors", isSelected ? "border border-[color:var(--hairline-strong)] bg-[var(--surface-1)] text-ink-0" : "bg-ink-0 text-ink-12 hover:bg-ink-2")} onClick={() => onSelect(prop.id)} type="button">
                     {isSelected ? "Seleccionada" : "Usar propuesta"}
                   </button>
                 </div>
@@ -488,9 +488,9 @@ function PreviewView({ project, onAction }: { project: any; onAction: (a: string
     <div className="space-y-6 p-6 lg:p-10">
       <div className="flex items-center justify-between">
         <h2 className="text-[20px] font-semibold tracking-[-0.02em] text-ink-0">Vista previa analítica.</h2>
-        <div className="flex rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] p-1">
-          <button className={cn("rounded-[var(--r-xs)] px-3 py-1.5 transition-colors", device === "desktop" ? "bg-[var(--surface-0)] text-ink-0" : "text-ink-5 hover:text-ink-0")} onClick={() => setDevice("desktop")} type="button" aria-label="Desktop"><Monitor className="h-4 w-4" strokeWidth={1.75} /></button>
-          <button className={cn("rounded-[var(--r-xs)] px-3 py-1.5 transition-colors", device === "mobile" ? "bg-[var(--surface-0)] text-ink-0" : "text-ink-5 hover:text-ink-0")} onClick={() => setDevice("mobile")} type="button" aria-label="Mobile"><Smartphone className="h-4 w-4" strokeWidth={1.75} /></button>
+        <div className="flex rounded-full border border-[color:var(--hairline)] bg-[var(--surface-1)] p-1">
+          <button className={cn("rounded-full px-3 py-1.5 transition-colors", device === "desktop" ? "bg-[var(--surface-0)] text-ink-0 shadow-[var(--shadow-card)]" : "text-ink-5 hover:text-ink-0")} onClick={() => setDevice("desktop")} type="button" aria-label="Desktop"><Monitor className="h-4 w-4" strokeWidth={1.75} /></button>
+          <button className={cn("rounded-full px-3 py-1.5 transition-colors", device === "mobile" ? "bg-[var(--surface-0)] text-ink-0 shadow-[var(--shadow-card)]" : "text-ink-5 hover:text-ink-0")} onClick={() => setDevice("mobile")} type="button" aria-label="Mobile"><Smartphone className="h-4 w-4" strokeWidth={1.75} /></button>
         </div>
       </div>
 
@@ -520,7 +520,7 @@ function PublishView({ openDrawer, project, onPublish }: { openDrawer: (c: Drawe
         <div className="flex flex-col gap-2 min-w-[200px]">
            <button 
              disabled={!isReady}
-             className="w-full inline-flex items-center justify-center gap-2 rounded-[var(--r-sm)] bg-ink-0 h-12 px-6 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:bg-ink-8 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" 
+             className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-ink-0 h-12 px-6 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:bg-ink-8 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" 
              onClick={onPublish} 
              type="button"
             >

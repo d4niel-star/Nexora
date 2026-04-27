@@ -730,7 +730,7 @@ function HealthBadge({ health }: { health: MarginHealth }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-[var(--r-sm)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
+        "inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
         current.cls
       )}
     >
@@ -751,7 +751,7 @@ function ConfidenceBadge({ confidence }: { confidence: CostConfidence }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-[var(--r-sm)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
+        "inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
         current.cls
       )}
     >

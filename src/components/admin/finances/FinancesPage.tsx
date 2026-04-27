@@ -214,11 +214,11 @@ function SummaryView({ onNavigate, openDrawer, onAction, data }: { onNavigate: (
 
       {/* Quick action */}
       <div className="flex items-center gap-3">
-        <button disabled className="flex items-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-5 py-2.5 text-[13px] font-semibold text-white opacity-50" type="button">
+        <button disabled className="flex items-center gap-2 rounded-full bg-ink-0 px-5 py-2.5 text-[13px] font-semibold text-white opacity-50" type="button">
           <Download className="h-3.5 w-3.5" />
           Exportar (Próximamente)
         </button>
-        <button className="flex items-center gap-2 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-5 py-2.5 text-[13px] font-semibold text-ink-0 transition-colors hover:bg-[var(--surface-1)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" onClick={() => onNavigate("pendiente")} type="button">
+        <button className="flex items-center gap-2 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-0)] px-5 py-2.5 text-[13px] font-semibold text-ink-0 transition-colors hover:bg-[var(--surface-1)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" onClick={() => onNavigate("pendiente")} type="button">
           Revisar pendientes
         </button>
       </div>
@@ -509,7 +509,7 @@ function ExportsView({ searchQuery, statusFilter, openDrawer, onAction, onReset,
     <div className="space-y-0">
       <div className="flex items-center justify-between p-6 pb-4">
         <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-5">Exportaciones recientes</h3>
-        <button disabled className="flex items-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-4 py-2 text-[13px] font-semibold text-white opacity-50" type="button">
+        <button disabled className="flex items-center gap-2 rounded-full bg-ink-0 px-4 py-2 text-[13px] font-semibold text-white opacity-50" type="button">
           <Download className="h-3.5 w-3.5" />
           Exportar CSV
         </button>
@@ -599,7 +599,7 @@ function NoResultsState({ onReset }: { onReset: () => void }) {
       <div className="mb-6 inline-flex items-center justify-center w-14 h-14 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)]"><Search className="h-5 w-5 text-ink-5" strokeWidth={1.5} /></div>
       <h3 className="text-[18px] font-semibold tracking-[-0.02em] text-ink-0">No encontramos resultados.</h3>
       <p className="mt-2 max-w-md text-[13px] leading-[1.55] text-ink-5">Ajustá la búsqueda o el estado y volvé a intentarlo.</p>
-      <button className="mt-6 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-6 py-2.5 text-[13px] font-semibold text-ink-0 transition-colors hover:bg-[var(--surface-1)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" onClick={onReset} type="button">Limpiar filtros</button>
+      <button className="mt-6 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-0)] px-6 py-2.5 text-[13px] font-semibold text-ink-0 transition-colors hover:bg-[var(--surface-1)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]" onClick={onReset} type="button">Limpiar filtros</button>
     </div>
   );
 }
@@ -612,7 +612,7 @@ function ToastViewport({ toasts, onDismiss }: { toasts: ToastMessage[]; onDismis
         <div key={t.id} className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-4 shadow-[var(--shadow-overlay)] animate-in slide-in-from-right-5 fade-in duration-300">
           <div className="flex items-start justify-between gap-4">
             <div><p className="text-sm font-semibold text-ink-0">{t.title}</p><p className="mt-1 text-sm font-medium text-ink-5">{t.description}</p></div>
-            <button aria-label="Cerrar" className="rounded-[var(--r-sm)] p-1 text-ink-6 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0" onClick={() => onDismiss(t.id)} type="button"><X className="h-4 w-4" /></button>
+            <button aria-label="Cerrar" className="rounded-full p-1.5 text-ink-6 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0" onClick={() => onDismiss(t.id)} type="button"><X className="h-4 w-4" /></button>
           </div>
         </div>
       ))}

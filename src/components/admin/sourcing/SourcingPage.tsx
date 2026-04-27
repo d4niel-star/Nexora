@@ -361,8 +361,8 @@ function RealImportTab({ onImportComplete }: { onImportComplete: () => void }) {
   };
 
   const inputCls = "w-full h-10 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 text-[13px] text-ink-0 outline-none transition-[box-shadow,border-color] placeholder:text-ink-6 focus:bg-[var(--surface-0)] focus:border-[var(--accent-500)] focus:shadow-[var(--shadow-focus)]";
-  const primaryBtn = "inline-flex items-center justify-center gap-2 h-10 px-4 rounded-[var(--r-sm)] bg-ink-0 text-[12px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]";
-  const secondaryBtn = "inline-flex items-center justify-center gap-2 h-10 px-3 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[12px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] disabled:opacity-50 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]";
+  const primaryBtn = "inline-flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-ink-0 text-[12px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]";
+  const secondaryBtn = "inline-flex items-center justify-center gap-2 h-10 px-4 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[12px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] disabled:opacity-50 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]";
 
   return (
     <div className="space-y-6">
@@ -788,7 +788,7 @@ function DiscoverTab({ providers, connections, onConnect, isPending }: { provide
 
               <div className="mt-6 pt-5 border-t border-[color:var(--hairline)]">
                 {isConnected ? (
-                  <button disabled className="flex w-full items-center justify-center gap-1.5 h-10 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] text-[12px] font-medium text-ink-5">
+                  <button disabled className="flex w-full items-center justify-center gap-1.5 h-10 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-1)] text-[12px] font-medium text-ink-5">
                     <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={1.75} />
                     Ya conectado
                   </button>
@@ -796,7 +796,7 @@ function DiscoverTab({ providers, connections, onConnect, isPending }: { provide
                   <button
                     onClick={() => onConnect(p.id)}
                     disabled={isPending}
-                    className="flex w-full items-center justify-center gap-1.5 h-10 rounded-[var(--r-sm)] bg-ink-0 text-[12px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:opacity-50 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+                    className="flex w-full items-center justify-center gap-1.5 h-10 rounded-full bg-ink-0 text-[12px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:opacity-50 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
                   >
                     Conectar proveedor
                     <ChevronRight className="h-3.5 w-3.5" />

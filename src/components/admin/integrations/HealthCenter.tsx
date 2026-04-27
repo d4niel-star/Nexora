@@ -264,7 +264,7 @@ function NoConnectionsState() {
       </p>
       <Link
         href="/admin/sourcing"
-        className="mt-6 inline-flex items-center gap-2 rounded-[var(--r-sm)] bg-ink-0 h-10 px-5 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
+        className="mt-6 inline-flex items-center gap-2 rounded-full bg-ink-0 h-10 px-5 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
       >
         Conectar proveedor <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
       </Link>

@@ -567,7 +567,7 @@ function ActionForm({
         type="button"
         onClick={handleSubmit}
         disabled={isPending || !value.trim()}
-        className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-[var(--r-sm)] bg-ink-0 text-[12px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:opacity-50"
+        className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-full bg-ink-0 text-[12px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:opacity-50"
       >
         {isPending ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={1.75} />

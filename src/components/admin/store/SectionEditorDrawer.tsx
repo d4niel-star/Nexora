@@ -200,7 +200,7 @@ export function SectionEditorDrawer({
                 : "Los cambios se aplican al guardar"}
             </p>
             <button
-              className="inline-flex items-center gap-2 h-10 px-5 rounded-[var(--r-sm)] bg-ink-0 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+              className="inline-flex items-center gap-2 h-10 px-5 rounded-full bg-ink-0 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
               disabled={isPending}
               onClick={handleSave}
               type="button"

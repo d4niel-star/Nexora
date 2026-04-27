@@ -93,7 +93,7 @@ export function StoreAIModule({
           <StatusPill label={statusInfo.label} tone={statusInfo.tone} />
           <Link
             href="/admin/store-ai/editor"
-            className="inline-flex h-10 items-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-5 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
+            className="inline-flex h-10 items-center gap-2 rounded-full bg-ink-0 px-5 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
           >
             <Pencil className="h-4 w-4" strokeWidth={1.75} />
             Editar contenido

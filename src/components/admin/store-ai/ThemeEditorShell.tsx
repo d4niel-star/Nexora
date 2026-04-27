@@ -388,7 +388,7 @@ export function ThemeEditorShell({
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="hidden items-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] p-0.5 lg:flex">
+          <div className="hidden items-center rounded-full border border-[color:var(--hairline)] bg-[var(--surface-1)] p-0.5 lg:flex">
             {previewSurfaces.map((surface) => (
               <button
                 key={surface.id}
@@ -396,8 +396,8 @@ export function ThemeEditorShell({
                 disabled={!surface.enabled}
                 onClick={() => setPreviewSurface(surface.id)}
                 className={cn(
-                  "h-7 rounded-[var(--r-xs)] px-2.5 text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
-                  previewSurface === surface.id ? "bg-[var(--surface-0)] text-ink-0 shadow-sm" : "text-ink-5 hover:text-ink-0",
+                  "h-7 rounded-full px-3 text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
+                  previewSurface === surface.id ? "bg-[var(--surface-0)] text-ink-0 shadow-[var(--shadow-card)]" : "text-ink-5 hover:text-ink-0",
                   !surface.enabled && "cursor-not-allowed opacity-40",
                 )}
               >
@@ -406,16 +406,16 @@ export function ThemeEditorShell({
             ))}
           </div>
 
-          <div className="flex rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] p-0.5">
-            <button type="button" onClick={() => setDevice("desktop")} className={cn("rounded-[var(--r-xs)] px-2.5 py-1 transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]", device === "desktop" ? "bg-[var(--surface-0)] text-ink-0 shadow-sm" : "text-ink-5 hover:text-ink-0")} aria-label="Preview desktop">
+          <div className="flex rounded-full border border-[color:var(--hairline)] bg-[var(--surface-1)] p-0.5">
+            <button type="button" onClick={() => setDevice("desktop")} className={cn("rounded-full px-2.5 py-1 transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]", device === "desktop" ? "bg-[var(--surface-0)] text-ink-0 shadow-[var(--shadow-card)]" : "text-ink-5 hover:text-ink-0")} aria-label="Preview desktop">
               <Monitor className="h-3.5 w-3.5" strokeWidth={1.75} />
             </button>
-            <button type="button" onClick={() => setDevice("mobile")} className={cn("rounded-[var(--r-xs)] px-2.5 py-1 transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]", device === "mobile" ? "bg-[var(--surface-0)] text-ink-0 shadow-sm" : "text-ink-5 hover:text-ink-0")} aria-label="Preview mobile">
+            <button type="button" onClick={() => setDevice("mobile")} className={cn("rounded-full px-2.5 py-1 transition-colors focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]", device === "mobile" ? "bg-[var(--surface-0)] text-ink-0 shadow-[var(--shadow-card)]" : "text-ink-5 hover:text-ink-0")} aria-label="Preview mobile">
               <Smartphone className="h-3.5 w-3.5" strokeWidth={1.75} />
             </button>
           </div>
 
-          <Link href={currentSurface?.path ?? publicPath} target="_blank" className="inline-flex h-8 items-center gap-1.5 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3 text-[11px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-1)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]">
+          <Link href={currentSurface?.path ?? publicPath} target="_blank" className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3.5 text-[11px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-1)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]">
             <Eye className="h-3 w-3" strokeWidth={1.75} />
             Ver tienda
           </Link>
@@ -834,10 +834,10 @@ function HomePanel({
                 <p className="truncate text-[12px] font-semibold text-ink-0">{BLOCK_LABELS[block.blockType] ?? block.blockType}</p>
                 <p className="mt-0.5 text-[10px] text-ink-5">{block.source} / {block.state}</p>
               </div>
-              <button type="button" disabled={isPending} onClick={() => toggle(block)} className="rounded-[var(--r-sm)] p-1.5 text-ink-5 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0" aria-label={block.isVisible ? "Ocultar bloque" : "Mostrar bloque"}>
+              <button type="button" disabled={isPending} onClick={() => toggle(block)} className="rounded-full p-1.5 text-ink-5 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0" aria-label={block.isVisible ? "Ocultar bloque" : "Mostrar bloque"}>
                 {block.isVisible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
               </button>
-              <button type="button" onClick={() => onEditBlock(block)} className="inline-flex h-8 items-center gap-1.5 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-2.5 text-[11px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)]">
+              <button type="button" onClick={() => onEditBlock(block)} className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3 text-[11px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)]">
                 <Pencil className="h-3 w-3" />
                 Editar
               </button>
@@ -904,7 +904,7 @@ function PanelRealityMeta({ panel }: { panel: EditorPanel }) {
 
 function SaveButton({ isPending, onClick, submit = false }: { isPending: boolean; onClick?: () => void; submit?: boolean }) {
   return (
-    <button type={submit ? "submit" : "button"} onClick={onClick} disabled={isPending} className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-4 text-[12px] font-semibold text-ink-12 transition-colors hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]">
+    <button type={submit ? "submit" : "button"} onClick={onClick} disabled={isPending} className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-full bg-ink-0 px-5 text-[12px] font-semibold text-ink-12 transition-colors hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]">
       <Save className="h-3.5 w-3.5" />
       {isPending ? "Guardando..." : "Guardar cambios"}
     </button>

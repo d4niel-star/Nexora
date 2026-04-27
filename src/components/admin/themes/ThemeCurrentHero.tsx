@@ -216,14 +216,14 @@ export function ThemeCurrentHero({ current, appliedTemplateFull }: Props) {
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link
               href="/admin/store-ai/editor"
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-6 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-ink-0 px-6 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
             >
               <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} />
               Editar tema
             </Link>
             <Link
               href="/admin/store-ai/themes"
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-6 text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-6 text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
             >
               <Palette className="h-3.5 w-3.5" strokeWidth={1.75} />
               Ver más temas

@@ -171,7 +171,7 @@ export function AIAssistantPage() {
           {/* New conversation */}
           <button
             onClick={() => handleNewConversation("general")}
-            className="flex w-full items-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-4 py-2.5 text-[13px] font-semibold text-ink-12 transition-all hover:bg-ink-1"
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-ink-0 px-4 py-2.5 text-[13px] font-semibold text-ink-12 transition-all hover:bg-ink-1"
             type="button"
           >
             <Plus className="h-3.5 w-3.5" />
@@ -186,7 +186,7 @@ export function AIAssistantPage() {
                 <button
                   key={ctx.type}
                   onClick={() => handleNewConversation(ctx.type)}
-                  className="flex w-full items-center gap-2.5 rounded-[var(--r-sm)] px-2.5 py-2 text-[13px] text-ink-5 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0"
+                  className="flex w-full items-center gap-2.5 rounded-full px-3 py-2 text-[13px] text-ink-5 transition-colors hover:bg-[var(--surface-2)] hover:text-ink-0"
                   type="button"
                 >
                   <ctx.icon className="h-3.5 w-3.5" />
@@ -275,7 +275,7 @@ export function AIAssistantPage() {
                      <button
                        onClick={handleSend}
                        disabled={!input.trim() || isPending}
-                       className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--r-sm)] bg-ink-0 text-ink-12 transition-all hover:bg-ink-1 disabled:opacity-20"
+                       className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ink-0 text-ink-12 transition-all hover:bg-ink-1 disabled:opacity-20"
                        type="button"
                        aria-label="Enviar mensaje"
                      >

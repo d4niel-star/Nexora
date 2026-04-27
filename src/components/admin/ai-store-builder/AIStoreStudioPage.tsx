@@ -399,7 +399,7 @@ function BriefPanel({
       <div className="flex justify-end border-t border-[color:var(--hairline)] pt-8">
         <button
           onClick={onGenerate}
-          className="inline-flex items-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-7 h-12 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+          className="inline-flex items-center gap-2 rounded-full bg-ink-0 px-7 h-12 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
           type="button"
         >
           <Wand2 className="h-4 w-4" strokeWidth={1.75} />
@@ -457,7 +457,7 @@ function ProposalsPanel({
         <button
           onClick={onRegenerate}
           disabled={isPending}
-          className="inline-flex items-center gap-2 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] h-9 px-3.5 text-[12px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] h-9 px-4 text-[12px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] disabled:opacity-50"
           type="button"
         >
           <RefreshCw className={cn("h-3.5 w-3.5", isPending && "animate-spin")} strokeWidth={1.75} />
@@ -527,7 +527,7 @@ function ProposalsPanel({
                   <button
                     onClick={() => onSelect(p)}
                     className={cn(
-                      "flex-1 inline-flex items-center justify-center h-10 rounded-[var(--r-sm)] text-[12px] font-medium transition-colors",
+                      "flex-1 inline-flex items-center justify-center h-10 rounded-full text-[12px] font-medium transition-colors",
                       isSelected
                         ? "border border-[color:var(--hairline-strong)] bg-[var(--surface-1)] text-ink-0"
                         : "bg-ink-0 text-ink-12 hover:bg-ink-2"
@@ -548,7 +548,7 @@ function ProposalsPanel({
         <div className="flex justify-end border-t border-[color:var(--hairline)] pt-6">
           <button
             onClick={onCustomize}
-            className="inline-flex items-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-7 h-12 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
+            className="inline-flex items-center gap-2 rounded-full bg-ink-0 px-7 h-12 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
             type="button"
           >
             Personalizar propuesta
@@ -614,7 +614,7 @@ function CustomizePanel({
             <button
               onClick={() => onRegenerateSection(block.type as AISectionType)}
               disabled={isPending}
-              className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] h-8 px-3 text-[11px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] h-8 px-3.5 text-[11px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] disabled:opacity-50"
               type="button"
             >
               <RefreshCw className={cn("h-3 w-3", isPending && "animate-spin")} strokeWidth={1.75} />
@@ -638,12 +638,12 @@ function CustomizePanel({
 
       {/* Navigation */}
       <div className="flex justify-between border-t border-[color:var(--hairline)] pt-6">
-        <button onClick={onBack} className="rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-5 h-10 text-[12px] font-medium text-ink-0 hover:bg-[var(--surface-2)] transition-colors" type="button">
+        <button onClick={onBack} className="rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-5 h-10 text-[12px] font-medium text-ink-0 hover:bg-[var(--surface-2)] transition-colors" type="button">
           Atrás
         </button>
         <button
           onClick={onPreview}
-          className="inline-flex items-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-7 h-12 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
+          className="inline-flex items-center gap-2 rounded-full bg-ink-0 px-7 h-12 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2"
           type="button"
         >
           <Monitor className="h-4 w-4" strokeWidth={1.75} />
@@ -711,7 +711,7 @@ function PreviewPanel({
             href={previewUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] h-9 px-3 text-[12px] font-medium text-ink-0 hover:bg-[var(--surface-2)] transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--hairline-strong)] h-9 px-4 text-[12px] font-medium text-ink-0 hover:bg-[var(--surface-2)] transition-colors"
           >
             <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.75} />
             Abrir
@@ -745,14 +745,14 @@ function PreviewPanel({
 
       {/* Actions */}
       <div className="flex flex-col gap-3 border-t border-[color:var(--hairline)] pt-6 md:flex-row md:justify-between">
-        <button onClick={onBack} className="rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-5 h-10 text-[12px] font-medium text-ink-0 hover:bg-[var(--surface-2)] transition-colors" type="button">
+        <button onClick={onBack} className="rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-5 h-10 text-[12px] font-medium text-ink-0 hover:bg-[var(--surface-2)] transition-colors" type="button">
           Volver a personalizar
         </button>
         <div className="flex gap-3">
           <button
             onClick={onApplyDraft}
             disabled={isPending || isApplied}
-            className="inline-flex items-center gap-2 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-5 h-10 text-[12px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-5 h-10 text-[12px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] disabled:opacity-50"
             type="button"
           >
             <Save className="h-4 w-4" strokeWidth={1.75} />
@@ -761,7 +761,7 @@ function PreviewPanel({
           <button
             onClick={onPublish}
             disabled={isPending}
-            className="inline-flex items-center gap-2 rounded-[var(--r-sm)] bg-ink-0 px-7 h-12 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-full bg-ink-0 px-7 h-12 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:opacity-50"
             type="button"
           >
             <Rocket className="h-4 w-4" strokeWidth={1.75} />

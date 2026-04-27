@@ -41,7 +41,7 @@ export function CarrierIntegrationPage({ carrier, summary }: Props) {
             href={carrier.docsUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-8 items-center gap-1.5 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 text-[12px] font-medium text-ink-3 transition-colors hover:bg-[var(--surface-2)]"
+            className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3.5 text-[12px] font-medium text-ink-3 transition-colors hover:bg-[var(--surface-2)]"
           >
             Documentación API
             <ExternalLink className="h-3 w-3" strokeWidth={1.75} />
@@ -50,7 +50,7 @@ export function CarrierIntegrationPage({ carrier, summary }: Props) {
             href={carrier.credentialsRequestUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-8 items-center gap-1.5 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 text-[12px] font-medium text-ink-3 transition-colors hover:bg-[var(--surface-2)]"
+            className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3.5 text-[12px] font-medium text-ink-3 transition-colors hover:bg-[var(--surface-2)]"
           >
             Solicitar credenciales
             <ExternalLink className="h-3 w-3" strokeWidth={1.75} />
