@@ -151,19 +151,6 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
           subtitle="Gestioná el motor logístico corporativo. Todo en un solo lugar."
         />
       )}
-      {!hideHeader && false && (
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div>
-            <h1 className="text-[28px] lg:text-[32px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0">Pedidos.</h1>
-            <p className="text-ink-5 text-[15px] mt-1 font-medium">Gestioná el motor logístico corporativo. Todo en un solo lugar.</p>
-          </div>
-          {/* Header CTAs removed: "Exportar CSV" and "Crear Pedido" had
-              no handlers — honest polish requires cutting dead buttons.
-              Both features require real backend work (CSV generator,
-              manual-order creation wizard) and will land as separate
-              features when that work ships. */}
-        </div>
-      )}
 
       {!hideHeader && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

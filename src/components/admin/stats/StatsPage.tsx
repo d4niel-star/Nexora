@@ -30,6 +30,7 @@ import type { CommercialData, OverviewData } from "@/lib/stats/types";
 
 import { DateRangePicker, type DateRangeValue } from "./DateRangePicker";
 import { RevenueHeroChart } from "./RevenueHeroChart";
+import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
 
 // ─── Stats Page · Rendimiento (minimalist redesign) ─────────────────────
 //
@@ -86,19 +87,15 @@ export function StatsPage({ overview, commercial }: StatsPageProps) {
       transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
       className="space-y-7"
     >
-      {/* ── Top bar — minimal, date-range only ────────────────────────── */}
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-[11px] font-medium text-ink-6">
-          <span className="uppercase tracking-[0.16em]">Rendimiento</span>
-          {isPending && (
-            <span className="inline-flex items-center gap-1 text-[10px] text-ink-5">
-              <Loader2 className="h-3 w-3 animate-spin" strokeWidth={2} />
-              Actualizando
-            </span>
-          )}
-        </div>
-        <DateRangePicker value={range} onChange={handleRangeChange} />
-      </header>
+      <AdminPageHeader
+        index="01"
+        eyebrow={
+          isPending ? "Rendimiento · actualizando" : "Rendimiento · estadísticas"
+        }
+        title="Rendimiento"
+        subtitle="Ingresos, conversión y comportamiento de catálogo sobre tu rango activo. Datos reales del backend."
+        actions={<DateRangePicker value={range} onChange={handleRangeChange} />}
+      />
 
       <PanelStream overview={overview} commercial={commercial} />
     </motion.div>

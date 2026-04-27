@@ -10,6 +10,7 @@ import { StockStatusBadge } from "@/components/admin/inventory/StockBadge";
 import { VariantRiskPanel } from "@/components/admin/inventory/VariantRiskPanel";
 import type { VariantIntelligenceReport } from "@/types/variant-intelligence";
 import Link from "next/link";
+import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
 
 type TabValue = "all" | "low_stock" | "out_of_stock" | "reserved" | "variant_risk";
 
@@ -134,20 +135,19 @@ export function InventoryClient({ items, variantIntel, focusVariantId, focusActi
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-32">
-      {/* Header — matches Catalog scale for a coherent operational tone */}
-      <header className="flex flex-col items-start justify-between gap-3 md:flex-row md:items-end">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-[24px] font-semibold leading-[1.1] tracking-[-0.025em] text-ink-0 md:text-[28px]">Inventario</h1>
-            {outOfStockCount > 0 && (
-              <span className="inline-flex items-center gap-1.5 h-6 px-2 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] text-[color:var(--signal-danger)] text-[10px] font-medium uppercase tracking-[0.14em]">
-                <AlertCircle className="w-3 h-3" strokeWidth={1.75} /> {outOfStockCount} agotado{outOfStockCount > 1 ? "s" : ""}
-              </span>
-            )}
-          </div>
-          <p className="mt-1 text-[13px] leading-[1.5] text-ink-5">Stock real por variante. Ajustá ingresos, mermas o conteos físicos en cualquier momento.</p>
-        </div>
-      </header>
+      <AdminPageHeader
+        index="01"
+        eyebrow="Inventario"
+        title="Inventario"
+        subtitle="Stock real por variante. Ajustá ingresos, mermas o conteos físicos en cualquier momento."
+        actions={
+          outOfStockCount > 0 ? (
+            <span className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full border border-[color:var(--signal-danger)]/30 bg-[color:var(--signal-danger)]/10 text-[color:var(--signal-danger)] text-[11px] font-semibold uppercase tracking-[0.14em]">
+              <AlertCircle className="w-3 h-3" strokeWidth={1.75} /> {outOfStockCount} agotado{outOfStockCount > 1 ? "s" : ""}
+            </span>
+          ) : undefined
+        }
+      />
 
       {/* Main panel — same elevation utility as Catalog for visual coherence */}
       <section className="elev-card-strong relative overflow-hidden rounded-[var(--r-lg)]">

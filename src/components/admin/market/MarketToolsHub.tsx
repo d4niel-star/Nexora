@@ -18,6 +18,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import type { MarketToolsSnapshot } from "@/lib/tools/queries";
+import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
 
 // ─── Market Tools Hub ───────────────────────────────────────────────────
 // Curated tools layer for ecommerce merchants. Every tool shows real DB
@@ -39,24 +40,20 @@ export function MarketToolsHub({ snapshot }: Props) {
 
   return (
     <div className="animate-in fade-in space-y-8 pb-32 duration-700">
-      {/* Header */}
-      <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h1 className="text-[28px] lg:text-[32px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0">
-            Herramientas.
-          </h1>
-          <p className="mt-2 max-w-2xl text-[14px] leading-[1.55] text-ink-5">
-            Diagnósticos reales sobre tu catálogo, storefront, operación y crecimiento.
-            Cada herramienta te muestra qué requiere atención y te lleva directo a resolverlo.
-          </p>
-        </div>
+      <AdminPageHeader
+        index="01"
+        eyebrow="Herramientas · operación"
+        title="Herramientas"
+        subtitle="Utilidades operativas, scripts y automatizaciones internas. Todo el toolkit Nexora en un solo lugar."
+      />
+      <div className="-mt-2 flex">
         {totalIssues > 0 ? (
-          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-[var(--r-full)] border border-[color:var(--signal-warning)]/30 bg-[color:var(--signal-warning)]/10 px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-[color:var(--signal-warning)]">
+          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[color:var(--signal-warning)]/30 bg-[color:var(--signal-warning)]/10 px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-[color:var(--signal-warning)]">
             <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--signal-warning)]" />
             {totalIssues} {totalIssues === 1 ? "acción pendiente" : "acciones pendientes"}
           </span>
         ) : (
-          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-[var(--r-full)] border border-[color:var(--signal-success)]/30 bg-[color:var(--signal-success)]/10 px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-[color:var(--signal-success)]">
+          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[color:var(--signal-success)]/30 bg-[color:var(--signal-success)]/10 px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-[color:var(--signal-success)]">
             <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--signal-success)]" />
             Todo en orden
           </span>

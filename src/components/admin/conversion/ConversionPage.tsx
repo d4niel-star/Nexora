@@ -16,6 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 import { fmtNumber } from "@/lib/stats/format";
 import { DateRangePicker, type DateRangeValue } from "@/components/admin/stats/DateRangePicker";
+import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
 import type {
   ConversionSnapshot,
   ConversionStage,
@@ -82,19 +83,15 @@ export function ConversionPage({ snapshot }: ConversionPageProps) {
       transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
       className="space-y-7"
     >
-      {/* ── Top bar: range picker + active state ─────────────────────── */}
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-[11px] font-medium text-ink-6">
-          <span className="uppercase tracking-[0.16em]">Conversión</span>
-          {isPending && (
-            <span className="inline-flex items-center gap-1 text-[10px] text-ink-5">
-              <Loader2 className="h-3 w-3 animate-spin" strokeWidth={2} />
-              Actualizando
-            </span>
-          )}
-        </div>
-        <DateRangePicker value={range} onChange={handleRangeChange} />
-      </header>
+      <AdminPageHeader
+        index="02"
+        eyebrow={
+          isPending ? "Conversión · actualizando" : "Conversión · embudo"
+        }
+        title="Conversión"
+        subtitle="Carrito → checkout → pago confirmado. Embudo construido sobre las señales reales del storefront."
+        actions={<DateRangePicker value={range} onChange={handleRangeChange} />}
+      />
 
       {/* ── Headline strip ───────────────────────────────────────────── */}
       <section className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6 shadow-[var(--shadow-elevated)] lg:p-8">

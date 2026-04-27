@@ -16,6 +16,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 import { cn, formatCurrency } from "@/lib/utils";
+import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
 import type {
   AbandonedCartRow,
   InactiveCustomerRow,
@@ -387,29 +388,22 @@ export function RecoveryPage({ snapshot }: RecoveryPageProps) {
           <Recycle className="h-3.5 w-3.5" strokeWidth={1.75} />
           Ventas · Recuperación
         </div>
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-          <div className="space-y-2">
-            <h1 className="text-[28px] font-semibold leading-[1.05] tracking-[-0.03em] text-ink-0 sm:text-[32px]">
-              Dinero y clientes para recuperar
-            </h1>
-            <p className="max-w-2xl text-[13.5px] leading-[1.55] text-ink-5">
-              No es analítica: es una lista accionable de pagos pendientes,
-              carritos abandonados y clientes que se pueden volver a activar.
-              Cada fila te lleva al lugar exacto donde se opera la
-              recuperación.
-            </p>
-          </div>
-          <div className="flex flex-col gap-1 self-start text-right lg:self-auto">
-            <p className="text-[10.5px] font-medium uppercase tracking-[0.18em] text-ink-5">
-              Valor recuperable
-            </p>
-            <p className="text-[26px] font-semibold leading-none tracking-[-0.02em] tabular-nums text-ink-0">
-              {totalRecoverable}
-            </p>
-            <p className="text-[11.5px] text-ink-5">
-              Suma de pagos pendientes, fallidos y carritos parados.
-            </p>
-          </div>
+        <AdminPageHeader
+          index="01"
+          eyebrow="Recuperación · ciclo de vida"
+          title="Dinero y clientes para recuperar"
+          subtitle="Pagos pendientes, carritos abandonados, clientes inactivos y oportunidades de recompra. Acción concreta sobre datos reales."
+        />
+        <div className="flex flex-col gap-1 self-start text-right">
+          <p className="text-[10.5px] font-medium uppercase tracking-[0.18em] text-ink-5">
+            Valor recuperable
+          </p>
+          <p className="tabular text-[26px] font-semibold leading-none tracking-[-0.02em] text-ink-0">
+            {totalRecoverable}
+          </p>
+          <p className="text-[11.5px] text-ink-5">
+            Suma de pagos pendientes, fallidos y carritos parados.
+          </p>
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

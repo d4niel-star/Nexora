@@ -87,17 +87,10 @@ export function IntegrationsClient({ initialData, healthData }: { initialData: U
         title="Integraciones"
         subtitle="Pagos, logística, proveedores, retención y publicidad. Todas las conexiones reales de tu tienda, con diagnóstico y acción correcta."
       />
-      {false && (
-      <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-        <div>
-          <h1 className="text-[28px] lg:text-[32px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0">Integraciones.</h1>
-          <p className="mt-2 text-[14px] leading-[1.55] text-ink-5">
-            Pagos, logística, proveedores, retención y publicidad. Todas las conexiones reales de tu tienda, con diagnóstico y acción correcta.
-          </p>
-        </div>
-        {/* Header attention chip — reflects the honest count of items that
-            aren't ready or absent; never a fabricated health score. */}
-        {attentionCount > 0 && (
+      {/* Header attention chip — reflects the honest count of items that
+          aren't ready or absent; never a fabricated health score. */}
+      {attentionCount > 0 && (
+        <div className="-mt-2 flex">
           <button
             type="button"
             onClick={() => setActiveTab("health")}
@@ -106,8 +99,7 @@ export function IntegrationsClient({ initialData, healthData }: { initialData: U
             <AlertTriangle className="h-3.5 w-3.5" strokeWidth={2} />
             {attentionCount} {attentionCount === 1 ? "integración requiere atención" : "integraciones requieren atención"}
           </button>
-        )}
-      </div>
+        </div>
       )}
 
       <div className="relative overflow-hidden rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)]">

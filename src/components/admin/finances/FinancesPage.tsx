@@ -25,6 +25,7 @@ import { cn, formatCurrency } from "@/lib/utils";
 import type { FinanceMovement, PendingPayment, Refund, CommissionEntry, MarginEntry, ExportRecord, FinanceStatus, FinanceSummary } from "@/types/finances";
 import type { ProfitabilityReport } from "@/types/profitability";
 import type { AdminFinanceData } from "@/lib/finances/queries";
+import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
 
 type TabValue = "resumen" | "cobrado" | "pendiente" | "reembolsos" | "comisiones" | "margenes" | "rentabilidad" | "exportaciones";
 
@@ -90,12 +91,12 @@ export function FinancesPage({ initialData, profitabilityReport, hideHeader = fa
   return (
     <div className="animate-in fade-in space-y-8 pb-32 duration-700">
       {!hideHeader && (
-        <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-          <div>
-            <h1 className="text-[28px] lg:text-[32px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0">Finanzas.</h1>
-            <p className="mt-2 text-[14px] leading-[1.55] text-ink-5">Ingresos, egresos, comisiones y salud de margen del negocio.</p>
-          </div>
-        </div>
+        <AdminPageHeader
+          index="01"
+          eyebrow="Finanzas · margen"
+          title="Finanzas"
+          subtitle="Ingresos, egresos, comisiones y salud de margen del negocio. Sobre datos reales."
+        />
       )}
 
       <div className="relative overflow-hidden rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] ">

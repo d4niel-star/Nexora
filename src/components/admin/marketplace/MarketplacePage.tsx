@@ -37,6 +37,7 @@ import {
 } from "@/lib/marketplace/external-registry";
 import { getAppIcon } from "../apps/appIcons";
 import { AppStatusBadge } from "../apps/AppStatusBadge";
+import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
 
 // ─── Marketplace UI ───────────────────────────────────────────────────────
 //
@@ -99,28 +100,22 @@ export function MarketplacePage({
 
   return (
     <div className="space-y-7 pb-24">
-      {/* Header */}
-      <header className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-end">
-        <div>
-          <h1 className="text-[24px] font-semibold leading-[1.1] tracking-[-0.025em] text-ink-0 md:text-[28px]">
-            Marketplace
-          </h1>
-          <p className="mt-1 max-w-2xl text-[13px] leading-[1.5] text-ink-5">
-            Activá herramientas de Nexora o conectá apps externas. Las herramientas viven dentro del producto;
-            las apps externas son de terceros y declaran qué datos usan antes de instalarse.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 text-[11px] text-ink-5">
-          <span className="inline-flex items-center gap-1.5 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2 py-1 font-medium uppercase tracking-[0.12em]">
-            <BadgeCheck className="h-3 w-3" strokeWidth={1.75} />
-            {internalSummary.installed} / {internalSummary.total} activas
-          </span>
-          <span className="inline-flex items-center gap-1.5 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2 py-1 font-medium uppercase tracking-[0.12em]">
-            <ExternalLink className="h-3 w-3" strokeWidth={1.75} />
-            {externalAvailable} externas disponibles
-          </span>
-        </div>
-      </header>
+      <AdminPageHeader
+        index="01"
+        eyebrow="Marketplace · Apps"
+        title="Marketplace"
+        subtitle="Apps oficiales y de terceros para extender tu operación. Activá lo que necesites, sin friccion."
+      />
+      <div className="-mt-2 flex flex-wrap items-center gap-2 text-[11px] text-ink-5">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-paper)] px-2.5 py-1 font-semibold uppercase tracking-[0.14em]">
+          <BadgeCheck className="h-3 w-3" strokeWidth={1.75} />
+          {internalSummary.installed} / {internalSummary.total} activas
+        </span>
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-paper)] px-2.5 py-1 font-semibold uppercase tracking-[0.14em]">
+          <ExternalLink className="h-3 w-3" strokeWidth={1.75} />
+          {externalAvailable} externas disponibles
+        </span>
+      </div>
 
       {/* Tab switch — explicit Internal vs External separation */}
       <div className="inline-flex items-center rounded-full border border-[color:var(--hairline)] bg-[var(--surface-1)] p-1">

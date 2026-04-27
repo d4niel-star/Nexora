@@ -41,6 +41,7 @@ import type { ProviderScoreReport } from "@/types/provider-score";
 import { SOURCING_CSV_TEMPLATE, type SourcingImportPreview, type SourcingImportSource } from "@/lib/sourcing/import-parsers";
 import { SourcingIntelligence } from "./SourcingIntelligence";
 import { ProviderScorePanel } from "./ProviderScorePanel";
+import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
 
 // ─── Types ───
 
@@ -103,32 +104,37 @@ export function SourcingPage({ intelData, scoreReport }: { intelData: SourcingIn
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-5 w-5 animate-spin text-ink-6" strokeWidth={1.75} />
+      <div className="animate-in fade-in duration-[var(--dur-slow)] space-y-8">
+        <AdminPageHeader
+          index="01"
+          eyebrow="Proveedores · sourcing"
+          title="Abastecimiento"
+          subtitle="Conectá proveedores, importá productos y armá tu catálogo B2B con datos reales."
+        />
+        <div className="flex min-h-[40vh] items-center justify-center">
+          <Loader2 className="h-5 w-5 animate-spin text-ink-6" strokeWidth={1.75} />
+        </div>
       </div>
     );
   }
 
   return (
     <div className="animate-in fade-in duration-[var(--dur-slow)] space-y-8">
-      {/* ─── Header ─── */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-[28px] lg:text-[32px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0">Abastecimiento.</h1>
-          <p className="mt-2 text-[14px] leading-[1.55] text-ink-5">
-            Conectá proveedores, importá productos y armá tu catálogo B2B.
-          </p>
+      <AdminPageHeader
+        index="01"
+        eyebrow="Proveedores · sourcing"
+        title="Abastecimiento"
+        subtitle="Conectá proveedores, importá productos y armá tu catálogo B2B con datos reales."
+      />
+      {connections.length > 0 && (
+        <div className="-mt-2 flex items-center gap-2">
+          <div className="inline-flex items-center gap-1.5 h-8 rounded-full border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3">
+            <Network className="h-3.5 w-3.5 text-ink-4" strokeWidth={1.75} />
+            <span className="text-[12px] font-semibold text-ink-0">{connections.length}</span>
+            <span className="text-[11px] text-ink-5">conectados</span>
+          </div>
         </div>
-        <div className="flex gap-2">
-          {connections.length > 0 && (
-            <div className="inline-flex items-center gap-1.5 h-8 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3">
-              <Network className="h-3.5 w-3.5 text-ink-4" strokeWidth={1.75} />
-              <span className="text-[12px] font-semibold text-ink-0">{connections.length}</span>
-              <span className="text-[11px] text-ink-5">conectados</span>
-            </div>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* ─── Tabs ─── */}
       <div className="flex items-center gap-6 overflow-x-auto border-b border-[color:var(--hairline)] px-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
