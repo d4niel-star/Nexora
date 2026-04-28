@@ -216,7 +216,17 @@
   --studio-line-strong: rgba(0, 0, 32, 0.26);
   --studio-row-hover: rgba(0, 0, 32, 0.045);
   --studio-row-selected: rgba(0, 0, 32, 0.07);
-  --studio-sidebar-bg: #000020;
+
+  /* Sidebar bg lives in the SAME cool blue-gray hue family as
+     --studio-canvas (≈ hue 218°). The previous --studio-sidebar-bg
+     #000020 was violet-pure (hue 240°), which clashed visually with
+     the slate canvas — they shared no common hue. #1a2236 is the
+     dark luminance step of the canvas family: sidebar (dark) → canvas
+     (light) → paper (white) now read as a single gradient instead of
+     two unrelated palettes glued together.
+     The brand color --ink-0 / --brand remain at #000020 on purpose:
+     primary CTAs and brand surfaces keep the pure navy identity. */
+  --studio-sidebar-bg: #1a2236;
 
   /* ─── Back-compat tokens ─── */
   --color-background: var(--admin-canvas);
