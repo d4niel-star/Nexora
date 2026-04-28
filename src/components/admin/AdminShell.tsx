@@ -152,6 +152,12 @@ const primaryNav: readonly NavEntry[] = [
     items: [
       { kind: "leaf", href: "/admin/store-ai", label: "Tienda IA", icon: Sparkles },
       { kind: "leaf", href: "/admin/store", label: "Mi tienda", icon: Store },
+      // Local físico — Tienda > Local físico. New surface that lets the
+      // merchant administer their physical retail store from Nexora:
+      // perfil + horarios, retiro en tienda, stock local independiente
+      // del online, ventas presenciales y caja diaria. MapPin is the
+      // most direct iconography for "ubicación física".
+      { kind: "leaf", href: "/admin/store/local", label: "Local físico", icon: MapPin },
     ],
   },
   // Marketing replaces the old generic "Ads" sub-leaf with one explicit
