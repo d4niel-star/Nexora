@@ -229,14 +229,14 @@
      panel/table borders read as crisp lines instead of vanishing into
      the surface. Paper stays pure #ffffff so panels read as the
      brightest plane available. */
-  --studio-canvas: #e6ede7;
+  --studio-canvas: #dceae0;
   --studio-paper: #ffffff;
-  --studio-paper-soft: #f1f6f2;
-  --studio-line: rgba(15, 35, 22, 0.36);
-  --studio-line-strong: rgba(15, 35, 22, 0.46);
-  --studio-row-hover: rgba(15, 35, 22, 0.05);
-  --studio-row-selected: rgba(15, 35, 22, 0.085);
-  --studio-sidebar-bg: #0a1810;
+  --studio-paper-soft: #ecf3ee;
+  --studio-line: rgba(15, 35, 22, 0.45);
+  --studio-line-strong: rgba(15, 35, 22, 0.56);
+  --studio-row-hover: rgba(15, 35, 22, 0.055);
+  --studio-row-selected: rgba(15, 35, 22, 0.09);
+  --studio-sidebar-bg: #040905;
 
   /* ─── Back-compat tokens ─── */
   --color-background: var(--admin-canvas);
