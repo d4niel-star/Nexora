@@ -57,3 +57,6 @@ next-env.d.ts
 # In Render production these must be persisted via Cloudinary/S3 instead.
 /public/uploads
 tmp.html
+
+# Local verification artifacts (Playwright screenshots)
+verification-screenshots/
