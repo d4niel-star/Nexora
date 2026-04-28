@@ -189,28 +189,33 @@
      Studio is a flat, Shopify-clear chrome:
        · sidebar: solid navy, edge-to-edge
        · topbar:  paper, single hairline bottom
-       · canvas:  cool slate gray (#eceef2) so white paper panels read
-                  as crisp cards on a desk — the previous near-white
-                  canvas (#f7f8fa) made hairlines invisible because
-                  paper and canvas were almost the same value.
-       · paper:   pure white panels — they earn their contrast against
-                  the slate canvas, so hairlines stay subtle but visible.
-       · lines:   10% ink-on-paper for clean borders against white paper
-                  (12% strong for inputs / chips / search frames).
-       · row-hover: 3.5% ink wash for tables and lists.
+       · canvas:  cool slate gray (#dde2e9) so white paper panels read
+                  as clearly elevated cards on a desk surface. This is
+                  one notch darker than #eceef2 (the original Studio v4
+                  attempt) because the prior value was so close to #fff
+                  that the human eye couldn't separate canvas from
+                  panel, hairlines disappeared, and minimal panel
+                  borders looked invisible in real screenshots.
+       · paper:   pure white panels — at 9–10 % luminance below paper,
+                  the canvas now gives every panel/table a perceptible
+                  "card on slate" lift without going dark or busy.
+       · lines:   12% ink-on-paper for clean, *visible* borders against
+                  white paper (18% strong for inputs / chips / search
+                  frames so they read as interactive controls).
+       · row-hover: 4 % ink wash for tables and lists.
 
-     Psychology: cool slate (#eceef2) reads "professional / calm /
-     trustworthy" — same hue family as Stripe Dashboard and Shopify
-     admin canvas. It's neutral enough not to compete with any chart
-     palette while giving every white surface a clear edge.
+     Psychology: cool slate (#dde2e9) reads "professional / calm /
+     trustworthy" — same hue family as Stripe Dashboard, Linear and
+     Shopify admin canvas. Neutral enough not to compete with any
+     chart palette while giving every white surface a clear edge.
      ═════════════════════════════════════════════════════════════════════════ */
-  --studio-canvas: #eceef2;
+  --studio-canvas: #dde2e9;
   --studio-paper: #ffffff;
-  --studio-paper-soft: #f7f8fa;
-  --studio-line: rgba(0, 0, 32, 0.10);
-  --studio-line-strong: rgba(0, 0, 32, 0.14);
-  --studio-row-hover: rgba(0, 0, 32, 0.035);
-  --studio-row-selected: rgba(0, 0, 32, 0.05);
+  --studio-paper-soft: #f4f6f9;
+  --studio-line: rgba(0, 0, 32, 0.12);
+  --studio-line-strong: rgba(0, 0, 32, 0.18);
+  --studio-row-hover: rgba(0, 0, 32, 0.04);
+  --studio-row-selected: rgba(0, 0, 32, 0.06);
   --studio-sidebar-bg: #000020;
 
   /* ─── Back-compat tokens ─── */
