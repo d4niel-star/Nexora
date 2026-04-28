@@ -221,14 +221,22 @@
      blue' — the brand color is intentionally the only chromatic
      accent allowed to sit outside the chrome family.
      ═════════════════════════════════════════════════════════════════════════ */
-  --studio-canvas: #bccdbf;
+  /* ── Refined sage palette ──
+     User direction: deepen the sidebar to forest-near-black so the dark
+     side of the gradient feels denser, soften the canvas down to a
+     near-white sage so it never competes with the white panels, and
+     compensate the now-subtle canvas with much stronger hairlines so
+     panel/table borders read as crisp lines instead of vanishing into
+     the surface. Paper stays pure #ffffff so panels read as the
+     brightest plane available. */
+  --studio-canvas: #e6ede7;
   --studio-paper: #ffffff;
-  --studio-paper-soft: #e2ebe3;
-  --studio-line: rgba(20, 40, 28, 0.20);
-  --studio-line-strong: rgba(20, 40, 28, 0.28);
-  --studio-row-hover: rgba(20, 40, 28, 0.05);
-  --studio-row-selected: rgba(20, 40, 28, 0.08);
-  --studio-sidebar-bg: #13241a;
+  --studio-paper-soft: #f1f6f2;
+  --studio-line: rgba(15, 35, 22, 0.36);
+  --studio-line-strong: rgba(15, 35, 22, 0.46);
+  --studio-row-hover: rgba(15, 35, 22, 0.05);
+  --studio-row-selected: rgba(15, 35, 22, 0.085);
+  --studio-sidebar-bg: #0a1810;
 
   /* ─── Back-compat tokens ─── */
   --color-background: var(--admin-canvas);
