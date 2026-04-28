@@ -221,14 +221,14 @@
      blue' — the brand color is intentionally the only chromatic
      accent allowed to sit outside the chrome family.
      ═════════════════════════════════════════════════════════════════════════ */
-  --studio-canvas: #d4dcd6;
+  --studio-canvas: #bccdbf;
   --studio-paper: #ffffff;
-  --studio-paper-soft: #edf2ed;
-  --studio-line: rgba(20, 40, 28, 0.18);
-  --studio-line-strong: rgba(20, 40, 28, 0.26);
-  --studio-row-hover: rgba(20, 40, 28, 0.045);
-  --studio-row-selected: rgba(20, 40, 28, 0.07);
-  --studio-sidebar-bg: #1d2922;
+  --studio-paper-soft: #e2ebe3;
+  --studio-line: rgba(20, 40, 28, 0.20);
+  --studio-line-strong: rgba(20, 40, 28, 0.28);
+  --studio-row-hover: rgba(20, 40, 28, 0.05);
+  --studio-row-selected: rgba(20, 40, 28, 0.08);
+  --studio-sidebar-bg: #13241a;
 
   /* ─── Back-compat tokens ─── */
   --color-background: var(--admin-canvas);
