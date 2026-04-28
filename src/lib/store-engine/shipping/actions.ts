@@ -26,7 +26,25 @@ export async function updateCheckoutShippingMethod(
       return { success: false, error: "Método de envío inválido" };
     }
 
-    const shippingAmount = calculateShippingAmount(selectedMethod, draft.subtotal);
+    // Pickup must always be free regardless of what the row currently
+    // stores; defensive override against a misconfigured baseAmount.
+    // We also re-validate that the merchant has the physical location
+    // pickup toggle on, in case the ShippingMethod was activated
+    // manually but the StoreLocation flag is off.
+    if (selectedMethod.type === "pickup") {
+      const location = await prisma.storeLocation.findUnique({
+        where: { storeId: draft.storeId },
+        select: { pickupEnabled: true },
+      });
+      if (!location || !location.pickupEnabled) {
+        return { success: false, error: "El retiro en local no está disponible" };
+      }
+    }
+
+    const shippingAmount =
+      selectedMethod.type === "pickup"
+        ? 0
+        : calculateShippingAmount(selectedMethod, draft.subtotal);
     const shippingEstimate = formatShippingEstimate(selectedMethod);
     const total = draft.subtotal + shippingAmount;
 

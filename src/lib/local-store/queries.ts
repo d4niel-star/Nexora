@@ -15,6 +15,7 @@ import type {
   LocalStockRow,
   LocationDayHours,
   LocationProfile,
+  PickupOrderRow,
 } from "./types";
 
 // ─── Internal helpers ────────────────────────────────────────────────
@@ -453,14 +454,7 @@ async function countPendingPickupOrders(storeId: string): Promise<number> {
   });
 }
 
-export async function listPendingPickupOrders(): Promise<{
-  id: string;
-  orderNumber: string;
-  customerName: string;
-  total: number;
-  status: string;
-  createdAt: string;
-}[]> {
+export async function listPendingPickupOrders(): Promise<PickupOrderRow[]> {
   const store = await getCurrentStore();
   if (!store) return [];
   const pickupMethods = await prisma.shippingMethod.findMany({
@@ -476,14 +470,21 @@ export async function listPendingPickupOrders(): Promise<{
       cancelledAt: null,
     },
     orderBy: { createdAt: "desc" },
-    take: 20,
+    take: 50,
+    include: {
+      items: { select: { quantity: true } },
+    },
   });
   return orders.map((o) => ({
     id: o.id,
     orderNumber: o.orderNumber,
-    customerName: `${o.firstName} ${o.lastName}`.trim(),
+    customerName: `${o.firstName} ${o.lastName}`.trim() || "Cliente sin nombre",
+    customerEmail: o.email,
+    customerPhone: o.phone,
     total: o.total,
-    status: o.shippingStatus,
+    itemCount: o.items.reduce((acc, it) => acc + it.quantity, 0),
+    paymentStatus: o.paymentStatus,
+    shippingStatus: o.shippingStatus,
     createdAt: o.createdAt.toISOString(),
   }));
 }

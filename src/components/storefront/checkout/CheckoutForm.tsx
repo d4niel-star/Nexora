@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { updateCheckoutDraftInfo } from "@/lib/store-engine/checkout/actions";
 import { initiatePayment } from "@/lib/payments/mercadopago/actions";
 import { updateCheckoutShippingMethod } from "@/lib/store-engine/shipping/actions";
 import { CheckoutDraftType } from "@/types/checkout";
 import { ShippingMethodData } from "@/lib/store-engine/shipping/queries";
+import { PublicPickupInfo } from "@/lib/store-engine/pickup/queries";
 import { useRouter } from "next/navigation";
-import { Loader2, ShieldCheck, AlertCircle } from "lucide-react";
+import { Loader2, ShieldCheck, AlertCircle, MapPin, Clock, Info } from "lucide-react";
 
 // ─── Checkout Form ───
 // Every handler, server action and payment integration is intact — including
@@ -21,7 +22,7 @@ import { Loader2, ShieldCheck, AlertCircle } from "lucide-react";
 
 const SECTIONS = {
   contact: { number: "01", title: "Contacto" },
-  address: { number: "02", title: "Envío" },
+  address: { number: "02", title: "Entrega" },
   payment: { number: "03", title: "Pago" },
 } as const;
 
@@ -49,23 +50,48 @@ export function CheckoutForm({
   draft,
   storeSlug,
   shippingMethods,
+  pickupInfo,
 }: {
   draft: CheckoutDraftType;
   storeSlug: string;
   shippingMethods: ShippingMethodData[];
+  pickupInfo: PublicPickupInfo | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isShippingPending, startShippingTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
+  // Track which shipping method the buyer has selected so the form
+  // can adapt: pickup hides the address fields and stops requiring
+  // them. We initialise from the draft so refreshes don't lose state.
+  const initialMethodId =
+    draft.shippingMethodId ||
+    shippingMethods.find((m) => m.isDefault)?.id ||
+    shippingMethods[0]?.id ||
+    null;
+  const [selectedMethodId, setSelectedMethodId] = useState<string | null>(initialMethodId);
+
+  const selectedMethod = useMemo(
+    () => shippingMethods.find((m) => m.id === selectedMethodId) ?? null,
+    [shippingMethods, selectedMethodId],
+  );
+  const isPickup = selectedMethod?.type === "pickup";
+
   const handleShippingChange = (id: string) => {
+    setSelectedMethodId(id);
     startShippingTransition(async () => {
       setError(null);
       const res = await updateCheckoutShippingMethod(draft.id, id);
       if (!res.success) {
         setError(res.error || "No se pudo actualizar el costo de envío.");
+        return;
       }
+      // The order summary aside is rendered by the RSC, so the
+      // shipping cost / total only reflects the new method after a
+      // server refresh. revalidatePath on its own won't pull a new
+      // RSC payload to the client.
+      router.refresh();
     });
   };
 
@@ -74,21 +100,29 @@ export function CheckoutForm({
     setError(null);
 
     const formData = new FormData(e.currentTarget);
-    const data = {
+    // For pickup we deliberately omit the address fields so the
+    // server-side update does not blank them out — the buyer may
+    // legitimately not have given any. For shipping we forward the
+    // full address as before.
+    const baseData = {
       email: formData.get("email") as string,
       firstName: formData.get("firstName") as string,
       lastName: formData.get("lastName") as string,
-      phone: formData.get("phone") as string,
-      document: formData.get("document") as string,
-      addressLine1: formData.get("addressLine1") as string,
-      addressLine2: formData.get("addressLine2") as string,
-      city: formData.get("city") as string,
-      province: formData.get("province") as string,
-      postalCode: formData.get("postalCode") as string,
-      country: formData.get("country") as string,
-      shippingMethod: formData.get("shippingMethod") as string,
+      phone: (formData.get("phone") as string) ?? "",
+      document: (formData.get("document") as string) ?? "",
       paymentMethod: "mercadopago",
     };
+    const data = isPickup
+      ? baseData
+      : {
+          ...baseData,
+          addressLine1: (formData.get("addressLine1") as string) ?? "",
+          addressLine2: (formData.get("addressLine2") as string) ?? "",
+          city: (formData.get("city") as string) ?? "",
+          province: (formData.get("province") as string) ?? "",
+          postalCode: (formData.get("postalCode") as string) ?? "",
+          country: (formData.get("country") as string) ?? "AR",
+        };
 
     startTransition(async () => {
       try {
@@ -166,141 +200,22 @@ export function CheckoutForm({
         </div>
       </section>
 
-      {/* 02 Shipping */}
+      {/* 02 Delivery — method first, then address only when shipping */}
       <section>
         <SectionHeader
           step={SECTIONS.address.number}
           title={SECTIONS.address.title}
         />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor="firstName" className={labelClass}>
-              Nombre <span className="text-ink-6">*</span>
-            </label>
-            <input
-              required
-              type="text"
-              id="firstName"
-              name="firstName"
-              defaultValue={draft.firstName || ""}
-              className={inputClass}
-            />
-          </div>
-          <div>
-            <label htmlFor="lastName" className={labelClass}>
-              Apellido <span className="text-ink-6">*</span>
-            </label>
-            <input
-              required
-              type="text"
-              id="lastName"
-              name="lastName"
-              defaultValue={draft.lastName || ""}
-              className={inputClass}
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <label htmlFor="document" className={labelClass}>
-              DNI / CUIT
-            </label>
-            <input
-              type="text"
-              id="document"
-              name="document"
-              defaultValue={draft.document || ""}
-              className={inputClass}
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <label htmlFor="addressLine1" className={labelClass}>
-              Dirección <span className="text-ink-6">*</span>
-            </label>
-            <input
-              required
-              type="text"
-              id="addressLine1"
-              name="addressLine1"
-              defaultValue={draft.addressLine1 || ""}
-              placeholder="Calle y número"
-              className={inputClass}
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <label htmlFor="addressLine2" className={labelClass}>
-              Depto, piso, etc.
-            </label>
-            <input
-              type="text"
-              id="addressLine2"
-              name="addressLine2"
-              defaultValue={draft.addressLine2 || ""}
-              className={inputClass}
-              placeholder="Opcional"
-            />
-          </div>
-          <div>
-            <label htmlFor="city" className={labelClass}>
-              Ciudad <span className="text-ink-6">*</span>
-            </label>
-            <input
-              required
-              type="text"
-              id="city"
-              name="city"
-              defaultValue={draft.city || ""}
-              className={inputClass}
-            />
-          </div>
-          <div>
-            <label htmlFor="province" className={labelClass}>
-              Provincia <span className="text-ink-6">*</span>
-            </label>
-            <input
-              required
-              type="text"
-              id="province"
-              name="province"
-              defaultValue={draft.province || ""}
-              className={inputClass}
-            />
-          </div>
-          <div>
-            <label htmlFor="postalCode" className={labelClass}>
-              Código postal <span className="text-ink-6">*</span>
-            </label>
-            <input
-              required
-              type="text"
-              id="postalCode"
-              name="postalCode"
-              defaultValue={draft.postalCode || ""}
-              className={inputClass}
-            />
-          </div>
-          <div>
-            <label htmlFor="country" className={labelClass}>
-              País
-            </label>
-            <select
-              id="country"
-              name="country"
-              defaultValue={draft.country || "AR"}
-              className={inputClass + " appearance-none bg-[var(--surface-0)]"}
-            >
-              <option value="AR">Argentina</option>
-            </select>
-          </div>
-        </div>
 
-        {/* Shipping method */}
+        {/* Delivery method selector */}
         <div
           className={
-            "mt-8 " + (isShippingPending ? "opacity-50 pointer-events-none" : "")
+            "mb-6 " + (isShippingPending ? "opacity-50 pointer-events-none" : "")
           }
         >
           <div className="mb-3 flex items-center gap-2">
             <h3 className="text-[13px] font-medium text-ink-0">
-              Método de envío
+              ¿Cómo querés recibir tu pedido?
             </h3>
             {isShippingPending && (
               <Loader2 className="h-3.5 w-3.5 animate-spin text-ink-6" />
@@ -308,17 +223,18 @@ export function CheckoutForm({
           </div>
           {shippingMethods.length === 0 ? (
             <p className="text-[13px] text-[color:var(--signal-danger)]">
-              No hay métodos de envío disponibles para esta zona.
+              No hay métodos de entrega disponibles.
             </p>
           ) : (
             <div className="space-y-2">
               {shippingMethods.map((method) => {
-                const isSelected =
-                  draft.shippingMethodId === method.id ||
-                  (!draft.shippingMethodId && method.isDefault);
+                const isSelected = method.id === selectedMethodId;
                 const isFree =
-                  method.freeShippingOver && draft.subtotal >= method.freeShippingOver;
-                const finalAmount = isFree ? 0 : method.baseAmount;
+                  method.type === "pickup"
+                    ? true
+                    : Boolean(method.freeShippingOver && draft.subtotal >= method.freeShippingOver);
+                const finalAmount =
+                  method.type === "pickup" ? 0 : isFree ? 0 : method.baseAmount;
                 const formattedPrice = new Intl.NumberFormat("es-AR", {
                   style: "currency",
                   currency: "ARS",
@@ -332,7 +248,7 @@ export function CheckoutForm({
                     className="flex cursor-pointer items-center gap-3 rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-4 transition-colors hover:bg-[var(--surface-2)] has-[:checked]:border-ink-0 has-[:checked]:bg-[var(--surface-2)]"
                   >
                     <input
-                      defaultChecked={isSelected}
+                      checked={isSelected}
                       id={`shipping-${method.id}`}
                       name="shippingMethodId"
                       type="radio"
@@ -342,11 +258,13 @@ export function CheckoutForm({
                     />
                     <div className="min-w-0 flex-1">
                       <p className="text-[14px] font-medium text-ink-0">
-                        {method.name}
+                        {method.type === "pickup" && pickupInfo
+                          ? "Retiro en local"
+                          : method.name}
                       </p>
                       <p className="mt-0.5 text-[12px] text-ink-5">
                         {method.type === "pickup"
-                          ? "Retirar por el local"
+                          ? pickupInfo?.preparationLabel ?? "Retirá por el local"
                           : method.estimatedDaysMax
                             ? `Llega entre ${method.estimatedDaysMin || 1} y ${method.estimatedDaysMax} días`
                             : "Recibilo en tu domicilio"}
@@ -361,6 +279,243 @@ export function CheckoutForm({
             </div>
           )}
         </div>
+
+        {/* Pickup card — replaces the address fields when pickup is the
+            selected method. Shows the merchant's local address, hours,
+            preparation time, instructions and a Maps link if any. */}
+        {isPickup && pickupInfo ? (
+          <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-1)] p-5">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--surface-0)] text-ink-1">
+                <MapPin className="h-4 w-4" strokeWidth={1.75} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[14px] font-semibold text-ink-0">
+                  {pickupInfo.localName}
+                </p>
+                {pickupInfo.addressLine ? (
+                  <p className="mt-0.5 text-[13px] leading-[1.5] text-ink-3">
+                    {pickupInfo.addressLine}
+                    {pickupInfo.city ? `, ${pickupInfo.city}` : ""}
+                    {pickupInfo.province ? `, ${pickupInfo.province}` : ""}
+                  </p>
+                ) : null}
+
+                <div className="mt-3 space-y-2 text-[12.5px] text-ink-3">
+                  <p className="flex items-center gap-2">
+                    <Clock className="h-3.5 w-3.5 shrink-0 text-ink-5" strokeWidth={1.75} />
+                    <span
+                      className={
+                        pickupInfo.isOpenNow
+                          ? "text-[color:var(--signal-success)]"
+                          : "text-ink-3"
+                      }
+                    >
+                      {pickupInfo.openCloseLabel}
+                    </span>
+                    <span className="text-ink-6">·</span>
+                    <span className="truncate">{pickupInfo.hoursSummary}</span>
+                  </p>
+                  {pickupInfo.preparationLabel ? (
+                    <p className="flex items-start gap-2">
+                      <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-5" strokeWidth={1.75} />
+                      <span>{pickupInfo.preparationLabel}</span>
+                    </p>
+                  ) : null}
+                  {pickupInfo.pickupInstructions ? (
+                    <p className="flex items-start gap-2">
+                      <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-5" strokeWidth={1.75} />
+                      <span className="whitespace-pre-wrap">
+                        {pickupInfo.pickupInstructions}
+                      </span>
+                    </p>
+                  ) : null}
+                  {pickupInfo.pickupWindow ? (
+                    <p className="flex items-start gap-2">
+                      <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-5" strokeWidth={1.75} />
+                      <span>Ventana de retiro: {pickupInfo.pickupWindow}</span>
+                    </p>
+                  ) : null}
+                </div>
+
+                {pickupInfo.googleMapsUrl ? (
+                  <a
+                    href={pickupInfo.googleMapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-4 inline-flex items-center gap-1.5 text-[12.5px] font-medium text-ink-0 underline-offset-4 hover:underline"
+                  >
+                    <MapPin className="h-3.5 w-3.5" strokeWidth={1.75} />
+                    Ver en Google Maps
+                  </a>
+                ) : null}
+              </div>
+            </div>
+
+            {/* Buyer name fields are still required even for pickup so
+                the merchant knows who's coming to collect. */}
+            <div className="mt-5 grid grid-cols-1 gap-4 border-t border-[color:var(--hairline)] pt-5 sm:grid-cols-2">
+              <div>
+                <label htmlFor="firstName" className={labelClass}>
+                  Nombre <span className="text-ink-6">*</span>
+                </label>
+                <input
+                  required
+                  type="text"
+                  id="firstName"
+                  name="firstName"
+                  defaultValue={draft.firstName || ""}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label htmlFor="lastName" className={labelClass}>
+                  Apellido <span className="text-ink-6">*</span>
+                </label>
+                <input
+                  required
+                  type="text"
+                  id="lastName"
+                  name="lastName"
+                  defaultValue={draft.lastName || ""}
+                  className={inputClass}
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label htmlFor="document" className={labelClass}>
+                  DNI / CUIT
+                </label>
+                <input
+                  type="text"
+                  id="document"
+                  name="document"
+                  defaultValue={draft.document || ""}
+                  className={inputClass}
+                />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="firstName" className={labelClass}>
+                Nombre <span className="text-ink-6">*</span>
+              </label>
+              <input
+                required
+                type="text"
+                id="firstName"
+                name="firstName"
+                defaultValue={draft.firstName || ""}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label htmlFor="lastName" className={labelClass}>
+                Apellido <span className="text-ink-6">*</span>
+              </label>
+              <input
+                required
+                type="text"
+                id="lastName"
+                name="lastName"
+                defaultValue={draft.lastName || ""}
+                className={inputClass}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label htmlFor="document" className={labelClass}>
+                DNI / CUIT
+              </label>
+              <input
+                type="text"
+                id="document"
+                name="document"
+                defaultValue={draft.document || ""}
+                className={inputClass}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label htmlFor="addressLine1" className={labelClass}>
+                Dirección <span className="text-ink-6">*</span>
+              </label>
+              <input
+                required
+                type="text"
+                id="addressLine1"
+                name="addressLine1"
+                defaultValue={draft.addressLine1 || ""}
+                placeholder="Calle y número"
+                className={inputClass}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label htmlFor="addressLine2" className={labelClass}>
+                Depto, piso, etc.
+              </label>
+              <input
+                type="text"
+                id="addressLine2"
+                name="addressLine2"
+                defaultValue={draft.addressLine2 || ""}
+                className={inputClass}
+                placeholder="Opcional"
+              />
+            </div>
+            <div>
+              <label htmlFor="city" className={labelClass}>
+                Ciudad <span className="text-ink-6">*</span>
+              </label>
+              <input
+                required
+                type="text"
+                id="city"
+                name="city"
+                defaultValue={draft.city || ""}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label htmlFor="province" className={labelClass}>
+                Provincia <span className="text-ink-6">*</span>
+              </label>
+              <input
+                required
+                type="text"
+                id="province"
+                name="province"
+                defaultValue={draft.province || ""}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label htmlFor="postalCode" className={labelClass}>
+                Código postal <span className="text-ink-6">*</span>
+              </label>
+              <input
+                required
+                type="text"
+                id="postalCode"
+                name="postalCode"
+                defaultValue={draft.postalCode || ""}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label htmlFor="country" className={labelClass}>
+                País
+              </label>
+              <select
+                id="country"
+                name="country"
+                defaultValue={draft.country || "AR"}
+                className={inputClass + " appearance-none bg-[var(--surface-0)]"}
+              >
+                <option value="AR">Argentina</option>
+              </select>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* 03 Payment — Mercado Pago */}

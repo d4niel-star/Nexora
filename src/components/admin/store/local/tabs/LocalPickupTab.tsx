@@ -1,24 +1,20 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Save, Check, Package } from "lucide-react";
+import { Save, Check, Package, ExternalLink, RotateCcw } from "lucide-react";
 
 import { AdminPanel } from "@/components/admin/primitives/AdminPanel";
-import { savePickupSettings } from "@/lib/local-store/actions";
-import type { LocationProfile } from "@/lib/local-store/types";
-
-interface PickupOrder {
-  id: string;
-  orderNumber: string;
-  customerName: string;
-  total: number;
-  status: string;
-  createdAt: string;
-}
+import {
+  markPickupCollected,
+  markPickupReady,
+  reopenPickup,
+  savePickupSettings,
+} from "@/lib/local-store/actions";
+import type { LocationProfile, PickupOrderRow } from "@/lib/local-store/types";
 
 interface Props {
   profile: LocationProfile;
-  pickupOrders: PickupOrder[];
+  pickupOrders: PickupOrderRow[];
 }
 
 const formatARS = (value: number) =>
@@ -64,7 +60,7 @@ export function LocalPickupTab({ profile, pickupOrders }: Props) {
   return (
     <div className="grid gap-4 lg:grid-cols-3">
       {/* ── Config ────────────────────────────────────────────────── */}
-      <div className="lg:col-span-2">
+      <div className="lg:col-span-3">
         <AdminPanel
           title="Retiro en tienda"
           description="Activá el retiro presencial y configurá lo que verán los clientes en el checkout."
@@ -158,7 +154,7 @@ export function LocalPickupTab({ profile, pickupOrders }: Props) {
           </div>
         </AdminPanel>
 
-        {/* Integration note */}
+        {/* Public integration note */}
         <p
           style={{
             marginTop: 10,
@@ -167,69 +163,10 @@ export function LocalPickupTab({ profile, pickupOrders }: Props) {
             lineHeight: 1.5,
           }}
         >
-          Esta configuración se guarda en el perfil del local y queda preparada para el
-          checkout. La integración pública con el flujo de pago se conecta en una
-          siguiente entrega — la opción no se mostrará al comprador hasta entonces.
+          Esta configuración aparece en el checkout público de tu tienda como una
+          opción de entrega. Cuando un cliente elige retirar, su pedido se lista
+          abajo para que lo prepares y entregues.
         </p>
-      </div>
-
-      {/* ── Pedidos para retirar ──────────────────────────────────── */}
-      <div className="lg:col-span-1">
-        <AdminPanel
-          title="Pedidos para retirar"
-          description="Pedidos online con envío tipo retiro pendientes de entrega."
-        >
-          {pickupOrders.length === 0 ? (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-                padding: "28px 12px",
-                color: "var(--ink-5)",
-                textAlign: "center",
-              }}
-            >
-              <Package size={20} strokeWidth={1.5} />
-              <span style={{ fontSize: 12.5 }}>
-                {profile.pickupEnabled
-                  ? "Cuando tus clientes elijan retirar, los verás acá."
-                  : "Activá el retiro para empezar a recibir pedidos."}
-              </span>
-            </div>
-          ) : (
-            <ul style={{ display: "flex", flexDirection: "column", gap: 6, margin: 0, padding: 0, listStyle: "none" }}>
-              {pickupOrders.map((o) => (
-                <li
-                  key={o.id}
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 2,
-                    padding: "8px 10px",
-                    borderRadius: 6,
-                    background: "var(--studio-paper-soft)",
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                    <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink-0)" }}>
-                      #{o.orderNumber}
-                    </span>
-                    <span style={{ fontSize: 12.5, color: "var(--ink-1)" }}>
-                      {formatARS(o.total)}
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                    <span style={{ fontSize: 11.5, color: "var(--ink-5)" }}>{o.customerName}</span>
-                    <span style={{ fontSize: 11.5, color: "var(--ink-5)" }}>{o.status}</span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </AdminPanel>
       </div>
 
       {/* ── Save bar ────────────────────────────────────────────── */}
@@ -253,7 +190,230 @@ export function LocalPickupTab({ profile, pickupOrders }: Props) {
           {isPending ? "Guardando…" : "Guardar configuración"}
         </button>
       </div>
+
+      {/* ── Pedidos para retirar ──────────────────────────────────── */}
+      <div className="lg:col-span-3">
+        <AdminPanel
+          title="Pedidos para retirar"
+          description="Pedidos online con retiro en local pendientes de entrega. Marcá listo cuando esté preparado y entregado cuando el cliente lo retire."
+        >
+          <PickupOrdersTable
+            orders={pickupOrders}
+            pickupEnabled={profile.pickupEnabled}
+          />
+        </AdminPanel>
+      </div>
     </div>
+  );
+}
+
+// ─── Tabla de pedidos pickup con acciones operativas ──────────────────
+function PickupOrdersTable({
+  orders,
+  pickupEnabled,
+}: {
+  orders: PickupOrderRow[];
+  pickupEnabled: boolean;
+}) {
+  if (orders.length === 0) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8,
+          padding: "40px 12px",
+          color: "var(--ink-5)",
+          textAlign: "center",
+        }}
+      >
+        <Package size={22} strokeWidth={1.5} />
+        <span style={{ fontSize: 13 }}>
+          {pickupEnabled
+            ? "No hay pedidos pendientes de retiro. Cuando tus clientes elijan retirar en local, los verás acá."
+            : "Activá el retiro para empezar a recibir pedidos."}
+        </span>
+      </div>
+    );
+  }
+  return (
+    <div className="nx-table-shell" style={{ border: "none" }}>
+      <table className="nx-table">
+        <thead>
+          <tr>
+            <th style={{ width: 100 }}>Pedido</th>
+            <th>Cliente</th>
+            <th style={{ width: 120 }}>Pago</th>
+            <th style={{ width: 70, textAlign: "right" }}>Items</th>
+            <th style={{ width: 110, textAlign: "right" }}>Total</th>
+            <th style={{ width: 100 }}>Hora</th>
+            <th style={{ width: 130 }}>Estado</th>
+            <th style={{ width: 220 }}>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {orders.map((o) => (
+            <PickupRow key={o.id} order={o} />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function PickupRow({ order }: { order: PickupOrderRow }) {
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const [optStatus, setOptStatus] = useState<string>(order.shippingStatus);
+
+  function run(action: () => Promise<{ success: boolean; error?: string }>, optimisticTo: string) {
+    setError(null);
+    const previous = optStatus;
+    setOptStatus(optimisticTo);
+    startTransition(async () => {
+      const res = await action();
+      if (!res.success) {
+        setError(res.error || "No se pudo actualizar");
+        setOptStatus(previous);
+      }
+    });
+  }
+
+  return (
+    <tr>
+      <td>
+        <span style={{ fontSize: 12.5, fontWeight: 600 }}>{order.orderNumber}</span>
+      </td>
+      <td>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <span style={{ fontSize: 12.5, color: "var(--ink-0)" }}>{order.customerName}</span>
+          <span style={{ fontSize: 11, color: "var(--ink-5)" }}>
+            {order.customerEmail}
+            {order.customerPhone ? ` · ${order.customerPhone}` : ""}
+          </span>
+        </div>
+      </td>
+      <td>
+        <PaymentBadge status={order.paymentStatus} />
+      </td>
+      <td style={{ textAlign: "right", fontSize: 12.5 }}>{order.itemCount}</td>
+      <td style={{ textAlign: "right", fontSize: 12.5, fontWeight: 500 }}>
+        {formatARS(order.total)}
+      </td>
+      <td style={{ fontSize: 11.5, color: "var(--ink-5)" }}>
+        {new Date(order.createdAt).toLocaleString("es-AR", {
+          day: "2-digit",
+          month: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+        })}
+      </td>
+      <td>
+        <ShippingStatusBadge status={optStatus} />
+      </td>
+      <td>
+        <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+          {optStatus === "unfulfilled" ? (
+            <button
+              className="nx-action nx-action--sm"
+              disabled={isPending}
+              onClick={() => run(() => markPickupReady(order.id), "fulfilled")}
+              title="Marcar como listo para retirar"
+            >
+              {isPending ? "…" : "Listo"}
+            </button>
+          ) : null}
+          {optStatus === "fulfilled" ? (
+            <>
+              <button
+                className="nx-action nx-action--sm nx-action--primary"
+                disabled={isPending}
+                onClick={() => run(() => markPickupCollected(order.id), "delivered")}
+              >
+                {isPending ? "…" : "Retirado"}
+              </button>
+              <button
+                className="nx-action nx-action--sm"
+                disabled={isPending}
+                onClick={() => run(() => reopenPickup(order.id), "unfulfilled")}
+                title="Volver a preparación"
+                aria-label="Volver a preparación"
+                style={{ width: 28, padding: 0, justifyContent: "center" }}
+              >
+                <RotateCcw size={12} />
+              </button>
+            </>
+          ) : null}
+          <a
+            href={`/admin/orders/${order.id}`}
+            className="nx-action nx-action--sm"
+            style={{ width: 28, padding: 0, justifyContent: "center" }}
+            title="Ver detalle del pedido"
+            aria-label="Ver detalle del pedido"
+          >
+            <ExternalLink size={12} />
+          </a>
+          {error ? (
+            <span style={{ fontSize: 10.5, color: "#a3262e" }}>{error}</span>
+          ) : null}
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function PaymentBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; bg: string; color: string }> = {
+    paid: { label: "Pagado", bg: "rgba(34, 153, 84, 0.10)", color: "#1d6f3f" },
+    approved: { label: "Pagado", bg: "rgba(34, 153, 84, 0.10)", color: "#1d6f3f" },
+    pending: { label: "Pendiente", bg: "rgba(186, 116, 0, 0.10)", color: "#8a5a00" },
+    failed: { label: "Falló", bg: "rgba(163, 38, 46, 0.08)", color: "#a3262e" },
+    rejected: { label: "Rechazado", bg: "rgba(163, 38, 46, 0.08)", color: "#a3262e" },
+    refunded: { label: "Reembolsado", bg: "var(--studio-paper-soft)", color: "var(--ink-3)" },
+  };
+  const cfg = map[status] ?? { label: status, bg: "var(--studio-paper-soft)", color: "var(--ink-3)" };
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        padding: "2px 8px",
+        borderRadius: 999,
+        background: cfg.bg,
+        color: cfg.color,
+        fontSize: 11,
+        fontWeight: 600,
+      }}
+    >
+      {cfg.label}
+    </span>
+  );
+}
+
+function ShippingStatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; bg: string; color: string }> = {
+    unfulfilled: { label: "Preparando", bg: "rgba(186, 116, 0, 0.12)", color: "#8a5a00" },
+    fulfilled: { label: "Listo p/ retirar", bg: "rgba(34, 153, 84, 0.12)", color: "#1d6f3f" },
+    delivered: { label: "Retirado", bg: "var(--studio-paper-soft)", color: "var(--ink-3)" },
+  };
+  const cfg = map[status] ?? { label: status, bg: "var(--studio-paper-soft)", color: "var(--ink-3)" };
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        padding: "2px 8px",
+        borderRadius: 999,
+        background: cfg.bg,
+        color: cfg.color,
+        fontSize: 11,
+        fontWeight: 600,
+      }}
+    >
+      {cfg.label}
+    </span>
   );
 }
 

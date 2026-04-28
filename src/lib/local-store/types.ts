@@ -101,6 +101,24 @@ export interface InStoreSaleRow {
   createdAt: string;
 }
 
+// ── Pedidos para retirar ─────────────────────────────────────────────
+//
+// Public-facing pickup order shape consumed by the admin pickup tab.
+// `shippingStatus` follows the operational state machine documented
+// in `markPickupReady` / `markPickupCollected` in actions.ts.
+export interface PickupOrderRow {
+  id: string;
+  orderNumber: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string | null;
+  total: number;
+  itemCount: number;
+  paymentStatus: string;
+  shippingStatus: string;
+  createdAt: string;
+}
+
 export interface DailyOperationalSummary {
   // Sales today (regardless of cash session)
   salesCountToday: number;

@@ -185,6 +185,41 @@ export async function savePickupSettings(input: SavePickupInput): Promise<Action
     },
   });
 
+  // Mirror the pickup toggle into a real ShippingMethod row so the
+  // public storefront can offer it through the existing shipping
+  // pipeline (cart → draft → order → admin pickup queries) without a
+  // schema change. We upsert by (storeId, code="pickup_local") so the
+  // row stays stable across toggles and never duplicates. We never
+  // hard-delete it: orders already created with this method id need
+  // it to remain resolvable.
+  await prisma.shippingMethod.upsert({
+    where: { storeId_code: { storeId: ctx.store.id, code: "pickup_local" } },
+    create: {
+      storeId: ctx.store.id,
+      code: "pickup_local",
+      name: "Retiro en local",
+      type: "pickup",
+      carrier: null,
+      baseAmount: 0,
+      estimatedDaysMin: 0,
+      estimatedDaysMax: input.pickupPreparationMinutes
+        ? Math.max(1, Math.ceil(input.pickupPreparationMinutes / (60 * 24)))
+        : 1,
+      isActive: input.pickupEnabled,
+      isDefault: false,
+      sortOrder: 100, // sorts after standard shipping methods
+    },
+    update: {
+      isActive: input.pickupEnabled,
+      // Keep the human-facing name fresh in case the merchant ever
+      // edits it; for now the label is fixed but the mapping is here.
+      name: "Retiro en local",
+      type: "pickup",
+      baseAmount: 0,
+      carrier: null,
+    },
+  });
+
   await logSystemEvent({
     storeId: ctx.store.id,
     entityType: "store_location",
@@ -195,6 +230,122 @@ export async function savePickupSettings(input: SavePickupInput): Promise<Action
     message: `Retiro en tienda ${input.pickupEnabled ? "activado" : "desactivado"}`,
   });
   revalidatePath(ROUTE);
+  return { success: true };
+}
+
+// ─── Operaciones sobre pedidos pickup ────────────────────────────────
+//
+// Once a buyer has placed a pickup order, the merchant moves it
+// through three operational states using `Order.shippingStatus`:
+//   "unfulfilled" → preparando
+//   "fulfilled"   → listo para retirar
+//   "delivered"   → retirado (cliente vino a buscarlo)
+//
+// Each transition validates that the order belongs to the calling
+// merchant *and* that the order's shipping method is genuinely a
+// pickup row, so an attacker can't drive an unrelated shipping
+// order's status through these endpoints.
+
+async function loadOwnedPickupOrder(orderId: string) {
+  const store = await getCurrentStore();
+  if (!store) return { ok: false as const, error: "Sesión inválida" };
+
+  const order = await prisma.order.findFirst({
+    where: { id: orderId, storeId: store.id },
+    select: {
+      id: true,
+      orderNumber: true,
+      storeId: true,
+      shippingMethodId: true,
+      shippingStatus: true,
+      cancelledAt: true,
+    },
+  });
+  if (!order) return { ok: false as const, error: "Pedido no encontrado" };
+  if (order.cancelledAt) {
+    return { ok: false as const, error: "El pedido está cancelado" };
+  }
+  if (!order.shippingMethodId) {
+    return { ok: false as const, error: "El pedido no tiene método de retiro asignado" };
+  }
+  const method = await prisma.shippingMethod.findFirst({
+    where: { id: order.shippingMethodId, storeId: store.id, type: "pickup" },
+    select: { id: true },
+  });
+  if (!method) return { ok: false as const, error: "El pedido no es un pedido de retiro" };
+
+  return { ok: true as const, store, order };
+}
+
+export async function markPickupReady(orderId: string): Promise<ActionResult> {
+  const ctx = await loadOwnedPickupOrder(orderId);
+  if (!ctx.ok) return { success: false, error: ctx.error };
+
+  await prisma.order.update({
+    where: { id: ctx.order.id },
+    data: { shippingStatus: "fulfilled" },
+  });
+  await logSystemEvent({
+    storeId: ctx.store.id,
+    entityType: "order",
+    entityId: ctx.order.id,
+    eventType: "pickup_ready",
+    severity: "info",
+    source: "admin_panel",
+    message: `Pedido ${ctx.order.orderNumber} marcado como listo para retirar`,
+  });
+  revalidatePath(ROUTE);
+  revalidatePath("/admin/orders");
+  return { success: true };
+}
+
+export async function markPickupCollected(orderId: string): Promise<ActionResult> {
+  const ctx = await loadOwnedPickupOrder(orderId);
+  if (!ctx.ok) return { success: false, error: ctx.error };
+
+  await prisma.order.update({
+    where: { id: ctx.order.id },
+    data: {
+      shippingStatus: "delivered",
+      deliveredAt: new Date(),
+    },
+  });
+  await logSystemEvent({
+    storeId: ctx.store.id,
+    entityType: "order",
+    entityId: ctx.order.id,
+    eventType: "pickup_collected",
+    severity: "info",
+    source: "admin_panel",
+    message: `Pedido ${ctx.order.orderNumber} retirado por el cliente`,
+  });
+  revalidatePath(ROUTE);
+  revalidatePath("/admin/orders");
+  return { success: true };
+}
+
+export async function reopenPickup(orderId: string): Promise<ActionResult> {
+  const ctx = await loadOwnedPickupOrder(orderId);
+  if (!ctx.ok) return { success: false, error: ctx.error };
+
+  await prisma.order.update({
+    where: { id: ctx.order.id },
+    data: {
+      shippingStatus: "unfulfilled",
+      deliveredAt: null,
+    },
+  });
+  await logSystemEvent({
+    storeId: ctx.store.id,
+    entityType: "order",
+    entityId: ctx.order.id,
+    eventType: "pickup_reopened",
+    severity: "info",
+    source: "admin_panel",
+    message: `Pedido ${ctx.order.orderNumber} reabierto en preparación`,
+  });
+  revalidatePath(ROUTE);
+  revalidatePath("/admin/orders");
   return { success: true };
 }
 

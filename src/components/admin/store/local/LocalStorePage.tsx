@@ -18,6 +18,7 @@ import type {
   DailyOperationalSummary,
   LocalStockRow,
   LocationProfile,
+  PickupOrderRow,
 } from "@/lib/local-store/types";
 import { LocalProfileTab } from "./tabs/LocalProfileTab";
 import { LocalPickupTab } from "./tabs/LocalPickupTab";
@@ -27,21 +28,12 @@ import { LocalCashTab } from "./tabs/LocalCashTab";
 
 type Tab = "profile" | "pickup" | "stock" | "sale" | "cash";
 
-interface PickupOrder {
-  id: string;
-  orderNumber: string;
-  customerName: string;
-  total: number;
-  status: string;
-  createdAt: string;
-}
-
 interface Props {
   profile: LocationProfile;
   summary: DailyOperationalSummary;
   stockRows: LocalStockRow[];
   openSession: CashSessionSummary | null;
-  pickupOrders: PickupOrder[];
+  pickupOrders: PickupOrderRow[];
 }
 
 const formatARS = (value: number) =>

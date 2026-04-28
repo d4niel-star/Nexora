@@ -30,8 +30,40 @@ export async function initiatePayment(draftId: string, storeSlug: string): Promi
     throw new Error("Checkout draft not found");
   }
 
-  if (!draft.email || !draft.firstName || !draft.addressLine1 || !draft.city) {
-    throw new Error("Completá todos los campos obligatorios antes de pagar");
+  // Resolve the shipping method up front so we know if we're in a
+  // pickup flow. Pickup orders skip the address requirement because
+  // the buyer never gives us a delivery address — they walk in.
+  const selectedMethod = draft.shippingMethodId
+    ? await prisma.shippingMethod.findUnique({ where: { id: draft.shippingMethodId } })
+    : null;
+  const isPickup = selectedMethod?.type === "pickup";
+
+  // Server-side guard: even if the buyer somehow kept a stale draft
+  // pointing at a pickup method that the merchant has since
+  // disabled, we refuse to commit the order. We also defensively
+  // re-check the StoreLocation toggle in case the ShippingMethod row
+  // was flipped manually.
+  if (isPickup) {
+    if (!selectedMethod?.isActive) {
+      throw new Error("El retiro en local ya no está disponible");
+    }
+    const location = await prisma.storeLocation.findUnique({
+      where: { storeId: draft.storeId },
+      select: { pickupEnabled: true },
+    });
+    if (!location || !location.pickupEnabled) {
+      throw new Error("El retiro en local ya no está disponible");
+    }
+  }
+
+  // Common contact requirements apply to both flows.
+  if (!draft.email || !draft.firstName) {
+    throw new Error("Completá tus datos de contacto antes de pagar");
+  }
+  // Address fields are only required for shipping. Pickup orders do
+  // not need a delivery address — buyer picks up at the store.
+  if (!isPickup && (!draft.addressLine1 || !draft.city)) {
+    throw new Error("Completá la dirección de envío antes de pagar");
   }
 
   const { cart } = draft;
@@ -61,7 +93,9 @@ export async function initiatePayment(draftId: string, storeSlug: string): Promi
   const mpCredentials = await getMercadoPagoCredentialsForStore(store.id);
 
   const subtotal = cart.items.reduce((acc, item) => acc + item.priceSnapshot * item.quantity, 0);
-  const shippingAmount = draft.shippingAmount || 0;
+  // Force shippingAmount=0 for pickup as a last-line defence against
+  // any client-side or stale-draft tampering.
+  const shippingAmount = isPickup ? 0 : draft.shippingAmount || 0;
   const total = subtotal + shippingAmount;
 
   // 2. Generate order number
@@ -80,9 +114,13 @@ export async function initiatePayment(draftId: string, storeSlug: string): Promi
       phone: draft.phone,
       document: draft.document,
 
-      addressLine1: draft.addressLine1,
+      // Address columns are non-nullable on the Order model. Pickup
+      // orders may legitimately have no shipping address, so we
+      // fall back to "" for the required strings instead of forcing
+      // the buyer to invent a fake one.
+      addressLine1: draft.addressLine1 ?? "",
       addressLine2: draft.addressLine2,
-      city: draft.city,
+      city: draft.city ?? "",
       province: draft.province || "",
       postalCode: draft.postalCode || "",
       country: draft.country || "AR",

@@ -4,6 +4,7 @@ import { CheckoutForm } from "@/components/storefront/checkout/CheckoutForm";
 import { getCart, getCartStockIssues } from "@/lib/store-engine/cart/queries";
 import { getOrCreateCheckoutDraftForSession } from "@/lib/store-engine/checkout/queries";
 import { getShippingMethods } from "@/lib/store-engine/shipping/queries";
+import { getPublicPickupInfo } from "@/lib/store-engine/pickup/queries";
 import { getStorefrontData } from "@/lib/store-engine/queries";
 import { storePath } from "@/lib/store-engine/urls";
 import { hasMercadoPagoConnected } from "@/lib/payments/mercadopago/tenant";
@@ -32,10 +33,13 @@ export default async function CheckoutPage({ params }: { params: Promise<{ store
     redirect(storePath(resolvedParams.storeSlug, "cart"));
   }
 
-  const shippingMethods = hasStockIssues ? [] : await getShippingMethods(storefrontData.store.id);
-  const canCheckoutWithMercadoPago = hasStockIssues
-    ? false
-    : await hasMercadoPagoConnected(storefrontData.store.id);
+  const [shippingMethods, pickupInfo, canCheckoutWithMercadoPago] = hasStockIssues
+    ? ([[], null, false] as const)
+    : await Promise.all([
+        getShippingMethods(storefrontData.store.id),
+        getPublicPickupInfo(storefrontData.store.id),
+        hasMercadoPagoConnected(storefrontData.store.id),
+      ]);
   const subtotal = draft?.subtotal ?? cart.subtotal;
   const shippingAmount = draft?.shippingAmount ?? 0;
   const total = draft?.total ?? subtotal;
@@ -113,7 +117,12 @@ export default async function CheckoutPage({ params }: { params: Promise<{ store
               </Link>
             </div>
           ) : (
-            <CheckoutForm draft={draft!} storeSlug={resolvedParams.storeSlug} shippingMethods={shippingMethods} />
+            <CheckoutForm
+              draft={draft!}
+              storeSlug={resolvedParams.storeSlug}
+              shippingMethods={shippingMethods}
+              pickupInfo={pickupInfo}
+            />
           )}
           </div>
         </section>
