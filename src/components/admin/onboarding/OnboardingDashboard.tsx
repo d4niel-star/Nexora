@@ -10,12 +10,26 @@ import {
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import type { ActivationState, ActivationStep, ActivationTier, ActivationStepStatus } from "@/types/activation";
-import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
+import { NexoraPageHeader, NexoraStatRow } from "@/components/admin/nexora";
+
+// ─── OnboardingDashboard · Studio v4 ─────────────────────────────────────
+//
+// What `/admin/dashboard` renders for any new merchant whose store
+// hasn't been fully activated yet (most users on a fresh signup).
+// Studio v4 ships:
+//   · Compact NexoraPageHeader inline (no eyebrow, no display title).
+//   · A flat `nx-stat-row` with progress / completed / blockers (no
+//     shadowed "premium card" chrome any more).
+//   · Hairline-bound progress bar inline.
+//   · Tier groups rendered as flat hairline rows, no rounded shadow
+//     panels per tier.
+//   · Step rows are `nx-table`-style: row hover, hairline divider,
+//     no individual card-with-shadow per step.
 
 const TIER_META: Record<ActivationTier, { label: string; color: string }> = {
-  blocker: { label: "Requisito", color: "text-[color:var(--signal-danger)]" },
-  accelerator: { label: "Acelerador", color: "text-[color:var(--signal-warning)]" },
-  recommended: { label: "Recomendado", color: "text-[var(--accent-500)]" },
+  blocker: { label: "Requisito", color: "var(--signal-danger)" },
+  accelerator: { label: "Acelerador", color: "var(--signal-warning)" },
+  recommended: { label: "Recomendado", color: "var(--accent-500)" },
 };
 
 export function OnboardingDashboard({ data }: { data: ActivationState }) {
@@ -28,80 +42,143 @@ export function OnboardingDashboard({ data }: { data: ActivationState }) {
 
   const subtitle =
     blockers > 0
-      ? `Hay ${blockers} paso${blockers !== 1 ? "s" : ""} bloqueante${blockers !== 1 ? "s" : ""} para empezar a vender. Resolvelos primero.`
+      ? `Hay ${blockers} paso${blockers !== 1 ? "s" : ""} bloqueante${blockers !== 1 ? "s" : ""} para empezar a vender.`
       : score < 100
         ? "Ya podés vender. Completá los pasos restantes para operar con todo el potencial."
         : "Tu negocio está completamente activado.";
 
   return (
-    <div className="mx-auto max-w-4xl animate-in fade-in duration-500">
-      <AdminPageHeader
-        eyebrow="Activación · onboarding"
+    <div className="animate-in fade-in duration-300">
+      <NexoraPageHeader
         title="Activación de tu negocio"
         subtitle={subtitle}
+        status={
+          blockers > 0
+            ? { label: `${blockers} bloqueante${blockers !== 1 ? "s" : ""}`, tone: "danger" }
+            : score < 100
+              ? { label: `${score}% completo`, tone: "warning" }
+              : { label: "Activado", tone: "success" }
+        }
       />
 
-      {/* Progress strip — premium variant of the previous bar */}
-      <div className="mb-10 rounded-[var(--r-xl)] border border-[color:var(--card-border)] bg-[var(--surface-paper)] p-6 shadow-[var(--shadow-soft)]">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-5">
-              Progreso de activación
-            </span>
-            <p className="mt-2 tabular text-[34px] font-semibold leading-none tracking-[-0.03em] text-ink-0">
-              {score}
-              <span className="ml-1 text-[18px] font-medium text-ink-5">%</span>
-            </p>
-          </div>
-          <div className="text-right">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-5">
-              Pasos completos
-            </span>
-            <p className="mt-2 tabular text-[20px] font-semibold tracking-[-0.02em] text-ink-0">
-              {completedSteps} <span className="text-ink-5">/ {totalSteps}</span>
-            </p>
-          </div>
-        </div>
-        <div className="mt-5 h-1.5 w-full overflow-hidden rounded-full bg-[var(--surface-3)]">
-          <div
-            className="h-full rounded-full bg-[var(--brand)] transition-all duration-1000 ease-out"
-            style={{ width: `${score}%` }}
-          />
-        </div>
+      {/* Flat progress band — hairline-divided, no shadow */}
+      <NexoraStatRow
+        cols={3}
+        stats={[
+          { label: "Progreso", value: `${score}%` },
+          { label: "Pasos completos", value: `${completedSteps}/${totalSteps}` },
+          { label: "Bloqueantes", value: String(blockers), hint: blockers > 0 ? "Pasos requeridos" : "Sin bloqueantes" },
+        ]}
+      />
+
+      {/* Hairline progress bar */}
+      <div
+        style={{
+          marginTop: 16,
+          height: 4,
+          width: "100%",
+          background: "var(--studio-row-hover)",
+          borderRadius: 999,
+          overflow: "hidden",
+        }}
+        aria-label={`Progreso ${score}%`}
+      >
+        <div
+          style={{
+            height: "100%",
+            width: `${score}%`,
+            background: "var(--brand)",
+            transition: "width 1s ease-out",
+            borderRadius: 999,
+          }}
+        />
       </div>
 
-      {/* Tier groups */}
-      <div className="space-y-8">
+      {/* Tier groups — flat hairline-bound sections */}
+      <div className="mt-8 space-y-6">
         {tierGroups.map(({ tier, steps: tierSteps }) => {
           const meta = TIER_META[tier];
+          const completed = tierSteps.filter((s) => s.status === "completed").length;
           return (
-            <div key={tier}>
-              <div className="flex items-center gap-2 mb-3">
-                <span className={cn("text-[10px] font-semibold uppercase tracking-[0.16em]", meta.color)}>
-                  {meta.label}
+            <section
+              key={tier}
+              style={{
+                border: "1px solid var(--studio-line)",
+                borderRadius: 8,
+                background: "var(--studio-paper)",
+                overflow: "hidden",
+              }}
+            >
+              <header
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "10px 16px",
+                  borderBottom: "1px solid var(--studio-line)",
+                  background: "var(--studio-paper-soft)",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span
+                    style={{
+                      display: "inline-block",
+                      width: 6,
+                      height: 6,
+                      borderRadius: 999,
+                      background: meta.color,
+                    }}
+                  />
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-1)" }}>
+                    {meta.label}
+                  </span>
+                </div>
+                <span
+                  style={{
+                    fontSize: 11.5,
+                    color: "var(--ink-5)",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {completed}/{tierSteps.length}
                 </span>
-                <span className="text-[10px] text-ink-6 font-semibold">
-                  {tierSteps.filter((s) => s.status === "completed").length}/{tierSteps.length}
-                </span>
-              </div>
-              <div className="space-y-3">
-                {tierSteps.map((step) => (
-                  <StepCard key={step.id} step={step} />
+              </header>
+              <ul>
+                {tierSteps.map((step, i) => (
+                  <li
+                    key={step.id}
+                    style={{
+                      borderTop: i === 0 ? "none" : "1px solid var(--studio-line)",
+                    }}
+                  >
+                    <StepRow step={step} />
+                  </li>
                 ))}
-              </div>
-            </div>
+              </ul>
+            </section>
           );
         })}
       </div>
 
       {/* Activation complete */}
       {score === 100 && (
-        <div className="mt-10 bg-[var(--accent-50)] border border-[var(--accent-200)] text-[var(--accent-700)] p-5 rounded-[var(--r-xl)] flex items-start gap-3">
-          <CheckCircle2 className="h-5 w-5 shrink-0 mt-0.5" />
+        <div
+          className="mt-6 flex items-start gap-3"
+          style={{
+            border: "1px solid var(--studio-line)",
+            borderRadius: 8,
+            background: "rgba(46, 132, 89, 0.08)",
+            padding: "14px 16px",
+          }}
+        >
+          <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" style={{ color: "#2e8459" }} />
           <div>
-            <h3 className="font-semibold text-[14px]">Negocio activado</h3>
-            <p className="mt-1 text-[12px]">
-              Todos los motores están conectados. El dashboard mostrará métricas operativas y alertas en tiempo real.
+            <p style={{ fontSize: 13.5, fontWeight: 600, color: "#2e8459" }}>
+              Negocio activado
+            </p>
+            <p style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2 }}>
+              Todos los motores están conectados. El dashboard mostrará métricas operativas
+              y alertas en tiempo real.
             </p>
           </div>
         </div>
@@ -110,63 +187,76 @@ export function OnboardingDashboard({ data }: { data: ActivationState }) {
   );
 }
 
-function StepCard({ step }: { step: ActivationStep }) {
+function StepRow({ step }: { step: ActivationStep }) {
   const isBlocked = step.status === "blocked";
   const isDone = step.status === "completed";
 
   return (
     <div
       className={cn(
-        "flex flex-col md:flex-row md:items-center justify-between p-5 rounded-[var(--r-md)] border transition-all",
-        isDone
-          ? "bg-[var(--surface-2)] border-[color:var(--hairline)]"
-          : isBlocked
-            ? "bg-[var(--surface-2)] border-dashed border-[color:var(--hairline)] opacity-60"
-            : "bg-[var(--surface-0)] border-[color:var(--hairline)] hover:border-[color:var(--hairline-strong)] hover:shadow-[var(--shadow-soft)]"
+        "flex items-center justify-between gap-4 px-4 py-3 transition-colors",
+        !isBlocked && !isDone && "hover:bg-[var(--studio-row-hover)]",
       )}
+      style={isBlocked ? { opacity: 0.55 } : undefined}
     >
-      <div className="flex gap-4 min-w-0">
+      <div className="flex items-start gap-3 min-w-0">
         <div className="mt-0.5 shrink-0">
           <StatusIcon status={step.status} />
         </div>
         <div className="min-w-0">
-          <h3
-            className={cn(
-              "font-bold text-[14px] leading-snug",
-              isDone ? "text-ink-5" : isBlocked ? "text-ink-6" : "text-ink-0"
-            )}
+          <p
+            style={{
+              fontSize: 13,
+              fontWeight: 500,
+              color: isDone ? "var(--ink-5)" : isBlocked ? "var(--ink-6)" : "var(--ink-0)",
+              lineHeight: 1.4,
+            }}
           >
             {step.title}
-          </h3>
-          <p className="mt-0.5 text-[12px] text-ink-5 leading-relaxed">
+          </p>
+          <p
+            style={{
+              marginTop: 2,
+              fontSize: 12,
+              color: "var(--ink-5)",
+              lineHeight: 1.5,
+            }}
+          >
             {step.description}
           </p>
-          {step.detail && (
-            <p className="mt-1 text-[10px] font-medium text-ink-6 italic">
+          {step.detail ? (
+            <p
+              style={{
+                marginTop: 2,
+                fontSize: 11,
+                fontStyle: "italic",
+                color: "var(--ink-6)",
+              }}
+            >
               {step.detail}
             </p>
-          )}
+          ) : null}
         </div>
       </div>
 
-      <div className="mt-4 md:mt-0 md:ml-4 shrink-0">
+      <div className="shrink-0">
         {isBlocked ? (
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-ink-7">
+          <span
+            className="inline-flex items-center gap-1.5"
+            style={{ fontSize: 11.5, color: "var(--ink-6)", fontWeight: 500 }}
+          >
             <Lock className="h-3 w-3" />
             Bloqueado
           </span>
         ) : isDone ? (
           <Link
             href={step.href}
-            className="text-[11px] font-semibold text-ink-6 hover:text-ink-0 transition-colors"
+            className="nx-action nx-action--ghost nx-action--sm"
           >
             Revisar
           </Link>
         ) : (
-          <Link
-            href={step.href}
-            className="inline-flex items-center gap-1.5 rounded-full bg-ink-0 px-5 py-2 text-[12px] font-semibold text-ink-12 transition-colors hover:bg-ink-2"
-          >
+          <Link href={step.href} className="nx-action nx-action--primary nx-action--sm">
             {step.actionLabel}
             <ArrowRight className="h-3.5 w-3.5" />
           </Link>
@@ -179,13 +269,13 @@ function StepCard({ step }: { step: ActivationStep }) {
 function StatusIcon({ status }: { status: ActivationStepStatus }) {
   switch (status) {
     case "completed":
-      return <CheckCircle2 className="h-5 w-5 text-[color:var(--signal-success)]" />;
+      return <CheckCircle2 className="h-4 w-4 text-[color:var(--signal-success)]" />;
     case "in_progress":
-      return <AlertTriangle className="h-5 w-5 text-[color:var(--signal-warning)]" />;
+      return <AlertTriangle className="h-4 w-4 text-[color:var(--signal-warning)]" />;
     case "blocked":
-      return <Lock className="h-5 w-5 text-ink-6" />;
+      return <Lock className="h-4 w-4 text-ink-6" />;
     case "pending":
     default:
-      return <Circle className="h-5 w-5 text-ink-6" />;
+      return <Circle className="h-4 w-4 text-ink-6" />;
   }
 }
