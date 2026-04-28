@@ -186,18 +186,28 @@
   /* ═════════════════════════════════════════════════════════════════════════
      Nexora Studio v4 — Admin shell tokens
      ─────────────────────────────────────
-     Replaces the v3 "navy frame + floating paper". Studio is a flat,
-     Shopify-clear chrome:
-       · sidebar: solid navy, edge-to-edge (no rounded paper around it)
-       · topbar: paper, single hairline bottom (no navy chrome)
-       · canvas: paper edge-to-edge (no admin-canvas grey backdrop)
-       · lines: subtle ink-on-paper hairlines
-       · row-hover: 3% ink wash for tables and lists
+     Studio is a flat, Shopify-clear chrome:
+       · sidebar: solid navy, edge-to-edge
+       · topbar:  paper, single hairline bottom
+       · canvas:  cool slate gray (#eceef2) so white paper panels read
+                  as crisp cards on a desk — the previous near-white
+                  canvas (#f7f8fa) made hairlines invisible because
+                  paper and canvas were almost the same value.
+       · paper:   pure white panels — they earn their contrast against
+                  the slate canvas, so hairlines stay subtle but visible.
+       · lines:   10% ink-on-paper for clean borders against white paper
+                  (12% strong for inputs / chips / search frames).
+       · row-hover: 3.5% ink wash for tables and lists.
+
+     Psychology: cool slate (#eceef2) reads "professional / calm /
+     trustworthy" — same hue family as Stripe Dashboard and Shopify
+     admin canvas. It's neutral enough not to compete with any chart
+     palette while giving every white surface a clear edge.
      ═════════════════════════════════════════════════════════════════════════ */
-  --studio-canvas: #f7f8fa;
+  --studio-canvas: #eceef2;
   --studio-paper: #ffffff;
-  --studio-paper-soft: #fafbfc;
-  --studio-line: rgba(0, 0, 32, 0.08);
+  --studio-paper-soft: #f7f8fa;
+  --studio-line: rgba(0, 0, 32, 0.10);
   --studio-line-strong: rgba(0, 0, 32, 0.14);
   --studio-row-hover: rgba(0, 0, 32, 0.035);
   --studio-row-selected: rgba(0, 0, 32, 0.05);
