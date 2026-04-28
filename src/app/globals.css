@@ -184,49 +184,51 @@
   --sidebar-active-bg: rgba(255, 255, 255, 0.08);
 
   /* ═════════════════════════════════════════════════════════════════════════
-     Nexora Studio v4 — Admin shell tokens
-     ─────────────────────────────────────
-     Studio is a flat, Shopify-clear chrome:
-       · sidebar: solid navy, edge-to-edge
-       · topbar:  paper, single hairline bottom
-       · canvas:  cool slate gray (#dde2e9) so white paper panels read
-                  as clearly elevated cards on a desk surface. This is
-                  one notch darker than #eceef2 (the original Studio v4
-                  attempt) because the prior value was so close to #fff
-                  that the human eye couldn't separate canvas from
-                  panel, hairlines disappeared, and minimal panel
-                  borders looked invisible in real screenshots.
-       · paper:   pure white panels — at 9–10 % luminance below paper,
-                  the canvas now gives every panel/table a perceptible
-                  "card on slate" lift without going dark or busy.
-       · lines:   12% ink-on-paper for clean, *visible* borders against
-                  white paper (18% strong for inputs / chips / search
-                  frames so they read as interactive controls).
-       · row-hover: 4 % ink wash for tables and lists.
+     Nexora Studio v4 — Admin shell tokens (Sage palette)
+     ─────────────────────────────────────────────────────
+     The admin chrome is a single hue (≈ 140°, sage / forest green)
+     stepped through luminance. Three surfaces, one family:
 
-     Psychology: cool slate (#dde2e9) reads "professional / calm /
-     trustworthy" — same hue family as Stripe Dashboard, Linear and
-     Shopify admin canvas. Neutral enough not to compete with any
-     chart palette while giving every white surface a clear edge.
+       · sidebar:  forest green deep   (#1d2922) — dark luminance step
+       · canvas:   sage green light    (#d4dcd6) — mid luminance step
+       · paper:    pure white          (#ffffff) — top luminance step
+
+     Psychology of sage / forest green
+     ─────────────────────────────────
+     Green is the chromatic anchor of e-commerce dashboards: it codes
+     for growth, money, balance, health. Sage specifically reads as
+     'mature professional' rather than 'eco startup' — same family
+     used by financial wellness products (Wealthsimple), high-end
+     productivity tools, and modern banking apps. It calms the eye on
+     long admin sessions and stays fully neutral against any
+     data-viz palette (charts, pills, status colors) because it sits
+     mid-spectrum, not on a competing chromatic axis.
+
+     Why same-hue family across all surfaces
+     ──────────────────────────────────────
+     Premium SaaS chrome (Stripe, Linear, Vercel) shares one hue
+     family across the whole shell so the eye reads the chrome as a
+     single gradient: sidebar (dark) → canvas (mid) → paper (light).
+     Mixing hues (e.g. navy violet sidebar + slate blue canvas)
+     fights the user's perception. Sage chrome avoids this entirely.
+
+     Hairlines / row hover are tinted into the same green-ink family
+     (very subtle, just enough that borders read coherent against the
+     sage canvas instead of importing a foreign violet ink).
+
+     Brand identity tokens (--ink-0 / --brand at #000020) are kept on
+     navy because primary CTAs are still expected to read as 'Nexora
+     blue' — the brand color is intentionally the only chromatic
+     accent allowed to sit outside the chrome family.
      ═════════════════════════════════════════════════════════════════════════ */
-  --studio-canvas: #c5ced9;
+  --studio-canvas: #d4dcd6;
   --studio-paper: #ffffff;
-  --studio-paper-soft: #eef1f6;
-  --studio-line: rgba(0, 0, 32, 0.18);
-  --studio-line-strong: rgba(0, 0, 32, 0.26);
-  --studio-row-hover: rgba(0, 0, 32, 0.045);
-  --studio-row-selected: rgba(0, 0, 32, 0.07);
-
-  /* Sidebar bg lives in the SAME cool blue-gray hue family as
-     --studio-canvas (≈ hue 218°). The previous --studio-sidebar-bg
-     #000020 was violet-pure (hue 240°), which clashed visually with
-     the slate canvas — they shared no common hue. #1a2236 is the
-     dark luminance step of the canvas family: sidebar (dark) → canvas
-     (light) → paper (white) now read as a single gradient instead of
-     two unrelated palettes glued together.
-     The brand color --ink-0 / --brand remain at #000020 on purpose:
-     primary CTAs and brand surfaces keep the pure navy identity. */
-  --studio-sidebar-bg: #1a2236;
+  --studio-paper-soft: #edf2ed;
+  --studio-line: rgba(20, 40, 28, 0.18);
+  --studio-line-strong: rgba(20, 40, 28, 0.26);
+  --studio-row-hover: rgba(20, 40, 28, 0.045);
+  --studio-row-selected: rgba(20, 40, 28, 0.07);
+  --studio-sidebar-bg: #1d2922;
 
   /* ─── Back-compat tokens ─── */
   --color-background: var(--admin-canvas);
