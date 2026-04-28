@@ -60,3 +60,6 @@ tmp.html
 
 # Local verification artifacts (Playwright screenshots)
 verification-screenshots/
+tmp.css
+tmp_root.html
+tmp.html

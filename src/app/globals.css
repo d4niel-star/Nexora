@@ -209,13 +209,13 @@
      Shopify admin canvas. Neutral enough not to compete with any
      chart palette while giving every white surface a clear edge.
      ═════════════════════════════════════════════════════════════════════════ */
-  --studio-canvas: #dde2e9;
+  --studio-canvas: #c5ced9;
   --studio-paper: #ffffff;
-  --studio-paper-soft: #f4f6f9;
-  --studio-line: rgba(0, 0, 32, 0.12);
-  --studio-line-strong: rgba(0, 0, 32, 0.18);
-  --studio-row-hover: rgba(0, 0, 32, 0.04);
-  --studio-row-selected: rgba(0, 0, 32, 0.06);
+  --studio-paper-soft: #eef1f6;
+  --studio-line: rgba(0, 0, 32, 0.18);
+  --studio-line-strong: rgba(0, 0, 32, 0.26);
+  --studio-row-hover: rgba(0, 0, 32, 0.045);
+  --studio-row-selected: rgba(0, 0, 32, 0.07);
   --studio-sidebar-bg: #000020;
 
   /* ─── Back-compat tokens ─── */
