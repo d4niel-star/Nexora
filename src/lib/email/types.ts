@@ -9,6 +9,7 @@ export type EventType =
   | "PAYMENT_REFUNDED"
   | "ORDER_DELIVERED"
   | "ORDER_IN_TRANSIT"
+  | "PICKUP_READY"
   | "STOCK_CRITICAL"
   | "ABANDONED_CART"
   | "POST_PURCHASE_REVIEW_REQUEST"
@@ -70,4 +71,14 @@ export interface OrderEmailData {
   trackingUrl?: string;
   trackingCode?: string;
   statusUrl?: string; // Link to the order success/pending page
+
+  // ─── PICKUP_READY-specific (only used by the pickup-ready template) ──
+  // These are public store-location fields the merchant has typed into
+  // /admin/store/local. We never include cash/sales/inventory data here.
+  pickupLocalName?: string;
+  pickupAddress?: string; // Single-line "addressLine, city, province"
+  pickupHoursSummary?: string; // e.g. "Lun a Vie 09:00-18:00 · Sáb 10:00-14:00"
+  pickupInstructions?: string;
+  pickupGoogleMapsUrl?: string;
+  pickupPhone?: string; // The merchant's local phone, not the buyer's
 }

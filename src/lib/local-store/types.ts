@@ -106,6 +106,10 @@ export interface InStoreSaleRow {
 // Public-facing pickup order shape consumed by the admin pickup tab.
 // `shippingStatus` follows the operational state machine documented
 // in `markPickupReady` / `markPickupCollected` in actions.ts.
+//
+// Notification state is denormalised into the row so the UI can show
+// "ya notificaste por email/WhatsApp" badges and disable the buttons
+// when there is no contact method available, without an extra round-trip.
 export interface PickupOrderRow {
   id: string;
   orderNumber: string;
@@ -117,6 +121,20 @@ export interface PickupOrderRow {
   paymentStatus: string;
   shippingStatus: string;
   createdAt: string;
+
+  // Notification telemetry surfaced from EmailLog / SystemEvent. Both
+  // are nullable because the merchant may have never notified the buyer
+  // (or the buyer may not have an email/phone to begin with).
+  pickupReadyEmailSentAt: string | null;
+  pickupReadyEmailRecipient: string | null;
+  pickupReadyWhatsAppOpenedAt: string | null;
+
+  // Pre-built wa.me deep link with the pickup-ready message already
+  // encoded. Null when the buyer has no usable phone number; callers
+  // should treat null as "WhatsApp button disabled". The link is
+  // generated server-side via `buildPickupWhatsAppLink` so the public
+  // location data does not have to bleed into client components.
+  whatsappLink: string | null;
 }
 
 export interface DailyOperationalSummary {

@@ -242,6 +242,89 @@ export function generateOrderDeliveredTemplate(data: OrderEmailData) {
   return BaseTemplate("¡Pedido entregado con éxito!", data.storeName, content, data.statusUrl, "Ver detalles del Pedido");
 }
 
+// ─── Pickup ready (Tienda > Local físico > Retiro en tienda) ───
+// Sent manually by the merchant once an in-store pickup order has been
+// prepared. Only public store-location fields land in the template;
+// nothing about cash sessions, in-store sales or local inventory is
+// ever surfaced here.
+export function generatePickupReadyTemplate(data: OrderEmailData) {
+  const local = data.pickupLocalName || data.storeName;
+  const addressBlock = data.pickupAddress
+    ? `
+      <tr>
+        <td style="padding: 8px 0; color: #6B7280;">Dirección</td>
+        <td align="right" style="padding: 8px 0; font-weight: 600; color: #111111;">${escapeHtml(data.pickupAddress)}</td>
+      </tr>`
+    : "";
+  const hoursBlock = data.pickupHoursSummary
+    ? `
+      <tr>
+        <td style="padding: 8px 0; color: #6B7280;">Horarios</td>
+        <td align="right" style="padding: 8px 0; font-weight: 600; color: #111111;">${escapeHtml(data.pickupHoursSummary)}</td>
+      </tr>`
+    : "";
+  const phoneBlock = data.pickupPhone
+    ? `
+      <tr>
+        <td style="padding: 8px 0; color: #6B7280;">Teléfono del local</td>
+        <td align="right" style="padding: 8px 0; font-weight: 600; color: #111111;">${escapeHtml(data.pickupPhone)}</td>
+      </tr>`
+    : "";
+  const instructionsBlock = data.pickupInstructions
+    ? `
+    <div style="background-color: #FEF3C7; border-left: 3px solid #F59E0B; border-radius: 0 6px 6px 0; padding: 14px 18px; margin-top: 24px;">
+      <p style="margin: 0 0 6px 0; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #92400E;">Instrucciones de retiro</p>
+      <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #1F2937; white-space: pre-wrap;">${escapeHtml(data.pickupInstructions)}</p>
+    </div>`
+    : "";
+
+  const content = `
+    <h2 style="margin: 0 0 20px 0; font-size: 20px; font-weight: 700; color: #111111;">Tu pedido está listo para retirar</h2>
+    <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.5; color: #374151;">
+      Hola ${data.customerName},<br>
+      Ya preparamos tu pedido <strong>${data.orderNumber}</strong>. Pasá a retirarlo por <strong>${escapeHtml(local)}</strong> en el horario que te quede mejor.
+    </p>
+
+    <div style="background-color: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 6px; padding: 20px; margin-top: 24px;">
+      <h3 style="margin: 0 0 15px 0; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #6B7280;">Punto de retiro</h3>
+      <table width="100%" border="0" cellspacing="0" cellpadding="0" style="font-size: 15px; color: #374151;">
+        <tr>
+          <td style="padding: 8px 0; color: #6B7280;">Local</td>
+          <td align="right" style="padding: 8px 0; font-weight: 600; color: #111111;">${escapeHtml(local)}</td>
+        </tr>
+        ${addressBlock}
+        ${hoursBlock}
+        ${phoneBlock}
+      </table>
+    </div>
+
+    ${instructionsBlock}
+
+    <p style="margin: 24px 0 0 0; font-size: 13px; line-height: 1.5; color: #6B7280;">
+      Llevá tu DNI y este pedido para que podamos identificarte rápido.
+    </p>
+  `;
+  return BaseTemplate(
+    "Tu pedido está listo para retirar",
+    data.storeName,
+    content,
+    data.pickupGoogleMapsUrl || data.statusUrl,
+    data.pickupGoogleMapsUrl ? "Ver en Google Maps" : "Ver mi pedido",
+  );
+}
+
+// Small HTML-escape helper used by the pickup template. We don't want
+// merchant-typed instructions or addresses to ever land as raw HTML
+// in a transactional email.
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 // ─── Post-purchase review request (app post-purchase-flows) ───
 // Sent N days after an order's deliveredAt when the tenant enabled the
 // flow. Invites the customer to leave a review on their order items.

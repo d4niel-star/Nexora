@@ -139,6 +139,10 @@ export async function sendEmailEvent(params: SendEmailEventParams): Promise<bool
         subject = `¡Tu pedido ${params.data.orderNumber} ha sido entregado!`;
         htmlContent = templates.generateOrderDeliveredTemplate(params.data);
         break;
+      case "PICKUP_READY":
+        subject = `Tu pedido ${params.data.orderNumber} está listo para retirar`;
+        htmlContent = templates.generatePickupReadyTemplate(params.data);
+        break;
       case "POST_PURCHASE_REVIEW_REQUEST":
         subject = `¿Cómo fue tu experiencia con ${params.data.storeName}?`;
         // V3.3: wrap the CTA href with the click-tracking redirect so real

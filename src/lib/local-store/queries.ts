@@ -7,6 +7,7 @@
 
 import { prisma } from "@/lib/db/prisma";
 import { getCurrentStore } from "@/lib/auth/session";
+import { buildPickupWhatsAppLink } from "./whatsapp";
 import type {
   CashMovementRow,
   CashSessionSummary,
@@ -475,18 +476,147 @@ export async function listPendingPickupOrders(): Promise<PickupOrderRow[]> {
       items: { select: { quantity: true } },
     },
   });
-  return orders.map((o) => ({
-    id: o.id,
-    orderNumber: o.orderNumber,
-    customerName: `${o.firstName} ${o.lastName}`.trim() || "Cliente sin nombre",
-    customerEmail: o.email,
-    customerPhone: o.phone,
-    total: o.total,
-    itemCount: o.items.reduce((acc, it) => acc + it.quantity, 0),
-    paymentStatus: o.paymentStatus,
-    shippingStatus: o.shippingStatus,
-    createdAt: o.createdAt.toISOString(),
-  }));
+  if (orders.length === 0) return [];
+
+  const orderIds = orders.map((o) => o.id);
+
+  // ── Notification state lookup ────────────────────────────────────
+  // We pull the EmailLog (PICKUP_READY) and the latest WhatsApp-opened
+  // SystemEvent in parallel so the merchant can see at a glance which
+  // orders have already been notified through which channel.
+  // EmailLog is 1:1 by (eventType, entityType, entityId) thanks to its
+  // unique constraint, so a single findMany suffices.
+  // SystemEvent has no such uniqueness, so we keep only the most recent
+  // entry per orderId via groupBy(_max).
+  const [emailLogs, whatsappEvents, location] = await Promise.all([
+    prisma.emailLog.findMany({
+      where: {
+        storeId: store.id,
+        eventType: "PICKUP_READY",
+        entityType: "order",
+        entityId: { in: orderIds },
+        status: "sent",
+      },
+      select: { entityId: true, sentAt: true, recipient: true },
+    }),
+    prisma.systemEvent.groupBy({
+      by: ["entityId"],
+      where: {
+        storeId: store.id,
+        entityType: "order",
+        entityId: { in: orderIds },
+        eventType: "pickup_ready_whatsapp_opened",
+      },
+      _max: { createdAt: true },
+    }),
+    // Public pickup context (used to pre-build the wa.me deep link).
+    // Only the public-facing fields are read here; cash/stock data are
+    // never exposed to the storefront-bound WhatsApp message.
+    prisma.storeLocation.findUnique({
+      where: { storeId: store.id },
+      select: {
+        name: true,
+        addressLine: true,
+        city: true,
+        province: true,
+        pickupInstructions: true,
+        googleMapsUrl: true,
+        hours: {
+          select: {
+            weekday: true,
+            isOpen: true,
+            openTime: true,
+            closeTime: true,
+          },
+        },
+      },
+    }),
+  ]);
+
+  const emailByOrder = new Map(
+    emailLogs.map((l) => [l.entityId, l] as const),
+  );
+  const whatsappByOrder = new Map(
+    whatsappEvents.map((e) => [e.entityId as string, e._max.createdAt] as const),
+  );
+
+  // Compose the public WhatsApp context once. Per-order links share
+  // the same local data; only the customer phone, name and order
+  // number vary, so we let `buildPickupWhatsAppLink` finish the job.
+  const localName = location?.name || store.name;
+  const address = [location?.addressLine, location?.city, location?.province]
+    .filter(Boolean)
+    .join(", ") || null;
+  const hoursSummary = summarizePickupHoursForMessage(location?.hours ?? []);
+
+  return orders.map((o) => {
+    const emailLog = emailByOrder.get(o.id);
+    const whatsappAt = whatsappByOrder.get(o.id) ?? null;
+
+    const customerName = `${o.firstName} ${o.lastName}`.trim() || "Cliente sin nombre";
+    const wa = buildPickupWhatsAppLink({
+      customerName: customerName === "Cliente sin nombre" ? null : customerName,
+      customerPhone: o.phone,
+      orderNumber: o.orderNumber,
+      localName,
+      address,
+      hoursSummary,
+      instructions: location?.pickupInstructions ?? null,
+      googleMapsUrl: location?.googleMapsUrl ?? null,
+    });
+
+    return {
+      id: o.id,
+      orderNumber: o.orderNumber,
+      customerName,
+      customerEmail: o.email,
+      customerPhone: o.phone,
+      total: o.total,
+      itemCount: o.items.reduce((acc, it) => acc + it.quantity, 0),
+      paymentStatus: o.paymentStatus,
+      shippingStatus: o.shippingStatus,
+      createdAt: o.createdAt.toISOString(),
+      pickupReadyEmailSentAt: emailLog?.sentAt ? emailLog.sentAt.toISOString() : null,
+      pickupReadyEmailRecipient: emailLog?.recipient ?? null,
+      pickupReadyWhatsAppOpenedAt: whatsappAt ? whatsappAt.toISOString() : null,
+      whatsappLink: wa.available ? wa.url : null,
+    };
+  });
+}
+
+// Tiny helper used by the pickup-list query so the WhatsApp message
+// composes a one-line schedule. Mirrors the email summarizer in
+// `actions.ts` to keep the content consistent across channels.
+function summarizePickupHoursForMessage(
+  rows: Array<{ weekday: number; isOpen: boolean; openTime: string | null; closeTime: string | null }>,
+): string | null {
+  const order = [1, 2, 3, 4, 5, 6, 0];
+  const labels = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+  const ordered = order.map((w) => rows.find((r) => r.weekday === w));
+  const segments: string[] = [];
+  let i = 0;
+  while (i < ordered.length) {
+    const cur = ordered[i];
+    if (!cur || !cur.isOpen || !cur.openTime || !cur.closeTime) {
+      i++;
+      continue;
+    }
+    let j = i;
+    while (
+      j + 1 < ordered.length &&
+      ordered[j + 1]?.isOpen &&
+      ordered[j + 1]?.openTime === cur.openTime &&
+      ordered[j + 1]?.closeTime === cur.closeTime
+    ) {
+      j++;
+    }
+    const start = labels[ordered[i]!.weekday];
+    const end = labels[ordered[j]!.weekday];
+    const range = i === j ? start : `${start} a ${end}`;
+    segments.push(`${range} ${cur.openTime}-${cur.closeTime}`);
+    i = j + 1;
+  }
+  return segments.length ? segments.join(" · ") : null;
 }
 
 // Catalogue lookup for the in-store sale builder. Returns variants

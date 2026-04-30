@@ -1,14 +1,25 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Save, Check, Package, ExternalLink, RotateCcw } from "lucide-react";
+import {
+  Save,
+  Check,
+  Package,
+  ExternalLink,
+  RotateCcw,
+  Mail,
+  MessageCircle,
+  BellRing,
+} from "lucide-react";
 
 import { AdminPanel } from "@/components/admin/primitives/AdminPanel";
 import {
   markPickupCollected,
   markPickupReady,
+  recordPickupWhatsAppOpened,
   reopenPickup,
   savePickupSettings,
+  sendPickupReadyEmail,
 } from "@/lib/local-store/actions";
 import type { LocationProfile, PickupOrderRow } from "@/lib/local-store/types";
 
@@ -245,12 +256,13 @@ function PickupOrdersTable({
           <tr>
             <th style={{ width: 100 }}>Pedido</th>
             <th>Cliente</th>
-            <th style={{ width: 120 }}>Pago</th>
-            <th style={{ width: 70, textAlign: "right" }}>Items</th>
-            <th style={{ width: 110, textAlign: "right" }}>Total</th>
-            <th style={{ width: 100 }}>Hora</th>
+            <th style={{ width: 110 }}>Pago</th>
+            <th style={{ width: 60, textAlign: "right" }}>Items</th>
+            <th style={{ width: 100, textAlign: "right" }}>Total</th>
+            <th style={{ width: 90 }}>Hora</th>
             <th style={{ width: 130 }}>Estado</th>
-            <th style={{ width: 220 }}>Acciones</th>
+            <th style={{ width: 160 }}>Notificar</th>
+            <th style={{ width: 180 }}>Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -268,6 +280,22 @@ function PickupRow({ order }: { order: PickupOrderRow }) {
   const [error, setError] = useState<string | null>(null);
   const [optStatus, setOptStatus] = useState<string>(order.shippingStatus);
 
+  // Notification UI is local-state-driven so the merchant gets instant
+  // feedback after clicking. We seed from the server-rendered row and
+  // let server actions confirm the canonical state on the next refresh.
+  const [emailSentAt, setEmailSentAt] = useState<string | null>(
+    order.pickupReadyEmailSentAt,
+  );
+  const [whatsappOpenedAt, setWhatsappOpenedAt] = useState<string | null>(
+    order.pickupReadyWhatsAppOpenedAt,
+  );
+  const [emailPending, setEmailPending] = useState(false);
+  const [emailFeedback, setEmailFeedback] = useState<string | null>(null);
+
+  const canNotify = optStatus === "fulfilled";
+  const hasEmail = Boolean(order.customerEmail);
+  const hasWhatsapp = Boolean(order.whatsappLink);
+
   function run(action: () => Promise<{ success: boolean; error?: string }>, optimisticTo: string) {
     setError(null);
     const previous = optStatus;
@@ -277,6 +305,50 @@ function PickupRow({ order }: { order: PickupOrderRow }) {
       if (!res.success) {
         setError(res.error || "No se pudo actualizar");
         setOptStatus(previous);
+      }
+    });
+  }
+
+  async function handleSendEmail(force: boolean) {
+    setEmailFeedback(null);
+    setEmailPending(true);
+    try {
+      const res = await sendPickupReadyEmail(order.id, { force });
+      if (!res.success) {
+        setEmailFeedback(res.error);
+        return;
+      }
+      const data = res.data;
+      if (data.sent) {
+        setEmailSentAt(data.sentAt ?? new Date().toISOString());
+        setEmailFeedback(`Email enviado a ${data.recipient}`);
+      } else if (data.alreadySent) {
+        setEmailSentAt(data.sentAt ?? emailSentAt);
+        setEmailFeedback("Ya estaba enviado. Usá «Reenviar» si querés mandarlo de nuevo.");
+      } else {
+        setEmailFeedback(data.error || "No se pudo enviar el email");
+      }
+    } catch {
+      setEmailFeedback("Error al enviar el email");
+    } finally {
+      setEmailPending(false);
+    }
+  }
+
+  function handleOpenWhatsapp() {
+    if (!order.whatsappLink) return;
+    // Open the deep link before awaiting the server action so popup
+    // blockers honor the click as a user gesture; the audit log is
+    // recorded asynchronously regardless of whether the merchant
+    // actually sends the message in WhatsApp.
+    window.open(order.whatsappLink, "_blank", "noopener,noreferrer");
+    setWhatsappOpenedAt(new Date().toISOString());
+    startTransition(async () => {
+      const res = await recordPickupWhatsAppOpened(order.id);
+      if (!res.success) {
+        // Soft-fail: roll back the badge since the audit row didn't land.
+        setWhatsappOpenedAt(order.pickupReadyWhatsAppOpenedAt);
+        setError(res.error || "No se pudo registrar la notificación");
       }
     });
   }
@@ -312,6 +384,20 @@ function PickupRow({ order }: { order: PickupOrderRow }) {
       </td>
       <td>
         <ShippingStatusBadge status={optStatus} />
+      </td>
+      <td>
+        <NotificationCell
+          canNotify={canNotify}
+          hasEmail={hasEmail}
+          hasWhatsapp={hasWhatsapp}
+          emailSentAt={emailSentAt}
+          whatsappOpenedAt={whatsappOpenedAt}
+          emailPending={emailPending}
+          emailFeedback={emailFeedback}
+          onSendEmail={() => handleSendEmail(false)}
+          onResendEmail={() => handleSendEmail(true)}
+          onOpenWhatsapp={handleOpenWhatsapp}
+        />
       </td>
       <td>
         <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
@@ -362,6 +448,144 @@ function PickupRow({ order }: { order: PickupOrderRow }) {
       </td>
     </tr>
   );
+}
+
+// Compact two-button cell for the notification column. The cell stays
+// passive when the order is not "fulfilled" — sending a "ready to pick
+// up" notice while preparing it would be dishonest. We preserve the
+// last-sent timestamp as a tooltip so the merchant knows whether the
+// buyer has already been pinged.
+function NotificationCell({
+  canNotify,
+  hasEmail,
+  hasWhatsapp,
+  emailSentAt,
+  whatsappOpenedAt,
+  emailPending,
+  emailFeedback,
+  onSendEmail,
+  onResendEmail,
+  onOpenWhatsapp,
+}: {
+  canNotify: boolean;
+  hasEmail: boolean;
+  hasWhatsapp: boolean;
+  emailSentAt: string | null;
+  whatsappOpenedAt: string | null;
+  emailPending: boolean;
+  emailFeedback: string | null;
+  onSendEmail: () => void;
+  onResendEmail: () => void;
+  onOpenWhatsapp: () => void;
+}) {
+  if (!canNotify) {
+    return (
+      <span style={{ fontSize: 11, color: "var(--ink-5)" }}>
+        Marcá listo para notificar
+      </span>
+    );
+  }
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+        <button
+          type="button"
+          className="nx-action nx-action--sm"
+          disabled={!hasEmail || emailPending}
+          onClick={emailSentAt ? onResendEmail : onSendEmail}
+          title={
+            !hasEmail
+              ? "El cliente no dejó email"
+              : emailSentAt
+                ? `Email enviado · ${formatNotificationTime(emailSentAt)}. Click para reenviar.`
+                : "Enviar email de retiro listo"
+          }
+          style={{ gap: 4 }}
+        >
+          <Mail size={12} />
+          {emailPending ? "…" : emailSentAt ? "Reenviar" : "Email"}
+        </button>
+        <button
+          type="button"
+          className="nx-action nx-action--sm"
+          disabled={!hasWhatsapp}
+          onClick={onOpenWhatsapp}
+          title={
+            !hasWhatsapp
+              ? "El cliente no dejó un teléfono válido"
+              : whatsappOpenedAt
+                ? `WhatsApp abierto · ${formatNotificationTime(whatsappOpenedAt)}. Click para volver a abrir.`
+                : "Abrir WhatsApp con mensaje pre-cargado"
+          }
+          style={{ gap: 4 }}
+        >
+          <MessageCircle size={12} />
+          WhatsApp
+        </button>
+      </div>
+      {(emailSentAt || whatsappOpenedAt) ? (
+        <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+          {emailSentAt ? (
+            <NotifiedBadge
+              icon={<Mail size={10} />}
+              label={`Email · ${formatNotificationTime(emailSentAt)}`}
+            />
+          ) : null}
+          {whatsappOpenedAt ? (
+            <NotifiedBadge
+              icon={<MessageCircle size={10} />}
+              label={`WhatsApp · ${formatNotificationTime(whatsappOpenedAt)}`}
+            />
+          ) : null}
+        </div>
+      ) : null}
+      {emailFeedback ? (
+        <span
+          style={{
+            fontSize: 10.5,
+            color: emailFeedback.startsWith("Email enviado") ? "#1d6f3f" : "var(--ink-5)",
+          }}
+        >
+          {emailFeedback}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function NotifiedBadge({ icon, label }: { icon: React.ReactNode; label: string }) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+        padding: "1px 6px",
+        borderRadius: 999,
+        background: "rgba(34, 153, 84, 0.10)",
+        color: "#1d6f3f",
+        fontSize: 10.5,
+        fontWeight: 600,
+      }}
+    >
+      <BellRing size={10} />
+      {icon}
+      {label}
+    </span>
+  );
+}
+
+function formatNotificationTime(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString("es-AR", {
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return iso;
+  }
 }
 
 function PaymentBadge({ status }: { status: string }) {

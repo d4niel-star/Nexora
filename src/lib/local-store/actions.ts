@@ -12,6 +12,7 @@ import { prisma } from "@/lib/db/prisma";
 import { getCurrentStore, getCurrentUser } from "@/lib/auth/session";
 import { revalidatePath } from "next/cache";
 import { logSystemEvent } from "@/lib/observability/audit";
+import { sendEmailEvent } from "@/lib/email/events";
 import {
   getCashSessionById as getCashSessionByIdQuery,
   getCashSessionMovements as getCashSessionMovementsQuery,
@@ -347,6 +348,253 @@ export async function reopenPickup(orderId: string): Promise<ActionResult> {
   revalidatePath(ROUTE);
   revalidatePath("/admin/orders");
   return { success: true };
+}
+
+// ─── Notificaciones de pickup ready ──────────────────────────────────
+//
+// Once a pickup order is marked as "fulfilled" (listo para retirar),
+// the merchant can notify the buyer through two channels:
+//
+//   1. EMAIL — fully transactional, goes through `sendEmailEvent`
+//      (Resend in prod, Mock in dev). Idempotent thanks to the
+//      `EmailLog @@unique([eventType, entityType, entityId])` index;
+//      `force=true` lets the merchant deliberately resend by deleting
+//      the previous log row and re-issuing the send.
+//   2. WHATSAPP — there is NO WhatsApp Business API integration in
+//      Nexora. The action returns a wa.me deep-link the client opens
+//      in a new tab, and the audit trail is written via SystemEvent
+//      so the UI can mark the order as "Notificado por WhatsApp"
+//      without faking server-side delivery.
+//
+// Both actions reuse `loadOwnedPickupOrder` for multi-tenant + type
+// validation, so they cannot be invoked against a non-pickup order
+// or an order belonging to another store.
+
+const PICKUP_READY_EVENT_TYPE = "PICKUP_READY";
+
+export interface SendPickupReadyEmailResult {
+  sent: boolean;
+  alreadySent?: boolean;
+  sentAt?: string;
+  recipient?: string;
+  reason?: "no_email" | "not_ready" | "provider_error" | "already_sent";
+  error?: string;
+}
+
+export async function sendPickupReadyEmail(
+  orderId: string,
+  options: { force?: boolean } = {},
+): Promise<{ success: true; data: SendPickupReadyEmailResult } | { success: false; error: string }> {
+  const ctx = await loadOwnedPickupOrder(orderId);
+  if (!ctx.ok) return { success: false, error: ctx.error };
+
+  // The shipping status must be "fulfilled". Sending a "ready to pick
+  // up" notification while the merchant is still preparing the order
+  // would be misleading at best.
+  if (ctx.order.shippingStatus !== "fulfilled") {
+    return {
+      success: true,
+      data: {
+        sent: false,
+        reason: "not_ready",
+        error: "Marcá el pedido como listo antes de notificar.",
+      },
+    };
+  }
+
+  // Pull the rest of the order fields we need for the email payload
+  // separately so `loadOwnedPickupOrder` keeps its tight select.
+  const orderDetail = await prisma.order.findUnique({
+    where: { id: ctx.order.id },
+    select: {
+      email: true,
+      firstName: true,
+      lastName: true,
+      orderNumber: true,
+      subtotal: true,
+      shippingAmount: true,
+      total: true,
+      currency: true,
+      shippingMethodLabel: true,
+    },
+  });
+  if (!orderDetail || !orderDetail.email) {
+    return {
+      success: true,
+      data: {
+        sent: false,
+        reason: "no_email",
+        error: "Este pedido no tiene email del cliente.",
+      },
+    };
+  }
+
+  // Idempotency: if the merchant clicked Send a second time without
+  // asking for `force`, just tell them it was already sent. The UI
+  // can then show a "Reenviar" affordance that calls us with force.
+  const existingLog = await prisma.emailLog.findUnique({
+    where: {
+      eventType_entityType_entityId: {
+        eventType: PICKUP_READY_EVENT_TYPE,
+        entityType: "order",
+        entityId: ctx.order.id,
+      },
+    },
+    select: { id: true, status: true, sentAt: true, recipient: true },
+  });
+  if (existingLog && existingLog.status === "sent" && !options.force) {
+    return {
+      success: true,
+      data: {
+        sent: false,
+        alreadySent: true,
+        reason: "already_sent",
+        sentAt: existingLog.sentAt?.toISOString(),
+        recipient: existingLog.recipient,
+      },
+    };
+  }
+  // When force is on, drop the previous row so `sendEmailEvent` can
+  // upsert a fresh one and treat the resend as a brand-new attempt.
+  if (existingLog && options.force) {
+    await prisma.emailLog.delete({ where: { id: existingLog.id } });
+  }
+
+  // Public location info for the email body. Falls back gracefully
+  // when the merchant has not filled some fields.
+  const location = await prisma.storeLocation.findUnique({
+    where: { storeId: ctx.store.id },
+    include: { hours: true },
+  });
+  const localName = location?.name || ctx.store.name;
+  const addressLine = [location?.addressLine, location?.city, location?.province]
+    .filter(Boolean)
+    .join(", ") || undefined;
+  const hoursSummary = summarizeHoursForEmail(location?.hours ?? []);
+
+  const customerName =
+    `${orderDetail.firstName ?? ""} ${orderDetail.lastName ?? ""}`.trim() || "cliente";
+
+  const sent = await sendEmailEvent({
+    storeId: ctx.store.id,
+    eventType: "PICKUP_READY",
+    entityType: "order",
+    entityId: ctx.order.id,
+    recipient: orderDetail.email,
+    data: {
+      storeSlug: ctx.store.slug,
+      storeName: ctx.store.name,
+      customerName,
+      orderNumber: orderDetail.orderNumber,
+      orderId: ctx.order.id,
+      subtotal: orderDetail.subtotal,
+      shippingAmount: orderDetail.shippingAmount,
+      total: orderDetail.total,
+      currency: orderDetail.currency,
+      shippingMethodLabel: orderDetail.shippingMethodLabel ?? undefined,
+      pickupLocalName: localName,
+      pickupAddress: addressLine,
+      pickupHoursSummary: hoursSummary || undefined,
+      pickupInstructions: location?.pickupInstructions ?? undefined,
+      pickupGoogleMapsUrl: location?.googleMapsUrl ?? undefined,
+      pickupPhone: location?.phone ?? undefined,
+    },
+  });
+
+  if (!sent) {
+    return {
+      success: true,
+      data: {
+        sent: false,
+        reason: "provider_error",
+        error: "El proveedor de email no pudo entregar el mensaje. Probá de nuevo.",
+      },
+    };
+  }
+
+  await logSystemEvent({
+    storeId: ctx.store.id,
+    entityType: "order",
+    entityId: ctx.order.id,
+    eventType: options.force
+      ? "pickup_ready_email_resent"
+      : "pickup_ready_email_sent",
+    severity: "info",
+    source: "admin_panel",
+    message: `Email de retiro listo enviado a ${orderDetail.email} para ${ctx.order.orderNumber}`,
+    metadata: { recipient: orderDetail.email },
+  });
+
+  revalidatePath(ROUTE);
+
+  return {
+    success: true,
+    data: {
+      sent: true,
+      recipient: orderDetail.email,
+      sentAt: new Date().toISOString(),
+    },
+  };
+}
+
+// Logs the fact that the merchant clicked the WhatsApp affordance
+// from the pickup tab. The link itself was generated in
+// `getPickupNotificationContext` (which is what the UI displays); we
+// just record that the merchant opened it so the row can show
+// "Notificado por WhatsApp" and we have an audit trail.
+export async function recordPickupWhatsAppOpened(orderId: string): Promise<ActionResult> {
+  const ctx = await loadOwnedPickupOrder(orderId);
+  if (!ctx.ok) return { success: false, error: ctx.error };
+  if (ctx.order.shippingStatus !== "fulfilled") {
+    return { success: false, error: "Marcá el pedido como listo antes de notificar." };
+  }
+
+  await logSystemEvent({
+    storeId: ctx.store.id,
+    entityType: "order",
+    entityId: ctx.order.id,
+    eventType: "pickup_ready_whatsapp_opened",
+    severity: "info",
+    source: "admin_panel",
+    message: `Mensaje de WhatsApp abierto para ${ctx.order.orderNumber}`,
+  });
+  revalidatePath(ROUTE);
+  return { success: true };
+}
+
+// Tiny helper used by `sendPickupReadyEmail` to render the merchant's
+// hours config as a one-line summary suitable for email. Mirrors the
+// summarizeHours used by the public storefront query.
+function summarizeHoursForEmail(
+  rows: Array<{ weekday: number; isOpen: boolean; openTime: string | null; closeTime: string | null }>,
+): string {
+  const order = [1, 2, 3, 4, 5, 6, 0];
+  const labels = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+  const ordered = order.map((w) => rows.find((r) => r.weekday === w));
+  const segments: string[] = [];
+  let i = 0;
+  while (i < ordered.length) {
+    const cur = ordered[i];
+    if (!cur || !cur.isOpen || !cur.openTime || !cur.closeTime) {
+      i++;
+      continue;
+    }
+    let j = i;
+    while (
+      j + 1 < ordered.length &&
+      ordered[j + 1]?.isOpen &&
+      ordered[j + 1]?.openTime === cur.openTime &&
+      ordered[j + 1]?.closeTime === cur.closeTime
+    ) {
+      j++;
+    }
+    const start = labels[ordered[i]!.weekday];
+    const end = labels[ordered[j]!.weekday];
+    const range = i === j ? start : `${start} a ${end}`;
+    segments.push(`${range} ${cur.openTime}-${cur.closeTime}`);
+    i = j + 1;
+  }
+  return segments.join(" · ");
 }
 
 // ─── Stock local ─────────────────────────────────────────────────────
