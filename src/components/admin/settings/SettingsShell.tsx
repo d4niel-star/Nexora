@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  CreditCard,
   Crown,
   FileText,
   Globe,
@@ -115,12 +114,6 @@ const SETTINGS_CATEGORIES: readonly CategoryGroup[] = [
         label: "Plan y facturación",
         icon: Crown,
         description: "Suscripción, límites y compra de créditos IA",
-      },
-      {
-        href: "/admin/settings/finanzas",
-        label: "Finanzas y retiros",
-        icon: CreditCard,
-        description: "Cuentas bancarias y solicitudes de retiro",
       },
       {
         href: "/admin/settings/integraciones",

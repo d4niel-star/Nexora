@@ -9,8 +9,12 @@
 //   · /admin/settings/dominios        (real domain status + deep link)
 //   · /admin/settings/comunicacion    (WhatsApp + post-purchase status)
 //   · /admin/settings/plan            (status + deep link to /admin/billing)
-//   · /admin/settings/finanzas        (status + deep link to /admin/finances)
 //   · /admin/settings/integraciones   (count + deep link to /admin/integrations)
+//
+// `Finanzas y retiros` was intentionally removed: Nexora does not run
+// an internal payouts pipeline yet, so the surface had nothing real
+// to configure. The smoke now refuses to let it come back without a
+// real backing flow.
 //
 // The layout at (tenant)/layout.tsx wraps every tenant page with the
 // SettingsShell (right-side category nav + main). The ops-only route
@@ -59,9 +63,12 @@ const categories = [
   { slug: "dominios", label: "Dominios" },
   { slug: "comunicacion", label: "WhatsApp y mensajes" },
   { slug: "plan", label: "Plan y facturación" },
-  { slug: "finanzas", label: "Finanzas y retiros" },
   { slug: "integraciones", label: "Integraciones" },
 ];
+
+// Categories that used to exist and were intentionally removed. Their
+// pages and links must NOT come back without a real backing flow.
+const removedCategories = ["finanzas"];
 
 const baseRel = "src/app/admin/settings/(tenant)";
 
@@ -184,16 +191,25 @@ const honestyChecks = [
     mustInclude: ["/admin/billing"],
   },
   {
-    slug: "finanzas",
-    label: "finanzas page deep-links to /admin/finances",
-    mustInclude: ["/admin/finances"],
-  },
-  {
     slug: "integraciones",
     label: "integraciones page counts real providerConnection rows",
     mustInclude: ["providerConnection.count", "/admin/integrations"],
   },
 ];
+
+// Hard guard: removed categories must not regrow a page or be linked
+// from the shell / overview.
+for (const slug of removedCategories) {
+  const path = resolve(process.cwd(), `${baseRel}/${slug}/page.tsx`);
+  if (existsSync(path)) {
+    fail(
+      `removed category ${slug} stays removed`,
+      `unexpected page at ${path}`,
+    );
+  } else {
+    ok(`removed category ${slug} stays removed (no page)`);
+  }
+}
 
 for (const check of honestyChecks) {
   const path = resolve(process.cwd(), `${baseRel}/${check.slug}/page.tsx`);
@@ -285,6 +301,22 @@ if (missingInOverview.length === 0) {
     "overview covers every shell category slug",
     `missing: ${missingInOverview.join(", ")}`,
   );
+}
+
+// Removed slugs must NOT appear in either source.
+for (const slug of removedCategories) {
+  const inShell = shellSlugs.includes(slug);
+  const inOverview = overviewSlugs.includes(slug);
+  if (!inShell && !inOverview) {
+    ok(`removed slug ${slug} not referenced from shell or overview`);
+  } else {
+    fail(
+      `removed slug ${slug} not referenced from shell or overview`,
+      [inShell ? "still in shell" : null, inOverview ? "still in overview" : null]
+        .filter(Boolean)
+        .join(", "),
+    );
+  }
 }
 
 const total = passed + failed;

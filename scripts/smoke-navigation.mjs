@@ -204,14 +204,30 @@ const mustBeInSettings = [
   '"/admin/settings/legal"',
   '"/admin/settings/comunicacion"',
   '"/admin/settings/plan"',
-  '"/admin/settings/finanzas"',
   '"/admin/settings/integraciones"',
+];
+
+// Removed settings categories: must NOT appear in the overview.
+// `Finanzas y retiros` was retired because Nexora has no internal
+// payouts pipeline backing it; the smoke catches accidental revivals.
+const mustNotBeInSettings = [
+  '"/admin/settings/finanzas"',
 ];
 for (const needle of mustBeInSettings) {
   if (settings.includes(needle)) {
     ok(`settings overview links to category: ${needle}`);
   } else {
     fail(`settings overview links to category: ${needle}`, "missing");
+  }
+}
+for (const needle of mustNotBeInSettings) {
+  if (settings.includes(needle)) {
+    fail(
+      `settings overview no longer links to retired category: ${needle}`,
+      "the retired card is back",
+    );
+  } else {
+    ok(`settings overview no longer links to retired category: ${needle}`);
   }
 }
 
@@ -221,8 +237,8 @@ for (const needle of mustBeInSettings) {
 // Sub-routes of /admin/settings must NOT appear in the global sidebar —
 // they live inside the settings page's own right-nav. We only assert
 // /admin/settings appears exactly once (settingsLeaf). Everything else
-// that used to live in the sidebar settings group (plan, finanzas,
-// legal, integrations) is intentionally absent now.
+// that used to live in the sidebar settings group (plan, legal,
+// integrations, …) is intentionally absent now.
 const duplicateFinder = ["/admin/settings"];
 for (const route of duplicateFinder) {
   // Count against the comment-stripped shell so a doc comment that
@@ -251,7 +267,6 @@ const forbiddenSubroutes = [
   "/admin/settings/legal",
   "/admin/settings/comunicacion",
   "/admin/settings/plan",
-  "/admin/settings/finanzas",
   "/admin/settings/integraciones",
 ];
 for (const route of forbiddenSubroutes) {
