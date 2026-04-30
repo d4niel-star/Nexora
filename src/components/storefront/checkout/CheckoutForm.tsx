@@ -5,6 +5,7 @@ import { updateCheckoutDraftInfo } from "@/lib/store-engine/checkout/actions";
 import { initiatePayment } from "@/lib/payments/mercadopago/actions";
 import { updateCheckoutShippingMethod } from "@/lib/store-engine/shipping/actions";
 import { CheckoutDraftType } from "@/types/checkout";
+import type { CartStockIssue } from "@/types/cart";
 import { ShippingMethodData } from "@/lib/store-engine/shipping/queries";
 import { PublicPickupInfo } from "@/lib/store-engine/pickup/queries";
 import { useRouter } from "next/navigation";
@@ -51,11 +52,15 @@ export function CheckoutForm({
   storeSlug,
   shippingMethods,
   pickupInfo,
+  onlineStockIssues = [],
+  pickupStockIssues = [],
 }: {
   draft: CheckoutDraftType;
   storeSlug: string;
   shippingMethods: ShippingMethodData[];
   pickupInfo: PublicPickupInfo | null;
+  onlineStockIssues?: CartStockIssue[];
+  pickupStockIssues?: CartStockIssue[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -65,11 +70,33 @@ export function CheckoutForm({
   // Track which shipping method the buyer has selected so the form
   // can adapt: pickup hides the address fields and stops requiring
   // them. We initialise from the draft so refreshes don't lose state.
+  const hasOnlineStockIssues = onlineStockIssues.length > 0;
+  const hasPickupStockIssues = pickupStockIssues.length > 0;
+  const isMethodSelectable = (method: ShippingMethodData | null | undefined) => {
+    if (!method) return false;
+    if (method.type === "pickup") return !hasPickupStockIssues;
+    return !hasOnlineStockIssues;
+  };
+  const stockIssueMessage = (method: ShippingMethodData | null | undefined) => {
+    const issue = method?.type === "pickup" ? pickupStockIssues[0] : onlineStockIssues[0];
+    if (!issue) {
+      return method?.type === "pickup"
+        ? "Sin stock local suficiente para este carrito."
+        : "Sin stock online suficiente para envío.";
+    }
+    return method?.type === "pickup"
+      ? `Sin stock local para ${issue.title} · ${issue.variantTitle}: pediste ${issue.requested}, quedan ${issue.available}.`
+      : `Sin stock online para ${issue.title} · ${issue.variantTitle}: pediste ${issue.requested}, quedan ${issue.available}.`;
+  };
+  const draftMethod = shippingMethods.find((m) => m.id === draft.shippingMethodId);
   const initialMethodId =
-    draft.shippingMethodId ||
-    shippingMethods.find((m) => m.isDefault)?.id ||
-    shippingMethods[0]?.id ||
-    null;
+    isMethodSelectable(draftMethod)
+      ? draftMethod!.id
+      : shippingMethods.find((m) => m.isDefault && isMethodSelectable(m))?.id ||
+        shippingMethods.find((m) => isMethodSelectable(m))?.id ||
+        draft.shippingMethodId ||
+        shippingMethods[0]?.id ||
+        null;
   const [selectedMethodId, setSelectedMethodId] = useState<string | null>(initialMethodId);
 
   const selectedMethod = useMemo(
@@ -79,6 +106,15 @@ export function CheckoutForm({
   const isPickup = selectedMethod?.type === "pickup";
 
   const handleShippingChange = (id: string) => {
+    const nextMethod = shippingMethods.find((m) => m.id === id) ?? null;
+    if (!isMethodSelectable(nextMethod)) {
+      setError(
+        nextMethod?.type === "pickup"
+          ? stockIssueMessage(nextMethod)
+          : `${stockIssueMessage(nextMethod)} Elegí retiro en local si está disponible.`,
+      );
+      return;
+    }
     setSelectedMethodId(id);
     startShippingTransition(async () => {
       setError(null);
@@ -126,6 +162,17 @@ export function CheckoutForm({
 
     startTransition(async () => {
       try {
+        if (!selectedMethod || !isMethodSelectable(selectedMethod)) {
+          setError("Elegí un método de entrega disponible para este carrito.");
+          return;
+        }
+        if (selectedMethodId && selectedMethodId !== draft.shippingMethodId) {
+          const shippingRes = await updateCheckoutShippingMethod(draft.id, selectedMethodId);
+          if (!shippingRes.success) {
+            setError(shippingRes.error || "No se pudo actualizar el método de entrega.");
+            return;
+          }
+        }
         await updateCheckoutDraftInfo(draft.id, data);
         const result = await initiatePayment(draft.id, storeSlug);
         window.location.href = result.redirectUrl;
@@ -229,6 +276,7 @@ export function CheckoutForm({
             <div className="space-y-2">
               {shippingMethods.map((method) => {
                 const isSelected = method.id === selectedMethodId;
+                const isDisabled = !isMethodSelectable(method);
                 const isFree =
                   method.type === "pickup"
                     ? true
@@ -245,10 +293,16 @@ export function CheckoutForm({
                   <label
                     key={method.id}
                     htmlFor={`shipping-${method.id}`}
-                    className="flex cursor-pointer items-center gap-3 rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-4 transition-colors hover:bg-[var(--surface-2)] has-[:checked]:border-ink-0 has-[:checked]:bg-[var(--surface-2)]"
+                    className={[
+                      "flex items-center gap-3 rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-4 transition-colors has-[:checked]:border-ink-0 has-[:checked]:bg-[var(--surface-2)]",
+                      isDisabled
+                        ? "cursor-not-allowed opacity-55"
+                        : "cursor-pointer hover:bg-[var(--surface-2)]",
+                    ].join(" ")}
                   >
                     <input
                       checked={isSelected}
+                      disabled={isDisabled}
                       id={`shipping-${method.id}`}
                       name="shippingMethodId"
                       type="radio"
@@ -269,6 +323,11 @@ export function CheckoutForm({
                             ? `Llega entre ${method.estimatedDaysMin || 1} y ${method.estimatedDaysMax} días`
                             : "Recibilo en tu domicilio"}
                       </p>
+                      {isDisabled ? (
+                        <p className="mt-1 text-[12px] text-[color:var(--signal-danger)]">
+                          {stockIssueMessage(method)}
+                        </p>
+                      ) : null}
                     </div>
                     <span className="tabular ml-auto shrink-0 text-[14px] font-medium text-ink-0">
                       {finalAmount === 0 ? "Gratis" : formattedPrice}
@@ -554,7 +613,7 @@ export function CheckoutForm({
       <div className="border-t border-[color:var(--hairline)] pt-8">
         <button
           type="submit"
-          disabled={isPending}
+          disabled={isPending || !selectedMethod || !isMethodSelectable(selectedMethod)}
           className="inline-flex h-12 min-h-12 w-full items-center justify-center gap-2 rounded-[var(--r-md)] bg-ink-0 text-[15px] font-medium text-ink-12 transition-colors hover:bg-ink-2 active:translate-y-px disabled:cursor-not-allowed disabled:bg-ink-8 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
         >
           {isPending ? (

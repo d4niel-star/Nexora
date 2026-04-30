@@ -5,6 +5,7 @@ import { getCart, getCartStockIssues } from "@/lib/store-engine/cart/queries";
 import { getOrCreateCheckoutDraftForSession } from "@/lib/store-engine/checkout/queries";
 import { getShippingMethods } from "@/lib/store-engine/shipping/queries";
 import { getPublicPickupInfo } from "@/lib/store-engine/pickup/queries";
+import { getPickupLocalStockIssuesForCart } from "@/lib/store-engine/pickup/local-stock";
 import { getStorefrontData } from "@/lib/store-engine/queries";
 import { storePath } from "@/lib/store-engine/urls";
 import { hasMercadoPagoConnected } from "@/lib/payments/mercadopago/tenant";
@@ -23,21 +24,34 @@ export default async function CheckoutPage({ params }: { params: Promise<{ store
     redirect(storePath(resolvedParams.storeSlug, "cart"));
   }
 
-  const stockIssues = await getCartStockIssues(cart.id);
-  const hasStockIssues = stockIssues.length > 0;
+  const [stockIssues, pickupInfo] = await Promise.all([
+    getCartStockIssues(cart.id),
+    getPublicPickupInfo(storefrontData.store.id),
+  ]);
+  const pickupStockIssues = pickupInfo
+    ? await getPickupLocalStockIssuesForCart(cart.id)
+    : [];
+  const pickupCanFulfillCart = Boolean(pickupInfo) && pickupStockIssues.length === 0;
+  const hasStockIssues = stockIssues.length > 0 && !pickupCanFulfillCart;
+  const preferredShippingMethodId =
+    stockIssues.length > 0 && pickupCanFulfillCart
+      ? pickupInfo?.shippingMethodId
+      : null;
   const draft = hasStockIssues
     ? null
-    : await getOrCreateCheckoutDraftForSession(storefrontData.store.id);
+    : await getOrCreateCheckoutDraftForSession(
+        storefrontData.store.id,
+        preferredShippingMethodId,
+      );
 
   if (!draft && !hasStockIssues) {
     redirect(storePath(resolvedParams.storeSlug, "cart"));
   }
 
-  const [shippingMethods, pickupInfo, canCheckoutWithMercadoPago] = hasStockIssues
-    ? ([[], null, false] as const)
+  const [shippingMethods, canCheckoutWithMercadoPago] = hasStockIssues
+    ? ([[], false] as const)
     : await Promise.all([
         getShippingMethods(storefrontData.store.id),
-        getPublicPickupInfo(storefrontData.store.id),
         hasMercadoPagoConnected(storefrontData.store.id),
       ]);
   const subtotal = draft?.subtotal ?? cart.subtotal;
@@ -122,6 +136,8 @@ export default async function CheckoutPage({ params }: { params: Promise<{ store
               storeSlug={resolvedParams.storeSlug}
               shippingMethods={shippingMethods}
               pickupInfo={pickupInfo}
+              onlineStockIssues={stockIssues}
+              pickupStockIssues={pickupStockIssues}
             />
           )}
           </div>

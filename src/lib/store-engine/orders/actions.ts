@@ -10,6 +10,7 @@ import { createRefund } from "@/lib/payments/mercadopago/client";
 import { getMercadoPagoCredentialsForStore } from "@/lib/payments/mercadopago/tenant";
 import { storePath } from "@/lib/store-engine/urls";
 import { restoreOrderStock } from "@/lib/store-engine/inventory/actions";
+import { restorePickupLocalStockForOrder } from "@/lib/store-engine/pickup/local-stock";
 
 export async function createOrderFromDraft(draftId: string) {
   const draft = await prisma.checkoutDraft.findUnique({
@@ -136,6 +137,17 @@ export async function cancelOrder(orderId: string, reason: string, doRefund: boo
     throw new Error("Esta orden ya fue reembolsada.");
   }
 
+  const isPickupOrder = order.shippingMethodId
+    ? Boolean(await prisma.shippingMethod.findFirst({
+        where: {
+          id: order.shippingMethodId,
+          storeId: order.storeId,
+          type: "pickup",
+        },
+        select: { id: true },
+      }))
+    : false;
+
   let paymentStatus = order.paymentStatus;
   let refundedAt: Date | null = null;
   let refundAmount: number | null = null;
@@ -226,6 +238,13 @@ export async function cancelOrder(orderId: string, reason: string, doRefund: boo
     refundSuccess ? "refund_restore" : "cancellation_restore",
     `Cancelled: ${reason}`
   );
+  const pickupLocalStockRestored = isPickupOrder
+    ? await restorePickupLocalStockForOrder(
+        order.id,
+        `Cancelled: ${reason}`,
+        "cancel_order_action",
+      )
+    : false;
 
   await logSystemEvent({
     storeId: order.storeId,
@@ -234,7 +253,7 @@ export async function cancelOrder(orderId: string, reason: string, doRefund: boo
     eventType: refundSuccess ? "order_refunded" : "order_cancelled",
     source: "admin_backend",
     message: `Orden ${order.orderNumber} ${refundSuccess ? "reembolsada y cancelada" : "cancelada"}: ${reason}`,
-    metadata: { reason, doRefund, refundAmount }
+    metadata: { reason, doRefund, refundAmount, pickupLocalStockRestored }
   });
 
   // Issue credit note automatically if there is an authorized invoice

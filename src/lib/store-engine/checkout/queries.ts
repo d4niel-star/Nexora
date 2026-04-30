@@ -14,7 +14,10 @@ export async function getCheckoutDraft(cartId: string): Promise<CheckoutDraftTyp
  * Gets or creates a checkout draft for the current session's active cart.
  * Safe for Server Component rendering (read-only session lookup).
  */
-export async function getOrCreateCheckoutDraftForSession(storeId: string): Promise<CheckoutDraftType | null> {
+export async function getOrCreateCheckoutDraftForSession(
+  storeId: string,
+  preferredShippingMethodId?: string | null,
+): Promise<CheckoutDraftType | null> {
   const sessionId = await getSessionId();
   if (!sessionId) return null;
 
@@ -38,7 +41,24 @@ export async function getOrCreateCheckoutDraftForSession(storeId: string): Promi
   let shippingEstimate = draft?.shippingEstimate || null;
   let shippingAmount = draft?.shippingAmount || 0;
 
-  if (!draft || !draft.shippingMethodId) {
+  if (preferredShippingMethodId) {
+    const preferredMethod = await prisma.shippingMethod.findFirst({
+      where: { id: preferredShippingMethodId, storeId, isActive: true },
+    });
+
+    if (preferredMethod) {
+      shippingMethodId = preferredMethod.id;
+      shippingMethodLabel = preferredMethod.name;
+      shippingCarrier = preferredMethod.carrier;
+      shippingEstimate = preferredMethod.type === "pickup" ? "Retiro en local" : shippingEstimate;
+      shippingAmount =
+        preferredMethod.type === "pickup"
+          ? 0
+          : (preferredMethod.freeShippingOver && subtotal >= preferredMethod.freeShippingOver)
+            ? 0
+            : preferredMethod.baseAmount;
+    }
+  } else if (!draft || !draft.shippingMethodId) {
     // If no shipping method selected, try to assign the default one
     const defaultMethod = await prisma.shippingMethod.findFirst({
       where: { storeId, isActive: true, isDefault: true }

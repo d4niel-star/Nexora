@@ -9,6 +9,7 @@ import { triggerStockCriticalIfNeeded } from "@/lib/email/events/stock-critical"
 import { trackServerEvent } from "@/lib/analytics/server-events";
 import { logSystemEvent } from "@/lib/observability/audit";
 import { storePath } from "@/lib/store-engine/urls";
+import { restorePickupLocalStockForOrderTx } from "@/lib/store-engine/pickup/local-stock";
 import type { EventType } from "@/lib/email/types";
 
 export const runtime = "nodejs";
@@ -257,6 +258,17 @@ export async function POST(request: NextRequest) {
         throw new Error("order_not_found");
       }
 
+      const isPickupOrder = order.shippingMethodId
+        ? Boolean(await tx.shippingMethod.findFirst({
+            where: {
+              id: order.shippingMethodId,
+              storeId: order.storeId,
+              type: "pickup",
+            },
+            select: { id: true },
+          }))
+        : false;
+
       const existingPayment = await tx.payment.findFirst({
         where: {
           orderId: order.id,
@@ -340,8 +352,21 @@ export async function POST(request: NextRequest) {
       });
 
       let stockCommitted = false;
+      let pickupLocalStockRestored = false;
       const decrementedVariantIds: string[] = [];
-      if (newPaymentStatus === "paid" && order.paymentStatus !== "paid") {
+      if (
+        isPickupOrder &&
+        (newPaymentStatus === "failed" || newPaymentStatus === "refunded") &&
+        order.paymentStatus !== newPaymentStatus
+      ) {
+        pickupLocalStockRestored = await restorePickupLocalStockForOrderTx(tx, {
+          orderId: order.id,
+          reason: `Mercado Pago payment ${newPaymentStatus}`,
+          source: "mercadopago_webhook",
+        });
+      }
+
+      if (newPaymentStatus === "paid" && order.paymentStatus !== "paid" && !isPickupOrder) {
         const existingMovement = await tx.stockMovement.findFirst({
           where: { orderId: order.id, type: "sale" },
         });
@@ -418,7 +443,9 @@ export async function POST(request: NextRequest) {
         currency: order.currency,
         shippingMethodLabel: order.shippingMethodLabel || undefined,
         newOrderStatus,
+        isPickupOrder,
         stockCommitted,
+        pickupLocalStockRestored,
         decrementedVariantIds,
       };
     });

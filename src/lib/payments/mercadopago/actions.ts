@@ -7,6 +7,10 @@ import { revalidateCheckoutStock } from "@/lib/store-engine/inventory/actions";
 import { sendEmailEvent } from "@/lib/email/events";
 import { storePath } from "@/lib/store-engine/urls";
 import { getMercadoPagoCredentialsForStore } from "@/lib/payments/mercadopago/tenant";
+import {
+  commitPickupLocalStockForOrderTx,
+  restorePickupLocalStockForOrder,
+} from "@/lib/store-engine/pickup/local-stock";
 
 /**
  * Creates an Order from a CheckoutDraft, then initiates a Mercado Pago preference.
@@ -30,12 +34,19 @@ export async function initiatePayment(draftId: string, storeSlug: string): Promi
     throw new Error("Checkout draft not found");
   }
 
+  if (draft.status !== "pending" || draft.cart.status !== "active") {
+    throw new Error("Este checkout ya fue procesado. Revisá el estado del pedido o volvé a armar el carrito.");
+  }
+
   // Resolve the shipping method up front so we know if we're in a
   // pickup flow. Pickup orders skip the address requirement because
   // the buyer never gives us a delivery address — they walk in.
   const selectedMethod = draft.shippingMethodId
     ? await prisma.shippingMethod.findUnique({ where: { id: draft.shippingMethodId } })
     : null;
+  if (selectedMethod && selectedMethod.storeId !== draft.storeId) {
+    throw new Error("Metodo de envio invalido");
+  }
   const isPickup = selectedMethod?.type === "pickup";
 
   // Server-side guard: even if the buyer somehow kept a stale draft
@@ -43,15 +54,16 @@ export async function initiatePayment(draftId: string, storeSlug: string): Promi
   // disabled, we refuse to commit the order. We also defensively
   // re-check the StoreLocation toggle in case the ShippingMethod row
   // was flipped manually.
+  let pickupLocation: { id: string; pickupEnabled: boolean } | null = null;
   if (isPickup) {
     if (!selectedMethod?.isActive) {
       throw new Error("El retiro en local ya no está disponible");
     }
-    const location = await prisma.storeLocation.findUnique({
+    pickupLocation = await prisma.storeLocation.findUnique({
       where: { storeId: draft.storeId },
-      select: { pickupEnabled: true },
+      select: { id: true, pickupEnabled: true },
     });
-    if (!location || !location.pickupEnabled) {
+    if (!pickupLocation || !pickupLocation.pickupEnabled) {
       throw new Error("El retiro en local ya no está disponible");
     }
   }
@@ -72,10 +84,14 @@ export async function initiatePayment(draftId: string, storeSlug: string): Promi
     throw new Error("El carrito está vacío");
   }
 
-  // Stock revalidation before order commit
-  const stockCheck = await revalidateCheckoutStock(cart.id);
-  if (!stockCheck.success) {
-    throw new Error(stockCheck.error);
+  // Stock revalidation before order commit. Shipping keeps using
+  // ProductVariant.stock; pickup is validated and decremented against
+  // LocalInventory inside the order transaction below.
+  if (!isPickup) {
+    const stockCheck = await revalidateCheckoutStock(cart.id);
+    if (!stockCheck.success) {
+      throw new Error(stockCheck.error);
+    }
   }
 
   const store = await prisma.store.findFirst({
@@ -101,59 +117,91 @@ export async function initiatePayment(draftId: string, storeSlug: string): Promi
   // 2. Generate order number
   const orderNumber = `#${Math.floor(10000 + Math.random() * 90000)}`;
 
-  // 3. Create Order
-  const order = await prisma.order.create({
-    data: {
-      storeId: draft.storeId,
-      orderNumber,
-      cartId: cart.id,
+  // 3. Create Order. Pickup stock is decremented in the same
+  // transaction so order + LocalInventory move together.
+  const order = await prisma.$transaction(async (tx) => {
+    const draftClaim = await tx.checkoutDraft.updateMany({
+      where: { id: draft.id, status: "pending" },
+      data: { status: "completed" },
+    });
+    const cartClaim = await tx.cart.updateMany({
+      where: { id: cart.id, status: "active" },
+      data: { status: "completed" },
+    });
 
-      email: draft.email,
-      firstName: draft.firstName,
-      lastName: draft.lastName || "",
-      phone: draft.phone,
-      document: draft.document,
+    if (draftClaim.count !== 1 || cartClaim.count !== 1) {
+      throw new Error("Este checkout ya fue procesado. Revisá el estado del pedido o volvé a armar el carrito.");
+    }
 
-      // Address columns are non-nullable on the Order model. Pickup
-      // orders may legitimately have no shipping address, so we
-      // fall back to "" for the required strings instead of forcing
-      // the buyer to invent a fake one.
-      addressLine1: draft.addressLine1 ?? "",
-      addressLine2: draft.addressLine2,
-      city: draft.city ?? "",
-      province: draft.province || "",
-      postalCode: draft.postalCode || "",
-      country: draft.country || "AR",
+    const createdOrder = await tx.order.create({
+      data: {
+        storeId: draft.storeId,
+        orderNumber,
+        cartId: cart.id,
 
-      currency: cart.currency,
-      subtotal,
-      shippingAmount,
-      total,
-      
-      shippingMethodId: draft.shippingMethodId,
-      shippingMethodLabel: draft.shippingMethodLabel,
-      shippingCarrier: draft.shippingCarrier,
-      shippingEstimate: draft.shippingEstimate,
+        email: draft.email!,
+        firstName: draft.firstName!,
+        lastName: draft.lastName || "",
+        phone: draft.phone,
+        document: draft.document,
 
-      status: "new",
-      paymentStatus: "pending",
-      paymentProvider: "mercadopago",
-      channel: "Storefront",
+        // Address columns are non-nullable on the Order model. Pickup
+        // orders may legitimately have no shipping address, so we
+        // fall back to "" for the required strings instead of forcing
+        // the buyer to invent a fake one.
+        addressLine1: draft.addressLine1 ?? "",
+        addressLine2: draft.addressLine2,
+        city: draft.city ?? "",
+        province: draft.province || "",
+        postalCode: draft.postalCode || "",
+        country: draft.country || "AR",
 
-      items: {
-        create: cart.items.map(item => ({
-          productId: item.productId,
-          variantId: item.variantId,
-          titleSnapshot: item.titleSnapshot,
-          variantTitleSnapshot: item.variantTitleSnapshot,
-          imageSnapshot: item.imageSnapshot,
-          priceSnapshot: item.priceSnapshot,
-          quantity: item.quantity,
-          lineTotal: item.priceSnapshot * item.quantity,
-        }))
-      }
-    },
-    include: { items: true }
+        currency: cart.currency,
+        subtotal,
+        shippingAmount,
+        total,
+
+        shippingMethodId: draft.shippingMethodId,
+        shippingMethodLabel: draft.shippingMethodLabel,
+        shippingCarrier: draft.shippingCarrier,
+        shippingEstimate: draft.shippingEstimate,
+
+        status: "new",
+        paymentStatus: "pending",
+        paymentProvider: "mercadopago",
+        channel: "Storefront",
+
+        items: {
+          create: cart.items.map(item => ({
+            productId: item.productId,
+            variantId: item.variantId,
+            titleSnapshot: item.titleSnapshot,
+            variantTitleSnapshot: item.variantTitleSnapshot,
+            imageSnapshot: item.imageSnapshot,
+            priceSnapshot: item.priceSnapshot,
+            quantity: item.quantity,
+            lineTotal: item.priceSnapshot * item.quantity,
+          }))
+        }
+      },
+    });
+
+    const createdItems = await tx.orderItem.findMany({
+      where: { orderId: createdOrder.id },
+    });
+
+    if (isPickup && pickupLocation) {
+      await commitPickupLocalStockForOrderTx(tx, {
+        storeId: draft.storeId,
+        locationId: pickupLocation.id,
+        orderId: createdOrder.id,
+        orderNumber: createdOrder.orderNumber,
+        items: createdItems,
+        source: "storefront_checkout",
+      });
+    }
+
+    return { ...createdOrder, items: createdItems };
   });
 
   // 4. Create Mercado Pago Preference
@@ -227,10 +275,27 @@ export async function initiatePayment(draftId: string, storeSlug: string): Promi
   } catch (err) {
     // If MP fails, still keep the order but mark payment as failed
     console.error("[initiatePayment] MercadoPago error:", err);
-    await prisma.order.update({
-      where: { id: order.id },
-      data: { paymentStatus: "failed" }
-    });
+    await prisma.$transaction([
+      prisma.order.update({
+        where: { id: order.id },
+        data: { paymentStatus: "failed" }
+      }),
+      prisma.cart.update({
+        where: { id: cart.id },
+        data: { status: "active" }
+      }),
+      prisma.checkoutDraft.update({
+        where: { id: draftId },
+        data: { status: "pending" }
+      }),
+    ]);
+    if (isPickup) {
+      await restorePickupLocalStockForOrder(
+        order.id,
+        "Mercado Pago preference creation failed",
+        "storefront_checkout",
+      );
+    }
     throw new Error("Error al conectar con Mercado Pago. Intentá nuevamente.");
   }
 

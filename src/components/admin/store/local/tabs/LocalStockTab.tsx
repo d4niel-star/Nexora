@@ -124,8 +124,9 @@ export function LocalStockTab({ initialRows }: Props) {
           lineHeight: 1.5,
         }}
       >
-        El stock local es independiente del stock online. Ajustá ambos manualmente
-        cuando muevas productos entre el local y el ecommerce.
+        El stock local es independiente del stock online. Las ventas presenciales
+        y los pedidos con retiro en local descuentan estas unidades; marcar un
+        pickup como listo o retirado no vuelve a descontar stock.
       </div>
     </div>
   );

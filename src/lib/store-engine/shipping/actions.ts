@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db/prisma";
 import { getShippingMethods, calculateShippingAmount, formatShippingEstimate } from "./queries";
 import { revalidatePath } from "next/cache";
 import { storePath } from "@/lib/store-engine/urls";
+import { getPickupLocalStockIssuesForCart } from "@/lib/store-engine/pickup/local-stock";
 
 export async function updateCheckoutShippingMethod(
   draftId: string, 
@@ -38,6 +39,14 @@ export async function updateCheckoutShippingMethod(
       });
       if (!location || !location.pickupEnabled) {
         return { success: false, error: "El retiro en local no está disponible" };
+      }
+      const pickupIssues = await getPickupLocalStockIssuesForCart(draft.cartId);
+      if (pickupIssues.length > 0) {
+        const issue = pickupIssues[0];
+        return {
+          success: false,
+          error: `Stock local insuficiente para "${issue.title} · ${issue.variantTitle}" (disponible ${issue.available}, pedido ${issue.requested}).`,
+        };
       }
     }
 
