@@ -74,6 +74,14 @@ const SYSTEM_EVENT_LABELS: Record<string, { title: string; severity: OrderTimeli
   stock_decremented: { title: "Stock descontado", severity: "neutral", actor: "system" },
   stock_restored: { title: "Stock restaurado", severity: "warning", actor: "system" },
   fulfillment_updated: { title: "Estado de envío actualizado", severity: "neutral", actor: "merchant" },
+  fulfillment_preparing: { title: "Preparación iniciada", severity: "neutral", actor: "merchant" },
+  fulfillment_shipped: { title: "Orden despachada", severity: "success", actor: "merchant" },
+  fulfillment_delivered: { title: "Orden entregada", severity: "success", actor: "merchant" },
+  fulfillment_blocked: { title: "Transición de envío bloqueada", severity: "warning", actor: "system" },
+  shipment_created: { title: "Envío creado con carrier", severity: "success", actor: "merchant" },
+  shipment_create_failed: { title: "Error al crear envío", severity: "danger", actor: "system" },
+  order_marked_shipped: { title: "Orden marcada como enviada manualmente", severity: "success", actor: "merchant" },
+  tracking_updated: { title: "Tracking actualizado", severity: "neutral", actor: "merchant" },
   cost_snapshot_backfill_batch_completed: { title: "Costo snapshot actualizado (backfill)", severity: "neutral", actor: "system" },
 };
 
@@ -83,6 +91,8 @@ const EMAIL_EVENT_LABELS: Record<string, string> = {
   PAYMENT_PENDING: "Email de pago pendiente",
   PAYMENT_FAILED: "Email de pago fallido",
   ORDER_SHIPPED: "Email de envío con tracking",
+  ORDER_DELIVERED: "Email de entrega confirmada",
+  ORDER_CANCELLED: "Email de cancelación",
   PICKUP_READY: "Email de pedido listo para retirar",
 };
 
