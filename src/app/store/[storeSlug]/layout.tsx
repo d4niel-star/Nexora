@@ -9,6 +9,8 @@ import { normalizeStorefrontHref } from "@/lib/store-engine/urls";
 import type { StoreConfig } from "@/types/storefront";
 import { isTrackingWidgetActive } from "@/lib/apps/order-tracking-widget/queries";
 import { getStorefrontCommunication } from "@/lib/communication/queries";
+import { getStorefrontAnalyticsConfig } from "@/lib/ads/pixels/storefront-query";
+import { StorefrontAnalyticsScripts } from "@/components/storefront/analytics/StorefrontAnalyticsScripts";
 import {
   getStoreButtonRadius,
   normalizeThemeColor,
@@ -34,11 +36,12 @@ export default async function StorefrontLayout({
   const fontOption = resolveStoreFontOption(storefrontData.branding.fontFamily);
   const buttonRadius = getStoreButtonRadius(storefrontData.branding.buttonStyle);
 
-  // Fetch communication + cart + tracking in parallel
-  const [cart, trackingEnabled, commData] = await Promise.all([
+  // Fetch communication + cart + tracking + analytics in parallel
+  const [cart, trackingEnabled, commData, analyticsConfig] = await Promise.all([
     getCart(storefrontData.store.id),
     isTrackingWidgetActive(storefrontData.store.id),
     getStorefrontCommunication(storefrontData.store.id),
+    getStorefrontAnalyticsConfig(storefrontData.store.id),
   ]);
 
   const config: StoreConfig = {
@@ -103,6 +106,7 @@ export default async function StorefrontLayout({
           position={config.whatsapp.buttonPosition}
         />
       )}
+      <StorefrontAnalyticsScripts config={analyticsConfig} />
     </div>
   );
 }

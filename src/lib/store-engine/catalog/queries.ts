@@ -276,8 +276,12 @@ export async function getAdminCatalogPage(
     } else if (options.status === "archived") {
       where.status = "archived";
     } else if (options.status === "out_of_stock") {
-      // Server-side: all variants have stock <= 0
-      where.variants = { every: { stock: { lte: 0 } } };
+      // Server-side: has at least one variant AND all have stock <= 0.
+      // `every` on empty relations returns true, so `some: {}` guards it.
+      where.AND = [
+        { variants: { some: {} } },
+        { variants: { every: { stock: { lte: 0 } } } },
+      ];
     }
   }
 
@@ -296,7 +300,7 @@ export async function getAdminCatalogPage(
   const storeWhere = { storeId: store.id };
 
   // Tab counts + main count (parallel) — fast indexed counts
-  const outOfStockWhere = { ...storeWhere, variants: { every: { stock: { lte: 0 } } } };
+  const outOfStockWhere = { ...storeWhere, AND: [{ variants: { some: {} } }, { variants: { every: { stock: { lte: 0 } } } }] };
   const [total, allCount, activeCount, draftCount, archivedCount, outOfStockCount] = await Promise.all([
     prisma.product.count({ where }),
     prisma.product.count({ where: { ...storeWhere } }),
