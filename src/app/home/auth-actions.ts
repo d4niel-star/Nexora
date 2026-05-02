@@ -3,10 +3,26 @@
 import { prisma } from "@/lib/db/prisma";
 import { createSession, clearSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
+import { cookies, headers } from "next/headers";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
 import { validatePasswordPolicy } from "@/lib/auth/password-policy";
 import { createAndSendVerificationEmail, resendVerificationEmail } from "@/lib/auth/verification";
 import { normalizeSlug } from "@/lib/store-engine/slug";
+import {
+  buildOAuthAuthorizationUrl,
+  getOAuthCookieNames,
+  getSocialProviderLabel,
+  isSocialAuthMode,
+  isSocialProvider,
+} from "@/lib/auth/social-oauth";
+
+export interface AuthActionState {
+  error?: string;
+  success?: boolean;
+  message?: string;
+  needsVerification?: boolean;
+  userId?: string;
+}
 
 function hashPassword(password: string): string {
   const salt = randomBytes(16).toString("hex");
@@ -36,7 +52,7 @@ async function generateUniqueStoreSlug(companyName: string): Promise<string> {
   return slug;
 }
 
-export async function loginAction(prevState: any, formData: FormData) {
+export async function loginAction(_prevState: AuthActionState | undefined, formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
 
@@ -65,7 +81,7 @@ export async function loginAction(prevState: any, formData: FormData) {
   redirect("/welcome/gate");
 }
 
-export async function registerAction(prevState: any, formData: FormData) {
+export async function registerAction(_prevState: AuthActionState | undefined, formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
   const confirmPassword = formData.get("confirmPassword") as string;
@@ -125,7 +141,7 @@ export async function registerAction(prevState: any, formData: FormData) {
   redirect("/home/check-email");
 }
 
-export async function resendVerificationAction(prevState: any, formData: FormData) {
+export async function resendVerificationAction(_prevState: AuthActionState | undefined, formData: FormData) {
   const userId = formData.get("userId") as string;
 
   if (!userId) {
@@ -144,4 +160,56 @@ export async function resendVerificationAction(prevState: any, formData: FormDat
 export async function logoutAction() {
   await clearSession();
   redirect("/home/login");
+}
+
+export async function socialAuthAction(
+  _prevState: AuthActionState | undefined,
+  formData: FormData,
+) {
+  const providerValue = formData.get("provider");
+  const modeValue = formData.get("mode");
+
+  if (!isSocialProvider(providerValue)) {
+    return { error: "Proveedor social no soportado." };
+  }
+
+  const mode = isSocialAuthMode(modeValue) ? modeValue : "login";
+  const origin = await getRequestOrigin();
+  const state = randomBytes(24).toString("hex");
+  const auth = buildOAuthAuthorizationUrl(providerValue, origin, state);
+
+  if (!auth.url) {
+    const label = getSocialProviderLabel(providerValue);
+    return {
+      error: `${label} todavia no esta configurado. Falta cargar ${auth.missing.join(
+        ", ",
+      )} en las variables de entorno.`,
+    };
+  }
+
+  const cookieStore = await cookies();
+  const names = getOAuthCookieNames();
+  const cookieOptions = {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 10 * 60,
+  };
+
+  cookieStore.set(names.state, state, cookieOptions);
+  cookieStore.set(names.provider, providerValue, cookieOptions);
+  cookieStore.set(names.mode, mode, cookieOptions);
+
+  redirect(auth.url.toString());
+}
+
+async function getRequestOrigin(): Promise<string> {
+  const headerStore = await headers();
+  const forwardedHost = headerStore.get("x-forwarded-host");
+  const host = forwardedHost || headerStore.get("host") || "localhost:3000";
+  const forwardedProto = headerStore.get("x-forwarded-proto");
+  const protocol = forwardedProto || (host.startsWith("localhost") ? "http" : "https");
+
+  return `${protocol}://${host}`;
 }

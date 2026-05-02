@@ -1,13 +1,19 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { AlertCircle, ArrowRight, Check, X } from "lucide-react";
+
 import { AuthShell } from "@/components/public/AuthShell";
-import { registerAction } from "@/app/home/auth-actions";
+import { registerAction, socialAuthAction } from "@/app/home/auth-actions";
 import { validatePasswordPolicy } from "@/lib/auth/password-policy";
+import {
+  getSocialAuthErrorMessage,
+  SocialAuthButtons,
+} from "@/components/public/SocialAuthButtons";
 
 const inputClass =
-  "flex h-12 min-h-12 w-full rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-paper)] px-3.5 text-[15px] text-ink-0 placeholder:text-ink-6 transition-[box-shadow,border-color] duration-[var(--dur-base)] ease-[var(--ease-out)] focus:border-[color:var(--hairline-strong)] focus:outline-none focus:shadow-[var(--shadow-focus)]";
+  "flex h-12 min-h-12 w-full rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-white px-3.5 text-[15px] text-ink-0 placeholder:text-ink-6 transition-[box-shadow,border-color] duration-[var(--dur-base)] ease-[var(--ease-out)] focus:border-[color:var(--hairline-strong)] focus:outline-none focus:shadow-[var(--shadow-focus)]";
 
 const labelClass = "mb-1.5 block text-[12px] font-medium text-ink-5";
 
@@ -29,10 +35,10 @@ function PasswordChecklist({
 
   const rules = [
     { label: "12+ caracteres", met: password.length >= 12 },
-    { label: "Una mayúscula", met: /[A-Z]/.test(password) },
-    { label: "Una minúscula", met: /[a-z]/.test(password) },
-    { label: "Un número", met: /[0-9]/.test(password) },
-    { label: "Un símbolo", met: /[^A-Za-z0-9]/.test(password) },
+    { label: "Una mayuscula", met: /[A-Z]/.test(password) },
+    { label: "Una minuscula", met: /[a-z]/.test(password) },
+    { label: "Un numero", met: /[0-9]/.test(password) },
+    { label: "Un simbolo", met: /[^A-Za-z0-9]/.test(password) },
   ];
 
   const contextErrors = result.errors.filter(
@@ -70,13 +76,20 @@ function PasswordChecklist({
 }
 
 export default function RegisterPage() {
+  const searchParams = useSearchParams();
   const [state, formAction, isPending] = useActionState(registerAction, undefined);
+  const [socialState, socialFormAction, isSocialPending] = useActionState(
+    socialAuthAction,
+    undefined,
+  );
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [email, setEmail] = useState("");
   const [companyName, setCompanyName] = useState("");
 
   const passwordMismatch = confirmPassword.length > 0 && password !== confirmPassword;
+  const callbackError = getSocialAuthErrorMessage(searchParams.get("auth_error"));
+  const visibleError = state?.error || socialState?.error || callbackError;
 
   return (
     <AuthShell
@@ -84,118 +97,122 @@ export default function RegisterPage() {
       eyebrow="Cuenta nueva"
       brandTitle={
         <>
-          Empezá tu tienda
+          Empeza tu tienda
           <br />
           en minutos.
         </>
       }
-      brandBody="Mercado Pago, dominio propio y catálogo real desde el primer día. Sin tarjeta, sin compromiso anual."
+      brandBody="Mercado Pago, dominio propio y catalogo real desde el primer dia. Sin tarjeta, sin compromiso anual."
       brandPoints={[
         "Storefront editable + checkout argentino listos para vender.",
-        "150 a 3.000 créditos de IA por mes según plan.",
-        "14 días gratis · cancelás cuando quieras.",
+        "150 a 3.000 creditos de IA por mes segun plan.",
+        "14 dias gratis. Cancelas cuando quieras.",
       ]}
-      formTitle="Creá tu cuenta."
-      formSubtitle="Configurá tu empresa y entrá a Nexora en pocos minutos."
-      alternateLabel="Ya tenés cuenta?"
+      formTitle="Crea tu cuenta."
+      formSubtitle="Configura tu empresa o continua con una cuenta social verificada."
+      alternateLabel="Ya tenes cuenta?"
       alternateAction="Ingresar"
       alternateHref="/home/login"
     >
-      <form className="space-y-4" action={formAction}>
-        {state?.error && (
+      <div className="space-y-4">
+        {visibleError && (
           <div
             role="alert"
             className="flex items-start gap-2 rounded-[var(--r-md)] border border-[color:var(--signal-danger)]/30 bg-[color:var(--signal-danger)]/5 px-3.5 py-3 text-[13px] text-[color:var(--signal-danger)]"
           >
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} />
-            <p>{state.error}</p>
+            <p>{visibleError}</p>
           </div>
         )}
 
-        <div>
-          <label htmlFor="name" className={labelClass}>
-            Nombre de la empresa
-          </label>
-          <input
-            id="name"
-            name="name"
-            type="text"
-            required
-            placeholder="Ej: TechStore Argentina"
-            value={companyName}
-            onChange={(event) => setCompanyName(event.target.value)}
-            className={inputClass}
-          />
-        </div>
+        <form className="space-y-4" action={formAction}>
+          <div>
+            <label htmlFor="name" className={labelClass}>
+              Nombre de la empresa
+            </label>
+            <input
+              id="name"
+              name="name"
+              type="text"
+              required
+              placeholder="Ej: TechStore Argentina"
+              value={companyName}
+              onChange={(event) => setCompanyName(event.target.value)}
+              className={inputClass}
+            />
+          </div>
 
-        <div>
-          <label htmlFor="email" className={labelClass}>
-            Email
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            required
-            placeholder="tu@empresa.com"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            className={inputClass}
-          />
-        </div>
+          <div>
+            <label htmlFor="email" className={labelClass}>
+              Correo electronico
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              required
+              placeholder="tu@empresa.com"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              className={inputClass}
+            />
+          </div>
 
-        <div>
-          <label htmlFor="password" className={labelClass}>
-            Contraseña
-          </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            required
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className={inputClass}
-          />
-          <PasswordChecklist password={password} email={email} companyName={companyName} />
-        </div>
+          <div>
+            <label htmlFor="password" className={labelClass}>
+              Contrasena
+            </label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              required
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className={inputClass}
+            />
+            <PasswordChecklist password={password} email={email} companyName={companyName} />
+          </div>
 
-        <div>
-          <label htmlFor="confirmPassword" className={labelClass}>
-            Confirmar contraseña
-          </label>
-          <input
-            id="confirmPassword"
-            name="confirmPassword"
-            type="password"
-            required
-            value={confirmPassword}
-            onChange={(event) => setConfirmPassword(event.target.value)}
-            className={
-              inputClass +
-              (passwordMismatch
-                ? " border-[color:var(--signal-danger)] focus:border-[color:var(--signal-danger)]"
-                : "")
-            }
-          />
-          {passwordMismatch && (
-            <p className="mt-1.5 text-[11px] text-[color:var(--signal-danger)]">
-              Las contraseñas no coinciden.
-            </p>
-          )}
-        </div>
+          <div>
+            <label htmlFor="confirmPassword" className={labelClass}>
+              Confirmar contrasena
+            </label>
+            <input
+              id="confirmPassword"
+              name="confirmPassword"
+              type="password"
+              required
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              className={
+                inputClass +
+                (passwordMismatch
+                  ? " border-[color:var(--signal-danger)] focus:border-[color:var(--signal-danger)]"
+                  : "")
+              }
+            />
+            {passwordMismatch && (
+              <p className="mt-1.5 text-[11px] text-[color:var(--signal-danger)]">
+                Las contrasenas no coinciden.
+              </p>
+            )}
+          </div>
 
-        <button
-          type="submit"
-          disabled={isPending}
-          className="group inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-ink-0 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2 active:translate-y-px disabled:cursor-not-allowed disabled:bg-ink-8 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
-        >
-          {isPending ? "Configurando cuenta..." : "Registrar empresa"}
-          {!isPending && (
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={1.75} />
-          )}
-        </button>
-      </form>
+          <button
+            type="submit"
+            disabled={isPending}
+            className="group inline-flex h-12 w-full items-center justify-center gap-2 rounded-[var(--r-md)] bg-ink-0 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2 active:translate-y-px disabled:cursor-not-allowed disabled:bg-ink-8 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+          >
+            {isPending ? "Configurando cuenta..." : "Registrar empresa"}
+            {!isPending && (
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={1.75} />
+            )}
+          </button>
+        </form>
+
+        <SocialAuthButtons action={socialFormAction} mode="register" pending={isSocialPending} />
+      </div>
     </AuthShell>
   );
 }
