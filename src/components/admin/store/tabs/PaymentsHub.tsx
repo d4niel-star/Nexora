@@ -635,7 +635,7 @@ function ProviderCard({
               metadata.checkoutWired ? "text-[color:var(--signal-success)]" : "text-ink-4",
             )}
           >
-            {metadata.checkoutWired ? "Operativo" : "Listo (próxima fase)"}
+            {metadata.checkoutWired ? "Operativo" : "Sin checkout aún"}
           </dd>
         </div>
       </dl>
@@ -732,7 +732,7 @@ function ProviderCard({
             onClick={onOpenDrawer}
             rightIcon={<ArrowUpRight className="h-3 w-3" />}
           >
-            Conectar
+            {metadata.checkoutWired ? "Conectar" : "Guardar credenciales"}
           </MotionButton>
         )}
       </div>
@@ -922,7 +922,7 @@ function ConnectDrawer({
                 loading={submitting}
                 leftIcon={<ShieldCheck className="h-3.5 w-3.5" />}
               >
-                {submitting ? "Validando…" : "Conectar y validar"}
+                {submitting ? "Validando…" : metadata.checkoutWired ? "Conectar y validar" : "Guardar y validar"}
               </MotionButton>
             </div>
           </form>

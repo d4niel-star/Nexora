@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
+// ─── Auth protection ────────────────────────────────────────────────────
+// Lightweight cookie-existence check for admin routes. Full session
+// validation (expiry, user lookup, store ownership) is enforced
+// server-side in the admin layout. This layer prevents unauthenticated
+// users from even reaching the admin RSC tree.
+const SESSION_COOKIE = 'nx_session'
+
 export const config = {
   matcher: [
     /*
@@ -75,6 +82,20 @@ export async function proxy(req: NextRequest) {
       }
     } catch {
       // Never break the request on lookup failure — fall through.
+    }
+  }
+
+  // ─── Auth guard for admin routes ──────────────────────────────────────
+  // Runs BEFORE the filesystem passthrough. If the request is for /admin/*
+  // and there's no session cookie, redirect to login instead of letting
+  // the RSC tree load and do its own redirect (saves DB queries + latency).
+  if (url.pathname.startsWith('/admin')) {
+    const sessionCookie = req.cookies.get(SESSION_COOKIE)
+    if (!sessionCookie?.value) {
+      const loginUrl = url.clone()
+      loginUrl.pathname = '/home/login'
+      loginUrl.searchParams.set('from', url.pathname)
+      return NextResponse.redirect(loginUrl)
     }
   }
 

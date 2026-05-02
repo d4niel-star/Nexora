@@ -11,6 +11,7 @@ import {
   commitPickupLocalStockForOrderTx,
   restorePickupLocalStockForOrder,
 } from "@/lib/store-engine/pickup/local-stock";
+import { generateNextOrderNumber } from "@/lib/store-engine/orders/sequence";
 
 /**
  * Creates an Order from a CheckoutDraft, then initiates a Mercado Pago preference.
@@ -25,7 +26,11 @@ export async function initiatePayment(draftId: string, storeSlug: string): Promi
     where: { id: draftId },
     include: {
       cart: {
-        include: { items: true }
+        include: {
+          items: {
+            include: { product: { select: { cost: true } } },
+          },
+        },
       }
     }
   });
@@ -114,12 +119,13 @@ export async function initiatePayment(draftId: string, storeSlug: string): Promi
   const shippingAmount = isPickup ? 0 : draft.shippingAmount || 0;
   const total = subtotal + shippingAmount;
 
-  // 2. Generate order number
-  const orderNumber = `#${Math.floor(10000 + Math.random() * 90000)}`;
-
-  // 3. Create Order. Pickup stock is decremented in the same
-  // transaction so order + LocalInventory move together.
+  // 2. Create Order. Order number is generated inside the transaction
+  // via atomic sequence increment — no Math.random(). Pickup stock is
+  // decremented in the same transaction so order + LocalInventory move
+  // together.
   const order = await prisma.$transaction(async (tx) => {
+    const orderNumber = await generateNextOrderNumber(tx, draft.storeId);
+
     const draftClaim = await tx.checkoutDraft.updateMany({
       where: { id: draft.id, status: "pending" },
       data: { status: "completed" },
@@ -179,6 +185,7 @@ export async function initiatePayment(draftId: string, storeSlug: string): Promi
             variantTitleSnapshot: item.variantTitleSnapshot,
             imageSnapshot: item.imageSnapshot,
             priceSnapshot: item.priceSnapshot,
+            costSnapshot: item.product?.cost ?? 0,
             quantity: item.quantity,
             lineTotal: item.priceSnapshot * item.quantity,
           }))

@@ -87,7 +87,23 @@ model Store {
   cashRegisterSessions CashRegisterSession[]
   cashMovements        CashMovement[]
 
+  orderSequence StoreOrderSequence?
+
   @@index([ownerId])
+}
+
+// ─── Sequential order number per store ────────────────────────────────────
+// Replaces Math.random() order number generation. The helper
+// `generateNextOrderNumber` atomically increments `nextValue` inside
+// the same Prisma transaction that creates the Order, so no two orders
+// can ever collide. Format: NX-000001, NX-000002, etc.
+model StoreOrderSequence {
+  id        String   @id @default(uuid())
+  storeId   String   @unique
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  nextValue Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model User {

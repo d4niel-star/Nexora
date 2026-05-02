@@ -12,102 +12,27 @@ import { storePath } from "@/lib/store-engine/urls";
 import { restoreOrderStock } from "@/lib/store-engine/inventory/actions";
 import { restorePickupLocalStockForOrder } from "@/lib/store-engine/pickup/local-stock";
 
-export async function createOrderFromDraft(draftId: string) {
-  const draft = await prisma.checkoutDraft.findUnique({
-    where: { id: draftId },
-    include: {
-      cart: {
-        include: { 
-          items: {
-            include: { product: true }
-          }
-        }
-      }
-    }
-  });
-
-  if (!draft || !draft.cart) {
-    throw new Error("Draft/Cart not found");
-  }
-
-  const { cart } = draft;
-
-  // Simple validation
-  if (!draft.email || !draft.firstName || !draft.addressLine1 || !draft.city) {
-    throw new Error("Missing required fields");
-  }
-
-  const orderNumber = `#${Math.floor(10000 + Math.random() * 90000)}`;
-
-  const order = await prisma.order.create({
-    data: {
-      storeId: draft.storeId,
-      orderNumber,
-      cartId: cart.id,
-      
-      email: draft.email,
-      firstName: draft.firstName,
-      lastName: draft.lastName || "",
-      phone: draft.phone,
-      document: draft.document,
-      
-      addressLine1: draft.addressLine1,
-      addressLine2: draft.addressLine2,
-      city: draft.city,
-      province: draft.province || "",
-      postalCode: draft.postalCode || "",
-      country: draft.country || "AR",
-      
-      currency: cart.currency,
-      subtotal: draft.subtotal,
-      shippingAmount: draft.shippingAmount,
-      total: draft.total,
-      
-      status: "new",
-      paymentStatus: "pending",
-      channel: "Storefront",
-      
-      items: {
-        create: cart.items.map(item => ({
-          productId: item.productId,
-          variantId: item.variantId,
-          titleSnapshot: item.titleSnapshot,
-          variantTitleSnapshot: item.variantTitleSnapshot,
-          imageSnapshot: item.imageSnapshot,
-          priceSnapshot: item.priceSnapshot,
-          costSnapshot: item.product?.cost || 0, // IMPORTANT: Snapshot the cost at the time of purchase
-          quantity: item.quantity,
-          lineTotal: item.priceSnapshot * item.quantity,
-        }))
-      }
-    }
-  });
-
-  // Mark cart as completed
-  await prisma.cart.update({
-    where: { id: cart.id },
-    data: { status: "completed" }
-  });
-
-  // Mark draft as completed
-  await prisma.checkoutDraft.update({
-    where: { id: draftId },
-    data: { status: "completed" }
-  });
-
-  // Revalidate admin orders page so the new order appears immediately
-  revalidatePath("/admin/orders");
-
-  await logSystemEvent({
-    storeId: draft.storeId,
-    entityType: "order",
-    entityId: order.id,
-    eventType: "order_created",
-    source: "storefront_checkout",
-    message: `Nueva orden ${orderNumber} creada por ${draft.firstName} ${draft.lastName}`
-  });
-
-  return order.id;
+/**
+ * @deprecated — REMOVED in Phase 1 stabilization.
+ *
+ * This function used to create orders without stock validation, without
+ * Payment records, and without Mercado Pago integration. It was a legacy
+ * bypass path that could produce inconsistent data.
+ *
+ * All real checkout must go through `initiatePayment` in
+ * `src/lib/payments/mercadopago/actions.ts`.
+ *
+ * If you need a non-MP order creation path in the future, implement it
+ * with the same safeguards: stock validation, transactional order number
+ * generation, costSnapshot, and Payment record creation.
+ */
+export async function createOrderFromDraft(_draftId: string): Promise<never> {
+  throw new Error(
+    "[DEPRECATED] createOrderFromDraft has been disabled. " +
+    "Use initiatePayment() from lib/payments/mercadopago/actions.ts instead. " +
+    "This function was removed because it created orders without stock " +
+    "validation, payment records, or cost snapshots."
+  );
 }
 
 export async function cancelOrder(orderId: string, reason: string, doRefund: boolean) {
