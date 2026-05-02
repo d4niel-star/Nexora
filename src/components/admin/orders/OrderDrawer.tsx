@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Order } from "../../../types/order";
 import { OrderStatusBadge, PaymentStatusBadge } from "./StatusBadge";
@@ -9,6 +9,9 @@ import { FulfillmentControls } from "./FulfillmentControls";
 import { CancelOrderControls } from "./CancelOrderControls";
 import { FiscalInvoiceControls } from "./FiscalInvoiceControls";
 import { buildVariantHref } from "@/lib/navigation/hrefs";
+import { OrderTimeline } from "./OrderTimeline";
+import { fetchOrderTimeline } from "@/lib/store-engine/orders/timeline-actions";
+import type { OrderTimelineEvent } from "@/lib/store-engine/orders/timeline";
 
 interface OrderDrawerProps {
   order: Order | null;
@@ -17,7 +20,21 @@ interface OrderDrawerProps {
 }
 
 export function OrderDrawer({ order, isOpen, onClose }: OrderDrawerProps) {
+  const [timelineEvents, setTimelineEvents] = useState<OrderTimelineEvent[]>([]);
+  const [timelineLoading, setTimelineLoading] = useState(false);
   
+  useEffect(() => {
+    if (isOpen && order) {
+      setTimelineLoading(true);
+      fetchOrderTimeline(order.id)
+        .then(setTimelineEvents)
+        .catch(() => setTimelineEvents([]))
+        .finally(() => setTimelineLoading(false));
+    } else {
+      setTimelineEvents([]);
+    }
+  }, [isOpen, order?.id]);
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -196,6 +213,18 @@ export function OrderDrawer({ order, isOpen, onClose }: OrderDrawerProps) {
               <p className="leading-[1.55] text-ink-3">{order.notes}</p>
             </div>
           )}
+
+          {/* Order Timeline */}
+          <div className="mt-2">
+            {timelineLoading ? (
+              <div className="flex items-center gap-2 text-ink-6 text-[13px] py-4">
+                <div className="w-4 h-4 border-2 border-ink-6 border-t-transparent rounded-full animate-spin" />
+                Cargando actividad…
+              </div>
+            ) : (
+              <OrderTimeline events={timelineEvents} />
+            )}
+          </div>
 
           {/* Payment Provider Info */}
           {order.paymentProvider && (
