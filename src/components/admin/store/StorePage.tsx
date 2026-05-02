@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -21,7 +21,6 @@ import { StoreSummaryView } from "@/components/admin/store/StoreSummaryView";
 import { DomainSettingsView } from "@/components/admin/store/tabs/DomainSettingsView";
 import { PaymentsHub } from "@/components/admin/store/tabs/PaymentsHub";
 import { CommunicationPage } from "@/components/admin/communication/CommunicationPage";
-import { TableSkeleton } from "@/components/admin/orders/TableSkeleton";
 import { cn } from "@/lib/utils";
 import type { MercadoPagoPlatformReadiness } from "@/lib/payments/mercadopago/platform-readiness";
 import type {
@@ -40,7 +39,7 @@ interface ToastMessage {
   description: string;
 }
 
-const loadingDelayMs = 260;
+
 
 function resolveStoreTab(tab: string | null): TabValue {
   if (tab === "dominio" || tab === "pagos" || tab === "comunicacion") return tab;
@@ -110,8 +109,8 @@ export function StorePage({
   const urlTab = resolveStoreTab(searchParams.get("tab"));
 
   const [activeTab, setActiveTab] = useState<TabValue>(urlTab);
-  const [isLoading, setIsLoading] = useState(true);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const prevUrlTab = useRef(urlTab);
 
   const publicPath =
     initialData?.publicUrl ?? (initialData ? `/store/${initialData.store.slug}` : "#");
@@ -172,17 +171,13 @@ export function StorePage({
     setToasts((current) => current.filter((toast) => toast.id !== id));
   }, []);
 
-  useEffect(() => {
-    if (urlTab === activeTab) return;
-    setActiveTab(urlTab);
-    setIsLoading(true);
-  }, [activeTab, urlTab]);
-
-  useEffect(() => {
-    if (!isLoading) return;
-    const timeout = window.setTimeout(() => setIsLoading(false), loadingDelayMs);
-    return () => window.clearTimeout(timeout);
-  }, [isLoading]);
+  // Sync URL tab → component state (without triggering loading cycle)
+  if (urlTab !== prevUrlTab.current) {
+    prevUrlTab.current = urlTab;
+    if (urlTab !== activeTab) {
+      setActiveTab(urlTab);
+    }
+  }
 
   useEffect(() => {
     const mp = searchParams.get("mp");
@@ -236,9 +231,7 @@ export function StorePage({
 
   const handleTabChange = (tab: TabValue) => {
     if (tab === activeTab) return;
-
     setActiveTab(tab);
-    setIsLoading(true);
 
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", tab);
@@ -246,7 +239,6 @@ export function StorePage({
   };
 
   const refreshData = () => {
-    setIsLoading(true);
     router.refresh();
   };
 
@@ -329,81 +321,74 @@ export function StorePage({
           })}
         </div>
 
-        <div className="min-h-[460px] bg-[var(--surface-0)]" role="tabpanel">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={isLoading ? "loading" : activeTab}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-            >
-              {isLoading ? (
-                <TableSkeleton />
-              ) : activeTab === "resumen" ? (
-                <StoreSummaryView
-                  initialData={initialData ?? null}
-                  isLive={isLive}
-                  isMercadoPagoConnected={isMercadoPagoConnected}
-                  isOps={isOps}
-                  paymentsPlatformReady={mercadoPagoPlatformReadiness.ready}
-                  onNavigate={handleTabChange}
-                  onRefresh={refreshData}
-                  pushToast={pushToast}
-                  publicPath={publicPath}
-                />
-              ) : activeTab === "comunicacion" ? (
-                <div className="px-5 py-6 sm:px-7 sm:py-8">
-                  {communicationSettings ? (
-                    <CommunicationPage
-                      initialSettings={communicationSettings}
-                      embedded
+        <div className="min-h-[320px] bg-[var(--surface-0)]" role="tabpanel">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+          >
+            {activeTab === "resumen" ? (
+              <StoreSummaryView
+                initialData={initialData ?? null}
+                isLive={isLive}
+                isMercadoPagoConnected={isMercadoPagoConnected}
+                isOps={isOps}
+                paymentsPlatformReady={mercadoPagoPlatformReadiness.ready}
+                onNavigate={handleTabChange}
+                onRefresh={refreshData}
+                pushToast={pushToast}
+                publicPath={publicPath}
+              />
+            ) : activeTab === "comunicacion" ? (
+              <div className="px-5 py-6 sm:px-7 sm:py-8">
+                {communicationSettings ? (
+                  <CommunicationPage
+                    initialSettings={communicationSettings}
+                    embedded
+                  />
+                ) : (
+                  <div className="rounded-[var(--r-md)] border border-dashed border-[color:var(--hairline)] bg-[var(--surface-1)] px-5 py-10 text-center">
+                    <MessageSquare
+                      className="mx-auto h-5 w-5 text-ink-5"
+                      strokeWidth={1.75}
+                      aria-hidden
                     />
-                  ) : (
-                    <div className="rounded-[var(--r-md)] border border-dashed border-[color:var(--hairline)] bg-[var(--surface-1)] px-5 py-10 text-center">
-                      <MessageSquare
-                        className="mx-auto h-5 w-5 text-ink-5"
-                        strokeWidth={1.75}
-                        aria-hidden
-                      />
-                      <p className="mt-3 text-[14px] font-semibold text-ink-0">
-                        No pudimos cargar la configuración de Comunicación
-                      </p>
-                      <p className="mt-1.5 text-[12.5px] leading-[1.5] text-ink-5">
-                        Recargá la página para volver a intentar. Si el problema
-                        persiste, los datos de canales y emails siguen
-                        guardados — solo no pudimos leerlos en este momento.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={refreshData}
-                        className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-4 text-[12.5px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-1)]"
-                      >
-                        <RefreshCw className="h-3.5 w-3.5" />
-                        Reintentar
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ) : activeTab === "dominio" ? (
-                <DomainSettingsView
-                  initialData={initialData ?? null}
-                  onRefresh={refreshData}
-                  pushToast={pushToast}
-                  storeId={initialData?.store.id ?? null}
-                />
-              ) : (
-                <PaymentsHub
-                  storeId={initialData?.store.id ?? null}
-                  publicPath={publicPath}
-                  isOps={isOps}
-                  platformReadiness={mercadoPagoPlatformReadiness}
-                  connections={paymentConnections}
-                  pushToast={pushToast}
-                />
-              )}
-            </motion.div>
-          </AnimatePresence>
+                    <p className="mt-3 text-[14px] font-semibold text-ink-0">
+                      No pudimos cargar la configuración de Comunicación
+                    </p>
+                    <p className="mt-1.5 text-[12.5px] leading-[1.5] text-ink-5">
+                      Recargá la página para volver a intentar.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={refreshData}
+                      className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-4 text-[12.5px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-1)]"
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                      Reintentar
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : activeTab === "dominio" ? (
+              <DomainSettingsView
+                initialData={initialData ?? null}
+                onRefresh={refreshData}
+                pushToast={pushToast}
+                storeId={initialData?.store.id ?? null}
+              />
+            ) : (
+              <PaymentsHub
+                storeId={initialData?.store.id ?? null}
+                publicPath={publicPath}
+                isOps={isOps}
+                platformReadiness={mercadoPagoPlatformReadiness}
+                connections={paymentConnections}
+                pushToast={pushToast}
+              />
+            )}
+          </motion.div>
         </div>
       </div>
 

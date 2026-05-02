@@ -2,9 +2,7 @@
 
 import { useMemo, useRef, useTransition } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import {
-  AlertTriangle,
   ArrowRight,
   ArrowUpRight,
   CheckCircle2,
@@ -13,11 +11,9 @@ import {
   Globe,
   Package,
   Pencil,
-  RefreshCw,
   Save,
   ShieldCheck,
   Sparkles,
-  Store as StorefrontIcon,
   Truck,
 } from "lucide-react";
 
@@ -36,58 +32,12 @@ import type { AdminStoreInitialData } from "@/types/store-engine";
 type TabValue = "resumen" | "dominio" | "pagos";
 type Tone = "success" | "warning" | "danger" | "neutral";
 
-type ActionTarget = {
-  actionLabel?: string;
-  href?: string;
-  onClick?: () => void;
-  external?: boolean;
-};
-
-type OperationalRow = ActionTarget & {
-  id: string;
-  label: string;
-  value: string;
-  description: string;
-  tone: Tone;
-  monospace?: boolean;
-};
-
-type AlertItem = ActionTarget & {
-  id: string;
-  title: string;
-  description: string;
-  tone: "warning" | "danger";
-};
-
-type ChecklistEntry = ActionTarget & {
-  id: string;
-  title: string;
-  description: string;
-  done: boolean;
-};
-
-type ShortcutAction = ActionTarget & {
-  id: string;
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-};
-
 const timeFormatter = new Intl.DateTimeFormat("es-AR", {
   day: "2-digit",
   month: "short",
   hour: "2-digit",
   minute: "2-digit",
 });
-
-const solidButtonClasses =
-  "inline-flex h-10 items-center gap-2 rounded-full bg-ink-0 px-5 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)] disabled:cursor-not-allowed disabled:opacity-40";
-
-const outlineButtonClasses =
-  "inline-flex h-10 items-center gap-2 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-5 text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)] disabled:cursor-not-allowed disabled:opacity-40";
-
-const inlineActionClasses =
-  "inline-flex items-center gap-1.5 text-[12px] font-medium text-ink-2 transition-colors hover:text-ink-0";
 
 function buildPublicStoreUrl(
   initialData: AdminStoreInitialData | null,
@@ -142,10 +92,6 @@ export function StoreSummaryView({
     const policiesReady = initialData?.checkout.policiesReady ?? false;
     const businessInfoReady = initialData?.checkout.businessInfoReady ?? false;
     const paymentStatus = initialData?.paymentProvider?.status ?? "disconnected";
-    const paymentNeedsAttention =
-      paymentStatus === "disconnected" ||
-      paymentStatus === "needs_reconnection" ||
-      paymentStatus === "error";
     const legalReady = policiesReady && businessInfoReady;
     const checkoutReady =
       paymentsPlatformReady &&
@@ -160,7 +106,6 @@ export function StoreSummaryView({
     const primaryDomain =
       normalizeDomainHost(initialData?.store.primaryDomain) ?? internalDomain ?? "sin dominio";
     const customDomains = initialData?.domains ?? [];
-    const activeCustomDomains = customDomains.filter((domain) => domain.status === "active");
     const domainAttention = customDomains.find(
       (domain) => domain.status === "failed" || domain.status === "pending",
     );
@@ -173,368 +118,92 @@ export function StoreSummaryView({
       ? timeFormatter.format(new Date(initialData.summary.lastPublishedAt))
       : null;
 
-    const alerts: AlertItem[] = [];
+    // Checklist items — keep only the most important ones
+    type CheckItem = {
+      id: string;
+      label: string;
+      detail: string;
+      done: boolean;
+      tone: Tone;
+      actionLabel?: string;
+      href?: string;
+      onClick?: () => void;
+    };
 
-    if (sellableProducts === 0) {
-      alerts.push({
-        id: "products",
-        title: "No hay productos vendibles",
-        description:
-          "La tienda no puede salir en vivo sin al menos un producto publicado con stock.",
-        tone: "danger",
-        actionLabel: productCount === 0 ? "Crear primer SKU" : "Ir a catalogo",
-        onClick:
-          productCount === 0
-            ? () => firstProductRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-            : undefined,
+    const checks: CheckItem[] = [
+      {
+        id: "catalog",
+        label: "Catálogo vendible",
+        detail: sellableProducts > 0
+          ? `${sellableProducts} producto${sellableProducts === 1 ? "" : "s"} listo${sellableProducts === 1 ? "" : "s"}`
+          : "Sin productos vendibles",
+        done: sellableProducts > 0,
+        tone: sellableProducts > 0 ? "success" : "danger",
+        actionLabel: productCount === 0 ? "Crear SKU" : "Catálogo",
+        onClick: productCount === 0
+          ? () => firstProductRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+          : undefined,
         href: productCount === 0 ? undefined : "/admin/catalog",
-      });
-    }
-
-    if (!paymentsPlatformReady) {
-      alerts.push({
-        id: "platform-payments",
-        title: "Mercado Pago bloqueado por plataforma",
-        description: isOps
-          ? "Falta completar la configuracion global para poder iniciar OAuth y cobrar."
-          : "La plataforma aun no habilito la integracion de cobro para esta tienda.",
-        tone: "danger",
-        actionLabel: "Revisar pagos",
-        onClick: () => onNavigate("pagos"),
-      });
-    } else if (paymentStatus === "needs_reconnection" || paymentStatus === "error") {
-      alerts.push({
-        id: "payments-health",
-        title: "Mercado Pago requiere atencion",
-        description:
-          "El proveedor esta conectado con errores o necesita reautorizacion antes de cobrar con normalidad.",
-        tone: "danger",
-        actionLabel: "Abrir pagos",
-        onClick: () => onNavigate("pagos"),
-      });
-    } else if (paymentStatus === "disconnected") {
-      alerts.push({
-        id: "payments-missing",
-        title: "Cobro pendiente",
-        description:
-          "La tienda puede prepararse, pero el checkout no cobrara hasta vincular una cuenta real.",
-        tone: "warning",
-        actionLabel: "Configurar pagos",
-        onClick: () => onNavigate("pagos"),
-      });
-    }
-
-    if (!hasShippingConfigured) {
-      alerts.push({
-        id: "shipping",
-        title: "No hay envios activos",
-        description:
-          "El checkout queda incompleto mientras no exista al menos un metodo de envio habilitado.",
-        tone: "warning",
-        actionLabel: "Configurar envios",
-        href: "/admin/shipping",
-      });
-    }
-
-    if (!legalReady) {
-      alerts.push({
-        id: "legal",
-        title: "Faltan legales o datos comerciales",
-        description:
-          "Conviene completar politicas y razon social para operar de forma mas clara y profesional.",
-        tone: "warning",
-        actionLabel: "Completar legales",
-        href: "/admin/settings/legal",
-      });
-    }
-
-    if (domainAttention) {
-      alerts.push({
-        id: "domain-attention",
-        title:
-          domainAttention.status === "failed"
-            ? "El dominio necesita correccion"
-            : "El dominio todavia no propago",
-        description:
-          domainAttention.status === "failed"
-            ? `El dominio ${domainAttention.hostname} no pudo validarse y requiere revisar DNS.`
-            : `El dominio ${domainAttention.hostname} esta enlazado pero aun espera propagacion DNS.`,
-        tone: domainAttention.status === "failed" ? "danger" : "warning",
-        actionLabel: "Revisar dominio",
-        onClick: () => onNavigate("dominio"),
-      });
-    } else if (usingInternalDomain) {
-      alerts.push({
-        id: "internal-domain",
-        title: "Seguis usando el subdominio interno",
-        description:
-          "La tienda ya funciona, pero todavia no tiene un dominio propio como frente comercial.",
-        tone: "warning",
-        actionLabel: "Conectar dominio",
-        onClick: () => onNavigate("dominio"),
-      });
-    }
-
-    if (!isLive) {
-      alerts.push({
-        id: "publication-state",
-        title: "La tienda sigue en borrador",
-        description:
-          sellableProducts > 0
-            ? "Ya tenes base para publicarla, pero todavia no esta visible para clientes."
-            : "Todavia no hay base suficiente para publicar sin friccion.",
-        tone: sellableProducts > 0 ? "warning" : "danger",
-      });
-    } else if (hasUnpublishedChanges) {
-      alerts.push({
-        id: "publish-pending",
-        title: "Hay cambios sin publicar",
-        description:
-          "La tienda esta en vivo, pero la version visible no incluye las ultimas modificaciones.",
-        tone: "warning",
-      });
-    }
-
-    const operationalRows: OperationalRow[] = [
-      {
-        id: "store-state",
-        label: "Estado de tienda",
-        value: isLive ? "En vivo" : sellableProducts > 0 ? "Lista para publicar" : "En preparacion",
-        description: isLive
-          ? "La tienda ya expone una version publica para clientes."
-          : sellableProducts > 0
-            ? "Hay base comercial lista; solo falta confirmar la publicacion."
-            : "Todavia falta cargar un producto vendible para habilitar la salida en vivo.",
-        tone: isLive ? "success" : sellableProducts > 0 ? "warning" : "danger",
       },
-      {
-        id: "publication",
-        label: "Publicacion",
-        value: hasUnpublishedChanges ? "Cambios pendientes" : "Al dia",
-        description: lastPublishedAt
-          ? `Ultima publicacion: ${lastPublishedAt}.`
-          : "Todavia no existe una publicacion registrada.",
-        tone: hasUnpublishedChanges ? "warning" : "success",
-      },
-      {
-        id: "domain",
-        label: "Dominio publico",
-        value: primaryDomain,
-        description: usingInternalDomain
-          ? "La tienda publica usando el subdominio interno de Nexora."
-          : `${activeCustomDomains.length} dominio${activeCustomDomains.length === 1 ? "" : "s"} activo${activeCustomDomains.length === 1 ? "" : "s"} conectado${activeCustomDomains.length === 1 ? "" : "s"}.`,
-        tone: domainAttention
-          ? domainAttention.status === "failed"
-            ? "danger"
-            : "warning"
-          : usingInternalDomain
-            ? "warning"
-            : "success",
-        actionLabel: "Abrir dominio",
-        onClick: () => onNavigate("dominio"),
-        monospace: true,
-      },
-    ];
-
-    const checkoutRows: OperationalRow[] = [
       {
         id: "payments",
-        label: "Cobro",
-        value: !paymentsPlatformReady
+        label: "Cobro operativo",
+        detail: !paymentsPlatformReady
           ? "Bloqueado por plataforma"
           : isMercadoPagoConnected
             ? "Mercado Pago conectado"
-            : "Pendiente de conexion",
-        description: !paymentsPlatformReady
-          ? "La integracion global no esta lista para iniciar OAuth."
-          : isMercadoPagoConnected
-            ? "La tienda ya puede cobrar con la cuenta vinculada."
-            : "Hace falta vincular Mercado Pago antes de operar con cobros reales.",
-        tone: !paymentsPlatformReady
-          ? "danger"
-          : isMercadoPagoConnected
-            ? "success"
-            : paymentNeedsAttention
-              ? "warning"
-              : "neutral",
-        actionLabel: "Abrir pagos",
+            : "Pendiente de conexión",
+        done: paymentsPlatformReady && isMercadoPagoConnected,
+        tone: !paymentsPlatformReady ? "danger" : isMercadoPagoConnected ? "success" : "warning",
+        actionLabel: "Pagos",
         onClick: () => onNavigate("pagos"),
       },
       {
         id: "shipping",
-        label: "Envios",
-        value: hasShippingConfigured
-          ? `${activeShippingMethods} metodo${activeShippingMethods === 1 ? "" : "s"} activo${activeShippingMethods === 1 ? "" : "s"}`
+        label: "Envíos",
+        detail: hasShippingConfigured
+          ? `${activeShippingMethods} método${activeShippingMethods === 1 ? "" : "s"} activo${activeShippingMethods === 1 ? "" : "s"}`
           : "Sin configurar",
-        description: hasShippingConfigured
-          ? "El checkout ya cuenta con al menos una opcion de entrega habilitada."
-          : "Configura envios para evitar friccion y bloqueos operativos en checkout.",
+        done: hasShippingConfigured,
         tone: hasShippingConfigured ? "success" : "warning",
-        actionLabel: "Configurar",
+        actionLabel: "Envíos",
         href: "/admin/shipping",
+      },
+      {
+        id: "domain",
+        label: "Dominio",
+        detail: usingInternalDomain ? "Subdominio interno" : primaryDomain,
+        done: !usingInternalDomain && !domainAttention,
+        tone: domainAttention ? (domainAttention.status === "failed" ? "danger" : "warning") : usingInternalDomain ? "warning" : "success",
+        actionLabel: "Dominio",
+        onClick: () => onNavigate("dominio"),
       },
       {
         id: "legal",
         label: "Legales",
-        value: legalReady ? "Completos" : "Incompletos",
-        description: legalReady
-          ? "Politicas y datos comerciales disponibles para una operacion mas clara."
-          : "Faltan politicas o informacion comercial para cerrar el frente operativo.",
-        tone: legalReady ? "success" : "warning",
-        actionLabel: "Completar",
-        href: "/admin/settings/legal",
-      },
-    ];
-
-    const checklist: ChecklistEntry[] = [
-      {
-        id: "products",
-        title: "Catalogo vendible",
-        description:
-          sellableProducts > 0
-            ? `${sellableProducts} producto${sellableProducts === 1 ? "" : "s"} con stock y publicacion activa.`
-            : "Aun no existe un SKU listo para vender.",
-        done: sellableProducts > 0,
-        actionLabel: productCount === 0 ? "Crear primer SKU" : "Ir a catalogo",
-        onClick:
-          productCount === 0
-            ? () => firstProductRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-            : undefined,
-        href: productCount === 0 ? undefined : "/admin/catalog",
-      },
-      {
-        id: "publication",
-        title: "Publicacion al dia",
-        description: isLive
-          ? hasUnpublishedChanges
-            ? "La tienda esta en vivo, pero faltan publicar los ultimos cambios."
-            : "La version publica ya refleja el estado actual de la tienda."
-          : "Todavia no esta publicada para clientes.",
-        done: isLive && !hasUnpublishedChanges,
-      },
-      {
-        id: "payments",
-        title: "Cobro operativo",
-        description: checkoutReady
-          ? "Pagos, envios y legales sostienen un checkout listo para operar."
-          : "Todavia falta cerrar pagos, envios o legales para cobrar con menos friccion.",
-        done: checkoutReady,
-        actionLabel: "Ver pagos",
-        onClick: () => onNavigate("pagos"),
-      },
-      {
-        id: "domain",
-        title: "Dominio profesional",
-        description: usingInternalDomain
-          ? "La tienda aun usa el dominio interno de Nexora."
-          : "La marca ya expone un dominio propio hacia clientes.",
-        done: !usingInternalDomain && !domainAttention,
-        actionLabel: "Gestionar dominio",
-        onClick: () => onNavigate("dominio"),
-      },
-      {
-        id: "legal",
-        title: "Legales y datos comerciales",
-        description: legalReady
-          ? "Politicas y business info completas."
-          : "Falta completar politicas o datos comerciales.",
+        detail: legalReady ? "Completos" : "Incompletos",
         done: legalReady,
-        actionLabel: "Abrir legales",
+        tone: legalReady ? "success" : "warning",
+        actionLabel: "Legales",
         href: "/admin/settings/legal",
       },
     ];
 
-    const quickActions: ShortcutAction[] = [
-      productCount === 0
-        ? {
-            id: "first-product",
-            title: "Crear primer SKU",
-            description: "Carga un producto vendible sin salir de Mi tienda.",
-            icon: <Package className="h-4 w-4" />,
-            onClick: () =>
-              firstProductRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
-          }
-        : {
-            id: "catalog",
-            title: "Catalogo",
-            description: "Agregar o corregir productos, stock y publicacion.",
-            icon: <Package className="h-4 w-4" />,
-            href: "/admin/catalog",
-          },
-      {
-        id: "domain",
-        title: "Dominio",
-        description: "Revisar DNS, dominio principal y propagacion.",
-        icon: <Globe className="h-4 w-4" />,
-        onClick: () => onNavigate("dominio"),
-      },
-      {
-        id: "payments",
-        title: "Pagos",
-        description: "Conectar Mercado Pago o corregir reconexion.",
-        icon: <CreditCard className="h-4 w-4" />,
-        onClick: () => onNavigate("pagos"),
-      },
-      {
-        id: "shipping",
-        title: "Envios",
-        description: "Activar metodos de entrega para checkout.",
-        icon: <Truck className="h-4 w-4" />,
-        href: "/admin/shipping",
-      },
-      {
-        id: "legal",
-        title: "Legales",
-        description: "Completar politicas y datos comerciales.",
-        icon: <ShieldCheck className="h-4 w-4" />,
-        href: "/admin/settings/legal",
-      },
-      {
-        id: "store-ai",
-        title: "Tienda IA",
-        description: "Branding, navegacion y contenido editorial.",
-        icon: <Sparkles className="h-4 w-4" />,
-        href: "/admin/store-ai",
-      },
-    ];
-
-    const blockingCount = alerts.filter((alert) => alert.tone === "danger").length;
-    const warningCount = alerts.filter((alert) => alert.tone === "warning").length;
-
-    const heroTitle =
-      blockingCount > 0
-        ? "Hay bloqueos operativos a resolver"
-        : warningCount > 0
-          ? "La tienda esta encaminada, pero todavia no cierra del todo"
-          : "La operacion esta estable y lista para vender";
-
-    const heroDescription =
-      blockingCount > 0
-        ? "Resumen concentra lo que hoy frena publicacion, cobro o claridad operativa para que puedas resolverlo rapido."
-        : warningCount > 0
-          ? "No hay un bloqueo critico, pero todavia quedan frentes abiertos en dominio, checkout o publicacion."
-          : "Publicacion, dominio, checkout y cobro quedaron alineados. Mi tienda pasa a funcionar como centro operativo real.";
+    const doneCount = checks.filter((c) => c.done).length;
+    const progress = Math.round((doneCount / checks.length) * 100);
 
     return {
       productCount,
       publishedProducts,
       sellableProducts,
-      activeShippingMethods,
-      legalReady,
-      checkoutReady,
       primaryDomain,
       usingInternalDomain,
       hasUnpublishedChanges,
       lastPublishedAt,
-      alerts,
-      operationalRows,
-      checkoutRows,
-      checklist,
-      quickActions,
-      blockingCount,
-      warningCount,
-      heroTitle,
-      heroDescription,
+      checkoutReady,
+      checks,
+      doneCount,
+      progress,
       publicStoreUrl: buildPublicStoreUrl(initialData, publicPath),
     };
   }, [
@@ -551,12 +220,12 @@ export function StoreSummaryView({
     startPublishing(async () => {
       try {
         await publishStoreAction();
-        pushToast("Publicacion actualizada", "La tienda quedo publicada correctamente.");
+        pushToast("Publicación actualizada", "La tienda quedó publicada correctamente.");
         onRefresh();
       } catch (error) {
         pushToast(
           "No se pudo publicar",
-          error instanceof Error ? error.message : "Ocurrio un error al publicar la tienda.",
+          error instanceof Error ? error.message : "Ocurrió un error al publicar la tienda.",
         );
       }
     });
@@ -565,7 +234,7 @@ export function StoreSummaryView({
   const handleShare = async () => {
     try {
       await navigator.clipboard.writeText(model.publicStoreUrl);
-      pushToast("Link copiado", "La URL publica de la tienda ya esta en el portapapeles.");
+      pushToast("Link copiado", "La URL pública de la tienda ya está en el portapapeles.");
     } catch {
       pushToast("No se pudo copiar", "Intenta nuevamente desde un navegador con permisos.");
     }
@@ -573,14 +242,11 @@ export function StoreSummaryView({
 
   if (!initialData) {
     return (
-      <div className="p-6">
-        <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6">
-          <h2 className="text-[18px] font-semibold text-ink-0">No encontramos datos de la tienda</h2>
-          <p className="mt-2 text-[13px] leading-[1.55] text-ink-5">
-            La superficie operativa necesita una tienda cargada para poder mostrar dominio,
-            checkout y pagos.
-          </p>
-        </div>
+      <div className="px-5 py-10 text-center">
+        <p className="text-[14px] font-semibold text-ink-0">No encontramos datos de la tienda</p>
+        <p className="mt-1.5 text-[12.5px] text-ink-5">
+          La superficie operativa necesita una tienda cargada.
+        </p>
       </div>
     );
   }
@@ -589,180 +255,258 @@ export function StoreSummaryView({
   const primaryActionDisabled = model.sellableProducts === 0 || isPublishing;
 
   return (
-    <div className="space-y-6 p-6">
-      <motion.section
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-        className="overflow-hidden rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)]"
-      >
-        <div className="grid gap-6 p-6 xl:grid-cols-[1.4fr_0.9fr] xl:items-start">
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-5">
-              <StorefrontIcon className="h-3.5 w-3.5" />
-              Resumen operativo
-            </div>
-            <div className="space-y-2">
-              <h2 className="text-[26px] font-semibold leading-[1.08] tracking-[-0.03em] text-ink-0">
-                {model.heroTitle}
-              </h2>
-              <p className="max-w-2xl text-[13.5px] leading-[1.6] text-ink-5">
-                {model.heroDescription}
+    <div className="space-y-0">
+      {/* ── Hero header ─────────────────────────────────── */}
+      <div className="flex flex-col gap-4 border-b border-[color:var(--hairline)] px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div className="min-w-0">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span
+                className={cn(
+                  "inline-block h-2 w-2 rounded-full",
+                  isLive ? "bg-[color:var(--signal-success)]" : "bg-ink-6",
+                )}
+              />
+              <p className="text-[13px] font-semibold text-ink-0">
+                {isLive ? "Tienda en vivo" : "En borrador"}
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {showPublishButton ? (
-                <button
-                  type="button"
-                  onClick={handlePublish}
-                  disabled={primaryActionDisabled}
-                  className={solidButtonClasses}
-                >
-                  <Eye className="h-3.5 w-3.5" />
-                  {isPublishing
-                    ? "Publicando..."
-                    : isLive
-                      ? "Publicar cambios"
-                      : "Publicar tienda"}
-                </button>
-              ) : (
-                <a
-                  href={model.publicStoreUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={solidButtonClasses}
-                >
-                  <Eye className="h-3.5 w-3.5" />
-                  Ver tienda
-                </a>
-              )}
-
-              <a
-                href={model.publicStoreUrl}
-                target="_blank"
-                rel="noreferrer"
-                className={outlineButtonClasses}
-              >
-                <ArrowUpRight className="h-3.5 w-3.5" />
-                Abrir storefront
-              </a>
-
-              <button type="button" onClick={handleShare} className={outlineButtonClasses}>
-                <ArrowRight className="h-3.5 w-3.5" />
-                Copiar link
-              </button>
-
-              <button type="button" onClick={onRefresh} className={outlineButtonClasses}>
-                <RefreshCw className="h-3.5 w-3.5" />
-                Actualizar
-              </button>
-            </div>
+            {model.lastPublishedAt ? (
+              <span className="text-[11px] text-ink-5">
+                Última publicación: {model.lastPublishedAt}
+              </span>
+            ) : null}
           </div>
-
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-            <HeroStat
-              label="Productos vendibles"
-              value={model.sellableProducts.toString()}
-              description={`${model.publishedProducts} publicados`}
-            />
-            <HeroStat
-              label="Dominio principal"
-              value={model.primaryDomain}
-              description={model.usingInternalDomain ? "Subdominio Nexora" : "Dominio propio"}
-              monospace
-            />
-            <HeroStat
-              label="Ultima publicacion"
-              value={model.lastPublishedAt ?? "Nunca"}
-              description={
-                model.hasUnpublishedChanges ? "Hay cambios pendientes" : "Vista publica al dia"
-              }
-            />
-            <HeroStat
-              label="Alertas activas"
-              value={(model.blockingCount + model.warningCount).toString()}
-              description={
-                model.blockingCount > 0
-                  ? `${model.blockingCount} bloqueante${model.blockingCount === 1 ? "" : "s"}`
-                  : "Sin bloqueos criticos"
-              }
-            />
-          </div>
+          <p className="mt-1 truncate font-mono text-[12px] text-ink-5">{model.primaryDomain}</p>
         </div>
-      </motion.section>
 
+        <div className="flex flex-wrap items-center gap-2">
+          {showPublishButton ? (
+            <button
+              type="button"
+              onClick={handlePublish}
+              disabled={primaryActionDisabled}
+              className="inline-flex h-9 items-center gap-2 rounded-full bg-ink-0 px-4 text-[12.5px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Eye className="h-3.5 w-3.5" />
+              {isPublishing
+                ? "Publicando..."
+                : isLive
+                  ? "Publicar cambios"
+                  : "Publicar tienda"}
+            </button>
+          ) : null}
+
+          <a
+            href={model.publicStoreUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex h-9 items-center gap-2 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-4 text-[12.5px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-1)]"
+          >
+            <ArrowUpRight className="h-3.5 w-3.5" />
+            Ver tienda
+          </a>
+
+          <button
+            type="button"
+            onClick={handleShare}
+            className="inline-flex h-9 items-center gap-2 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-3 text-[12.5px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-1)]"
+          >
+            Copiar link
+          </button>
+        </div>
+      </div>
+
+      {/* ── KPIs ────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 divide-x divide-[color:var(--hairline)] border-b border-[color:var(--hairline)] sm:grid-cols-4">
+        <KpiCell label="Productos vendibles" value={model.sellableProducts.toString()} />
+        <KpiCell label="Publicados" value={model.publishedProducts.toString()} />
+        <KpiCell
+          label="Progreso"
+          value={`${model.doneCount}/${model.checks.length}`}
+          detail={`${model.progress}%`}
+        />
+        <KpiCell
+          label="Estado"
+          value={isLive ? "En vivo" : model.sellableProducts > 0 ? "Lista" : "Preparando"}
+          tone={isLive ? "success" : model.sellableProducts > 0 ? "warning" : "neutral"}
+        />
+      </div>
+
+      {/* ── First product CTA (only when 0 products) ──── */}
       {model.productCount === 0 ? (
         <div ref={firstProductRef}>
           <FirstProductPanel onRefresh={onRefresh} pushToast={pushToast} />
         </div>
       ) : null}
 
-      <div className="grid gap-5 xl:grid-cols-[1.2fr_0.85fr]">
-        <div className="space-y-5">
-          <SectionCard
-            eyebrow="Estado general"
-            title="Operacion esencial"
-            description="Lo minimo que tiene que estar resuelto para que la tienda funcione con criterio operativo."
-          >
-            <OperationalRows rows={model.operationalRows} />
-          </SectionCard>
-
-          <SectionCard
-            eyebrow="Checkout y cobro"
-            title="Lo que sostiene la conversion"
-            description="Pagos, envios y legales en un mismo bloque para detectar rapido donde se corta el flujo."
-          >
-            <OperationalRows rows={model.checkoutRows} />
-          </SectionCard>
-        </div>
-
-        <div className="space-y-5">
-          <SectionCard
-            eyebrow="Estado y alertas"
-            title="Lo que requiere atencion"
-            description="Alertas visibles y priorizadas para actuar sin entrar al editor ni recorrer otras areas."
-          >
-            <AlertsList alerts={model.alerts} />
-          </SectionCard>
-
-          <SectionCard
-            eyebrow="Checklist operativo"
-            title="Frentes a cerrar"
-            description="Confirmacion rapida de lo que ya esta listo y de lo que todavia necesita accion."
-          >
-            <ChecklistList entries={model.checklist} />
-          </SectionCard>
-
-          <SectionCard
-            eyebrow="Acciones rapidas"
-            title="Atajos utiles"
-            description="Solo accesos de alto valor para resolver tareas frecuentes sin ruido."
-          >
-            <QuickActions actions={model.quickActions} />
-          </SectionCard>
-        </div>
+      {/* ── Checklist ───────────────────────────────────── */}
+      <div className="divide-y divide-[color:var(--hairline)]">
+        {model.checks.map((check) => (
+          <CheckRow key={check.id} check={check} />
+        ))}
       </div>
 
-      <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-5 py-4">
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-[12px] font-medium text-ink-0">
-              El trabajo editorial sigue fuera de Mi tienda
-            </p>
-            <p className="mt-1 text-[12px] leading-[1.55] text-ink-5">
-              Branding, tema, navegacion y paginas quedaron fuera del cockpit para no duplicar
-              Tienda IA.
-            </p>
-          </div>
-          <Link href="/admin/store-ai" className={inlineActionClasses}>
-            Abrir Tienda IA
-            <Pencil className="h-3.5 w-3.5" />
-          </Link>
-        </div>
+      {/* ── Quick links ─────────────────────────────────── */}
+      <div className="grid grid-cols-2 gap-px border-t border-[color:var(--hairline)] bg-[var(--hairline)] sm:grid-cols-3">
+        <QuickLink icon={<Package className="h-4 w-4" />} label="Catálogo" href="/admin/catalog" />
+        <QuickLink icon={<CreditCard className="h-4 w-4" />} label="Pagos" onClick={() => onNavigate("pagos")} />
+        <QuickLink icon={<Globe className="h-4 w-4" />} label="Dominio" onClick={() => onNavigate("dominio")} />
+        <QuickLink icon={<Truck className="h-4 w-4" />} label="Envíos" href="/admin/shipping" />
+        <QuickLink icon={<ShieldCheck className="h-4 w-4" />} label="Legales" href="/admin/settings/legal" />
+        <QuickLink icon={<Sparkles className="h-4 w-4" />} label="Tienda IA" href="/admin/store-ai" />
       </div>
     </div>
   );
 }
+
+// ─── Sub-components ──────────────────────────────────────────────────────
+
+function KpiCell({
+  label,
+  value,
+  detail,
+  tone,
+}: {
+  label: string;
+  value: string;
+  detail?: string;
+  tone?: Tone;
+}) {
+  return (
+    <div className="px-5 py-4">
+      <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-ink-5">{label}</p>
+      <div className="mt-1.5 flex items-baseline gap-2">
+        <p className="text-[18px] font-semibold tracking-[-0.02em] text-ink-0">{value}</p>
+        {detail ? <span className="text-[11px] text-ink-5">{detail}</span> : null}
+        {tone ? (
+          <span
+            className={cn(
+              "inline-block h-1.5 w-1.5 rounded-full",
+              tone === "success" && "bg-[color:var(--signal-success)]",
+              tone === "warning" && "bg-[color:var(--signal-warning)]",
+              tone === "danger" && "bg-[color:var(--signal-danger)]",
+              tone === "neutral" && "bg-ink-6",
+            )}
+          />
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function CheckRow({
+  check,
+}: {
+  check: {
+    id: string;
+    label: string;
+    detail: string;
+    done: boolean;
+    tone: Tone;
+    actionLabel?: string;
+    href?: string;
+    onClick?: () => void;
+  };
+}) {
+  const action = check.actionLabel ? (
+    check.href ? (
+      <Link href={check.href} className="text-[12px] font-medium text-ink-3 transition-colors hover:text-ink-0">
+        {check.actionLabel}
+        <ArrowRight className="ml-1 inline h-3 w-3" />
+      </Link>
+    ) : check.onClick ? (
+      <button type="button" onClick={check.onClick} className="text-[12px] font-medium text-ink-3 transition-colors hover:text-ink-0">
+        {check.actionLabel}
+        <ArrowRight className="ml-1 inline h-3 w-3" />
+      </button>
+    ) : null
+  ) : null;
+
+  return (
+    <div className="flex items-center gap-3 px-5 py-3.5 sm:px-6">
+      <span
+        className={cn(
+          "flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
+          check.done
+            ? "text-[color:var(--signal-success)]"
+            : check.tone === "danger"
+              ? "text-[color:var(--signal-danger)]"
+              : "text-ink-5",
+        )}
+      >
+        {check.done ? (
+          <CheckCircle2 className="h-4 w-4" strokeWidth={2} />
+        ) : (
+          <div className="h-3.5 w-3.5 rounded-full border-2 border-current" />
+        )}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <p className="text-[13px] font-medium text-ink-0">{check.label}</p>
+          <TonePill tone={check.tone} />
+        </div>
+        <p className="text-[12px] text-ink-5">{check.detail}</p>
+      </div>
+      {action}
+    </div>
+  );
+}
+
+function QuickLink({
+  icon,
+  label,
+  href,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  href?: string;
+  onClick?: () => void;
+}) {
+  const className =
+    "flex items-center gap-2.5 bg-[var(--surface-0)] px-5 py-3.5 text-[12.5px] font-medium text-ink-2 transition-colors hover:bg-[var(--surface-1)] hover:text-ink-0";
+
+  if (href) {
+    return (
+      <Link href={href} className={className}>
+        {icon}
+        {label}
+      </Link>
+    );
+  }
+
+  return (
+    <button type="button" onClick={onClick} className={className}>
+      {icon}
+      {label}
+    </button>
+  );
+}
+
+function TonePill({ tone }: { tone: Tone }) {
+  const label =
+    tone === "success" ? "OK" : tone === "warning" ? "Pendiente" : tone === "danger" ? "Requiere acción" : "";
+  if (!label) return null;
+
+  return (
+    <span
+      className={cn(
+        "rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em]",
+        tone === "success" &&
+          "bg-[color:color-mix(in_srgb,var(--signal-success)_12%,transparent)] text-[color:var(--signal-success)]",
+        tone === "warning" &&
+          "bg-[color:color-mix(in_srgb,var(--signal-warning)_12%,transparent)] text-[color:var(--signal-warning)]",
+        tone === "danger" &&
+          "bg-[color:color-mix(in_srgb,var(--signal-danger)_12%,transparent)] text-[color:var(--signal-danger)]",
+      )}
+    >
+      {label}
+    </span>
+  );
+}
+
+// ─── First product panel ─────────────────────────────────────────────────
 
 function FirstProductPanel({
   onRefresh,
@@ -782,362 +526,48 @@ function FirstProductPanel({
       try {
         await createFirstStoreProductAction(formData);
         form.reset();
-        pushToast("Producto creado", "Ya tenes un primer SKU con variante, precio y stock.");
+        pushToast("Producto creado", "Ya tenés un primer SKU con variante, precio y stock.");
         onRefresh();
       } catch (error) {
         pushToast(
           "No se pudo crear",
-          error instanceof Error ? error.message : "Ocurrio un error al crear el producto.",
+          error instanceof Error ? error.message : "Ocurrió un error al crear el producto.",
         );
       }
     });
   };
 
-  const inputClasses =
-    "h-11 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3.5 text-[13px] font-medium text-ink-0 outline-none transition-[box-shadow,border-color] placeholder:text-ink-6 focus:border-[var(--accent-500)] focus:shadow-[var(--shadow-focus)]";
+  const inputClass =
+    "h-10 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-3 text-[13px] text-ink-0 outline-none transition-[box-shadow,border-color] placeholder:text-ink-6 focus:border-[var(--accent-500)] focus:shadow-[var(--shadow-focus)]";
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-[var(--r-md)] border border-[color:color-mix(in_srgb,var(--signal-warning)_24%,transparent)] bg-[color:color-mix(in_srgb,var(--signal-warning)_6%,var(--surface-0))] p-5"
+      className="border-b border-[color:var(--hairline)] bg-[color:color-mix(in_srgb,var(--signal-warning)_4%,var(--surface-0))] px-5 py-5 sm:px-6"
     >
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--signal-warning)]">
-            Accion inmediata
-          </p>
-          <h3 className="mt-2 text-[17px] font-semibold tracking-[-0.015em] text-ink-0">
-            Carga el primer SKU sin salir de Mi tienda
-          </h3>
-          <p className="mt-1 max-w-2xl text-[13px] leading-[1.6] text-ink-5">
-            Este bloque existe porque sin un producto vendible la operacion no despega. Crea una
-            base real con stock y precio, y despues afinas el resto desde Catalogo.
+          <p className="text-[13px] font-semibold text-ink-0">Cargá el primer producto</p>
+          <p className="mt-0.5 text-[12px] text-ink-5">
+            Sin un SKU vendible la tienda no puede salir en vivo.
           </p>
         </div>
-        <button type="submit" disabled={isPending} className={solidButtonClasses}>
+        <button
+          type="submit"
+          disabled={isPending}
+          className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full bg-ink-0 px-4 text-[12.5px] font-medium text-ink-12 transition-colors hover:bg-ink-2 disabled:opacity-40"
+        >
           <Save className="h-3.5 w-3.5" />
-          {isPending ? "Creando..." : "Crear producto"}
+          {isPending ? "Creando..." : "Crear"}
         </button>
       </div>
 
-      <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <input className={inputClasses} name="title" placeholder="Nombre del producto" required />
-        <input className={inputClasses} name="variantTitle" placeholder="Variante" />
-        <input
-          className={inputClasses}
-          min="1"
-          name="price"
-          placeholder="Precio"
-          required
-          step="0.01"
-          type="number"
-        />
-        <input
-          className={inputClasses}
-          min="0"
-          name="stock"
-          placeholder="Stock"
-          required
-          step="1"
-          type="number"
-        />
-        <input className={cn(inputClasses, "md:col-span-2")} name="category" placeholder="Categoria" />
-        <input
-          className={cn(inputClasses, "md:col-span-2")}
-          name="featuredImage"
-          placeholder="URL de imagen"
-          type="url"
-        />
-        <textarea
-          className={cn(inputClasses, "min-h-24 md:col-span-2 xl:col-span-4")}
-          name="description"
-          placeholder="Descripcion breve"
-        />
+      <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <input className={inputClass} name="title" placeholder="Nombre" required />
+        <input className={inputClass} name="variantTitle" placeholder="Variante" />
+        <input className={inputClass} min="1" name="price" placeholder="Precio" required step="0.01" type="number" />
+        <input className={inputClass} min="0" name="stock" placeholder="Stock" required step="1" type="number" />
       </div>
     </form>
   );
-}
-
-function SectionCard({
-  eyebrow,
-  title,
-  description,
-  children,
-}: {
-  eyebrow: string;
-  title: string;
-  description: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5">
-      <div className="mb-4 space-y-1">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-5">
-          {eyebrow}
-        </p>
-        <h3 className="text-[17px] font-semibold tracking-[-0.015em] text-ink-0">{title}</h3>
-        <p className="max-w-2xl text-[12.5px] leading-[1.55] text-ink-5">{description}</p>
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function OperationalRows({ rows }: { rows: OperationalRow[] }) {
-  return (
-    <div className="divide-y divide-[color:var(--hairline)]">
-      {rows.map((row) => (
-        <div key={row.id} className="grid gap-3 py-4 first:pt-0 last:pb-0 md:grid-cols-[1fr_auto] md:items-start">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <p className="text-[13px] font-medium text-ink-0">{row.label}</p>
-              <ToneBadge tone={row.tone} />
-            </div>
-            <p className="text-[12px] leading-[1.55] text-ink-5">{row.description}</p>
-          </div>
-          <div className="space-y-2 md:text-right">
-            <p
-              className={cn(
-                "text-[13px] font-semibold text-ink-0",
-                row.monospace && "font-mono text-[12px]",
-              )}
-            >
-              {row.value}
-            </p>
-            <RowAction row={row} />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function AlertsList({ alerts }: { alerts: AlertItem[] }) {
-  if (alerts.length === 0) {
-    return (
-      <div className="rounded-[var(--r-sm)] border border-[color:color-mix(in_srgb,var(--signal-success)_24%,transparent)] bg-[color:color-mix(in_srgb,var(--signal-success)_6%,var(--surface-0))] px-4 py-3">
-        <div className="flex items-start gap-3">
-          <CheckCircle2 className="mt-0.5 h-4 w-4 text-[color:var(--signal-success)]" />
-          <div>
-            <p className="text-[13px] font-medium text-ink-0">Sin alertas relevantes</p>
-            <p className="mt-1 text-[12px] leading-[1.55] text-ink-5">
-              La operacion basica de la tienda no muestra bloqueos dentro del scope actual.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-3">
-      {alerts.map((alert) => (
-        <div
-          key={alert.id}
-          className={cn(
-            "rounded-[var(--r-sm)] border px-4 py-3",
-            alert.tone === "danger"
-              ? "border-[color:color-mix(in_srgb,var(--signal-danger)_24%,transparent)] bg-[color:color-mix(in_srgb,var(--signal-danger)_6%,var(--surface-0))]"
-              : "border-[color:color-mix(in_srgb,var(--signal-warning)_24%,transparent)] bg-[color:color-mix(in_srgb,var(--signal-warning)_6%,var(--surface-0))]",
-          )}
-        >
-          <div className="flex items-start gap-3">
-            <AlertTriangle
-              className={cn(
-                "mt-0.5 h-4 w-4 shrink-0",
-                alert.tone === "danger"
-                  ? "text-[color:var(--signal-danger)]"
-                  : "text-[color:var(--signal-warning)]",
-              )}
-            />
-            <div className="min-w-0 flex-1">
-              <p className="text-[13px] font-medium text-ink-0">{alert.title}</p>
-              <p className="mt-1 text-[12px] leading-[1.55] text-ink-5">{alert.description}</p>
-              <RowAction row={alert} className="mt-2" />
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function ChecklistList({ entries }: { entries: ChecklistEntry[] }) {
-  return (
-    <div className="space-y-3">
-      {entries.map((entry) => (
-        <div
-          key={entry.id}
-          className="rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-4 py-3"
-        >
-          <div className="flex items-start gap-3">
-            <span
-              className={cn(
-                "mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border",
-                entry.done
-                  ? "border-[color:color-mix(in_srgb,var(--signal-success)_32%,transparent)] bg-[color:color-mix(in_srgb,var(--signal-success)_10%,transparent)] text-[color:var(--signal-success)]"
-                  : "border-[color:var(--hairline)] bg-[var(--surface-1)] text-ink-5",
-              )}
-            >
-              {entry.done ? <CheckCircle2 className="h-3.5 w-3.5" /> : <ArrowRight className="h-3.5 w-3.5" />}
-            </span>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <p className="text-[13px] font-medium text-ink-0">{entry.title}</p>
-                <span
-                  className={cn(
-                    "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]",
-                    entry.done
-                      ? "bg-[color:color-mix(in_srgb,var(--signal-success)_12%,transparent)] text-[color:var(--signal-success)]"
-                      : "bg-[var(--surface-1)] text-ink-5",
-                  )}
-                >
-                  {entry.done ? "Listo" : "Pendiente"}
-                </span>
-              </div>
-              <p className="mt-1 text-[12px] leading-[1.55] text-ink-5">{entry.description}</p>
-              <RowAction row={entry} className="mt-2" />
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function QuickActions({ actions }: { actions: ShortcutAction[] }) {
-  return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      {actions.map((action) => {
-        const content = (
-          <>
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] text-ink-2">
-              {action.icon}
-            </span>
-            <div className="min-w-0">
-              <p className="text-[13px] font-medium text-ink-0">{action.title}</p>
-              <p className="mt-1 text-[12px] leading-[1.5] text-ink-5">{action.description}</p>
-            </div>
-            <ArrowRight className="ml-auto h-4 w-4 shrink-0 text-ink-6 transition-colors group-hover:text-ink-0" />
-          </>
-        );
-
-        const className =
-          "group flex items-start gap-3 rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-4 text-left transition-colors hover:bg-[var(--surface-1)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]";
-
-        if (action.href) {
-          return (
-            <Link key={action.id} href={action.href} className={className}>
-              {content}
-            </Link>
-          );
-        }
-
-        return (
-          <button key={action.id} type="button" onClick={action.onClick} className={className}>
-            {content}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function HeroStat({
-  label,
-  value,
-  description,
-  monospace = false,
-}: {
-  label: string;
-  value: string;
-  description: string;
-  monospace?: boolean;
-}) {
-  return (
-    <div className="rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-4 py-3">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-5">{label}</p>
-      <p
-        className={cn(
-          "mt-2 text-[16px] font-semibold tracking-[-0.015em] text-ink-0",
-          monospace && "font-mono text-[13px]",
-        )}
-      >
-        {value}
-      </p>
-      <p className="mt-1 text-[11.5px] text-ink-5">{description}</p>
-    </div>
-  );
-}
-
-function ToneBadge({ tone }: { tone: Tone }) {
-  const copy =
-    tone === "success"
-      ? "Ok"
-      : tone === "warning"
-        ? "Atencion"
-        : tone === "danger"
-          ? "Bloqueo"
-          : "Info";
-
-  return (
-    <span
-      className={cn(
-        "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]",
-        tone === "success" &&
-          "bg-[color:color-mix(in_srgb,var(--signal-success)_12%,transparent)] text-[color:var(--signal-success)]",
-        tone === "warning" &&
-          "bg-[color:color-mix(in_srgb,var(--signal-warning)_12%,transparent)] text-[color:var(--signal-warning)]",
-        tone === "danger" &&
-          "bg-[color:color-mix(in_srgb,var(--signal-danger)_12%,transparent)] text-[color:var(--signal-danger)]",
-        tone === "neutral" && "bg-[var(--surface-1)] text-ink-5",
-      )}
-    >
-      {copy}
-    </span>
-  );
-}
-
-function RowAction({
-  row,
-  className,
-}: {
-  row: ActionTarget;
-  className?: string;
-}) {
-  if (!row.actionLabel) return null;
-
-  if (row.href) {
-    if (row.external) {
-      return (
-        <a
-          href={row.href}
-          target="_blank"
-          rel="noreferrer"
-          className={cn(inlineActionClasses, className)}
-        >
-          {row.actionLabel}
-          <ArrowUpRight className="h-3.5 w-3.5" />
-        </a>
-      );
-    }
-
-    return (
-      <Link href={row.href} className={cn(inlineActionClasses, className)}>
-        {row.actionLabel}
-        <ArrowRight className="h-3.5 w-3.5" />
-      </Link>
-    );
-  }
-
-  if (row.onClick) {
-    return (
-      <button type="button" onClick={row.onClick} className={cn(inlineActionClasses, className)}>
-        {row.actionLabel}
-        <ArrowRight className="h-3.5 w-3.5" />
-      </button>
-    );
-  }
-
-  return null;
 }
