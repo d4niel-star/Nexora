@@ -21,6 +21,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { CommunicationSettings } from "@/lib/communication/types";
 import { saveCommunicationSettings } from "@/lib/communication/actions";
+import { EmailOperationsPanel } from "./EmailOperationsPanel";
 
 // ─── Comunicación — Admin Category Page ─────────────────────────────────
 //
@@ -549,6 +550,9 @@ export function CommunicationPage({ initialSettings, embedded = false }: Props) 
               </div>
             </div>
           </div>
+
+          {/* Email operations: preview, test send, logs */}
+          <EmailOperationsPanel storeEmail={settings.contact.email} />
         </div>
       )}
     </div>
