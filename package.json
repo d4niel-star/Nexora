@@ -8,7 +8,8 @@
     "postinstall": "prisma generate",
     "start": "next start -H 0.0.0.0",
     "migrate:data": "npx tsx scripts/migrate-sqlite-to-pg.ts",
-    "lint": "eslint"
+    "lint": "eslint",
+    "backfill:cost-snapshots": "npx tsx --env-file=.env.local --env-file=.env scripts/backfill-cost-snapshots.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.90.0",
