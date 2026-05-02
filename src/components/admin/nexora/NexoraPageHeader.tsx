@@ -39,31 +39,17 @@ const TONE_CLASS: Record<NexoraStatusTone, string> = {
 };
 
 export function NexoraPageHeader({
-  title,
-  subtitle,
-  status,
   actions,
   className,
 }: NexoraPageHeaderProps) {
+  if (!actions) return null;
+
   return (
     <header className={cn("nx-page-header", className)}>
       <div className="nx-page-header__row">
-        <div className="nx-page-header__main">
-          <h1 className="nx-page-header__title">{title}</h1>
-          {status ? (
-            <span
-              className={cn(
-                "nx-page-header__status",
-                status.tone ? TONE_CLASS[status.tone] : "",
-              )}
-            >
-              {status.label}
-            </span>
-          ) : null}
-        </div>
-        {actions ? <div className="nx-page-header__actions">{actions}</div> : null}
+        <div className="nx-page-header__main" />
+        <div className="nx-page-header__actions">{actions}</div>
       </div>
-      {subtitle ? <p className="nx-page-header__sub">{subtitle}</p> : null}
     </header>
   );
 }
