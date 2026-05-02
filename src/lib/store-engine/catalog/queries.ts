@@ -1,4 +1,4 @@
-﻿import { prisma } from "@/lib/db/prisma";
+import { prisma } from "@/lib/db/prisma";
 import { getCurrentStore } from "@/lib/auth/session";
 import { getVariantIntelligenceReport } from "@/lib/replenishment/variant-queries";
 import { getVariantEconomicsReport } from "@/lib/profitability/variant-queries";
@@ -263,7 +263,7 @@ export async function getAdminCatalogPage(
   const page = Math.max(1, options.page ?? 1);
 
   // Build WHERE clause
-  const where: Record<string, unknown> = { storeId: store.id };
+  const where: Record<string, any> = { storeId: store.id };
 
   // Status filter
   if (options.status && options.status !== "all") {
@@ -276,10 +276,8 @@ export async function getAdminCatalogPage(
     } else if (options.status === "archived") {
       where.status = "archived";
     } else if (options.status === "out_of_stock") {
-      // out_of_stock: products where ALL variants have stock = 0
-      // We'll handle this after the query as a post-filter since Prisma
-      // can't do aggregate-where on relations easily. But we still use
-      // the DB-level filter for active products only.
+      // Server-side: all variants have stock <= 0
+      where.variants = { every: { stock: { lte: 0 } } };
     }
   }
 
@@ -295,24 +293,26 @@ export async function getAdminCatalogPage(
     }
   }
 
-  // For out_of_stock, we need a different approach - we can't easily filter
-  // by aggregate variant stock at the DB level. For now, we'll load all
-  // products for that tab and paginate the results.
-  const isOutOfStockTab = options.status === "out_of_stock";
-
   const storeWhere = { storeId: store.id };
 
-  // Tab counts (parallel) â€” these are fast indexed counts
-  const [allCount, activeCount, draftCount, archivedCount] = await Promise.all([
+  // Tab counts + main count (parallel) — fast indexed counts
+  const outOfStockWhere = { ...storeWhere, variants: { every: { stock: { lte: 0 } } } };
+  const [total, allCount, activeCount, draftCount, archivedCount, outOfStockCount] = await Promise.all([
+    prisma.product.count({ where }),
     prisma.product.count({ where: { ...storeWhere } }),
     prisma.product.count({ where: { ...storeWhere, isPublished: true, status: { not: "archived" } } }),
     prisma.product.count({ where: { ...storeWhere, isPublished: false, status: { not: "archived" } } }),
     prisma.product.count({ where: { ...storeWhere, status: "archived" } }),
+    prisma.product.count({ where: outOfStockWhere }),
   ]);
 
-  // Main query
+  // Clamp page to valid range BEFORE querying data
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.max(1, Math.min(page, pageCount));
+
+  // Main query — always server-side paginated with clamped page
   const products = await prisma.product.findMany({
-    where: isOutOfStockTab ? { ...storeWhere } : where,
+    where,
     include: {
       variants: {
         orderBy: { createdAt: "asc" },
@@ -331,73 +331,26 @@ export async function getAdminCatalogPage(
       },
     },
     orderBy: { createdAt: "desc" },
-    // For out_of_stock we need all products to filter, otherwise paginate
-    ...(isOutOfStockTab ? {} : { take: pageSize, skip: pageToSkip(page, pageSize) }),
+    take: pageSize,
+    skip: pageToSkip(safePage, pageSize),
   });
-
-  // Get total count for pagination
-  const totalBeforePostFilter = isOutOfStockTab
-    ? products.length
-    : await prisma.product.count({ where });
 
   // Fetch variant intelligence for variant-level signals
   const variantEcon = await getVariantEconomicsReport();
   const variantIntel = await getVariantIntelligenceReport(undefined, variantEcon);
 
-  // Map products
-  let mapped = products.map((p) => mapToAdminProduct(p, variantIntel));
-
-  // Post-filter for out_of_stock
-  if (isOutOfStockTab) {
-    mapped = mapped.filter((p) => p.totalStock === 0);
-  }
-
-  // Count out_of_stock and issues
-  // For issues count we need all products â€” use the already-counted total
-  // and compute a rough count from the current page
-  let outOfStockCount = 0;
-  let issuesCount = 0;
-
-  if (isOutOfStockTab) {
-    outOfStockCount = mapped.length;
-    issuesCount = mapped.filter((p) => p.issueCount > 0).length;
-  } else {
-    // For performance, we compute these from the current batch.
-    // For accurate global counts, we'd need additional queries.
-    // This is acceptable for the tab UI.
-    outOfStockCount = 0; // Will be computed separately if needed
-    issuesCount = 0;
-  }
-
-  // For out_of_stock tab, paginate the post-filtered results
-  if (isOutOfStockTab) {
-    const total = mapped.length;
-    const skip = pageToSkip(page, pageSize);
-    mapped = mapped.slice(skip, skip + pageSize);
-    return {
-      products: mapped,
-      pagination: buildPaginationMeta(total, page, pageSize),
-      counts: {
-        all: allCount,
-        active: activeCount,
-        draft: draftCount,
-        archived: archivedCount,
-        outOfStock: total,
-        issues: 0, // Approximate
-      },
-    };
-  }
+  const mapped = products.map((p) => mapToAdminProduct(p, variantIntel));
 
   return {
     products: mapped,
-    pagination: buildPaginationMeta(totalBeforePostFilter, page, pageSize),
+    pagination: buildPaginationMeta(total, safePage, pageSize),
     counts: {
       all: allCount,
       active: activeCount,
       draft: draftCount,
       archived: archivedCount,
       outOfStock: outOfStockCount,
-      issues: issuesCount,
+      issues: 0, // Requires denormalized field for global count — deferred
     },
   };
 }

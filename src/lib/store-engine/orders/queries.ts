@@ -91,35 +91,10 @@ export async function getAdminOrdersPage(
     where.createdAt = createdAt;
   }
 
-  // Parallel: count + page data + tab counts
+  // Phase 1: counts + tab counts (parallel)
   const storeWhere = { storeId: store.id };
-  const [total, dbOrders, ...statusCounts] = await Promise.all([
+  const [total, ...statusCounts] = await Promise.all([
     prisma.order.count({ where }),
-    prisma.order.findMany({
-      where,
-      include: {
-        items: {
-          select: {
-            id: true,
-            productId: true,
-            variantId: true,
-            skuSnapshot: true,
-            titleSnapshot: true,
-            variantTitleSnapshot: true,
-            quantity: true,
-            priceSnapshot: true,
-            lineTotal: true,
-            imageSnapshot: true,
-          },
-        },
-        fiscalInvoice: true,
-      },
-      orderBy: { createdAt: "desc" },
-      take: pageSize,
-      skip: pageToSkip(page, pageSize),
-    }),
-    // Tab counts — one query per status is fine at this scale and avoids
-    // loading all rows. These are cheap indexed counts.
     prisma.order.count({ where: { ...storeWhere } }),
     prisma.order.count({ where: { ...storeWhere, status: "new" } }),
     prisma.order.count({ where: { ...storeWhere, status: "paid" } }),
@@ -130,6 +105,35 @@ export async function getAdminOrdersPage(
     prisma.order.count({ where: { ...storeWhere, status: "refunded" } }),
     prisma.order.count({ where: { ...storeWhere, paymentStatus: { in: ["pending", "in_process"] } } }),
   ]);
+
+  // Clamp page to valid range BEFORE querying data
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.max(1, Math.min(page, pageCount));
+
+  // Phase 2: fetch page data with clamped skip
+  const dbOrders = await prisma.order.findMany({
+    where,
+    include: {
+      items: {
+        select: {
+          id: true,
+          productId: true,
+          variantId: true,
+          skuSnapshot: true,
+          titleSnapshot: true,
+          variantTitleSnapshot: true,
+          quantity: true,
+          priceSnapshot: true,
+          lineTotal: true,
+          imageSnapshot: true,
+        },
+      },
+      fiscalInvoice: true,
+    },
+    orderBy: { createdAt: "desc" },
+    take: pageSize,
+    skip: pageToSkip(safePage, pageSize),
+  });
 
   const counts: OrderStatusCounts = {
     all: statusCounts[0],
@@ -142,6 +146,7 @@ export async function getAdminOrdersPage(
     refunded: statusCounts[7],
     pendingPayment: statusCounts[8],
   };
+
 
   const orders: Order[] = dbOrders.map((o) => ({
     id: o.id,
@@ -195,7 +200,7 @@ export async function getAdminOrdersPage(
 
   return {
     orders,
-    pagination: buildPaginationMeta(total, page, pageSize),
+    pagination: buildPaginationMeta(total, safePage, pageSize),
     counts,
   };
 }
