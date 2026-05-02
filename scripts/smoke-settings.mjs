@@ -17,13 +17,13 @@
 // real backing flow.
 //
 // The layout at (tenant)/layout.tsx wraps every tenant page with the
-// SettingsShell (right-side category nav + main). The ops-only route
+// SettingsShell shared header. The ops-only route
 // /admin/settings/integrations/mercadopago lives OUTSIDE the (tenant)
 // group so it does not inherit the tenant shell.
 //
 // This smoke guards the four absolute rules:
 //   1. Every category page exists and renders a real server component.
-//   2. Every category is declared in SettingsShell (source of truth).
+//   2. SettingsShell stays a thin wrapper with no duplicate category nav.
 //   3. The (tenant) layout wraps exactly the tenant pages (ops route
 //      stays out of the group).
 //   4. No category page ships a hardcoded fabricated status — each one
@@ -112,7 +112,7 @@ if (existsSync(opsInsideTenant)) {
   ok("ops route is NOT inside the (tenant) group");
 }
 
-// ─── 2. SettingsShell is the canonical category registry ──────────────
+// ─── 2. SettingsShell stays thin (no duplicate category registry) ─────
 
 const shellSrc = stripComments(
   readFileSync(
@@ -121,28 +121,34 @@ const shellSrc = stripComments(
   ),
 );
 
-for (const cat of categories) {
-  const href = `"/admin/settings/${cat.slug}"`;
-  if (shellSrc.includes(href)) {
-    ok(`SettingsShell registers category: ${href}`);
-  } else {
-    fail(`SettingsShell registers category: ${href}`, "not found in SettingsShell.tsx");
-  }
+if (/AdminPageHeader/.test(shellSrc) && /\{children\}/.test(shellSrc)) {
+  ok("SettingsShell renders the shared header and children");
+} else {
+  fail("SettingsShell renders the shared header and children");
 }
 
-// The shell must expose both a right-side nav (<aside>) and a mobile
-// picker (<select>) so desktop and mobile share the same IA.
-if (/<aside[^>]*aria-label=/.test(shellSrc)) ok("SettingsShell renders a labeled <aside> for desktop right-nav");
-else fail("SettingsShell renders a labeled <aside> for desktop right-nav");
-
-if (/id="settings-category-mobile"/.test(shellSrc)) ok("SettingsShell renders a mobile category picker");
-else fail("SettingsShell renders a mobile category picker");
-
-// aria-current propagation on the active category.
-if (/aria-current=\{active \? "page" : undefined\}/.test(shellSrc)) {
-  ok("SettingsShell emits aria-current on the active category");
+if (!/SETTINGS_CATEGORIES/.test(shellSrc)) {
+  ok("SettingsShell does not keep a duplicate category registry");
 } else {
-  fail("SettingsShell emits aria-current on the active category");
+  fail("SettingsShell does not keep a duplicate category registry");
+}
+
+if (!/<aside[^>]*aria-label=/.test(shellSrc)) {
+  ok("SettingsShell does not render the removed desktop summary panel");
+} else {
+  fail("SettingsShell does not render the removed desktop summary panel");
+}
+
+if (!/id="settings-category-mobile"/.test(shellSrc)) {
+  ok("SettingsShell does not render a duplicate mobile category picker");
+} else {
+  fail("SettingsShell does not render a duplicate mobile category picker");
+}
+
+if (!/usePathname|window\.location/.test(shellSrc)) {
+  ok("SettingsShell has no client-only navigation logic");
+} else {
+  fail("SettingsShell has no client-only navigation logic");
 }
 
 // ─── 3. (tenant) layout wires the shell ──────────────────────────────
@@ -263,14 +269,11 @@ if (bannedHits === 0) {
   ok(`no-invention scan (${filesUnderTenant.length} settings files clean)`);
 }
 
-// ─── 6. Overview ↔ SettingsShell category sync ────────────────────────
+// ─── 6. Overview category dashboard stays canonical ───────────────────
 //
-// The overview page must NOT import SETTINGS_CATEGORIES from the
-// "use client" SettingsShell — crossing the client→server boundary
-// with a value that carries Lucide component references crashes the
-// production runtime (generic 500 on Render). Instead we source-check
-// that every /admin/settings/<slug> href present in the shell also
-// appears in the overview, so the two can't drift silently.
+// The overview page is the single category dashboard. It must NOT import
+// a second registry from SettingsShell, and every expected
+// /admin/settings/<slug> href must remain present on the dashboard.
 
 const overviewSrc = stripComments(readFileSync(overviewPath, "utf8"));
 
@@ -284,7 +287,7 @@ if (overviewSrc.includes("SETTINGS_CATEGORIES")) {
 }
 
 // Extract every "/admin/settings/<slug>" literal from each file and
-// assert the overview covers every category the shell advertises.
+// assert the overview covers every expected category.
 const shellSlugs = Array.from(
   shellSrc.matchAll(/"\/admin\/settings\/([a-z0-9-]+)"/g),
   (m) => m[1],
@@ -293,12 +296,14 @@ const overviewSlugs = Array.from(
   overviewSrc.matchAll(/"\/admin\/settings\/([a-z0-9-]+)"/g),
   (m) => m[1],
 );
-const missingInOverview = shellSlugs.filter((slug) => !overviewSlugs.includes(slug));
+const missingInOverview = categories
+  .map((cat) => cat.slug)
+  .filter((slug) => !overviewSlugs.includes(slug));
 if (missingInOverview.length === 0) {
-  ok(`overview covers every shell category slug (${shellSlugs.length})`);
+  ok(`overview covers every expected category slug (${categories.length})`);
 } else {
   fail(
-    "overview covers every shell category slug",
+    "overview covers every expected category slug",
     `missing: ${missingInOverview.join(", ")}`,
   );
 }

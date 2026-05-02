@@ -17,8 +17,8 @@
 //
 // Run: npx tsx scripts/smoke-navigation.mjs
 
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { resolve, join } from "node:path";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { resolve } from "node:path";
 
 const shellPath = resolve(
   process.cwd(),
@@ -235,7 +235,7 @@ for (const needle of mustNotBeInSettings) {
 //
 // Configuración is a SINGLE leaf in the sidebar pointing at /admin/settings.
 // Sub-routes of /admin/settings must NOT appear in the global sidebar —
-// they live inside the settings page's own right-nav. We only assert
+// the settings dashboard is the only local category index. We only assert
 // /admin/settings appears exactly once (settingsLeaf). Everything else
 // that used to live in the sidebar settings group (plan, legal,
 // integrations, …) is intentionally absent now.

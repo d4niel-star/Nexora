@@ -11,7 +11,7 @@ import { LegalSettingsForm } from "@/components/admin/fiscal/LegalSettingsForm";
 // The form itself is already self-contained (takes storeId + initial
 // data, issues server actions for save), so we reuse it verbatim and
 // avoid shipping a duplicate form. The Settings shell provides the
-// right-side category nav; the form renders in the main column.
+// shared header; the form renders as the page content.
 
 export const dynamic = "force-dynamic";
 

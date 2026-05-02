@@ -209,8 +209,8 @@ const primaryNav: readonly NavEntry[] = [
 ];
 
 // Bottom-pinned Configuración entry. Configuración is a SINGLE sidebar
-// leaf on purpose: clicking it opens a dedicated settings surface
-// (/admin/settings) that owns its own right-side category nav.
+// leaf on purpose: clicking it opens the dedicated settings dashboard
+// (/admin/settings), where the category cards are the only local index.
 const settingsLeaf: NavLeaf = {
   kind: "leaf",
   href: "/admin/settings",

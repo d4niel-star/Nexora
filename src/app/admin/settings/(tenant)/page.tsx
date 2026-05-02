@@ -19,14 +19,9 @@ import { getPublicWhatsappSettings } from "@/lib/apps/whatsapp-recovery/settings
 import { getMercadoPagoPlatformReadiness } from "@/lib/payments/mercadopago/platform-readiness";
 import { NexoraStatRow } from "@/components/admin/nexora";
 
-// NOTE: we intentionally do NOT import SETTINGS_CATEGORIES from
-// SettingsShell here. SettingsShell is a "use client" module whose
-// categories reference Lucide icon components; importing that value
-// into a server component forces the runtime to cross the client
-// boundary for non-serialisable references, which crashes some
-// deployment targets (Render with the current Next runtime returns a
-// generic 500 when this happens). The overview keeps its own grouped
-// list and stays in sync with the shell via `scripts/smoke-settings.mjs`.
+// NOTE: this overview is the only category dashboard for settings.
+// SettingsShell intentionally stays thin so the same categories are not
+// repeated in a second local navigation panel.
 
 // ─── Settings overview ──────────────────────────────────────────────────
 //
@@ -45,8 +40,8 @@ import { NexoraStatRow } from "@/components/admin/nexora";
 //
 // We deliberately omit "Finanzas y retiros": Nexora does not run an
 // internal payouts pipeline yet, so the surface had nothing real to
-// configure. Removing it from this overview AND from `SettingsShell`
-// avoids advertising a dead route.
+// configure. Removing it from this overview avoids advertising a dead
+// route.
 
 export const dynamic = "force-dynamic";
 
@@ -114,8 +109,8 @@ export default async function SettingsHubPage() {
     whatsappApp?.status === "active" && whatsappSettings?.status === "active";
 
   // ── Card registry · grouped by topic ───────────────────────────────
-  // Adding a new card requires also registering the route in
-  // SettingsShell.tsx; the smoke test asserts both stay in sync.
+  // Adding a new card requires adding the matching route first; the
+  // smoke test asserts every dashboard href has a real page.
   const groups: readonly CategoryGroup[] = [
     {
       title: "Pagos y checkout",
