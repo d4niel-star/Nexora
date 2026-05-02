@@ -31,7 +31,7 @@ export type CatalogActionResult<T = undefined> =
 // Mirrors the runtime values used across the schema (`Product.status` is a
 // string column with these allowed values). We keep this as a string union
 // so client and server agree on the contract.
-export const PRODUCT_STATUSES = ["active", "draft", "archived"] as const;
+const PRODUCT_STATUSES = ["active", "draft", "archived"] as const;
 export type ProductStatusValue = (typeof PRODUCT_STATUSES)[number];
 
 function revalidateCatalogPaths() {

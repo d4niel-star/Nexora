@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
@@ -34,7 +34,6 @@ import {
   NexoraSearch,
   NexoraFilters,
   NexoraActions,
-  NexoraChip,
   NexoraBulkBar,
   NexoraEmpty,
   NexoraTabs,
@@ -80,7 +79,9 @@ export default function CatalogClient({
 
   const [activeTab, setActiveTab] = useState<TabValue>(initialTab);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(
+    focusProductId ?? null,
+  );
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
 
   const [actioningId, setActioningId] = useState<string | null>(null);
@@ -92,30 +93,17 @@ export default function CatalogClient({
   const [bulkConfirmDelete, setBulkConfirmDelete] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
 
-  // Reset selection whenever the merchant switches tabs to avoid acting on
-  // products that are no longer visible.
-  useEffect(() => {
+  const selectedProduct = useMemo(
+    () => products.find((product) => product.id === selectedProductId) ?? null,
+    [products, selectedProductId],
+  );
+
+  const handleTabChange = (next: TabValue) => {
+    setActiveTab(next);
     setSelectedRows([]);
     setBulkConfirmDelete(false);
     setBulkError(null);
-  }, [activeTab]);
-
-  // Keep the open drawer in sync if the underlying products list refreshes
-  // (e.g. after a server-action revalidatePath).
-  useEffect(() => {
-    if (selectedProduct) {
-      const updated = products.find((p) => p.id === selectedProduct.id);
-      if (updated && updated !== selectedProduct) setSelectedProduct(updated);
-    }
-  }, [products]);
-
-  // Auto-open the drawer when a deep-link asks for a specific product.
-  useEffect(() => {
-    if (focusProductId && !selectedProduct) {
-      const target = products.find((p) => p.id === focusProductId);
-      if (target) setSelectedProduct(target);
-    }
-  }, [focusProductId, products]);
+  };
 
   // ── Filtering ──
   const filtered = useMemo(() => {
@@ -162,14 +150,22 @@ export default function CatalogClient({
 
   // ── Single inline actions ──
   const handlePublish = (productId: string) => {
+    setBulkError(null);
     setActioningId(productId);
     startSinglePublish(async () => {
-      const result = await publishDraftProduct(productId);
-      setActioningId(null);
-      if (result.success) {
+      try {
+        const result = await publishDraftProduct(productId);
+        if (!result.success) {
+          setBulkError(result.error ?? "No se pudo publicar el producto.");
+          return;
+        }
         setActionFeedback({ id: productId, label: "Publicado" });
         window.setTimeout(() => setActionFeedback(null), 1800);
         router.refresh();
+      } catch (error) {
+        setBulkError(actionErrorMessage(error, "No se pudo publicar el producto."));
+      } finally {
+        setActioningId(null);
       }
     });
   };
@@ -177,15 +173,21 @@ export default function CatalogClient({
   // ── Bulk actions ──
   const runBulkStatus = (status: "active" | "draft" | "archived") => {
     if (selectedRows.length === 0) return;
+    const ids = [...selectedRows];
     setBulkError(null);
+    setBulkConfirmDelete(false);
     startBulk(async () => {
-      const result = await setProductsStatusAction(selectedRows, status);
-      if (!result.success) {
-        setBulkError(result.error);
-        return;
+      try {
+        const result = await setProductsStatusAction(ids, status);
+        if (!result.success) {
+          setBulkError(result.error);
+          return;
+        }
+        setSelectedRows([]);
+        router.refresh();
+      } catch (error) {
+        setBulkError(actionErrorMessage(error, "No se pudo cambiar el estado de los productos."));
       }
-      setSelectedRows([]);
-      router.refresh();
     });
   };
 
@@ -198,17 +200,23 @@ export default function CatalogClient({
       window.setTimeout(() => setBulkConfirmDelete(false), 5000);
       return;
     }
+    const ids = [...selectedRows];
     setBulkError(null);
     startBulk(async () => {
-      const result = await deleteProductsAction(selectedRows);
-      if (!result.success) {
-        setBulkError(result.error);
+      try {
+        const result = await deleteProductsAction(ids);
+        if (!result.success) {
+          setBulkError(result.error);
+          setBulkConfirmDelete(false);
+          return;
+        }
+        setSelectedRows([]);
         setBulkConfirmDelete(false);
-        return;
+        router.refresh();
+      } catch (error) {
+        setBulkError(actionErrorMessage(error, "No se pudieron eliminar los productos."));
+        setBulkConfirmDelete(false);
       }
-      setSelectedRows([]);
-      setBulkConfirmDelete(false);
-      router.refresh();
     });
   };
 
@@ -318,7 +326,7 @@ export default function CatalogClient({
           count: t.count,
         }))}
         active={activeTab}
-        onChange={setActiveTab}
+        onChange={handleTabChange}
       />
 
       {/* Single hairline-frame DataBoard: cmd bar + bulk bar + table */}
@@ -436,7 +444,7 @@ export default function CatalogClient({
                       hasSearch={searchQuery.length > 0}
                       onClear={() => {
                         setSearchQuery("");
-                        setActiveTab("all");
+                        handleTabChange("all");
                       }}
                       onAdd={() => setManualOpen(true)}
                     />
@@ -448,7 +456,7 @@ export default function CatalogClient({
                   return (
                     <tr
                       key={product.id}
-                      onClick={() => setSelectedProduct(product)}
+                      onClick={() => setSelectedProductId(product.id)}
                       data-selected={isSelected ? "true" : undefined}
                       style={{ cursor: "pointer" }}
                     >
@@ -572,7 +580,7 @@ export default function CatalogClient({
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setSelectedProduct(product);
+                                  setSelectedProductId(product.id);
                                 }}
                                 title="Ver detalle"
                                 className="nx-action nx-action--ghost nx-action--sm"
@@ -597,7 +605,7 @@ export default function CatalogClient({
       <ProductDrawer
         product={selectedProduct}
         isOpen={selectedProduct !== null}
-        onClose={() => setSelectedProduct(null)}
+        onClose={() => setSelectedProductId(null)}
         onProductUpdated={() => router.refresh()}
         focusSection={focusSection}
       />
@@ -611,6 +619,11 @@ export default function CatalogClient({
 }
 
 // ─── Subcomponents ────────────────────────────────────────────────────────
+
+function actionErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message.trim()) return error.message;
+  return fallback;
+}
 
 function EmptyState({
   hasSearch,

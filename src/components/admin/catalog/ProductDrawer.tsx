@@ -16,12 +16,17 @@ interface ProductDrawerProps {
 }
 
 export function ProductDrawer({ product, isOpen, onClose, onProductUpdated, focusSection }: ProductDrawerProps) {
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
   
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
       const handleEsc = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') onClose();
+        if (e.key === 'Escape') onCloseRef.current();
       };
       window.addEventListener('keydown', handleEsc);
 
@@ -42,7 +47,7 @@ export function ProductDrawer({ product, isOpen, onClose, onProductUpdated, focu
     } else {
       document.body.style.overflow = 'unset';
     }
-  }, [isOpen, focusSection]); // Removed onClose to prevent re-renders breaking state
+  }, [isOpen, focusSection]);
 
   if (!isOpen || !product) return null;
 
@@ -87,7 +92,14 @@ export function ProductDrawer({ product, isOpen, onClose, onProductUpdated, focu
           {/* Main Visuals & Details */}
           <section className="flex gap-6">
             <div className="w-32 h-32 rounded-[var(--r-md)] bg-[var(--surface-2)] border border-[color:var(--hairline)] overflow-hidden shrink-0">
-              <img src={product.image} alt={product.title} className="w-full h-full object-cover" />
+              {product.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={product.image} alt={product.title} className="w-full h-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-ink-6">
+                  <Package className="h-7 w-7" strokeWidth={1.5} />
+                </div>
+              )}
             </div>
             <div className="space-y-3 flex-1">
                <div className="flex flex-wrap gap-1.5">
@@ -107,6 +119,7 @@ export function ProductDrawer({ product, isOpen, onClose, onProductUpdated, focu
           {/* Pricing & Margins Grid — Editable Cost */}
           <div id="pricing-cost-section">
             <InlineCostSection
+              key={product.id}
               product={product}
               onCostSaved={onProductUpdated}
             />
@@ -181,13 +194,6 @@ function InlineCostSection({ product, onCostSaved }: { product: Product; onCostS
   const parsedCost = parseFloat(value);
   const hasValidInput = value !== "" && !isNaN(parsedCost) && isFinite(parsedCost) && parsedCost >= 0;
   const liveMargin = hasValidInput && product.price > 0 ? (product.price - parsedCost) / product.price : null;
-
-  // Reset state when product changes
-  useEffect(() => {
-    setEditing(false);
-    setError(null);
-    setSaved(false);
-  }, [product.id]);
 
   const startEditing = () => {
     setValue(product.costReal ? String(product.cost) : "");
