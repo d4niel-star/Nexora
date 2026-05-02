@@ -17,6 +17,7 @@ import { getCurrentStore } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
 import { getPublicWhatsappSettings } from "@/lib/apps/whatsapp-recovery/settings";
 import { getMercadoPagoPlatformReadiness } from "@/lib/payments/mercadopago/platform-readiness";
+import { NexoraStatRow } from "@/components/admin/nexora";
 
 // NOTE: we intentionally do NOT import SETTINGS_CATEGORIES from
 // SettingsShell here. SettingsShell is a "use client" module whose
@@ -208,42 +209,64 @@ export default async function SettingsHubPage() {
   ];
 
   const totalCards = groups.reduce((acc, g) => acc + g.cards.length, 0);
+  const categoryWindows = groups.flatMap((group) =>
+    group.cards.map((card) => ({
+      ...card,
+      groupTitle: group.title,
+    })),
+  );
+  const settingsStats = [
+    {
+      label: "Gateway",
+      value: mpConnected ? "Activo" : "Pendiente",
+      hint: "Mercado Pago",
+    },
+    {
+      label: "Dominios",
+      value: domains.length > 0 ? `${verifiedDomains}/${domains.length}` : "Subdominio",
+      hint: domains.length > 0 ? "Verificados" : "Base Nexora",
+    },
+    {
+      label: "WhatsApp",
+      value: whatsappActive ? "Activo" : whatsappApp ? "Sin cred." : "No instalado",
+      hint: "Mensajes al cliente",
+    },
+    {
+      label: "Integraciones",
+      value: `${integrationsCount}`,
+      hint: integrationsCount === 1 ? "Activa" : "Activas",
+    },
+  ];
   const platformReadiness = isOps ? getMercadoPagoPlatformReadiness() : null;
 
   return (
-    <div className="space-y-10">
-      {/* Grouped grid — one section per topic. The SettingsShell already
-          draws the page title; we don't repeat it here. */}
-      {groups.map((group) => (
-        <section
-          key={group.title}
-          aria-label={group.title}
-          className="space-y-3"
-        >
-          <header className="flex items-end justify-between gap-4 px-1">
-            <div className="min-w-0">
-              <h2 className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-6">
-                {group.title}
-              </h2>
-              {group.description ? (
-                <p className="mt-0.5 text-[12px] leading-[1.5] text-ink-5">
-                  {group.description}
-                </p>
-              ) : null}
-            </div>
-            <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-6">
-              {group.cards.length === 1
-                ? "1 ajuste"
-                : `${group.cards.length} ajustes`}
-            </span>
-          </header>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {group.cards.map((card) => (
-              <CategoryCardLink key={card.href} card={card} />
-            ))}
+    <div className="space-y-6">
+      <NexoraStatRow stats={settingsStats} cols={4} />
+      <section aria-label="Categorias de configuracion" className="space-y-3">
+        <header className="flex items-end justify-between gap-4 px-1">
+          <div className="min-w-0">
+            <h2 className="text-[13.5px] font-semibold tracking-[-0.005em] text-ink-0">
+              Dashboard de configuraci&oacute;n
+            </h2>
+            <p className="mt-0.5 text-[12px] leading-[1.5] text-ink-5">
+              Categor&iacute;as ordenadas por &aacute;rea, con estado real y acceso directo a su ventana.
+            </p>
           </div>
-        </section>
-      ))}
+          <span className="shrink-0 text-[11.5px] font-medium tabular-nums text-ink-5">
+            {totalCards} ventanas
+          </span>
+        </header>
+
+        <div className="space-y-3">
+          {categoryWindows.map((card, index) => (
+            <SettingsWindowLink
+              key={card.href}
+              card={card}
+              index={index + 1}
+            />
+          ))}
+        </div>
+      </section>
 
       {/* Ops-only block: visible ONLY when the current user is on the
           Nexora ops allowlist. Never shown to merchants. Keeps the
@@ -301,34 +324,48 @@ export default async function SettingsHubPage() {
   );
 }
 
-// ─── Card primitive ────────────────────────────────────────────────────
+// ─── Window primitive ──────────────────────────────────────────────────
 //
-// One-row card with an icon medallion at the left, the category label
-// + description in the middle, an optional tone-coded status chip on
-// the right, and a chevron to communicate "this opens its own page".
-function CategoryCardLink({ card }: { card: CategoryCard }) {
+// One vertical window per category. Each row opens a real settings page.
+function SettingsWindowLink({
+  card,
+  index,
+}: {
+  card: CategoryCard & { groupTitle: string };
+  index: number;
+}) {
   const Icon = card.icon;
   return (
     <Link
+      data-square
       href={card.href}
-      className="group flex items-start gap-4 rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] px-5 py-4 transition-colors hover:border-[color:var(--hairline-strong)] hover:bg-[var(--surface-1)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+      className="group block overflow-hidden rounded-[var(--r-md)] border border-[color:var(--studio-line)] bg-[var(--studio-paper)] transition-colors hover:border-[color:var(--studio-line-strong)] hover:bg-[var(--studio-row-hover)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
     >
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] transition-colors group-hover:bg-[var(--surface-0)]">
-        <Icon className="h-4 w-4 text-ink-0" strokeWidth={1.75} />
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <h3 className="text-[14px] font-semibold text-ink-0">{card.label}</h3>
-          {card.status ? <StatusChip status={card.status} /> : null}
+      <div className="grid grid-cols-[auto_1fr] gap-4 p-4 sm:grid-cols-[auto_1fr_auto] sm:items-center">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--studio-line)] bg-[var(--studio-paper-soft)] transition-colors group-hover:bg-[var(--studio-paper)]">
+          <Icon className="h-4 w-4 text-ink-1" strokeWidth={1.75} />
         </div>
-        <p className="mt-1 text-[12px] leading-[1.55] text-ink-5">
-          {card.summary}
-        </p>
+
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-6">
+              {String(index).padStart(2, "0")} / {card.groupTitle}
+            </span>
+            {card.status ? <StatusChip status={card.status} /> : null}
+          </div>
+          <h3 className="mt-1 text-[14px] font-semibold tracking-[-0.005em] text-ink-0">
+            {card.label}
+          </h3>
+          <p className="mt-1 max-w-2xl text-[12px] leading-[1.55] text-ink-5">
+            {card.summary}
+          </p>
+        </div>
+
+        <div className="col-start-2 flex items-center gap-1.5 self-center text-[12px] font-medium text-ink-5 transition-colors group-hover:text-ink-0 sm:col-start-auto">
+          Abrir
+          <ChevronRight className="h-3.5 w-3.5" strokeWidth={1.75} />
+        </div>
       </div>
-      <ChevronRight
-        className="mt-1 h-4 w-4 shrink-0 text-ink-6 transition-colors group-hover:text-ink-0"
-        strokeWidth={1.75}
-      />
     </Link>
   );
 }

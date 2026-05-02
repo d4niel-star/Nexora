@@ -72,16 +72,16 @@ export function SettingsCategoryPanel({
   children,
 }: Props) {
   return (
-    <div className="space-y-6">
-      <header className="flex items-start gap-4">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)]">
-          <Icon className="h-4 w-4 text-ink-0" strokeWidth={1.75} />
+    <section className="overflow-hidden rounded-[var(--r-md)] border border-[color:var(--studio-line)] bg-[var(--studio-paper)]">
+      <header className="flex items-start gap-4 border-b border-[color:var(--studio-line)] p-5">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--studio-line)] bg-[var(--studio-paper-soft)]">
+          <Icon className="h-4 w-4 text-ink-1" strokeWidth={1.75} />
         </div>
         <div className="flex-1 min-w-0">
           <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-6">
             {eyebrow}
           </span>
-          <h2 className="mt-1 text-[20px] font-semibold tracking-[-0.02em] text-ink-0">
+          <h2 className="mt-1 text-[17px] font-semibold tracking-[-0.01em] text-ink-0">
             {title}
           </h2>
           <p className="mt-2 max-w-2xl text-[13px] leading-[1.55] text-ink-5">
@@ -90,33 +90,38 @@ export function SettingsCategoryPanel({
         </div>
       </header>
 
-      {facts && facts.length > 0 ? (
-        <dl className="grid grid-cols-1 gap-3 rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 sm:grid-cols-2">
-          {facts.map((fact) => (
-            <div key={fact.label} className="min-w-0">
-              <dt className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-6">
-                {fact.label}
-              </dt>
-              <dd className={`mt-1 truncate text-[13px] font-medium ${toneClass(fact.tone)}`}>
-                {fact.value}
-              </dd>
-            </div>
-          ))}
-        </dl>
-      ) : null}
+      <div className="space-y-5 p-5">
+        {facts && facts.length > 0 ? (
+          <dl className="grid grid-cols-1 sm:grid-cols-2">
+            {facts.map((fact) => (
+              <div
+                key={fact.label}
+                className="min-w-0 border-t border-[color:var(--studio-line)] py-3 first:border-t-0 sm:border-t-0 sm:py-4"
+              >
+                <dt className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-6">
+                  {fact.label}
+                </dt>
+                <dd className={`mt-1 truncate text-[13px] font-medium ${toneClass(fact.tone)}`}>
+                  {fact.value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        ) : null}
 
-      {children ? (
-        <div className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-5 text-[13px] leading-[1.55] text-ink-3">
-          {children}
-        </div>
-      ) : null}
+        {children ? (
+          <div className="border-t border-[color:var(--studio-line)] pt-5 text-[13px] leading-[1.55] text-ink-3">
+            {children}
+          </div>
+        ) : null}
+      </div>
 
-      <div className="flex flex-wrap gap-2">
+      <footer className="flex flex-wrap gap-2 border-t border-[color:var(--studio-line)] bg-[var(--studio-paper-soft)] p-4">
         {actions.map((action, idx) => {
           const isPrimary = (action.variant ?? (idx === 0 ? "primary" : "secondary")) === "primary";
           const className = isPrimary
-            ? "inline-flex items-center justify-center gap-1.5 h-10 px-5 rounded-full bg-ink-0 text-[13px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
-            : "inline-flex items-center justify-center gap-1.5 h-10 px-5 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[13px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]";
+            ? "nx-action nx-action--primary focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+            : "nx-action focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]";
           return action.external ? (
             <a
               key={action.href + action.label}
@@ -135,7 +140,7 @@ export function SettingsCategoryPanel({
             </Link>
           );
         })}
-      </div>
-    </div>
+      </footer>
+    </section>
   );
 }
