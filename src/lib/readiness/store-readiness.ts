@@ -67,11 +67,13 @@ export async function getStoreReadiness(storeId: string): Promise<StoreReadiness
     emailLogCount,
     // Pixels
     pixelConfig,
+    // Subscription
+    subscription,
   ] = await Promise.all([
     // Store identity
     prisma.store.findUnique({
       where: { id: storeId },
-      select: { name: true, slug: true, logo: true, description: true, status: true, customDomain: true },
+      select: { name: true, slug: true, logo: true, description: true, status: true, customDomain: true, owner: { select: { emailVerified: true, email: true } } },
     }),
     prisma.storeBranding.findUnique({ where: { storeId }, select: { logoUrl: true } }),
     prisma.storeCommunicationSettings.findUnique({
@@ -134,9 +136,41 @@ export async function getStoreReadiness(storeId: string): Promise<StoreReadiness
     prisma.emailLog.count({ where: { storeId, status: "sent" } }),
     // Pixels
     getStorefrontAnalyticsConfig(storeId),
+    prisma.storeSubscription.findUnique({ where: { storeId }, select: { status: true } }),
   ]);
 
   const noVariantCount = Number(activeProductsNoVariantCount?.[0]?.count ?? 0);
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // 0. ACCOUNT
+  // ═══════════════════════════════════════════════════════════════════════
+
+  const emailVerified = store?.owner?.emailVerified ?? false;
+  const hasPlan = !!subscription && ["active", "trialing"].includes(subscription.status);
+
+  items.push({
+    id: "account_email",
+    category: "Cuenta",
+    label: "Email verificado",
+    description: "Necesario para operar la cuenta y recibir notificaciones de ventas.",
+    status: emailVerified ? "complete" : "warning",
+    severity: "recommended",
+    evidence: emailVerified ? "Email verificado" : "Pendiente de verificación",
+    actionLabel: "Verificar email",
+    actionHref: "/admin/settings",
+  });
+
+  items.push({
+    id: "account_plan",
+    category: "Cuenta",
+    label: "Suscripción activa",
+    description: "Sin plan activo la tienda puede tener funcionalidades limitadas.",
+    status: hasPlan ? "complete" : (subscription?.status === "trialing" ? "warning" : "missing"),
+    severity: "recommended",
+    evidence: hasPlan ? "Plan activo" : "No verificado / configuración de plan pendiente",
+    actionLabel: "Gestionar plan",
+    actionHref: "/admin/settings",
+  });
 
   // ═══════════════════════════════════════════════════════════════════════
   // 1. IDENTITY
@@ -283,37 +317,53 @@ export async function getStoreReadiness(storeId: string): Promise<StoreReadiness
 
   const mpProvider = paymentProviders.find((p: any) => p.provider === "mercadopago");
   const mpConnected = mpProvider?.status === "connected";
-  const anyPaymentConnected = paymentProviders.some((p: any) => p.status === "connected");
+  // Only Mercado Pago is actually wired to the checkout for now.
+  const anyPaymentConnected = mpConnected;
 
   items.push({
     id: "payment_operational",
     category: "Pagos",
     label: "Método de pago operativo",
-    description: "Necesitás al menos un método de pago conectado para cobrar.",
+    description: "Necesitás al menos un método de pago con checkout público cableado para cobrar.",
     status: anyPaymentConnected ? "complete" : "missing",
     severity: "blocking",
     evidence: mpConnected
-      ? "Mercado Pago conectado"
-      : anyPaymentConnected
-        ? `${paymentProviders.filter((p: any) => p.status === "connected").map((p: any) => p.provider).join(", ")} conectado`
-        : "Sin método de pago",
+      ? "Mercado Pago conectado y operativo"
+      : "Sin checkout operativo",
     actionLabel: "Configurar pagos",
     actionHref: "/admin/settings",
   });
 
-  if (paymentProviders.length > 0 && !anyPaymentConnected) {
-    const pending = paymentProviders.filter((p: any) => p.status !== "connected");
+  const alternateProviders = paymentProviders.filter((p: any) => p.provider !== "mercadopago" && p.status === "connected");
+  if (alternateProviders.length > 0) {
     items.push({
-      id: "payment_pending",
+      id: "payment_alternate",
       category: "Pagos",
-      label: "Proveedores pendientes",
-      description: "Hay proveedores configurados pero no conectados.",
+      label: "Proveedores alternativos conectados",
+      description: "Credenciales guardadas, checkout próximamente.",
       status: "warning",
       severity: "recommended",
-      evidence: pending.map((p) => `${p.provider}: ${p.status}`).join(", "),
-      actionLabel: "Revisar conexión",
+      evidence: alternateProviders.map((p: any) => p.provider).join(", "),
+      actionLabel: "Revisar proveedores",
       actionHref: "/admin/settings",
     });
+  }
+
+  if (paymentProviders.length > 0 && !anyPaymentConnected) {
+    const pending = paymentProviders.filter((p: any) => p.status !== "connected");
+    if (pending.length > 0) {
+      items.push({
+        id: "payment_pending",
+        category: "Pagos",
+        label: "Proveedores pendientes",
+        description: "Hay proveedores configurados pero no conectados.",
+        status: "warning",
+        severity: "recommended",
+        evidence: pending.map((p: any) => `${p.provider}: ${p.status}`).join(", "),
+        actionLabel: "Revisar conexión",
+        actionHref: "/admin/settings",
+      });
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════════════
