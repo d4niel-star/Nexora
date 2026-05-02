@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ReadinessPanel } from "./ReadinessPanel";
+import { MerchantOnboardingGuide } from "./MerchantOnboardingGuide";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
@@ -111,7 +111,7 @@ export function CommandCenter({ data }: { data: CommandCenterData }) {
         <NexoraStatRow stats={stats} cols={6} />
 
         {/* Readiness checklist */}
-        <ReadinessPanel />
+        <MerchantOnboardingGuide />
 
         {/* Directive groups (or empty state) */}
         {hasDirectives ? (
