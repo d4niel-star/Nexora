@@ -1,13 +1,15 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
-import { useSearchParams } from "next/navigation";
-import { Package, ShoppingBag, CalendarDays, Zap, Truck, AlertTriangle } from "lucide-react";
+import { useMemo, useState, useTransition, useCallback } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { Package, ShoppingBag, CalendarDays, Zap, Truck, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 import { Order } from "../../../types/order";
 import { OrderStatusBadge, PaymentStatusBadge } from "../../../components/admin/orders/StatusBadge";
 import { OrderDrawer } from "../../../components/admin/orders/OrderDrawer";
 import { deriveOrderNextAction, orderNeedsAction, type OrderNextAction } from "@/lib/orders/workqueue";
 import { bulkUpdateFulfillment } from "@/lib/store-engine/orders/bulk-actions";
+import type { PaginationMeta } from "@/lib/pagination";
+import type { OrderStatusCounts } from "@/lib/store-engine/orders/queries";
 import {
   NexoraPageHeader,
   NexoraStatRow,
@@ -21,84 +23,107 @@ import {
   NexoraEmpty,
 } from "@/components/admin/nexora";
 
-type TabValue = 'action' | 'all' | 'new' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
+type TabValue = "all" | "new" | "paid" | "processing" | "shipped" | "delivered" | "cancelled" | "refunded";
 
 interface OrdersClientProps {
   orders: Order[];
+  pagination: PaginationMeta;
+  counts: OrderStatusCounts;
   hideHeader?: boolean;
-  initialTab?: TabValue;
 }
 
-export default function OrdersClient({ orders, hideHeader = false, initialTab = 'action' }: OrdersClientProps) {
+export default function OrdersClient({
+  orders,
+  pagination,
+  counts,
+  hideHeader = false,
+}: OrdersClientProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const urlParams = useSearchParams();
 
-  const fromCustomer = urlParams?.get("customer") ?? "";
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  // Read current URL state
+  const currentTab = (urlParams?.get("status") ?? "all") as TabValue;
+  const currentQuery = urlParams?.get("q") ?? "";
+  const currentDateFrom = urlParams?.get("dateFrom") ?? "";
+  const currentDateTo = urlParams?.get("dateTo") ?? "";
+
+  // Local state for inputs (synced to URL on submit/change)
+  const [searchInput, setSearchInput] = useState(currentQuery);
+  const [dateFrom, setDateFrom] = useState(currentDateFrom);
+  const [dateTo, setDateTo] = useState(currentDateTo);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [bulkPending, startBulkTransition] = useTransition();
   const [bulkFeedback, setBulkFeedback] = useState<string | null>(null);
 
-  // ── Cross-module navigation ────────────────────────────────────────────
-  // When the merchant arrives from /admin/customers?customer=<email>,
-  // seed the search field so the table immediately narrows to that
-  // customer's orders. One-shot: subsequent typing must not be clobbered.
-  const [activeTab, setActiveTab] = useState<TabValue>(fromCustomer ? "all" : initialTab);
-  const [searchQuery, setSearchQuery] = useState(fromCustomer);
+  // ── URL navigation helper ────────────────────────────────────────────
+  const pushParams = useCallback(
+    (updates: Record<string, string | undefined>) => {
+      const sp = new URLSearchParams(urlParams?.toString() ?? "");
+      for (const [key, value] of Object.entries(updates)) {
+        if (value === undefined || value === "" || value === "all" && key === "status") {
+          sp.delete(key);
+        } else {
+          sp.set(key, value);
+        }
+      }
+      // Reset to page 1 when filters change (except when explicitly setting page)
+      if (!("page" in updates)) {
+        sp.delete("page");
+      }
+      const qs = sp.toString();
+      router.push(`${pathname}${qs ? `?${qs}` : ""}`);
+    },
+    [router, pathname, urlParams],
+  );
 
-  // Compute the next-action map once per render so the table, the tab
-  // count and the KPI all agree (single source of truth).
+  // ── Next-action map (for current page only) ──────────────────────────
   const nextActions = useMemo(() => {
     const map = new Map<string, OrderNextAction | null>();
     for (const o of orders) map.set(o.id, deriveOrderNextAction(o));
     return map;
   }, [orders]);
 
-  const actionCount = useMemo(
-    () => orders.reduce((n, o) => n + (nextActions.get(o.id) ? 1 : 0), 0),
-    [orders, nextActions],
-  );
+  // ── Tab handling ─────────────────────────────────────────────────────
+  const handleTabChange = (tab: string) => {
+    setSelectedRows([]);
+    pushParams({ status: tab === "all" ? undefined : tab });
+  };
 
-  const filteredOrders = orders.filter(order => {
-    const matchesTab =
-      activeTab === 'all'
-        ? true
-        : activeTab === 'action'
-          ? orderNeedsAction(order)
-          : order.status === activeTab;
-    const matchesSearch = order.number.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          order.customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          order.customer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          order.items.some((item) => item.title.toLowerCase().includes(searchQuery.toLowerCase()));
-    const orderDate = new Date(order.createdAt);
-    const matchesDateFrom = !dateFrom || orderDate >= new Date(`${dateFrom}T00:00:00`);
-    const matchesDateTo = !dateTo || orderDate <= new Date(`${dateTo}T23:59:59`);
-    return matchesTab && matchesSearch && matchesDateFrom && matchesDateTo;
-  });
+  // ── Search ───────────────────────────────────────────────────────────
+  const handleSearchSubmit = () => {
+    pushParams({ q: searchInput || undefined });
+  };
 
-  const realSales = orders.filter((order) => order.paymentStatus === "paid" && !["cancelled", "refunded"].includes(order.status));
-  const pendingPayment = orders.filter((order) => order.paymentStatus === "pending" || order.paymentStatus === "in_process");
-  const toPrepare = realSales.filter((order) => ["paid", "processing", "new"].includes(order.status) && order.shipping.shippingStatus !== "shipped" && order.shipping.shippingStatus !== "delivered");
-  const realRevenue = realSales.reduce((acc, order) => acc + order.total, 0);
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") handleSearchSubmit();
+  };
 
-  const tabs: { label: string, value: TabValue, count?: number }[] = [
-    { label: "Requiere acción", value: "action", count: actionCount },
-    { label: "Todos", value: "all", count: orders.length },
-    { label: "Nuevos", value: "new", count: orders.filter(o => o.status === 'new').length },
-    { label: "Pagados", value: "paid", count: orders.filter(o => o.status === 'paid').length },
-    { label: "Preparando", value: "processing", count: orders.filter(o => o.status === 'processing').length },
-    { label: "Enviados", value: "shipped", count: orders.filter(o => o.status === 'shipped').length },
-    { label: "Entregados", value: "delivered", count: orders.filter(o => o.status === 'delivered').length },
-    { label: "Cancelados", value: "cancelled", count: orders.filter(o => o.status === 'cancelled').length },
-    { label: "Reembolsados", value: "refunded", count: orders.filter(o => o.status === 'refunded').length },
-  ];
+  // ── Date filters ─────────────────────────────────────────────────────
+  const handleDateFromChange = (v: string) => {
+    setDateFrom(v);
+    pushParams({ dateFrom: v || undefined });
+  };
 
-  // ── Bulk action — mark preparing ───────────────────────────────────────
-  // Real server call (no fake buttons). Only enabled when every selected
-  // order is in a state where "preparing" is a valid forward transition:
-  // paid/approved + shipping=unfulfilled. The backend also enforces this,
-  // but filtering client-side avoids partial failures.
+  const handleDateToChange = (v: string) => {
+    setDateTo(v);
+    pushParams({ dateTo: v || undefined });
+  };
+
+  const handleClearFilters = () => {
+    setSearchInput("");
+    setDateFrom("");
+    setDateTo("");
+    pushParams({ q: undefined, dateFrom: undefined, dateTo: undefined, status: undefined, page: undefined });
+  };
+
+  // ── Pagination ───────────────────────────────────────────────────────
+  const goToPage = (p: number) => {
+    pushParams({ page: p > 1 ? String(p) : undefined });
+  };
+
+  // ── Bulk actions ─────────────────────────────────────────────────────
   const bulkPreparingEligibleIds = useMemo(() => {
     const set = new Set(selectedRows);
     return orders
@@ -124,6 +149,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
             : `${okCount} actualizadas · ${failCount} con error.`,
         );
         setSelectedRows([]);
+        router.refresh();
       } catch (err) {
         setBulkFeedback(
           err instanceof Error ? err.message : "Error al actualizar los pedidos.",
@@ -134,7 +160,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
-      setSelectedRows(filteredOrders.map(o => o.id));
+      setSelectedRows(orders.map((o) => o.id));
     } else {
       setSelectedRows([]);
     }
@@ -143,11 +169,25 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
   const handleSelectRow = (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
     e.stopPropagation();
     if (e.target.checked) {
-      setSelectedRows(prev => [...prev, id]);
+      setSelectedRows((prev) => [...prev, id]);
     } else {
-      setSelectedRows(prev => prev.filter(r => r !== id));
+      setSelectedRows((prev) => prev.filter((r) => r !== id));
     }
   };
+
+  // ── Tab definitions ──────────────────────────────────────────────────
+  const tabs: { label: string; value: TabValue; count?: number }[] = [
+    { label: "Todos", value: "all", count: counts.all },
+    { label: "Nuevos", value: "new", count: counts.new },
+    { label: "Pagados", value: "paid", count: counts.paid },
+    { label: "Preparando", value: "processing", count: counts.processing },
+    { label: "Enviados", value: "shipped", count: counts.shipped },
+    { label: "Entregados", value: "delivered", count: counts.delivered },
+    { label: "Cancelados", value: "cancelled", count: counts.cancelled },
+    { label: "Reembolsados", value: "refunded", count: counts.refunded },
+  ];
+
+  const hasActiveFilters = currentQuery || currentDateFrom || currentDateTo;
 
   return (
     <div className="space-y-5 animate-in fade-in duration-300 pb-16">
@@ -164,27 +204,19 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
         <NexoraStatRow
           stats={[
             {
-              label: "Ventas reales (30d)",
-              value: `$${realRevenue.toLocaleString("es-AR")}`,
-              hint: "Solo pagos confirmados",
+              label: "Total pedidos",
+              value: String(counts.all),
+              hint: "Todos los pedidos",
             },
             {
               label: "Pendientes de pago",
-              value: String(pendingPayment.length),
+              value: String(counts.pendingPayment),
               hint: "No cuentan como venta",
-              onClick: () => {
-                setActiveTab("action");
-                setSearchQuery("");
-              },
             },
             {
               label: "Por preparar",
-              value: String(toPrepare.length),
+              value: String(counts.paid + counts.processing),
               hint: "Pagados, sin despachar",
-              onClick: () => {
-                setActiveTab("action");
-                setSearchQuery("");
-              },
             },
           ]}
           cols={3}
@@ -198,16 +230,18 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
           label: t.label,
           count: t.count,
         }))}
-        active={activeTab}
-        onChange={setActiveTab}
+        active={currentTab}
+        onChange={handleTabChange}
       />
 
       {/* DataBoard — cmd bar + bulk + table fused under one hairline frame */}
       <NexoraTableShell>
         <NexoraCmdBar>
           <NexoraSearch
-            value={searchQuery}
-            onChange={setSearchQuery}
+            value={searchInput}
+            onChange={setSearchInput}
+            onKeyDown={handleSearchKeyDown}
+            onBlur={handleSearchSubmit}
             placeholder="Buscar pedido, cliente, tracking…"
           />
           <NexoraFilters>
@@ -217,7 +251,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
               <input
                 type="date"
                 value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
+                onChange={(e) => handleDateFromChange(e.target.value)}
                 style={{
                   background: "transparent",
                   border: "none",
@@ -235,7 +269,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
               <input
                 type="date"
                 value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
+                onChange={(e) => handleDateToChange(e.target.value)}
                 style={{
                   background: "transparent",
                   border: "none",
@@ -248,16 +282,11 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
                 }}
               />
             </label>
-            {(searchQuery || dateFrom || dateTo) ? (
+            {hasActiveFilters ? (
               <button
                 type="button"
                 className="nx-action nx-action--ghost nx-action--sm"
-                onClick={() => {
-                  setSearchQuery("");
-                  setDateFrom("");
-                  setDateTo("");
-                  setActiveTab("all");
-                }}
+                onClick={handleClearFilters}
               >
                 Limpiar
               </button>
@@ -265,7 +294,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
           </NexoraFilters>
           <NexoraActions>
             <span className="nx-cmd-bar__count">
-              {filteredOrders.length} de {orders.length}
+              {pagination.total} pedido{pagination.total !== 1 ? "s" : ""}
             </span>
           </NexoraActions>
         </NexoraCmdBar>
@@ -294,7 +323,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
 
         {/* Table */}
         <div className="overflow-x-auto">
-          {orders.length === 0 ? (
+          {counts.all === 0 && !hasActiveFilters ? (
             <NexoraEmpty
               title="Sin pedidos aún"
               body="Cuando tus compradores paguen desde el storefront, los pedidos aparecerán acá en tiempo real."
@@ -302,6 +331,20 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
                 <a href="/admin/store" className="nx-action nx-action--sm">
                   Ver storefront
                 </a>
+              }
+            />
+          ) : orders.length === 0 ? (
+            <NexoraEmpty
+              title="Sin resultados"
+              body="Ajustá los filtros o limpiá la búsqueda para ver todos los pedidos."
+              actions={
+                <button
+                  type="button"
+                  className="nx-action nx-action--sm"
+                  onClick={handleClearFilters}
+                >
+                  Limpiar filtros
+                </button>
               }
             />
           ) : (
@@ -312,7 +355,7 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
                     <input
                       type="checkbox"
                       onChange={handleSelectAll}
-                      checked={selectedRows.length === filteredOrders.length && filteredOrders.length > 0}
+                      checked={selectedRows.length === orders.length && orders.length > 0}
                       className="h-4 w-4 cursor-pointer accent-[var(--brand)]"
                     />
                   </th>
@@ -328,34 +371,10 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
                 </tr>
               </thead>
               <tbody>
-                {filteredOrders.length === 0 ? (
-                  <tr>
-                    <td colSpan={10} style={{ padding: 0 }}>
-                      <NexoraEmpty
-                        title="Sin resultados"
-                        body="Ajustá los filtros o limpiá la búsqueda para ver todos los pedidos."
-                        actions={
-                          <button
-                            type="button"
-                            className="nx-action nx-action--sm"
-                            onClick={() => {
-                              setSearchQuery("");
-                              setDateFrom("");
-                              setDateTo("");
-                              setActiveTab("all");
-                            }}
-                          >
-                            Limpiar filtros
-                          </button>
-                        }
-                      />
-                    </td>
-                  </tr>
-                ) : (
-                  filteredOrders.map((order) => {
-                    const isSelected = selectedRows.includes(order.id);
-                    const nextAction = nextActions.get(order.id) ?? null;
-                    return (
+                {orders.map((order) => {
+                  const isSelected = selectedRows.includes(order.id);
+                  const nextAction = nextActions.get(order.id) ?? null;
+                  return (
                     <tr
                       key={order.id}
                       onClick={() => setSelectedOrder(order)}
@@ -363,15 +382,15 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
                       style={{ cursor: "pointer" }}
                     >
                       <td onClick={(e) => e.stopPropagation()}>
-                         <input
-                           type="checkbox"
-                           checked={isSelected}
-                           onChange={(e) => handleSelectRow(e, order.id)}
-                           className="h-4 w-4 cursor-pointer accent-[var(--brand)]"
-                         />
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => handleSelectRow(e, order.id)}
+                          className="h-4 w-4 cursor-pointer accent-[var(--brand)]"
+                        />
                       </td>
                       <td className="nx-cell-strong" style={{ fontVariantNumeric: "tabular-nums" }}>{order.number}</td>
-                      <td className="nx-cell-meta" style={{ fontVariantNumeric: "tabular-nums" }}>{new Date(order.createdAt).toLocaleString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
+                      <td className="nx-cell-meta" style={{ fontVariantNumeric: "tabular-nums" }}>{new Date(order.createdAt).toLocaleString("es-AR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</td>
                       <td>
                         <div className="nx-cell-strong">{order.customer.name}</div>
                         <div className="nx-cell-meta truncate" style={{ maxWidth: 160 }}>{order.customer.email}</div>
@@ -383,12 +402,12 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
                         </div>
                       </td>
                       <td>
-                        {order.channel === 'Storefront' ? (
-                           <span className="nx-chip" style={{ pointerEvents: "none", height: 22, fontSize: 11 }}>
-                              <ShoppingBag className="w-3 h-3" strokeWidth={1.75} /> Tienda
-                           </span>
+                        {order.channel === "Storefront" ? (
+                          <span className="nx-chip" style={{ pointerEvents: "none", height: 22, fontSize: 11 }}>
+                            <ShoppingBag className="w-3 h-3" strokeWidth={1.75} /> Tienda
+                          </span>
                         ) : (
-                           <span className="nx-cell-meta">{order.channel}</span>
+                          <span className="nx-cell-meta">{order.channel}</span>
                         )}
                       </td>
                       <td><PaymentStatusBadge status={order.paymentStatus} /></td>
@@ -415,23 +434,63 @@ export default function OrdersClient({ orders, hideHeader = false, initialTab = 
                           <span className="nx-cell-meta">—</span>
                         )}
                       </td>
-                      <td className="nx-cell-num nx-cell-strong">${order.total.toLocaleString('es-AR')}</td>
+                      <td className="nx-cell-num nx-cell-strong">${order.total.toLocaleString("es-AR")}</td>
                     </tr>
-                  )})
-                )}
+                  );
+                })}
               </tbody>
             </table>
           )}
         </div>
+
+        {/* Pagination bar */}
+        {pagination.pageCount > 1 && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "10px 16px",
+              borderTop: "1px solid var(--hairline)",
+              fontSize: 12,
+              color: "var(--ink-4)",
+            }}
+          >
+            <span style={{ fontVariantNumeric: "tabular-nums" }}>
+              Página {pagination.page} de {pagination.pageCount} · {pagination.total} pedidos
+            </span>
+            <div style={{ display: "flex", gap: 4 }}>
+              <button
+                type="button"
+                className="nx-action nx-action--ghost nx-action--sm"
+                disabled={!pagination.hasPreviousPage}
+                onClick={() => goToPage(pagination.page - 1)}
+                aria-label="Página anterior"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Anterior
+              </button>
+              <button
+                type="button"
+                className="nx-action nx-action--ghost nx-action--sm"
+                disabled={!pagination.hasNextPage}
+                onClick={() => goToPage(pagination.page + 1)}
+                aria-label="Página siguiente"
+              >
+                Siguiente
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </NexoraTableShell>
 
       {/* Slide-in Drawer Component */}
-      <OrderDrawer 
-        order={selectedOrder} 
-        isOpen={selectedOrder !== null} 
-        onClose={() => setSelectedOrder(null)} 
+      <OrderDrawer
+        order={selectedOrder}
+        isOpen={selectedOrder !== null}
+        onClose={() => setSelectedOrder(null)}
       />
-
     </div>
   );
 }

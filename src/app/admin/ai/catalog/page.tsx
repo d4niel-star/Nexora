@@ -1,23 +1,25 @@
 import { NexoraAIShell } from "@/components/admin/ai/NexoraAIShell";
-import { getAdminCatalog } from "@/lib/store-engine/catalog/queries";
+import { getAdminCatalogPage } from "@/lib/store-engine/catalog/queries";
 import { Package } from "lucide-react";
 import { unstable_noStore as noStore } from "next/cache";
 import CatalogClient from "@/app/admin/catalog/CatalogClient";
 import type { Product } from "@/types/product";
 
 interface Props {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; page?: string; q?: string; status?: string }>;
 }
 
 export default async function AICatalogPage({ searchParams }: Props) {
   noStore();
-  const adminProducts = await getAdminCatalog();
   const params = await searchParams;
 
-  const validTabs = ["all", "active", "draft", "archived", "out_of_stock", "issues", "import"] as const;
-  const tab = validTabs.includes(params.tab as any) ? (params.tab as any) : "all";
+  const result = await getAdminCatalogPage({
+    page: params.page ? parseInt(params.page, 10) : 1,
+    status: params.status ?? params.tab,
+    query: params.q,
+  });
 
-  const products: Product[] = adminProducts.map((p) => ({
+  const products: Product[] = result.products.map((p) => ({
     id: p.id,
     image: p.image,
     title: p.title,
@@ -60,7 +62,7 @@ export default async function AICatalogPage({ searchParams }: Props) {
         contextName="Catálogo & Calidad"
         contextIcon={<Package className="w-5 h-5 text-ink-0" />}
       >
-        <CatalogClient products={products} hideHeader initialTab={tab} />
+        <CatalogClient products={products} pagination={result.pagination} counts={result.counts} hideHeader />
       </NexoraAIShell>
     </div>
   );

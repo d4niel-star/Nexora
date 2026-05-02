@@ -1,10 +1,208 @@
 import { prisma } from "@/lib/db/prisma";
 import { getCurrentStore } from "@/lib/auth/session";
 import type { Order, OrderStatus, PaymentStatus, Channel } from "@/types/order";
+import {
+  type PaginationMeta,
+  buildPaginationMeta,
+  pageToSkip,
+  clampPageSize,
+  DEFAULT_PAGE_SIZE,
+} from "@/lib/pagination";
+
+// ─── Tab status counts (server-computed, avoids loading all orders) ────
+export interface OrderStatusCounts {
+  all: number;
+  new: number;
+  paid: number;
+  processing: number;
+  shipped: number;
+  delivered: number;
+  cancelled: number;
+  refunded: number;
+  pendingPayment: number;
+}
+
+// ─── Paginated result ─────────────────────────────────────────────────
+export interface OrdersPageResult {
+  orders: Order[];
+  pagination: PaginationMeta;
+  counts: OrderStatusCounts;
+}
+
+// ─── Options ──────────────────────────────────────────────────────────
+export interface GetOrdersPageOptions {
+  page?: number;
+  pageSize?: number;
+  query?: string;
+  status?: string;
+  paymentStatus?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
 
 /**
- * Fetches all orders for the active store, adapting the flat Prisma schema
- * into the structured `Order` type used by the admin UI.
+ * Server-side paginated orders query.
+ * Uses take/skip, where filters, and returns pagination metadata + tab counts.
+ */
+export async function getAdminOrdersPage(
+  options: GetOrdersPageOptions = {},
+): Promise<OrdersPageResult> {
+  const store = await getCurrentStore();
+
+  const empty: OrdersPageResult = {
+    orders: [],
+    pagination: buildPaginationMeta(0, 1, DEFAULT_PAGE_SIZE),
+    counts: { all: 0, new: 0, paid: 0, processing: 0, shipped: 0, delivered: 0, cancelled: 0, refunded: 0, pendingPayment: 0 },
+  };
+
+  if (!store) return empty;
+
+  const pageSize = clampPageSize(options.pageSize ?? DEFAULT_PAGE_SIZE);
+  const page = Math.max(1, options.page ?? 1);
+
+  // Build WHERE clause
+  const where: Record<string, unknown> = { storeId: store.id };
+
+  if (options.status && options.status !== "all") {
+    where.status = options.status;
+  }
+
+  if (options.paymentStatus) {
+    where.paymentStatus = options.paymentStatus;
+  }
+
+  if (options.query) {
+    const q = options.query.trim();
+    if (q) {
+      where.OR = [
+        { orderNumber: { contains: q, mode: "insensitive" } },
+        { email: { contains: q, mode: "insensitive" } },
+        { firstName: { contains: q, mode: "insensitive" } },
+        { lastName: { contains: q, mode: "insensitive" } },
+        { trackingCode: { contains: q, mode: "insensitive" } },
+      ];
+    }
+  }
+
+  if (options.dateFrom || options.dateTo) {
+    const createdAt: Record<string, Date> = {};
+    if (options.dateFrom) createdAt.gte = new Date(`${options.dateFrom}T00:00:00`);
+    if (options.dateTo) createdAt.lte = new Date(`${options.dateTo}T23:59:59`);
+    where.createdAt = createdAt;
+  }
+
+  // Parallel: count + page data + tab counts
+  const storeWhere = { storeId: store.id };
+  const [total, dbOrders, ...statusCounts] = await Promise.all([
+    prisma.order.count({ where }),
+    prisma.order.findMany({
+      where,
+      include: {
+        items: {
+          select: {
+            id: true,
+            productId: true,
+            variantId: true,
+            skuSnapshot: true,
+            titleSnapshot: true,
+            variantTitleSnapshot: true,
+            quantity: true,
+            priceSnapshot: true,
+            lineTotal: true,
+            imageSnapshot: true,
+          },
+        },
+        fiscalInvoice: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: pageSize,
+      skip: pageToSkip(page, pageSize),
+    }),
+    // Tab counts — one query per status is fine at this scale and avoids
+    // loading all rows. These are cheap indexed counts.
+    prisma.order.count({ where: { ...storeWhere } }),
+    prisma.order.count({ where: { ...storeWhere, status: "new" } }),
+    prisma.order.count({ where: { ...storeWhere, status: "paid" } }),
+    prisma.order.count({ where: { ...storeWhere, status: "processing" } }),
+    prisma.order.count({ where: { ...storeWhere, status: "shipped" } }),
+    prisma.order.count({ where: { ...storeWhere, status: "delivered" } }),
+    prisma.order.count({ where: { ...storeWhere, status: "cancelled" } }),
+    prisma.order.count({ where: { ...storeWhere, status: "refunded" } }),
+    prisma.order.count({ where: { ...storeWhere, paymentStatus: { in: ["pending", "in_process"] } } }),
+  ]);
+
+  const counts: OrderStatusCounts = {
+    all: statusCounts[0],
+    new: statusCounts[1],
+    paid: statusCounts[2],
+    processing: statusCounts[3],
+    shipped: statusCounts[4],
+    delivered: statusCounts[5],
+    cancelled: statusCounts[6],
+    refunded: statusCounts[7],
+    pendingPayment: statusCounts[8],
+  };
+
+  const orders: Order[] = dbOrders.map((o) => ({
+    id: o.id,
+    number: o.orderNumber,
+    createdAt: o.createdAt.toISOString(),
+    status: o.status as OrderStatus,
+    publicStatus: o.publicStatus,
+    paymentStatus: o.paymentStatus as PaymentStatus,
+    channel: o.channel as Channel,
+    total: o.total,
+    subtotal: o.subtotal,
+    shippingCost: o.shippingAmount,
+    currency: o.currency,
+    customer: {
+      id: o.email,
+      name: `${o.firstName} ${o.lastName}`.trim(),
+      email: o.email,
+      phone: o.phone,
+      document: o.document,
+    },
+    shipping: {
+      address: [o.addressLine1, o.addressLine2].filter(Boolean).join(", "),
+      city: o.city,
+      state: o.province,
+      zipCode: o.postalCode,
+      country: o.country,
+      carrier: o.shippingCarrier,
+      trackingNumber: o.trackingCode,
+      trackingUrl: o.trackingUrl,
+      shippingMethodLabel: o.shippingMethodLabel,
+      shippingEstimate: o.shippingEstimate,
+      shippingStatus: o.shippingStatus,
+    },
+    items: o.items.map((item) => ({
+      id: item.id,
+      productId: item.productId,
+      variantId: item.variantId,
+      sku: item.skuSnapshot,
+      title: item.titleSnapshot,
+      variantTitle: item.variantTitleSnapshot,
+      quantity: item.quantity,
+      price: item.priceSnapshot,
+      lineTotal: item.lineTotal,
+      image: item.imageSnapshot,
+    })),
+    paymentProvider: o.paymentProvider,
+    mpPaymentId: o.mpPaymentId,
+    mpPreferenceId: o.mpPreferenceId,
+    fiscalInvoice: o.fiscalInvoice,
+  }));
+
+  return {
+    orders,
+    pagination: buildPaginationMeta(total, page, pageSize),
+    counts,
+  };
+}
+
+/**
+ * @deprecated Use getAdminOrdersPage for paginated access.
+ * Kept for backward compatibility with dashboard widgets and other callers.
  */
 export async function getAdminOrders(): Promise<Order[]> {
   const store = await getCurrentStore();
@@ -37,7 +235,7 @@ export async function getAdminOrders(): Promise<Order[]> {
     shippingCost: o.shippingAmount,
     currency: o.currency,
     customer: {
-      id: o.email, // Using email as pseudo-ID since we don't have a customer table yet
+      id: o.email,
       name: `${o.firstName} ${o.lastName}`.trim(),
       email: o.email,
       phone: o.phone,

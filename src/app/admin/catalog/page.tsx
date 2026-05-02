@@ -1,13 +1,31 @@
-import { getAdminCatalog } from "@/lib/store-engine/catalog/queries";
+import { getAdminCatalogPage } from "@/lib/store-engine/catalog/queries";
+import { parsePositiveInt, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import type { Product } from "@/types/product";
 import CatalogClient from "./CatalogClient";
 
-export default async function CatalogPage({ searchParams }: { searchParams?: Promise<{ product?: string; focus?: string }> }) {
-  const params = searchParams ? await searchParams : undefined;
-  const adminProducts = await getAdminCatalog();
+export default async function CatalogPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{
+    product?: string;
+    focus?: string;
+    page?: string;
+    pageSize?: string;
+    q?: string;
+    status?: string;
+  }>;
+}) {
+  const params = searchParams ? await searchParams : {};
+
+  const result = await getAdminCatalogPage({
+    page: parsePositiveInt(params.page, 1),
+    pageSize: parsePositiveInt(params.pageSize, DEFAULT_PAGE_SIZE),
+    query: params.q,
+    status: params.status,
+  });
 
   // Map AdminProduct → Product type expected by UI components (drawers, badges)
-  const products: Product[] = adminProducts.map((p) => ({
+  const products: Product[] = result.products.map((p) => ({
     id: p.id,
     image: p.image,
     title: p.title,
@@ -44,5 +62,13 @@ export default async function CatalogPage({ searchParams }: { searchParams?: Pro
     variantUrgentReorderId: p.variantUrgentReorderId,
   }));
 
-  return <CatalogClient products={products} focusProductId={params?.product} focusSection={params?.focus} />;
+  return (
+    <CatalogClient
+      products={products}
+      pagination={result.pagination}
+      counts={result.counts}
+      focusProductId={params.product}
+      focusSection={params.focus}
+    />
+  );
 }
