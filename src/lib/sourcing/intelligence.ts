@@ -134,37 +134,48 @@ export async function getSourcingIntelData(): Promise<SourcingIntelData> {
 
     // ─── Already imported? ───
     if (mirror) {
-      readiness = "imported";
+      // If the internal product no longer exists, this mirror is orphaned.
+      // Clean it up asynchronously and treat the product as not imported.
+      if (!mirror.internalProduct) {
+        // Fire-and-forget: delete the orphaned mirror record
+        prisma.catalogMirrorProduct.deleteMany({
+          where: { storeId: sid, providerProductId: pp.id },
+        }).catch(() => { /* best effort */ });
 
-      if (mirror.importStatus === "failed") {
-        readiness = "risk";
-        signals.push("Importación fallida");
-      } else if (mirror.syncStatus === "out_of_sync") {
-        signals.push("Espejo desincronizado");
+        // Fall through to classify as non-imported product
+      } else {
+        readiness = "imported";
+
+        if (mirror.importStatus === "failed") {
+          readiness = "risk";
+          signals.push("Importación fallida");
+        } else if (mirror.syncStatus === "out_of_sync") {
+          signals.push("Espejo desincronizado");
+        }
+
+        if (mirror.internalProduct?.status === "draft") {
+          signals.push("Producto interno en borrador");
+        }
+
+        products.push({
+          providerProductId: pp.id,
+          title: pp.title,
+          category: pp.category || "Sin categoría",
+          cost: pp.cost,
+          suggestedPrice: pp.suggestedPrice,
+          stock: pp.stock,
+          providerName: pp.provider.name,
+          providerCode: pp.provider.code,
+          connectionId,
+          readiness,
+          signals,
+          estimatedMarginPercent,
+          alreadyImported: true,
+          internalProductId: mirror.internalProductId,
+          internalStatus: mirror.internalProduct?.status ?? null,
+        });
+        continue;
       }
-
-      if (mirror.internalProduct?.status === "draft") {
-        signals.push("Producto interno en borrador");
-      }
-
-      products.push({
-        providerProductId: pp.id,
-        title: pp.title,
-        category: pp.category || "Sin categoría",
-        cost: pp.cost,
-        suggestedPrice: pp.suggestedPrice,
-        stock: pp.stock,
-        providerName: pp.provider.name,
-        providerCode: pp.provider.code,
-        connectionId,
-        readiness,
-        signals,
-        estimatedMarginPercent,
-        alreadyImported: true,
-        internalProductId: mirror.internalProductId,
-        internalStatus: mirror.internalProduct?.status ?? null,
-      });
-      continue;
     }
 
     // ─── Not imported: classify readiness ───

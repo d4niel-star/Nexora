@@ -433,11 +433,97 @@ export async function disconnectProviderAction(providerConnectionId: string) {
   const store = await getDefaultStore();
   if (!store) throw new Error("No active store");
 
-  await prisma.providerConnection.delete({
-    where: { id: providerConnectionId, storeId: store.id },
+  // Clean up mirrors and sync jobs for this connection
+  await prisma.$transaction(async (tx) => {
+    await tx.catalogMirrorProduct.deleteMany({
+      where: { storeId: store.id, providerConnectionId },
+    });
+    await tx.providerSyncJob.deleteMany({
+      where: { storeId: store.id, providerConnectionId },
+    });
+    await tx.providerConnection.delete({
+      where: { id: providerConnectionId, storeId: store.id },
+    });
   });
 
   revalidatePath("/admin/sourcing");
+  revalidatePath("/admin/catalog");
+}
+
+/**
+ * Fully deletes a provider connection and all associated data:
+ * - CatalogMirrorProduct records (does NOT delete the internal products)
+ * - ProviderSyncJob records
+ * - ProviderProduct records for this provider
+ * - The ProviderConnection itself
+ * - If no other store uses this provider, the SourcingProvider record too
+ *
+ * The internal products that were previously imported remain in the catalog
+ * so the merchant doesn't lose inventory data.
+ */
+export async function deleteProviderAction(providerConnectionId: string) {
+  const store = await getDefaultStore();
+  if (!store) throw new Error("No active store");
+
+  const connection = await prisma.providerConnection.findUnique({
+    where: { id: providerConnectionId, storeId: store.id },
+    include: { provider: true },
+  });
+
+  if (!connection) throw new Error("Conexión de proveedor no encontrada.");
+  if (LEGACY_SEEDED_PROVIDER_CODES.includes(connection.provider.code)) {
+    throw new Error("Este proveedor no se puede eliminar.");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    // 1. Delete mirrors
+    await tx.catalogMirrorProduct.deleteMany({
+      where: { storeId: store.id, providerConnectionId },
+    });
+
+    // 2. Delete sync jobs
+    await tx.providerSyncJob.deleteMany({
+      where: { storeId: store.id, providerConnectionId },
+    });
+
+    // 3. Delete the connection
+    await tx.providerConnection.delete({
+      where: { id: providerConnectionId },
+    });
+
+    // 4. Check if any other connection uses this provider
+    const otherConnections = await tx.providerConnection.count({
+      where: { providerId: connection.providerId },
+    });
+
+    if (otherConnections === 0) {
+      // 5. Delete all provider products
+      await tx.providerProduct.deleteMany({
+        where: { providerId: connection.providerId },
+      });
+
+      // 6. Delete the provider itself
+      await tx.sourcingProvider.delete({
+        where: { id: connection.providerId },
+      });
+    }
+
+    // 7. Log the event
+    await tx.systemEvent.create({
+      data: {
+        storeId: store.id,
+        entityType: "sourcing",
+        entityId: connection.providerId,
+        eventType: "provider_deleted",
+        source: "admin_panel",
+        message: `Proveedor eliminado: ${connection.provider.name}`,
+        severity: "info",
+      },
+    });
+  });
+
+  revalidatePath("/admin/sourcing");
+  revalidatePath("/admin/catalog");
 }
 
 export async function getImportedProductsAction() {

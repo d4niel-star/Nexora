@@ -14,6 +14,7 @@ import {
   Network,
   PackageCheck,
   ShoppingCart,
+  Trash2,
   UploadCloud,
   XCircle,
   RefreshCw,
@@ -25,6 +26,7 @@ import {
   getConnectedProvidersAction,
   getImportedProductsAction,
   connectProviderAction,
+  deleteProviderAction,
   getProviderExternalProductsAction,
   importProductAction,
   previewCsvImportAction,
@@ -817,6 +819,7 @@ function DiscoverTab({ providers, connections, onConnect, isPending }: { provide
 
 function ConnectedTab({ connections, onRefresh }: { connections: ConnectedProviderData[]; onRefresh: () => void }) {
   const [selectedProvider, setSelectedProvider] = useState<ConnectedProviderData | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   if (connections.length === 0) {
     return (
@@ -834,6 +837,23 @@ function ConnectedTab({ connections, onRefresh }: { connections: ConnectedProvid
     return <ProviderWorkbench connection={selectedProvider} onBack={() => setSelectedProvider(null)} onImportSuccess={onRefresh} />;
   }
 
+  const handleDelete = async (connectionId: string, providerName: string) => {
+    const confirmed = window.confirm(
+      `¿Eliminar el proveedor "${providerName}"?\n\nEsto elimina la conexión, los espejos y los datos de sync. Los productos que ya importaste al catálogo se mantienen.`
+    );
+    if (!confirmed) return;
+
+    setDeletingId(connectionId);
+    try {
+      await deleteProviderAction(connectionId);
+      onRefresh();
+    } catch (err: any) {
+      alert(err.message || "No se pudo eliminar el proveedor.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const chipBase = "inline-flex items-center h-6 rounded-[var(--r-xs)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-2 text-[10px] font-medium uppercase tracking-[0.14em]";
 
   return (
@@ -843,7 +863,7 @@ function ConnectedTab({ connections, onRefresh }: { connections: ConnectedProvid
         <div>Proveedor</div>
         <div className="w-32">Integración</div>
         <div className="w-32">Estado</div>
-        <div className="w-24 text-right">Acciones</div>
+        <div className="w-36 text-right">Acciones</div>
       </div>
       <div className="divide-y divide-[color:var(--hairline)]">
         {connections.map(c => (
@@ -868,12 +888,24 @@ function ConnectedTab({ connections, onRefresh }: { connections: ConnectedProvid
                 <span className="text-[12px] font-medium text-ink-3 capitalize">{c.status}</span>
               </div>
             </div>
-            <div className="w-24 flex justify-end">
+            <div className="w-36 flex justify-end gap-2">
               <button
                 onClick={() => setSelectedProvider(c)}
                 className="inline-flex items-center h-9 px-3 rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-[12px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
               >
                 Explorar
+              </button>
+              <button
+                onClick={() => handleDelete(c.id, c.provider.name)}
+                disabled={deletingId === c.id}
+                className="inline-flex items-center justify-center h-9 w-9 rounded-[var(--r-sm)] border border-[color:var(--hairline)] text-ink-5 transition-colors hover:bg-[var(--surface-2)] hover:text-[color:var(--signal-danger)] disabled:opacity-40 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+                title="Eliminar proveedor"
+              >
+                {deletingId === c.id ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="h-3.5 w-3.5" />
+                )}
               </button>
             </div>
           </div>
