@@ -5,13 +5,12 @@ import { StoreAIModule } from "@/components/admin/store-ai/StoreAIModule";
 import { checkAIBuilderAccess } from "@/lib/billing/service";
 import { getStoreReadinessSnapshot } from "@/lib/readiness/snapshot";
 import { getAdminStoreId } from "@/lib/store-engine/actions";
-import { getAIGenerationDraft } from "@/lib/store-engine/ai-builder/queries";
 
 // ─── Tienda IA — top-level module page ───────────────────────────────────
 // Dedicated route and shell (NOT wrapped in NexoraAIShell). Sits at the
 // same hierarchy as Catálogo, Inventario, Abastecimiento, Operaciones,
 // Apps. The heavy lifting happens inside <StoreAIModule> — this file
-// only owns auth, billing gating and the initial draft fetch.
+// only owns auth, billing gating and the initial data fetch.
 
 export default async function StoreAIPage() {
   noStore();
@@ -43,8 +42,7 @@ export default async function StoreAIPage() {
 
   const { getCurrentThemeState, listBuiltInTemplates } = await import("@/lib/themes/queries");
 
-  const [draft, readiness, themeState] = await Promise.all([
-    getAIGenerationDraft(storeId),
+  const [readiness, themeState] = await Promise.all([
     getStoreReadinessSnapshot(storeId),
     getCurrentThemeState(storeId),
   ]);
@@ -70,7 +68,6 @@ export default async function StoreAIPage() {
 
   return (
     <StoreAIModule
-      initialDraft={draft}
       readiness={readiness}
       themeState={currentThemeView}
       templates={templates}

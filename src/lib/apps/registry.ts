@@ -304,18 +304,18 @@ export const APP_REGISTRY: AppDefinition[] = [
     iconName: "Sparkles",
     category: "ai",
     shortDescription:
-      "Generá una tienda completa (home, páginas, navegación) a partir de un brief, con IA y editor controlado.",
+      "Diseñá y editá tu tienda con el editor visual potenciado por IA: temas, secciones, colores y contenido.",
     problem:
       "Arrancar una tienda desde cero implica semanas de copy, layout y navegación.",
     outcome:
-      "Nexora arma una tienda publicable en minutos respetando tu brief, branding y categorías reales.",
+      "Nexora te da un editor visual completo con asistencia de IA para diseñar tu tienda en minutos.",
     capabilities: [
-      "Generación de home, páginas y navegación.",
-      "Drafts revisables antes de publicar.",
-      "Editor integrado al store-engine.",
+      "Editor visual con asistencia de IA en tiempo real.",
+      "Galería de temas profesionales aplicables en un click.",
+      "Personalización completa de secciones, colores y tipografía.",
     ],
-    setupRoute: "/admin/store-ai",
-    manageRoute: "/admin/store-ai",
+    setupRoute: "/admin/store-ai/editor",
+    manageRoute: "/admin/store-ai/editor",
     installMode: "deep-link",
     setupTime: "10 minutos",
     planGate: (cfg) => cfg.aiBuilder,

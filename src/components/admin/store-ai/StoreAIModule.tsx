@@ -1,16 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
-  ChevronDown,
   Edit3,
   Layers,
   Pencil,
   Sparkles,
   Store,
-  Wrench,
 } from "lucide-react";
 
 import { ThemeCurrentHero } from "@/components/admin/themes/ThemeCurrentHero";
@@ -21,9 +19,9 @@ import type { StoreTemplate } from "@/types/store-templates";
 import { cn } from "@/lib/utils";
 import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
 
-// ─── Tienda IA — module landing (v3) ────────────────────────────────────
+// ─── Tienda IA — module landing (v4) ────────────────────────────────────
 //
-// Transformed from a "builder wizard" into a "store design centre".
+// Store design centre — the primary hub for visual editing.
 //
 // Architecture:
 //   1. Module header — identity + status + "Editar contenido" CTA
@@ -31,16 +29,9 @@ import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
 //      with CTAs to edit and explore more themes
 //   3. Quick editor shortcuts — direct links to edit surfaces
 //   4. Readiness panel — publication readiness (compacted)
-//   5. Advanced tools — the old wizard, collapsed behind a disclosure
-//   6. NexoraCopilot — floating AI assistant (bottom-right)
 //
-// What changed from v2:
-//   · The 8-tab AIStoreBuilderPage wizard is RELEGATED — it lives behind
-//     "Herramientas avanzadas" and is no longer the primary path.
-//   · The primary flow is now: see theme → edit directly → use copilot.
-//   · StatusStrip + RecommendedActions REMOVED from the landing.
-//   · NexoraCopilot added as a persistent floating assistant.
-//   · Quick editor links surface the real editing surfaces.
+// The old 8-tab AIStoreBuilderPage wizard has been fully removed.
+// The primary flow is: see theme → edit directly via the editor.
 
 interface CurrentThemeView {
   themeStyle: string | null;
@@ -52,27 +43,23 @@ interface CurrentThemeView {
 }
 
 interface StoreAIModuleProps {
-  initialDraft: any; // eslint-disable-line @typescript-eslint/no-explicit-any
   readiness?: ReadinessSnapshot | null;
   themeState?: CurrentThemeView;
   templates?: readonly StoreTemplate[];
 }
 
 export function StoreAIModule({
-  initialDraft,
   readiness,
   themeState,
   templates,
 }: StoreAIModuleProps) {
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const appliedTemplateFull = useMemo(() => {
     if (!themeState?.appliedTemplate?.id || !templates) return null;
     return templates.find((t) => t.id === themeState.appliedTemplate!.id) ?? null;
   }, [themeState, templates]);
 
-  const draftStatus = initialDraft?.status ?? "draft";
-  const statusInfo = deriveStatus(draftStatus, themeState);
+  const statusInfo = deriveStatus(themeState);
 
   return (
     <div className="space-y-7">
@@ -130,39 +117,6 @@ export function StoreAIModule({
 
       {/* ── 4. Readiness panel ───────────────────────────── */}
       {readiness && <ReadinessPanel snapshot={readiness} />}
-
-      {/* ── 5. Advanced tools (old wizard) ───────────────── */}
-      <section className="rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)]">
-        <button
-          type="button"
-          onClick={() => setShowAdvanced(!showAdvanced)}
-          className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-[var(--surface-1)]"
-        >
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] text-ink-3">
-              <Wrench className="h-4 w-4" strokeWidth={1.75} />
-            </div>
-            <div>
-              <p className="text-[13px] font-semibold tracking-[-0.01em] text-ink-0">
-                Herramientas avanzadas
-              </p>
-              <p className="mt-0.5 text-[11px] text-ink-5">
-                Constructor guiado con IA · Generar propuestas · Publicar
-              </p>
-            </div>
-          </div>
-          <ChevronDown
-            className={cn(
-              "h-4 w-4 text-ink-5 transition-transform duration-200",
-              showAdvanced && "rotate-180",
-            )}
-            strokeWidth={1.75}
-          />
-        </button>
-        {showAdvanced && (
-          <AdvancedToolsPanel initialDraft={initialDraft} />
-        )}
-      </section>
 
       {/* Copiloto IA now lives inside /admin/store-ai/editor */}
     </div>
@@ -225,36 +179,6 @@ function ShortcutCard({
   return content;
 }
 
-// ─── Advanced tools (old wizard, lazy-loaded) ────────────────────────────
-
-function AdvancedToolsPanel({ initialDraft }: { initialDraft: any }) { // eslint-disable-line @typescript-eslint/no-explicit-any
-  const [AIBuilder, setAIBuilder] = useState<React.ComponentType<any> | null>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
-  const [loading, setLoading] = useState(true);
-
-  // Lazy-load the full builder only when the user expands
-  useState(() => {
-    import("@/components/admin/ai-store-builder/AIStoreBuilderPage").then((mod) => {
-      setAIBuilder(() => mod.AIStoreBuilderPage);
-      setLoading(false);
-    });
-  });
-
-  return (
-    <div className="border-t border-[color:var(--hairline)] px-4 py-6 sm:px-6 lg:px-8">
-      {loading || !AIBuilder ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="flex items-center gap-2 text-[13px] text-ink-5">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-ink-6 border-t-ink-0" />
-            Cargando herramientas…
-          </div>
-        </div>
-      ) : (
-        <AIBuilder initialDraft={initialDraft} embedded />
-      )}
-    </div>
-  );
-}
-
 // ─── Status pill ─────────────────────────────────────────────────────────
 
 function StatusPill({ label, tone }: { label: string; tone: "success" | "warning" | "neutral" }) {
@@ -286,23 +210,13 @@ function StatusPill({ label, tone }: { label: string; tone: "success" | "warning
 // ─── Status derivation ───────────────────────────────────────────────────
 
 function deriveStatus(
-  draftStatus: string,
   themeState?: CurrentThemeView | null,
 ): { label: string; tone: "success" | "warning" | "neutral" } {
-  if (draftStatus === "applied" || themeState?.blocks.total && themeState.blocks.total > 0) {
+  if (themeState?.blocks.total && themeState.blocks.total > 0) {
     if (themeState?.appliedTemplate) {
       return { label: "Tema activo", tone: "success" };
     }
     return { label: "Diseño activo", tone: "success" };
   }
   return { label: "En construcción", tone: "neutral" };
-}
-
-interface CurrentThemeView {
-  themeStyle: string | null;
-  appliedTemplate: { id: string; name: string; themeStyle: string } | null;
-  primaryColor: string | null;
-  secondaryColor: string | null;
-  fontFamily: string | null;
-  blocks: { total: number; bySource: Record<string, number> };
 }
