@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { Suspense, useActionState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AlertCircle, ArrowRight, Mail } from "lucide-react";
 
@@ -21,6 +21,14 @@ const inputClass =
 const labelClass = "mb-1.5 block text-[12px] font-medium text-ink-5";
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginFallback />}>
+      <LoginContent />
+    </Suspense>
+  );
+}
+
+function LoginContent() {
   const searchParams = useSearchParams();
   const [state, formAction, isPending] = useActionState(loginAction, undefined);
   const [resendState, resendFormAction, isResending] = useActionState(
@@ -161,6 +169,30 @@ export default function LoginPage() {
 
         <SocialAuthButtons action={socialFormAction} mode="login" pending={isSocialPending} />
       </div>
+    </AuthShell>
+  );
+}
+
+function LoginFallback() {
+  return (
+    <AuthShell
+      step="01"
+      eyebrow="Acceso"
+      brandTitle={
+        <>
+          Tu tienda,
+          <br />
+          en una sola pantalla.
+        </>
+      }
+      brandBody="Ingresa a la consola Nexora."
+      formTitle="Inicia sesion en Nexora."
+      formSubtitle="Preparando el acceso seguro..."
+      alternateLabel="Todavia no tenes cuenta?"
+      alternateAction="Registrate"
+      alternateHref="/home/register"
+    >
+      <div className="h-[248px] animate-pulse rounded-[var(--r-md)] bg-[var(--surface-1)]" />
     </AuthShell>
   );
 }

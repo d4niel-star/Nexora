@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { Suspense, useActionState, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AlertCircle, ArrowRight, Check, X } from "lucide-react";
 
@@ -76,6 +76,14 @@ function PasswordChecklist({
 }
 
 export default function RegisterPage() {
+  return (
+    <Suspense fallback={<RegisterFallback />}>
+      <RegisterContent />
+    </Suspense>
+  );
+}
+
+function RegisterContent() {
   const searchParams = useSearchParams();
   const [state, formAction, isPending] = useActionState(registerAction, undefined);
   const [socialState, socialFormAction, isSocialPending] = useActionState(
@@ -213,6 +221,30 @@ export default function RegisterPage() {
 
         <SocialAuthButtons action={socialFormAction} mode="register" pending={isSocialPending} />
       </div>
+    </AuthShell>
+  );
+}
+
+function RegisterFallback() {
+  return (
+    <AuthShell
+      step="02"
+      eyebrow="Cuenta nueva"
+      brandTitle={
+        <>
+          Empeza tu tienda
+          <br />
+          en minutos.
+        </>
+      }
+      brandBody="Configura tu empresa y entra a Nexora."
+      formTitle="Crea tu cuenta."
+      formSubtitle="Preparando el registro seguro..."
+      alternateLabel="Ya tenes cuenta?"
+      alternateAction="Ingresar"
+      alternateHref="/home/login"
+    >
+      <div className="h-[420px] animate-pulse rounded-[var(--r-md)] bg-[var(--surface-1)]" />
     </AuthShell>
   );
 }
