@@ -71,7 +71,7 @@ export function StockMovementTable({ movements, total }: Props) {
                     key={m.id}
                     className="border-b border-[color:var(--hairline)] last:border-b-0 hover:bg-[var(--surface-1)] transition-colors"
                   >
-                    <td className="px-4 py-3 text-ink-5 font-mono text-[11px] whitespace-nowrap">
+                    <td className="px-4 py-3 text-ink-5 font-mono text-[11px] whitespace-nowrap" suppressHydrationWarning>
                       {formatDate(m.createdAt)}
                     </td>
                     <td className="px-4 py-3">
