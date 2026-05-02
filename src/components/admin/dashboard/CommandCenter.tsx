@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ReadinessPanel } from "./ReadinessPanel";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
@@ -108,6 +109,9 @@ export function CommandCenter({ data }: { data: CommandCenterData }) {
       <div className="space-y-6">
         {/* Flat KPI band — one hairline frame, vertical hairlines between */}
         <NexoraStatRow stats={stats} cols={6} />
+
+        {/* Readiness checklist */}
+        <ReadinessPanel />
 
         {/* Directive groups (or empty state) */}
         {hasDirectives ? (

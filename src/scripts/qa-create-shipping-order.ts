@@ -75,12 +75,11 @@ async function main() {
       await prisma.orderItem.create({
         data: {
           orderId: order.id,
-          storeId: store.id,
           productId: variant.productId,
           variantId: variant.id,
-          sku: variant.sku || "QA-SKU-001",
-          title: variant.product.title,
-          variantTitle: variant.title || "Default",
+          skuSnapshot: variant.sku || "QA-SKU-001",
+          titleSnapshot: variant.product.title,
+          variantTitleSnapshot: variant.title || "Default",
           quantity: 2,
           priceSnapshot: 2500,
           costSnapshot: 1200,
