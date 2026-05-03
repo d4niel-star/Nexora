@@ -19,6 +19,8 @@
 //
 // Exit 0 on full success, 1 on any assertion failure.
 
+import "dotenv/config";
+
 import { prisma } from "@/lib/db/prisma";
 import { expireAbandonedPickupReservations } from "@/lib/store-engine/pickup/expire-reservations";
 
@@ -435,15 +437,27 @@ async function main() {
       olderThanMinutes: 60,
       source: "manual",
     });
-    expect("first run scanned ≥ 3 candidates", first.scanned >= 3, `scanned=${first.scanned}`);
-    expect("first run expired exactly 1 (abandoned)", first.expired === 1, `expired=${first.expired}`);
-    expect("first run restored exactly 1", first.restored === 1, `restored=${first.restored}`);
+    // The dev DB may already contain other abandoned pickup orders
+    // from previous manual testing — those are also legitimate
+    // candidates and get expired in the same run. We assert the
+    // minimum our own seed guarantees and check specifics per order.
+    // Our seed contributes 2 candidates to `scanned`: the abandoned
+    // order (A) and the pending-with-approved-payment order (C).
+    // B is filtered out by the `paymentStatus=pending` clause and D
+    // by the `shippingMethodId IN pickupIds` clause before the scan.
+    expect("first run scanned ≥ 2 candidates", first.scanned >= 2, `scanned=${first.scanned}`);
+    expect("first run expired ≥ 1 (abandoned)", first.expired >= 1, `expired=${first.expired}`);
+    expect("first run restored ≥ 1", first.restored >= 1, `restored=${first.restored}`);
     expect(
       "first run skippedPaid ≥ 1 (approved Payment row)",
       first.skippedPaid >= 1,
       `skippedPaid=${first.skippedPaid}`,
     );
     expect("first run has no errors", first.errors === 0, JSON.stringify(first.errorDetails));
+    expect(
+      "our abandoned seed is present in summary.expiredOrders",
+      first.expiredOrders.some((e) => e.orderId === abandoned.id),
+    );
 
     const abandonedAfter = await loadOrder(abandoned.id);
     expect(

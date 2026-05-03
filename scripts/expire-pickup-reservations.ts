@@ -19,6 +19,8 @@
 // if no order matched), 1 if the core service threw or any per-order
 // error was recorded.
 
+import "dotenv/config";
+
 import { expireAbandonedPickupReservations } from "@/lib/store-engine/pickup/expire-reservations";
 
 type CliFlags = {
