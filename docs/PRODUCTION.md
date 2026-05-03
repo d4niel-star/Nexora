@@ -56,12 +56,13 @@ Complementa:
 
 ---
 
-## 4. Email (OPTIONAL — degrada a Mock)
+## 4. Email (REQUIRED en producción)
 
 | Variable | Consumido por | Qué hace | Si falta |
 |---|---|---|---|
-| `RESEND_API_KEY` | `src/lib/email/providers/index.ts` | API key Resend | **Degrada**: `MockProvider` activa con warn loud. EmailLog se escribe pero no se entrega. |
-| `RESEND_FROM_EMAIL` | idem | Remitente | Default `Nexora <noreply@nexora.app>`. |
+| `RESEND_API_KEY` | `src/lib/email/providers/index.ts` | API key Resend | **Fail-closed en producción**: `getEmailProvider()` tira `MissingEmailApiKeyError` al primer uso. En dev/test se usa `MockProvider` con warn. |
+| `RESEND_FROM_EMAIL` | idem | Remitente (preferido) | Si falta, se intenta `EMAIL_FROM`; si tampoco está, default dev-only `Nexora <noreply@nexora.app>`. |
+| `EMAIL_FROM` | idem (alias) | Alias aceptado del remitente | Usado solo si `RESEND_FROM_EMAIL` no existe. |
 
 ---
 
@@ -124,7 +125,7 @@ Complementa:
 | Cron secret | ✅ | — |
 | OAuth tenant (MP/Ads) | ✅ | — |
 | Ops observability gate | ✅ | — |
-| Email (Resend) | — | ✅ |
+| Email (Resend) | ✅ (producción) | ✅ (dev/test) |
 | IA (Anthropic/Gemini) | — | ✅ |
 | Analytics (GA/Plausible) | — | ✅ |
 | Billing webhook HMAC (opcional) | — | ✅ |

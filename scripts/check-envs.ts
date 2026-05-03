@@ -11,6 +11,13 @@
 // it's set. The inventory below is the single source of truth for
 // what "production-ready" looks like from a configuration standpoint
 // and must stay in sync with `.env.example` and `docs/PRODUCTION.md`.
+//
+// Loading .env: in local development we load the dotenv file so the
+// checker matches what the app would actually see at runtime. In
+// hosted environments (Render, GitHub Actions, Docker) the variables
+// come from the platform and `dotenv/config` is a no-op because there
+// is no .env file.
+import "dotenv/config";
 
 type Severity = "required" | "required-for-feature" | "optional";
 
@@ -46,8 +53,23 @@ const ENV_INVENTORY: EnvSpec[] = [
   // Middleware / domains
   { name: "CANONICAL_APP_HOST", severity: "required-for-feature", subsystem: "middleware", notes: "Apex host for tenant custom domain routing" },
 
-  // Email
-  { name: "RESEND_API_KEY", severity: "required-for-feature", subsystem: "email", notes: "Emails fall back to MockProvider when unset" },
+  // Email — production REQUIRES a real provider. getEmailProvider() throws
+  // in NODE_ENV=production when RESEND_API_KEY is missing; there is no
+  // silent MockProvider fallback anymore. RESEND_FROM_EMAIL is the
+  // preferred name; EMAIL_FROM is accepted as an alias.
+  {
+    name: "RESEND_API_KEY",
+    severity: "required",
+    subsystem: "email",
+    notes: "Real email provider. In production MockProvider is NOT used as fallback — missing key throws.",
+  },
+  {
+    name: "RESEND_FROM_EMAIL",
+    severity: "required-for-feature",
+    subsystem: "email",
+    notes: "Remitente Resend. EMAIL_FROM accepted as alias. Default literal only covers dev.",
+    alsoAccept: ["EMAIL_FROM"],
+  },
 
   // Ops
   { name: "NEXORA_OPS_EMAILS", severity: "optional", subsystem: "ops", notes: "Allowlist for /admin/billing/observability" },
@@ -100,7 +122,11 @@ const PRODUCTION_SAFETY: SafetyCheck[] = [
   },
   {
     envName: "ENCRYPTION_KEY",
-    predicate: (v) => (v === "fallback_dev_key_must_be_32_byte!" ? "is the dev fallback literal. Rotate with `openssl rand -hex 32`." : null),
+    predicate: (v) => {
+      if (v === "fallback_dev_key_must_be_32_byte!") return "is the dev fallback literal. Rotate with `openssl rand -hex 32`.";
+      if (v.length < 32) return `is only ${v.length} chars (recommended ≥ 32 hex chars)`;
+      return null;
+    },
   },
   {
     envName: "CRON_SECRET",
@@ -109,6 +135,13 @@ const PRODUCTION_SAFETY: SafetyCheck[] = [
   {
     envName: "MP_WEBHOOK_SECRET",
     predicate: (v) => (v.length < 32 ? `is only ${v.length} chars (recommended ≥ 32)` : null),
+  },
+  // Resend API keys from the dashboard start with "re_". A raw string
+  // that doesn't look like a Resend key usually means the wrong env was
+  // pasted in (e.g. the WhatsApp token) — flag it so operators notice.
+  {
+    envName: "RESEND_API_KEY",
+    predicate: (v) => (v.startsWith("re_") ? null : "does not start with 're_'. Confirm this is a Resend API key and not another provider's token."),
   },
 ];
 
@@ -136,7 +169,16 @@ function isSet(envName: string): boolean {
 
 function main() {
   const nodeEnv = process.env.NODE_ENV || "development";
-  console.log(`\nNexora env check · NODE_ENV=${nodeEnv}\n`);
+
+  // Honest sandbox mode banner so operators see at a glance whether the
+  // current env resolves to TEST tokens. We do not print the token value
+  // itself — only whether any MP token begins with TEST-.
+  const mpBillingRaw = process.env.MERCADOPAGO_BILLING_ACCESS_TOKEN || "";
+  const mpStorefrontRaw = process.env.MERCADOPAGO_ACCESS_TOKEN || "";
+  const mpAnyTest = mpBillingRaw.startsWith("TEST-") || mpStorefrontRaw.startsWith("TEST-");
+  const mpMode = mpAnyTest ? "sandbox (TEST-*)" : (mpBillingRaw || mpStorefrontRaw ? "live" : "unset");
+
+  console.log(`\nNexora env check · NODE_ENV=${nodeEnv} · MP mode: ${mpMode}\n`);
 
   const missingRequired: EnvSpec[] = [];
   const missingFeature: EnvSpec[] = [];
@@ -187,6 +229,17 @@ function main() {
     console.log(`  safety warnings: ${safetyWarnings.length}`);
   }
 
+  // Explicit names of what is missing so operators know what to set
+  // without having to parse the colour-coded list above.
+  if (missingRequired.length > 0) {
+    console.log(`\n${RED}Missing REQUIRED:${RESET}`);
+    for (const spec of missingRequired) console.log(`  - ${spec.name}  (${spec.subsystem})`);
+  }
+  if (missingFeature.length > 0) {
+    console.log(`\n${YELLOW}Missing REQUIRED-FOR-FEATURE:${RESET}`);
+    for (const spec of missingFeature) console.log(`  - ${spec.name}  (${spec.subsystem})`);
+  }
+
   // Policy: fail (exit 1) if any REQUIRED is missing in production, or if
   // there is any safety warning in production. In development we just
   // report.
@@ -199,6 +252,9 @@ function main() {
     if (safetyWarnings.length > 0) {
       console.log(`\n${RED}FAIL:${RESET} ${safetyWarnings.length} safety warning(s) in production configuration.`);
       exitCode = 1;
+    }
+    if (exitCode === 0) {
+      console.log(`\n${GREEN}OK:${RESET} production env inventory passes.`);
     }
   } else {
     if (missingRequired.length > 0) {
