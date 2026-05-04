@@ -1,270 +1,85 @@
-// ─── Pre-deploy env checker ───
+// Pre-deploy env checker.
 //
-// Reads the current process environment and reports which envs documented
-// in docs/PRODUCTION.md are missing, grouped by severity. Exits with code
-// 0 when every REQUIRED env is present, 1 otherwise. Safe to run in CI.
+// Safe to run in CI:
+//   NODE_ENV=production npx tsx scripts/check-envs.ts
 //
-// Usage:
-//   npx tsx scripts/check-envs.ts
-//
-// This script never prints the value of any env variable — only whether
-// it's set. The inventory below is the single source of truth for
-// what "production-ready" looks like from a configuration standpoint
-// and must stay in sync with `.env.example` and `docs/PRODUCTION.md`.
-//
-// Loading .env: in local development we load the dotenv file so the
-// checker matches what the app would actually see at runtime. In
-// hosted environments (Render, GitHub Actions, Docker) the variables
-// come from the platform and `dotenv/config` is a no-op because there
-// is no .env file.
+// This script never prints env values. It only reports names, statuses,
+// modes and warnings derived from the shared safe inventory.
 import "dotenv/config";
 
-type Severity = "required" | "required-for-feature" | "optional";
+import {
+  ENV_INVENTORY,
+  checkEnvVars,
+  isEnvSpecSatisfied,
+} from "@/lib/env/check-envs";
 
-interface EnvSpec {
-  name: string;
-  severity: Severity;
-  subsystem: string;
-  notes: string;
-  alsoAccept?: string[]; // if any of these is set, treat as satisfied
-}
-
-const ENV_INVENTORY: EnvSpec[] = [
-  // Core
-  { name: "DATABASE_URL", severity: "required", subsystem: "db", notes: "Postgres connection string" },
-  { name: "ENCRYPTION_KEY", severity: "required", subsystem: "security", notes: "32-byte hex key for the OAuth token vault" },
-  { name: "NEXT_PUBLIC_APP_URL", severity: "required", subsystem: "core", notes: "Public URL of the admin/marketing app" },
-
-  // Billing / MP
-  {
-    name: "MERCADOPAGO_BILLING_ACCESS_TOKEN",
-    severity: "required",
-    subsystem: "billing",
-    notes: "MP platform wallet token for billing. Accepts MERCADOPAGO_ACCESS_TOKEN as fallback.",
-    alsoAccept: ["MERCADOPAGO_ACCESS_TOKEN"],
-  },
-  { name: "MP_CLIENT_ID", severity: "required", subsystem: "payments", notes: "OAuth client id for tenant MP connection" },
-  { name: "MP_CLIENT_SECRET", severity: "required", subsystem: "payments", notes: "OAuth client secret for tenant MP connection" },
-  { name: "MP_WEBHOOK_SECRET", severity: "required", subsystem: "payments", notes: "HMAC for storefront payments webhook" },
-
-  // Cron
-  { name: "CRON_SECRET", severity: "required", subsystem: "cron", notes: "Shared secret for cron endpoints" },
-
-  // Middleware / domains
-  { name: "CANONICAL_APP_HOST", severity: "required-for-feature", subsystem: "middleware", notes: "Apex host for tenant custom domain routing" },
-
-  // Email — production REQUIRES a real provider. getEmailProvider() throws
-  // in NODE_ENV=production when RESEND_API_KEY is missing; there is no
-  // silent MockProvider fallback anymore. RESEND_FROM_EMAIL is the
-  // preferred name; EMAIL_FROM is accepted as an alias.
-  {
-    name: "RESEND_API_KEY",
-    severity: "required",
-    subsystem: "email",
-    notes: "Real email provider. In production MockProvider is NOT used as fallback — missing key throws.",
-  },
-  {
-    name: "RESEND_FROM_EMAIL",
-    severity: "required-for-feature",
-    subsystem: "email",
-    notes: "Remitente Resend. EMAIL_FROM accepted as alias. Default literal only covers dev.",
-    alsoAccept: ["EMAIL_FROM"],
-  },
-
-  // Ops
-  { name: "NEXORA_OPS_EMAILS", severity: "optional", subsystem: "ops", notes: "Allowlist for /admin/billing/observability" },
-  { name: "MERCADOPAGO_WEBHOOK_SECRET", severity: "optional", subsystem: "billing", notes: "HMAC for billing webhook (re-fetch protects without it)" },
-
-  // IA (optional, mock fallback)
-  { name: "ANTHROPIC_API_KEY", severity: "optional", subsystem: "ai", notes: "Claude; mock fallback otherwise" },
-  { name: "GEMINI_API_KEY", severity: "optional", subsystem: "ai", notes: "Gemini; mock fallback otherwise" },
-
-  // Ads (optional)
-  { name: "GOOGLE_ADS_CLIENT_ID", severity: "optional", subsystem: "ads", notes: "Disables Google Ads OAuth if unset" },
-  { name: "GOOGLE_ADS_CLIENT_SECRET", severity: "optional", subsystem: "ads", notes: "Disables Google Ads OAuth if unset" },
-  { name: "GOOGLE_DEVELOPER_TOKEN", severity: "optional", subsystem: "ads", notes: "Disables Google Ads sync if unset" },
-  { name: "FACEBOOK_APP_ID", severity: "optional", subsystem: "ads", notes: "Disables Meta Ads OAuth if unset" },
-  { name: "FACEBOOK_APP_SECRET", severity: "optional", subsystem: "ads", notes: "Disables Meta Ads OAuth if unset" },
-  { name: "TIKTOK_APP_ID", severity: "optional", subsystem: "ads", notes: "Disables TikTok Ads OAuth if unset" },
-  { name: "TIKTOK_APP_SECRET", severity: "optional", subsystem: "ads", notes: "Disables TikTok Ads OAuth if unset" },
-
-  // Analytics (optional)
-  { name: "NEXT_PUBLIC_PLAUSIBLE_DOMAIN", severity: "optional", subsystem: "analytics", notes: "Client-side Plausible" },
-  { name: "NEXT_PUBLIC_GA_ID", severity: "optional", subsystem: "analytics", notes: "Client-side GA4" },
-  { name: "GA_MEASUREMENT_ID", severity: "optional", subsystem: "analytics", notes: "Server-side GA4 events" },
-  { name: "GA_MEASUREMENT_PROTOCOL_SECRET", severity: "optional", subsystem: "analytics", notes: "Server-side GA4 events" },
-];
-
-// ─── Production safety checks ────────────────────────────────────────────
-// Not just "is the env set?" — also warn on values that are clearly not
-// production-safe (TEST tokens, localhost URLs, dev fallbacks).
-interface SafetyCheck {
-  envName: string;
-  predicate: (value: string) => string | null; // returns error message or null
-}
-
-const PRODUCTION_SAFETY: SafetyCheck[] = [
-  {
-    envName: "MERCADOPAGO_BILLING_ACCESS_TOKEN",
-    predicate: (v) => (v.startsWith("TEST-") ? "starts with 'TEST-' (MP sandbox). Real billing will route to sandbox." : null),
-  },
-  {
-    envName: "MERCADOPAGO_ACCESS_TOKEN",
-    predicate: (v) => (v.startsWith("TEST-") ? "starts with 'TEST-' (MP sandbox). Real billing will route to sandbox." : null),
-  },
-  {
-    envName: "NEXT_PUBLIC_APP_URL",
-    predicate: (v) => {
-      if (v.includes("localhost")) return "points to localhost; MP back_urls and email CTAs will be broken in prod.";
-      if (v.startsWith("http://") && !v.includes("localhost")) return "uses http:// (not https). MP OAuth requires https.";
-      return null;
-    },
-  },
-  {
-    envName: "ENCRYPTION_KEY",
-    predicate: (v) => {
-      if (v === "fallback_dev_key_must_be_32_byte!") return "is the dev fallback literal. Rotate with `openssl rand -hex 32`.";
-      if (v.length < 32) return `is only ${v.length} chars (recommended ≥ 32 hex chars)`;
-      return null;
-    },
-  },
-  {
-    envName: "CRON_SECRET",
-    predicate: (v) => (v.length < 16 ? `is only ${v.length} chars (recommended ≥ 32)` : null),
-  },
-  {
-    envName: "MP_WEBHOOK_SECRET",
-    predicate: (v) => (v.length < 32 ? `is only ${v.length} chars (recommended ≥ 32)` : null),
-  },
-  // Resend API keys from the dashboard start with "re_". A raw string
-  // that doesn't look like a Resend key usually means the wrong env was
-  // pasted in (e.g. the WhatsApp token) — flag it so operators notice.
-  {
-    envName: "RESEND_API_KEY",
-    predicate: (v) => (v.startsWith("re_") ? null : "does not start with 're_'. Confirm this is a Resend API key and not another provider's token."),
-  },
-];
-
-// ─── Runner ──────────────────────────────────────────────────────────────
-// IMPORTANT: this script MUST NOT leak NODE_ENV into the calling shell.
-// Setting NODE_ENV=production before this script and forgetting to
-// clear it afterwards causes `next build` in the same shell to fail
-// with spurious "useContext of null" prerender errors (Next 16 ships
-// a dev-only React build when NODE_ENV !== "production" but `next
-// build` also internally forces production, producing an inconsistent
-// runtime). Callers simulate production by setting the env inline on
-// the same command:
-//   NODE_ENV=production npx tsx scripts/check-envs.ts
-// ...instead of exporting it to the shell.
 const GREEN = "\x1b[32m";
 const YELLOW = "\x1b[33m";
 const RED = "\x1b[31m";
 const GREY = "\x1b[90m";
 const RESET = "\x1b[0m";
 
-function isSet(envName: string): boolean {
-  const raw = process.env[envName];
-  return typeof raw === "string" && raw.trim().length > 0;
+const result = checkEnvVars(process.env);
+const nodeEnv = process.env.NODE_ENV || "development";
+
+console.log(`\nNexora env check - NODE_ENV=${nodeEnv} - MP mode: ${result.mpMode}\n`);
+
+for (const spec of ENV_INVENTORY) {
+  const set = isEnvSpecSatisfied(process.env, spec);
+  const label = set ? `${GREEN}[ok ]${RESET}` : `${RED}[   ]${RESET}`;
+  const severity =
+    spec.severity === "required"
+      ? `${RED}REQ${RESET}`
+      : spec.severity === "required-for-feature"
+        ? `${YELLOW}FEAT${RESET}`
+        : `${GREY}opt${RESET}`;
+
+  console.log(
+    `${label} ${severity}  ${spec.name.padEnd(40)} ${GREY}${spec.subsystem}${RESET}  ${spec.notes}`,
+  );
 }
 
-function main() {
-  const nodeEnv = process.env.NODE_ENV || "development";
-
-  // Honest sandbox mode banner so operators see at a glance whether the
-  // current env resolves to TEST tokens. We do not print the token value
-  // itself — only whether any MP token begins with TEST-.
-  const mpBillingRaw = process.env.MERCADOPAGO_BILLING_ACCESS_TOKEN || "";
-  const mpStorefrontRaw = process.env.MERCADOPAGO_ACCESS_TOKEN || "";
-  const mpAnyTest = mpBillingRaw.startsWith("TEST-") || mpStorefrontRaw.startsWith("TEST-");
-  const mpMode = mpAnyTest ? "sandbox (TEST-*)" : (mpBillingRaw || mpStorefrontRaw ? "live" : "unset");
-
-  console.log(`\nNexora env check · NODE_ENV=${nodeEnv} · MP mode: ${mpMode}\n`);
-
-  const missingRequired: EnvSpec[] = [];
-  const missingFeature: EnvSpec[] = [];
-  const missingOptional: EnvSpec[] = [];
-  const safetyWarnings: string[] = [];
-
-  for (const spec of ENV_INVENTORY) {
-    const set = isSet(spec.name) || (spec.alsoAccept || []).some(isSet);
-    const label = set ? `${GREEN}[ok ]${RESET}` : `${RED}[   ]${RESET}`;
-    const sev =
-      spec.severity === "required"
-        ? `${RED}REQ${RESET}`
-        : spec.severity === "required-for-feature"
-          ? `${YELLOW}FEAT${RESET}`
-          : `${GREY}opt${RESET}`;
-    console.log(`${label} ${sev}  ${spec.name.padEnd(40)} ${GREY}${spec.subsystem}${RESET}  ${spec.notes}`);
-    if (!set) {
-      if (spec.severity === "required") missingRequired.push(spec);
-      else if (spec.severity === "required-for-feature") missingFeature.push(spec);
-      else missingOptional.push(spec);
-    }
+if (result.details.safetyWarnings.length > 0) {
+  console.log(`\n${YELLOW}Safety warnings:${RESET}`);
+  for (const warning of result.details.safetyWarnings) {
+    console.log(`  ${YELLOW}!${RESET}  ${warning}`);
   }
-
-  console.log("");
-
-  // Safety checks only on set values.
-  for (const check of PRODUCTION_SAFETY) {
-    const raw = process.env[check.envName];
-    if (typeof raw !== "string" || raw.length === 0) continue;
-    const msg = check.predicate(raw);
-    if (msg) safetyWarnings.push(`${check.envName} ${msg}`);
-  }
-
-  if (safetyWarnings.length > 0) {
-    console.log(`${YELLOW}Safety warnings:${RESET}`);
-    for (const w of safetyWarnings) console.log(`  ${YELLOW}⚠${RESET}  ${w}`);
-    console.log("");
-  }
-
-  // Summary
-  const total = ENV_INVENTORY.length;
-  const setCount = total - missingRequired.length - missingFeature.length - missingOptional.length;
-  console.log(`Summary: ${setCount}/${total} envs set.`);
-  console.log(`  required missing: ${missingRequired.length}`);
-  console.log(`  feature  missing: ${missingFeature.length}`);
-  console.log(`  optional missing: ${missingOptional.length}`);
-  if (safetyWarnings.length > 0) {
-    console.log(`  safety warnings: ${safetyWarnings.length}`);
-  }
-
-  // Explicit names of what is missing so operators know what to set
-  // without having to parse the colour-coded list above.
-  if (missingRequired.length > 0) {
-    console.log(`\n${RED}Missing REQUIRED:${RESET}`);
-    for (const spec of missingRequired) console.log(`  - ${spec.name}  (${spec.subsystem})`);
-  }
-  if (missingFeature.length > 0) {
-    console.log(`\n${YELLOW}Missing REQUIRED-FOR-FEATURE:${RESET}`);
-    for (const spec of missingFeature) console.log(`  - ${spec.name}  (${spec.subsystem})`);
-  }
-
-  // Policy: fail (exit 1) if any REQUIRED is missing in production, or if
-  // there is any safety warning in production. In development we just
-  // report.
-  let exitCode = 0;
-  if (nodeEnv === "production") {
-    if (missingRequired.length > 0) {
-      console.log(`\n${RED}FAIL:${RESET} ${missingRequired.length} required env(s) missing in production.`);
-      exitCode = 1;
-    }
-    if (safetyWarnings.length > 0) {
-      console.log(`\n${RED}FAIL:${RESET} ${safetyWarnings.length} safety warning(s) in production configuration.`);
-      exitCode = 1;
-    }
-    if (exitCode === 0) {
-      console.log(`\n${GREEN}OK:${RESET} production env inventory passes.`);
-    }
-  } else {
-    if (missingRequired.length > 0) {
-      console.log(`\n${YELLOW}Non-production:${RESET} ${missingRequired.length} required env(s) missing. Set before deploying to production.`);
-    } else {
-      console.log(`\n${GREEN}OK:${RESET} every REQUIRED env is present.`);
-    }
-  }
-
-  process.exit(exitCode);
 }
 
-main();
+console.log(`\nSummary: ${result.details.setCount}/${result.details.total} envs set.`);
+console.log(`  required missing: ${result.details.missingRequired.length}`);
+console.log(`  feature  missing: ${result.details.missingFeature.length}`);
+console.log(`  optional missing: ${result.details.missingOptional.length}`);
+console.log(`  safety warnings: ${result.details.safetyWarnings.length}`);
+console.log(`  email provider ready: ${result.emailProviderReady ? "yes" : "no"}`);
+console.log(`  app url production-like: ${result.appUrlLooksProduction ? "yes" : "no"}`);
+
+if (result.details.missingRequired.length > 0) {
+  console.log(`\n${RED}Missing REQUIRED:${RESET}`);
+  for (const name of result.details.missingRequired) console.log(`  - ${name}`);
+}
+
+if (result.details.missingFeature.length > 0) {
+  console.log(`\n${YELLOW}Missing REQUIRED-FOR-FEATURE:${RESET}`);
+  for (const name of result.details.missingFeature) console.log(`  - ${name}`);
+}
+
+if (nodeEnv === "production") {
+  if (result.ok) {
+    console.log(`\n${GREEN}OK:${RESET} production env inventory passes.`);
+    process.exit(0);
+  }
+
+  console.log(`\n${RED}FAIL:${RESET} production env inventory is incomplete or unsafe.`);
+  process.exit(1);
+}
+
+if (result.details.missingRequired.length > 0) {
+  console.log(
+    `\n${YELLOW}Non-production:${RESET} ${result.details.missingRequired.length} required env(s) missing. Set before deploying to production.`,
+  );
+} else {
+  console.log(`\n${GREEN}OK:${RESET} every REQUIRED env is present.`);
+}
+
+process.exit(0);
