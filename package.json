@@ -9,7 +9,10 @@
     "start": "next start -H 0.0.0.0",
     "migrate:data": "npx tsx scripts/migrate-sqlite-to-pg.ts",
     "lint": "eslint",
-    "backfill:cost-snapshots": "npx tsx --env-file=.env.local --env-file=.env scripts/backfill-cost-snapshots.ts"
+    "backfill:cost-snapshots": "npx tsx --env-file=.env.local --env-file=.env scripts/backfill-cost-snapshots.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:smoke": "playwright test tests/e2e/smoke.spec.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.90.0",
@@ -28,6 +31,7 @@
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20",

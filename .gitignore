@@ -63,3 +63,9 @@ verification-screenshots/
 tmp.css
 tmp_root.html
 tmp.html
+
+# Playwright E2E artefacts
+/test-results/
+/playwright-report/
+/playwright/.cache/
+tests/e2e/.auth/

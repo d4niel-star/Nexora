@@ -66,7 +66,13 @@ export async function getCurrentUser(): Promise<User | null> {
     return null;
   }
 
-  // Rolling expiration: extend session if it has less than 15 days remaining
+  // Rolling expiration: extend session if it has less than 15 days remaining.
+  // The DB update is the source of truth; the cookie expiry update is a UX
+  // nicety so the browser keeps the cookie alive in sync. In Next 16 a Server
+  // Component context cannot mutate cookies — that operation is reserved for
+  // Server Actions / Route Handlers / Middleware. We swallow the throw here so
+  // RSC callers (e.g. admin layout) never 500 when the rolling window fires;
+  // the next Server Action / middleware roundtrip will refresh the cookie.
   const fifteenDays = 15 * 24 * 60 * 60 * 1000;
   if (session.expiresAt.getTime() - Date.now() < fifteenDays) {
     const newExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
@@ -74,13 +80,17 @@ export async function getCurrentUser(): Promise<User | null> {
       where: { id: session.id },
       data: { expiresAt: newExpiresAt },
     });
-    cookieStore.set(SESSION_COOKIE_NAME, session.id, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      expires: newExpiresAt,
-      path: "/",
-    });
+    try {
+      cookieStore.set(SESSION_COOKIE_NAME, session.id, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        expires: newExpiresAt,
+        path: "/",
+      });
+    } catch {
+      // Read-only context (RSC). DB row already extended; nothing else to do.
+    }
   }
 
   return session.user;

@@ -46,7 +46,7 @@ export function MerchantOnboardingGuide() {
 
   if (loading) {
     return (
-      <div className="nx-panel p-6">
+      <div className="nx-panel p-6" data-testid="merchant-onboarding-guide">
         <div className="flex items-center gap-2 text-[13px] text-ink-5">
           <Loader2 className="w-4 h-4 animate-spin" /> Evaluando estado de tu tienda…
         </div>
@@ -57,7 +57,7 @@ export function MerchantOnboardingGuide() {
   if (!data) return null;
 
   return (
-    <div className="nx-panel overflow-hidden">
+    <div className="nx-panel overflow-hidden" data-testid="merchant-onboarding-guide">
       {/* Header */}
       <div className="p-5 pb-4 border-b border-[color:var(--hairline)]">
         <div className="flex items-center justify-between mb-3">

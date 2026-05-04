@@ -100,7 +100,7 @@ export function CommandCenter({ data }: { data: CommandCenterData }) {
   ];
 
   return (
-    <div className="animate-in fade-in duration-300">
+    <div className="animate-in fade-in duration-300" data-testid="command-center">
       <NexoraPageHeader
         title="Panel de control"
         subtitle="Decisiones priorizadas hoy, sobre datos reales de ventas, margen, stock y operación."
