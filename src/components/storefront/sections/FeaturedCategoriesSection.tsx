@@ -33,14 +33,15 @@ export function FeaturedCategoriesSection({
             <Link
               key={col.id}
               href={storePath(storeSlug, `collections/${col.handle}`)}
-              className="group relative block aspect-[3/2] overflow-hidden rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] shadow-[var(--shadow-soft)] transition-[border-color,box-shadow] hover:border-[color:var(--hairline-strong)] hover:shadow-[var(--shadow-elevated)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+              className="group relative block aspect-[3/2] overflow-hidden rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] shadow-[var(--shadow-soft)] transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] hover:border-[color:var(--hairline-strong)] hover:shadow-[var(--shadow-elevated)] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
             >
               {col.imageUrl ? (
                 <>
                   <img
                     src={col.imageUrl}
                     alt={col.title}
-                    className="absolute inset-0 h-full w-full object-cover transition-opacity duration-[var(--dur-base)] ease-[var(--ease-out)] group-hover:opacity-95"
+                    loading="lazy"
+                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-[1.04]"
                   />
                   <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-ink-0/75 via-ink-0/25 to-transparent" />
                 </>
