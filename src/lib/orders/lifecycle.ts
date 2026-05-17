@@ -110,3 +110,38 @@ export const SHIPPING_TRANSITIONS: Record<ShippingStatusValue, readonly Shipping
 // Both operations are IDEMPOTENT via StockMovement existence checks.
 // Race conditions on stock are prevented by atomic `updateMany` with
 // `stock: { gte: quantity }` in the where clause.
+
+// ─── Schema Debt (Phase 4C Audit) ────────────────────────────────────────
+// The following Prisma fields exist in the schema but are NEVER WRITTEN by
+// the application. They are safe to ignore and should be cleaned up in a
+// future migration. Do NOT build features on top of them.
+//
+// Order model:
+//   - buyerName       — dead. Use firstName + lastName instead.
+//   - buyerEmail      — dead. Use email instead.
+//   - buyerPhone      — dead. Use phone instead.
+//   - buyerAddress    — dead. Use addressLine1 + addressLine2 instead.
+//   - buyerCity       — dead. Use city instead.
+//   - buyerPostalCode — dead. Use postalCode instead.
+//
+// OrderItem model:
+//   - productName     — dead. Use titleSnapshot instead.
+//   - variantName     — dead. Use variantTitleSnapshot instead.
+//   - unitPrice       — dead. Use priceSnapshot instead.
+//   - subtotal        — dead. Use lineTotal instead.
+//
+// ProductVariant model:
+//   - reservedStock   — READ but NEVER WRITTEN. Always 0 in production.
+//     Every `stock - reservedStock` calculation reduces to just `stock`.
+//     The field was designed for a cart-reservation system (lock stock on
+//     add-to-cart, release on timeout) that was never implemented. Nexora
+//     instead commits stock atomically on payment confirmation, which is
+//     simpler and avoids reservation drift. If a reservation system is
+//     added in the future, it MUST increment/decrement reservedStock in
+//     the same transaction as cart add/remove/expire.
+//
+// Prisma enum OrderStatus:
+//   - Defined in schema (PENDING, PAID, PROCESSING, SHIPPED, DELIVERED,
+//     CANCELLED, REFUNDED) but only used by Order.publicStatus.
+//   - Order.status is a free-form String field defaulting to "new".
+//   - Removing the enum requires a migration. Not worth it now.
