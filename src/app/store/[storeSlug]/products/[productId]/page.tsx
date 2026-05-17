@@ -249,13 +249,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
         </ol>
       </nav>
 
-      <main className="mx-auto max-w-7xl px-4 pb-32 pt-8 sm:px-6 sm:pb-16 lg:px-8 lg:pt-12">
+      <main className="mx-auto max-w-7xl px-4 pb-32 pt-8 sm:px-6 sm:pb-20 lg:px-8 lg:pt-12">
         <div className="grid gap-10 lg:grid-cols-2 lg:items-start lg:gap-14 xl:gap-16">
           {/* Gallery */}
           <ProductGallery images={galleryImages} />
 
-          {/* Info */}
-          <div className="flex flex-col rounded-[var(--r-xl)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6 shadow-[var(--shadow-soft)] sm:p-8">
+          {/* Info — sticky on desktop so CTA stays visible while scrolling gallery */}
+          <div className="flex flex-col rounded-[var(--r-xl)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-6 shadow-[var(--shadow-soft)] sm:p-8 lg:sticky lg:top-20">
             {product.brand && (
               <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-ink-5">
                 {product.brand}
@@ -380,7 +380,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             <h2 className="mb-8 mt-3 font-semibold text-[26px] leading-[1.05] tracking-[-0.03em] text-ink-0 sm:mb-10 sm:text-[32px]">
               También te puede interesar
             </h2>
-            <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-10 lg:grid-cols-4 xl:gap-x-7">
               {relatedProducts.map((relatedProduct) => (
                 <ProductCard
                   key={relatedProduct.id}
@@ -397,15 +397,20 @@ export default async function ProductPage({ params }: ProductPageProps) {
           The actual add-to-cart action runs inside AddToCartForm so this is
           purely a scroll-anchor for mobile conversion. */}
       {product.inStock && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 shadow-[var(--shadow-elevated)] lg:hidden">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[color:var(--hairline-strong)] bg-[var(--surface-0)]/95 px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 shadow-[0_-4px_24px_rgba(0,0,0,0.08)] backdrop-blur-md lg:hidden">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
             <div className="min-w-0">
               <p className="truncate text-[12px] text-ink-5">{product.title}</p>
-              <p className="tabular text-[18px] font-semibold text-ink-0">{priceFormatted}</p>
+              <div className="flex items-baseline gap-2">
+                <p className="tabular text-[18px] font-semibold text-ink-0">{priceFormatted}</p>
+                {compareAtFormatted && (
+                  <p className="tabular text-[12px] text-ink-6 line-through">{compareAtFormatted}</p>
+                )}
+              </div>
             </div>
             <a
               href="#add-to-cart"
-              className="inline-flex h-12 min-h-12 shrink-0 items-center justify-center rounded-[var(--r-md)] bg-ink-0 px-6 text-[14px] font-medium text-ink-12 transition-colors hover:bg-ink-2 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+              className="inline-flex h-12 min-h-12 shrink-0 items-center justify-center rounded-[var(--r-md)] bg-ink-0 px-7 text-[14px] font-semibold text-ink-12 transition-colors hover:bg-ink-2 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
             >
               Comprar
             </a>

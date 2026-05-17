@@ -2,9 +2,11 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { normalizeStorefrontHref, storePath } from "@/lib/store-engine/urls";
 
-// ─── Storefront Hero ───
-// Optional background image behind a cool neutral scrim. Typography and CTAs
-// follow global tokens — data and routes unchanged.
+// ─── Storefront Hero Pro ───
+// Premium hero with better image treatment (higher presence), refined
+// typography scale, improved CTA hierarchy, and responsive vertical rhythm.
+// Supports layout variants via settings.layout (centered | split | default).
+// All pure CSS — no animation libraries, no client component.
 
 export function HeroSection({
   settings,
@@ -19,11 +21,6 @@ export function HeroSection({
       : "products";
   const primaryHref = normalizeStorefrontHref(primaryActionLink, storeSlug);
 
-  // The secondary CTA used to render with href="#" when the CMS left
-  // secondaryActionLink blank — a dead link that hurts trust and SEO.
-  // We now only render it when the CMS provides a real link target,
-  // and we route it through the same normalizeStorefrontHref helper so
-  // relative paths like "collections" still resolve correctly.
   const secondaryActionLabel =
     typeof settings.secondaryActionLabel === "string" &&
     settings.secondaryActionLabel.trim()
@@ -38,39 +35,86 @@ export function HeroSection({
     ? normalizeStorefrontHref(secondaryActionLink, storeSlug)
     : null;
 
+  const layout = (settings.layout as string) || "default";
+  const isCentered = layout === "centered";
+
   return (
-    <section className="relative isolate overflow-hidden border-b border-[color:var(--hairline-strong)] bg-[var(--surface-0)] text-ink-0">
+    <section className="relative isolate overflow-hidden bg-[var(--surface-0)] text-ink-0">
+      {/* Background image — calibrated for strong visual presence */}
       {settings.backgroundImageUrl ? (
         <>
           <img
             src={settings.backgroundImageUrl}
             alt=""
-            className="absolute inset-0 -z-10 h-full w-full object-cover opacity-[0.22]"
+            className="absolute inset-0 -z-10 h-full w-full object-cover"
+          />
+          {/* Multi-stop gradient for readability without killing the image */}
+          <div
+            aria-hidden
+            className="absolute inset-0 -z-10 bg-gradient-to-r from-[var(--surface-0)]/95 via-[var(--surface-0)]/70 to-[var(--surface-0)]/40"
           />
           <div
             aria-hidden
-            className="absolute inset-0 -z-10 bg-gradient-to-b from-[var(--surface-0)] via-[var(--surface-0)]/88 to-[var(--surface-0)]"
+            className="absolute inset-0 -z-10 bg-gradient-to-t from-[var(--surface-0)]/80 via-transparent to-[var(--surface-0)]/30"
           />
         </>
       ) : (
-        <div aria-hidden className="absolute inset-0 -z-10 bg-[var(--surface-0)]" />
+        <div
+          aria-hidden
+          className="absolute inset-0 -z-10 bg-gradient-to-br from-[var(--surface-0)] via-[var(--surface-1)] to-[var(--surface-2)]"
+        />
       )}
 
-      <div className="mx-auto max-w-6xl px-5 pb-28 pt-28 sm:px-8 sm:pb-36 sm:pt-36 lg:pt-40">
-        <div className="max-w-3xl">
-          <div className="mb-8 h-px w-10 bg-[var(--accent-500)]" aria-hidden />
-          <h1 className="font-bold text-[42px] leading-[0.98] tracking-[-0.045em] text-ink-0 sm:text-[64px] lg:text-[72px]">
+      <div
+        className={
+          "mx-auto max-w-7xl px-5 sm:px-8 lg:px-8 " +
+          "py-20 sm:py-28 lg:py-36 " +
+          (isCentered ? "text-center" : "")
+        }
+      >
+        <div className={isCentered ? "mx-auto max-w-3xl" : "max-w-2xl"}>
+          {/* Accent line */}
+          <div
+            className={
+              "mb-8 h-px w-12 bg-[var(--accent-500)] " +
+              (isCentered ? "mx-auto" : "")
+            }
+            aria-hidden
+          />
+
+          <h1
+            className={
+              "font-bold tracking-[-0.04em] text-ink-0 " +
+              "text-[36px] leading-[0.98] " +
+              "sm:text-[52px] " +
+              "lg:text-[64px]"
+            }
+          >
             {settings.headline}
           </h1>
+
           {settings.subheadline && (
-            <p className="mt-8 max-w-xl text-[16px] leading-[1.65] text-ink-4 sm:text-[17px]">
+            <p
+              className={
+                "mt-6 text-[16px] leading-[1.65] text-ink-3 sm:mt-8 sm:text-[17px] lg:text-[18px] " +
+                (isCentered ? "mx-auto max-w-xl" : "max-w-lg")
+              }
+            >
               {settings.subheadline}
             </p>
           )}
-          <div className="mt-12 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:gap-4">
+
+          <div
+            className={
+              "mt-10 flex gap-3 sm:mt-12 sm:gap-4 " +
+              (isCentered
+                ? "flex-col items-center sm:flex-row sm:justify-center"
+                : "flex-col items-stretch sm:flex-row sm:items-center")
+            }
+          >
             <Link
               href={primaryHref}
-              className="inline-flex h-12 min-h-12 items-center justify-center gap-2 rounded-[var(--r-md)] bg-ink-0 px-8 text-[15px] font-medium text-ink-12 transition-colors hover:bg-ink-2 active:translate-y-px focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+              className="inline-flex h-12 min-h-12 items-center justify-center gap-2.5 rounded-[var(--r-md)] bg-ink-0 px-8 text-[15px] font-semibold text-ink-12 transition-all duration-300 hover:bg-ink-2 hover:shadow-[var(--shadow-elevated)] active:translate-y-px focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
             >
               {settings.primaryActionLabel}
               <ArrowRight className="h-4 w-4" strokeWidth={2} />
@@ -78,10 +122,9 @@ export function HeroSection({
             {secondaryActionLabel && secondaryHref && (
               <Link
                 href={secondaryHref}
-                className="inline-flex h-12 min-h-12 items-center justify-center gap-1.5 rounded-[var(--r-md)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-8 text-[15px] font-medium text-ink-0 transition-colors hover:bg-[var(--surface-2)] active:translate-y-px focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+                className="inline-flex h-12 min-h-12 items-center justify-center gap-2 rounded-[var(--r-md)] border border-ink-0/20 bg-transparent px-8 text-[15px] font-medium text-ink-0 transition-all duration-300 hover:border-ink-0/40 hover:bg-ink-0/5 active:translate-y-px focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
               >
                 {secondaryActionLabel}
-                <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
               </Link>
             )}
           </div>
