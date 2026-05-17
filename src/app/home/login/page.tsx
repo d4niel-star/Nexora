@@ -136,12 +136,12 @@ function LoginContent() {
               <label htmlFor="password" className="text-[12px] font-medium text-ink-5">
                 Contrasena
               </label>
-              <a
-                href="#"
-                className="text-[12px] text-ink-5 transition-colors hover:text-ink-0"
+              <span
+                className="text-[12px] text-ink-6 cursor-default select-none"
+                title="Próximamente"
               >
-                Olvidaste tu contrasena?
-              </a>
+                Olvidaste tu contraseña?
+              </span>
             </div>
             <input
               id="password"

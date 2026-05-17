@@ -170,8 +170,6 @@ function mapProductToStorefront(product: any): StorefrontProduct {
     variants,
     brand: product.supplier || "Nexora",
     badges: product.isFeatured ? ["Featured"] : [],
-    rating: 0, // TODO(4C): placeholder until reviews module is connected — NOT rendered in UI
-    reviewCount: 0, // TODO(4C): placeholder — NOT rendered in UI
     inStock,
     features: [], 
   };

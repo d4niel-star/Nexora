@@ -55,8 +55,6 @@ export interface StorefrontProduct {
   variants: ProductVariant[];
   brand: string;
   badges: string[];
-  rating: number;
-  reviewCount: number;
   inStock: boolean;
   features: string[];
 }

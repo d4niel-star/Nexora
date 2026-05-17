@@ -1,5 +1,24 @@
 "use server";
 
+// ─── Customer Domain (Derived from Orders) ─────────────────────────────
+// Nexora does NOT have a dedicated `Customer` Prisma model. This is an
+// intentional architectural decision made during Phase 4C hardening:
+//
+//   1. Every "customer" is someone who placed at least one real order.
+//      There are no phantom/pre-registered customers inflating metrics.
+//   2. Segmentation (new/recurring/vip) and lifecycle (active/inactive/risk)
+//      are computed from real order data, not stored state that can drift.
+//   3. The `id` uses the customer email as a natural key — this gives us
+//      deduplication for free without reconciliation complexity.
+//   4. Guest checkout is the only mode today. When registered-customer
+//      accounts are added (Phase 5+), a Customer model will be introduced
+//      with a migration that backfills from existing orders.
+//
+// Tradeoff: we can't store per-customer preferences, addresses, or marketing
+// consent until the Customer model exists. This is acceptable because those
+// features are not yet implemented.
+// ────────────────────────────────────────────────────────────────────────
+
 import { prisma } from "@/lib/db/prisma";
 import { getCurrentStore } from "@/lib/auth/session";
 

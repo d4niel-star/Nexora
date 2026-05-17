@@ -157,8 +157,6 @@ export async function getActiveUpsellsForProduct(
       variants: [],
       brand: "",
       badges: [],
-      rating: 0,
-      reviewCount: 0,
       inStock,
       features: [],
     });
