@@ -37,7 +37,6 @@ o log. Usar el dashboard del provider (Render env group) para cargarlos.
 | `NEXT_PUBLIC_PLAUSIBLE_DOMAIN`, `NEXT_PUBLIC_GA_ID` | opcional | Pixels client-side global | Según plan de analytics global |
 | `GA_MEASUREMENT_ID`, `GA_MEASUREMENT_PROTOCOL_SECRET` | opcional | Eventos server-side a GA4 | Idem |
 | `ABANDONED_CART_THRESHOLD_MINUTES` | opcional | Minutos de inactividad → abandono | Default `120` |
-| `MOCK_LOGISTICS_SECRET` | opcional | HMAC del provider mock de logística (solo dev/demo) | — |
 | `ENABLE_VERBOSE_AUDIT` | opcional | Audit verbose a stdout | `"1"` para habilitar, off en prod |
 
 **Nota sobre sesiones**: el proyecto **no usa** `SESSION_SECRET` ni

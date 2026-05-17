@@ -1,12 +1,11 @@
 import { prisma } from "@/lib/db/prisma";
 import { getCurrentStore } from "@/lib/auth/session";
-import type { 
-  FinanceMovement, 
-  PendingPayment, 
-  Refund, 
-  CommissionEntry, 
-  MarginEntry, 
-  ExportRecord,
+import type {
+  FinanceMovement,
+  PendingPayment,
+  Refund,
+  CommissionEntry,
+  MarginEntry,
   FinanceSummary
 } from "@/types/finances";
 
@@ -17,7 +16,6 @@ export interface AdminFinanceData {
   refunds: Refund[];
   commissions: CommissionEntry[];
   margins: MarginEntry[];
-  exports: ExportRecord[];
 }
 
 export async function getAdminFinanceData(): Promise<AdminFinanceData> {
@@ -210,8 +208,6 @@ export async function getAdminFinanceData(): Promise<AdminFinanceData> {
     });
   }
 
-  const exportsRecords: ExportRecord[] = []; // Usually kept in a separate table, mocking empty for real flow.
-
   const collectedCount = movements.length;
   const avgTicket = collectedCount > 0 ? totalCollected / collectedCount : 0;
   
@@ -238,7 +234,6 @@ export async function getAdminFinanceData(): Promise<AdminFinanceData> {
     pending,
     refunds,
     commissions,
-    margins: margins.sort((a,b) => b.revenue - a.revenue),
-    exports: exportsRecords
+    margins: margins.sort((a,b) => b.revenue - a.revenue)
   };
 }

@@ -17,9 +17,15 @@ interface OrderDrawerProps {
   order: Order | null;
   isOpen: boolean;
   onClose: () => void;
+  /**
+   * Forwarded to <FiscalInvoiceControls>. When false, the fiscal block
+   * never exposes an "Emitir comprobante (AFIP)" CTA — the underlying
+   * service is still mocked and any emission would persist a fake CAE.
+   */
+  fiscalReal: boolean;
 }
 
-export function OrderDrawer({ order, isOpen, onClose }: OrderDrawerProps) {
+export function OrderDrawer({ order, isOpen, onClose, fiscalReal }: OrderDrawerProps) {
   const [timelineEvents, setTimelineEvents] = useState<OrderTimelineEvent[]>([]);
   const [timelineLoading, setTimelineLoading] = useState(false);
   
@@ -250,7 +256,7 @@ export function OrderDrawer({ order, isOpen, onClose }: OrderDrawerProps) {
           )}
 
           {/* Fiscal Invoice Zone */}
-          <FiscalInvoiceControls order={order} />
+          <FiscalInvoiceControls order={order} fiscalReal={fiscalReal} />
 
           {/* Danger Zone: Cancellation */}
           <CancelOrderControls order={order} />

@@ -40,6 +40,76 @@ services:
       - key: NEXT_PUBLIC_APP_URL
         sync: false
 
+  # Recovery email for abandoned carts. The endpoint hard-caps each
+  # batch internally and is idempotent (one email per cart, by
+  # eventType+entityId) so running every 30 min is safe even if a tick
+  # is missed or duplicated.
+  - type: cron
+    name: nexora-cron-abandoned-carts
+    runtime: node
+    repo: https://github.com/d4niel-star/Nexora
+    branch: main
+    schedule: "*/30 * * * *"
+    buildCommand: echo "no build required for cron"
+    startCommand: "curl -fsSL -X POST -H \"x-cron-secret: $CRON_SECRET\" $NEXT_PUBLIC_APP_URL/api/cron/abandoned-carts"
+    envVars:
+      - key: CRON_SECRET
+        sync: false
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+
+  # Pickup reservations expire after the per-store TTL. The endpoint is
+  # idempotent (only flips reservations whose expiresAt has passed) so a
+  # 30-min cadence is enough; running more often would just make
+  # SystemEvent rows noisier without changing outcomes.
+  - type: cron
+    name: nexora-cron-pickup-expire
+    runtime: node
+    repo: https://github.com/d4niel-star/Nexora
+    branch: main
+    schedule: "*/30 * * * *"
+    buildCommand: echo "no build required for cron"
+    startCommand: "curl -fsSL -X POST -H \"x-cron-secret: $CRON_SECRET\" $NEXT_PUBLIC_APP_URL/api/cron/expire-pickup-reservations"
+    envVars:
+      - key: CRON_SECRET
+        sync: false
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+
+  # Dunning reminders for overdue subscriptions. Hourly is plenty — the
+  # endpoint reads `nextRetryAt` so it self-throttles and never sends
+  # twice for the same cycle.
+  - type: cron
+    name: nexora-cron-dunning
+    runtime: node
+    repo: https://github.com/d4niel-star/Nexora
+    branch: main
+    schedule: "0 * * * *"
+    buildCommand: echo "no build required for cron"
+    startCommand: "curl -fsSL -X POST -H \"x-cron-secret: $CRON_SECRET\" $NEXT_PUBLIC_APP_URL/api/cron/dunning-reminders"
+    envVars:
+      - key: CRON_SECRET
+        sync: false
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+
+  # Post-purchase review request emails (V2.5 app). Daily is enough — the
+  # endpoint enforces the per-store delay window and is idempotent via
+  # EmailLog.
+  - type: cron
+    name: nexora-cron-post-purchase
+    runtime: node
+    repo: https://github.com/d4niel-star/Nexora
+    branch: main
+    schedule: "0 13 * * *" # 13:00 UTC ≈ 10:00 AR
+    buildCommand: echo "no build required for cron"
+    startCommand: "curl -fsSL -X POST -H \"x-cron-secret: $CRON_SECRET\" $NEXT_PUBLIC_APP_URL/api/cron/post-purchase-review-requests"
+    envVars:
+      - key: CRON_SECRET
+        sync: false
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+
 databases:
   - name: nexora-db
     plan: free

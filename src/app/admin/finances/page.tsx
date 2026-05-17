@@ -10,7 +10,6 @@ const validTabs = [
   "comisiones",
   "margenes",
   "rentabilidad",
-  "exportaciones",
 ] as const;
 
 type FinanceTabValue = (typeof validTabs)[number];

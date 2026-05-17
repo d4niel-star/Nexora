@@ -30,6 +30,14 @@ interface OrdersClientProps {
   pagination: PaginationMeta;
   counts: OrderStatusCounts;
   hideHeader?: boolean;
+  /**
+   * Resolved server-side from `isRealFiscalIntegrationEnabled()` and
+   * forwarded to <OrderDrawer>. Defaults to `false` so any caller that
+   * forgets to pass it falls into the safe "no fiscal CTA" branch.
+   * Today only `/admin/orders` and `/admin/ai/operations` mount this
+   * client; both pass the flag explicitly.
+   */
+  fiscalReal?: boolean;
 }
 
 export default function OrdersClient({
@@ -37,6 +45,7 @@ export default function OrdersClient({
   pagination,
   counts,
   hideHeader = false,
+  fiscalReal = false,
 }: OrdersClientProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -490,6 +499,7 @@ export default function OrdersClient({
         order={selectedOrder}
         isOpen={selectedOrder !== null}
         onClose={() => setSelectedOrder(null)}
+        fiscalReal={fiscalReal}
       />
     </div>
   );

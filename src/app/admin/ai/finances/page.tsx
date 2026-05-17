@@ -13,7 +13,7 @@ export default async function AIFinancesPage({ searchParams }: Props) {
   const data = await getAdminFinanceData();
   const params = await searchParams;
 
-  const validTabs = ["resumen", "cobrado", "pendiente", "reembolsos", "comisiones", "margenes", "exportaciones"] as const;
+  const validTabs = ["resumen", "cobrado", "pendiente", "reembolsos", "comisiones", "margenes", "rentabilidad"] as const;
   const tab = validTabs.includes(params.tab as any) ? (params.tab as any) : "resumen";
 
   return (

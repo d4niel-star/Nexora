@@ -41,7 +41,6 @@ export async function createCampaignDraft(storeId: string, recommendationId: str
         create: productIds.map((pid: string) => ({ productId: pid })),
       },
       aiSummary: recommendation.summary,
-      aiScore: 92,
       status: "draft_local_only" // Brutal honesty: we do not publish to Meta/TikTok yet
     }
   });

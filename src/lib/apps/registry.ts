@@ -222,17 +222,23 @@ export const APP_REGISTRY: AppDefinition[] = [
   },
 
   // ── Operations / Fiscal ────────────────────────────────────────────────
+  // Marked coming-soon while the real ARCA WebService adapter is being
+  // wired. The current implementation goes through `mockArcaWebServiceCall`
+  // which produces simulated CAEs; presenting the app as "available"
+  // would make the merchant believe Nexora emite comprobantes con
+  // validez fiscal — y eso no es cierto hasta que el flag
+  // `ARCA_REAL_INTEGRATION=true` se habilite junto con el adapter real.
   {
     slug: "fiscal-arca",
     name: "Facturación ARCA (AFIP)",
     iconName: "ReceiptText",
     category: "operations",
     shortDescription:
-      "Emití comprobantes electrónicos ARCA (AFIP) directo desde cada venta, con alias de WebService.",
+      "Próximamente: emisión real de comprobantes electrónicos ARCA / AFIP desde cada venta.",
     problem:
       "Emitir facturas manualmente por cada venta es lento, propenso a errores y frena el scale.",
     outcome:
-      "Configurás tu perfil ARCA una vez y Nexora emite los comprobantes con tu CUIT en cada venta, respetando homologación o producción.",
+      "Cuando el WebService AFIP esté habilitado, vas a configurar tu perfil ARCA una vez y Nexora emitirá los comprobantes con tu CUIT por cada venta. Hoy la integración corre en modo prueba y los comprobantes generados no tienen validez fiscal.",
     capabilities: [
       "Perfil ARCA con IVA, punto de venta y entorno.",
       "Homologación / testing sin riesgo fiscal.",
@@ -242,6 +248,7 @@ export const APP_REGISTRY: AppDefinition[] = [
     manageRoute: "/admin/fiscal",
     installMode: "deep-link",
     setupTime: "10 minutos",
+    isComingSoon: true,
     tags: ["afip", "arca", "facturas"],
   },
 

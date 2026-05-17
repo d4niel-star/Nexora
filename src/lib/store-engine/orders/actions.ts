@@ -6,6 +6,10 @@ import { revalidatePath } from "next/cache";
 import { sendEmailEvent } from "@/lib/email/events";
 import { logSystemEvent } from "../../observability/audit";
 import { issueCreditNoteForInvoice } from "@/lib/fiscal/arca/services";
+import {
+  FISCAL_DISABLED_ERROR_CODE,
+  isRealFiscalIntegrationEnabled,
+} from "@/lib/fiscal/feature-flag";
 import { createRefund } from "@/lib/payments/mercadopago/client";
 import { getMercadoPagoCredentialsForStore } from "@/lib/payments/mercadopago/tenant";
 import { storePath } from "@/lib/store-engine/urls";
@@ -181,19 +185,50 @@ export async function cancelOrder(orderId: string, reason: string, doRefund: boo
     metadata: { reason, doRefund, refundAmount, pickupLocalStockRestored }
   });
 
-  // Issue credit note automatically if there is an authorized invoice
+  // Issue credit note automatically if there is an authorized invoice.
+  // Skip silently when the real ARCA integration is disabled — under the
+  // mock the NC would persist as "authorized" with a fake CAE, which is
+  // exactly the smoke we want to remove. We still emit a SystemEvent so
+  // operators can audit the skip in dev/QA.
   if (order.fiscalInvoice?.fiscalStatus === "authorized") {
-     try {
-       await issueCreditNoteForInvoice(order.fiscalInvoice.id, `Reembolso / Cancelación: ${reason}`);
-     } catch (err: any) {
-       await logSystemEvent({
-          storeId: order.storeId,
-          eventType: "credit_note_failed",
-          entityType: "FiscalInvoice",
-          source: "cancel_order_action",
-          severity: "error",
-          message: `La orden fue cancelada, pero falló la emisión automática de Nota de Crédito: ${err.message}`
-       });
+     if (!isRealFiscalIntegrationEnabled()) {
+        await logSystemEvent({
+           storeId: order.storeId,
+           eventType: "fiscal_credit_note_skipped_testing_mode",
+           entityType: "FiscalInvoice",
+           entityId: order.fiscalInvoice.id,
+           source: "cancel_order_action",
+           severity: "info",
+           message: `Orden ${order.orderNumber} cancelada/reembolsada, pero no se emitió Nota de Crédito fiscal: ARCA real no está habilitado (ARCA_REAL_INTEGRATION≠true).`,
+        });
+     } else {
+        try {
+          await issueCreditNoteForInvoice(order.fiscalInvoice.id, `Reembolso / Cancelación: ${reason}`);
+        } catch (err: any) {
+          // Do not surface the disabled-flag error as a failure (the guard
+          // above should have prevented entering this branch); only the
+          // real-API failures land here.
+          if (err?.code === FISCAL_DISABLED_ERROR_CODE) {
+             await logSystemEvent({
+                storeId: order.storeId,
+                eventType: "fiscal_credit_note_skipped_testing_mode",
+                entityType: "FiscalInvoice",
+                entityId: order.fiscalInvoice.id,
+                source: "cancel_order_action",
+                severity: "info",
+                message: `Orden ${order.orderNumber}: integración ARCA real deshabilitada — NC fiscal no emitida.`,
+             });
+          } else {
+             await logSystemEvent({
+                storeId: order.storeId,
+                eventType: "credit_note_failed",
+                entityType: "FiscalInvoice",
+                source: "cancel_order_action",
+                severity: "error",
+                message: `La orden fue cancelada, pero falló la emisión automática de Nota de Crédito: ${err.message}`,
+             });
+          }
+        }
      }
   }
 

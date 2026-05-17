@@ -72,10 +72,10 @@ export default async function AIGeneralPage() {
       draftId: d.id,
       title: d.aiSummary || "Campaña sin título",
       description: `${d.platform.toUpperCase()} · ${d.objective} · $${(d.budgetDaily || 0).toLocaleString()}/día`,
-      meta: `Score IA: ${d.aiScore || "—"}%`,
+      meta: `${d.platform.toUpperCase()} · ${d.objective}`,
       priority: "medium",
       href: "/admin/ads",
-      scoreLabel: `Score IA: ${d.aiScore || "—"}%`,
+      scoreLabel: undefined,
     });
   });
 

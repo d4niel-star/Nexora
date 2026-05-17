@@ -1,9 +1,10 @@
 import { getInvoicesAction, getStoreFiscalProfileAction, getWithdrawalRequestsAction } from "@/lib/fiscal/arca/actions";
 import { getCurrentStore } from "@/lib/auth/session";
-import { AlertCircle, CheckCircle2, RotateCcw, FileText, Send, Building2, Store } from "lucide-react";
+import { AlertCircle, AlertTriangle, CheckCircle2, RotateCcw, FileText, Send, Building2, Store } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
+import { isRealFiscalIntegrationEnabled } from "@/lib/fiscal/feature-flag";
 
 export default async function FiscalDashboardPage() {
   const store = await getCurrentStore();
@@ -12,6 +13,7 @@ export default async function FiscalDashboardPage() {
   const profile = await getStoreFiscalProfileAction(store.id);
   const invoices = await getInvoicesAction(store.id);
   const requests = await getWithdrawalRequestsAction(store.id);
+  const fiscalReal = isRealFiscalIntegrationEnabled();
 
   return (
     <div className="space-y-10 animate-in fade-in duration-500 py-6">
@@ -20,6 +22,24 @@ export default async function FiscalDashboardPage() {
         title="Fiscal y legal"
         subtitle="Gestión de facturación electrónica ARCA/AFIP y compliance de comercio electrónico."
       />
+
+      {/* ─── Modo prueba banner ────────────────────────────────────────
+          Until ARCA_REAL_INTEGRATION=true is set and a real AFIP/ARCA
+          adapter has replaced `mockArcaWebServiceCall`, every CAE shown
+          on this surface is simulated. We surface that loudly so a
+          merchant never assumes a comprobante here is fiscally valid. */}
+      {!fiscalReal && (
+        <div className="p-5 rounded-[var(--r-md)] border border-[color:var(--signal-warning)] bg-[color:color-mix(in_srgb,var(--signal-warning)_10%,transparent)] flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-[color:var(--signal-warning)] shrink-0 mt-0.5" strokeWidth={1.75} />
+          <div className="space-y-1">
+            <h3 className="text-[13px] font-semibold text-ink-0">Modo prueba fiscal — sin validez ante AFIP</h3>
+            <p className="text-[12.5px] leading-[1.55] text-ink-4 max-w-2xl">
+              La integración ARCA real todavía no está habilitada en este entorno. Los comprobantes y números CAE que veas acá son simulados y <strong>no tienen validez fiscal</strong>. La emisión real estará disponible una vez que el equipo de Nexora active el WebService AFIP y configure <code className="font-mono text-[11.5px]">ARCA_REAL_INTEGRATION=true</code>.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
         </div>
@@ -31,14 +51,16 @@ export default async function FiscalDashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
          {/* ARCA STatus */}
          <div className="p-6 bg-[var(--surface-0)] rounded-[var(--r-md)] border border-[color:var(--hairline)] flex items-start gap-4">
-            <div className={cn("flex h-12 w-12 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] shrink-0", profile?.status === "active" ? "text-[color:var(--signal-success)]" : "text-[color:var(--signal-warning)]")}>
+            <div className={cn("flex h-12 w-12 items-center justify-center rounded-[var(--r-sm)] border border-[color:var(--hairline)] bg-[var(--surface-1)] shrink-0", fiscalReal && profile?.status === "active" ? "text-[color:var(--signal-success)]" : "text-[color:var(--signal-warning)]")}>
                <Building2 className="w-5 h-5" strokeWidth={1.5} />
             </div>
             <div>
                <h3 className="text-sm font-bold uppercase tracking-wider text-ink-0 mb-1">Estado ARCA / AFIP</h3>
                <p className="text-ink-5 text-[13px] leading-relaxed mb-4">
-                 {profile?.status === "active" 
-                   ? "Nexora está enlazado a los servicios de AFIP. Los comprobantes se emiten correctamente." 
+                 {!fiscalReal
+                   ? "AFIP / ARCA real no está conectado. La emisión está deshabilitada hasta que el equipo de Nexora active el WebService oficial."
+                   : profile?.status === "active"
+                   ? "Nexora está enlazado a los servicios de AFIP. Los comprobantes se emiten correctamente."
                    : "Perfil fiscal incompleto. Para poder emitir comprobantes necesitás configurar la clave fiscal / punto de venta en ajustes."}
                </p>
                {profile && (
@@ -94,8 +116,14 @@ export default async function FiscalDashboardPage() {
                        <div className="text-right">
                           <div className="font-bold text-[13px] text-ink-0 mb-1">${inv.total.toFixed(2)}</div>
                           {inv.fiscalStatus === "authorized" ? (
-                             <span className="inline-flex items-center text-[10px] uppercase font-medium tracking-[0.14em] text-[color:var(--signal-success)]">
-                                <CheckCircle2 className="w-3 h-3 mr-1" strokeWidth={1.75} /> CAE aprobado
+                             <span className={cn(
+                               "inline-flex items-center text-[10px] uppercase font-medium tracking-[0.14em]",
+                               fiscalReal
+                                 ? "text-[color:var(--signal-success)]"
+                                 : "text-[color:var(--signal-warning)]",
+                             )}>
+                                <CheckCircle2 className="w-3 h-3 mr-1" strokeWidth={1.75} />
+                                {fiscalReal ? "CAE aprobado" : "CAE simulado (modo prueba)"}
                              </span>
                           ) : inv.fiscalStatus === "error" || inv.fiscalStatus === "rejected" ? (
                              <span className="inline-flex items-center text-[10px] uppercase font-medium tracking-[0.14em] text-[color:var(--signal-danger)]">

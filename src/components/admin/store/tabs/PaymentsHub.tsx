@@ -244,6 +244,20 @@ export function PaymentsHub({
         />
       </div>
 
+      <div className="rounded-[var(--r-md)] border border-[color:var(--signal-warning)] bg-[color:color-mix(in_srgb,var(--signal-warning)_9%,transparent)] px-4 py-3 text-[12px] leading-[1.55] text-ink-4">
+        <div className="flex items-start gap-2.5">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--signal-warning)]" strokeWidth={2} />
+          <div>
+            <p className="font-semibold text-ink-0">
+              Hoy el checkout público procesa pagos solo con Mercado Pago.
+            </p>
+            <p className="mt-0.5">
+              MODO, Ualá Bis, dLocal, PayU y Payway permiten guardar y validar credenciales, pero todavía no están conectados al checkout público.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* ─── Provider grid ─────────────────────────────────────────── */}
       <div className="space-y-3">
         <div className="flex items-end justify-between">
@@ -305,13 +319,6 @@ export function PaymentsHub({
           })}
         </motion.div>
       </div>
-
-      <p className="rounded-[var(--r-sm)] border border-dashed border-[color:var(--hairline)] bg-[var(--surface-1)] px-4 py-3 text-[12px] leading-[1.55] text-ink-5">
-        <Info className="mr-1.5 -mt-0.5 inline-block h-3.5 w-3.5 text-ink-4" />
-        Sólo Mercado Pago está cableado al checkout público hoy. Los demás
-        proveedores quedan persistidos y validados, listos para activarse en
-        la próxima fase de cobros multi-gateway.
-      </p>
 
       {/* ─── Connect drawer ────────────────────────────────────────── */}
       <AnimatePresence>

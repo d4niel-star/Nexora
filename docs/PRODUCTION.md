@@ -106,11 +106,12 @@ Complementa:
 
 ---
 
-## 9. Logistics (OPTIONAL — sólo mock)
+## 9. Logistics
 
-| Variable | Consumido por | Si falta |
-|---|---|---|
-| `MOCK_LOGISTICS_SECRET` | `src/lib/logistics/providers/mock.ts` | Fallback a `"mock-secret"` literal — solo usado en demo/dev. |
+> **Phase 4B**: The mock logistics subsystem (`src/lib/logistics/`) has been removed.
+> Real shipping operations live in `src/lib/shipping/`. The webhook route
+> `/api/logistics/webhook/[provider]` returns **410 Gone**. The `CarrierWebhookLog`
+> Prisma model is retained for when real carrier adapters are wired.
 
 ---
 

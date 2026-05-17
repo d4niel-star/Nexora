@@ -7,7 +7,6 @@ import {
   Clock,
   DollarSign,
   Download,
-  FileSpreadsheet,
   Filter,
   Layers,
   Percent,
@@ -22,20 +21,19 @@ import { FinanceStatusBadge, MarginHealthBadge, ChannelBadge, ExportTypeBadge } 
 import { ProfitabilityView } from "@/components/admin/finances/ProfitabilityView";
 import { TableSkeleton } from "@/components/admin/orders/TableSkeleton";
 import { cn, formatCurrency } from "@/lib/utils";
-import type { FinanceMovement, PendingPayment, Refund, CommissionEntry, MarginEntry, ExportRecord, FinanceStatus, FinanceSummary } from "@/types/finances";
+import type { FinanceMovement, PendingPayment, Refund, CommissionEntry, MarginEntry, FinanceStatus, FinanceSummary } from "@/types/finances";
 import type { ProfitabilityReport } from "@/types/profitability";
 import type { AdminFinanceData } from "@/lib/finances/queries";
 import { AdminPageHeader } from "@/components/admin/layout/AdminPageHeader";
 
-type TabValue = "resumen" | "cobrado" | "pendiente" | "reembolsos" | "comisiones" | "margenes" | "rentabilidad" | "exportaciones";
+type TabValue = "resumen" | "cobrado" | "pendiente" | "reembolsos" | "comisiones" | "margenes" | "rentabilidad";
 
 type DrawerContent =
   | { kind: "movement"; data: FinanceMovement }
   | { kind: "pending"; data: PendingPayment }
   | { kind: "refund"; data: Refund }
   | { kind: "commission"; data: CommissionEntry }
-  | { kind: "margin"; data: MarginEntry }
-  | { kind: "export"; data: ExportRecord };
+  | { kind: "margin"; data: MarginEntry };
 
 interface ToastMessage { id: string; title: string; description: string; }
 
@@ -59,7 +57,6 @@ export function FinancesPage({ initialData, profitabilityReport, hideHeader = fa
     { label: "Comisiones", value: "comisiones", icon: <Percent className="h-3.5 w-3.5" /> },
     { label: "Margenes", value: "margenes", icon: <TrendingUp className="h-3.5 w-3.5" /> },
     { label: "Salud de margen", value: "rentabilidad", icon: <DollarSign className="h-3.5 w-3.5" /> },
-    { label: "Exportaciones", value: "exportaciones", icon: <FileSpreadsheet className="h-3.5 w-3.5" /> },
   ];
 
   const handleTabChange = (v: TabValue) => { if (v === activeTab) return; setActiveTab(v); setSearchQuery(""); setStatusFilter("all"); setIsLoading(true); };
@@ -83,7 +80,6 @@ export function FinancesPage({ initialData, profitabilityReport, hideHeader = fa
       case "cobrado": return ["all", "collected"];
       case "pendiente": return ["all", "pending", "review", "scheduled", "critical", "partial"];
       case "reembolsos": return ["all", "refunded", "partial", "review", "failed"];
-      case "exportaciones": return ["all", "exported", "scheduled"];
       default: return ["all"];
     }
   })();
@@ -140,7 +136,7 @@ export function FinancesPage({ initialData, profitabilityReport, hideHeader = fa
           ) : activeTab === "rentabilidad" ? (
             profitabilityReport ? <ProfitabilityView report={profitabilityReport} /> : <TableSkeleton />
           ) : (
-            <ExportsView searchQuery={searchQuery} statusFilter={statusFilter} openDrawer={openDrawer} onAction={handleAction} onReset={resetFilters} data={initialData.exports} />
+            <SummaryView onNavigate={handleTabChange} openDrawer={openDrawer} onAction={handleAction} data={initialData} />
           )}
         </div>
       </div>
@@ -182,7 +178,6 @@ function SummaryView({ onNavigate, openDrawer, onAction, data }: { onNavigate: (
         <NavCard icon={<RotateCcw className="h-4 w-4" strokeWidth={1.75} />} title="Reembolsos" description={`${data.refunds.length} procesados`} onClick={() => onNavigate("reembolsos")} />
         <NavCard icon={<Percent className="h-4 w-4" strokeWidth={1.75} />} title="Comisiones" description={formatCurrency(s.totalCommissions)} onClick={() => onNavigate("comisiones")} />
         <NavCard icon={<TrendingUp className="h-4 w-4" strokeWidth={1.75} />} title="Márgenes" description={`${s.estimatedMarginPercent}% estimado`} onClick={() => onNavigate("margenes")} />
-        <NavCard icon={<FileSpreadsheet className="h-4 w-4" strokeWidth={1.75} />} title="Exportaciones" description={`${data.exports.length} archivos`} onClick={() => onNavigate("exportaciones")} />
       </div>
 
       {/* Alerts */}
@@ -480,60 +475,6 @@ function MarginsView({ searchQuery, openDrawer, onReset, data }: { searchQuery: 
                   <td className="px-6 py-4 text-sm font-medium tabular-nums text-ink-5">{formatCurrency(m.discountImpact)}</td>
                   <td className="px-6 py-4 text-sm font-medium tabular-nums text-ink-5">{formatCurrency(m.shippingImpact)}</td>
                   <td className="px-6 py-4"><MarginHealthBadge health={m.health} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <TableFooter count={filtered.length} total={data.length} />
-      </div>
-    </div>
-  );
-}
-
-/* ─── Exports ─── */
-
-function ExportsView({ searchQuery, statusFilter, openDrawer, onAction, onReset, data }: { searchQuery: string; statusFilter: "all" | FinanceStatus; openDrawer: (c: DrawerContent) => void; onAction: (a: string) => void; onReset: () => void; data: ExportRecord[] }) {
-  const filtered = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    return data.filter((e) => {
-      const s = !q || e.type.toLowerCase().includes(q) || e.range.toLowerCase().includes(q);
-      const st = statusFilter === "all" || e.status === statusFilter;
-      return s && st;
-    });
-  }, [searchQuery, statusFilter, data]);
-
-  if (filtered.length === 0) return <NoResultsState onReset={onReset} />;
-
-  return (
-    <div className="space-y-0">
-      <div className="flex items-center justify-between p-6 pb-4">
-        <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-5">Exportaciones recientes</h3>
-        <button disabled className="flex items-center gap-2 rounded-full bg-ink-0 px-4 py-2 text-[13px] font-semibold text-white opacity-50" type="button">
-          <Download className="h-3.5 w-3.5" />
-          Exportar CSV
-        </button>
-      </div>
-      <div className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[700px] text-left">
-            <thead>
-              <tr className="border-b border-[color:var(--hairline)] bg-[var(--surface-1)]">
-                <TableHead label="Tipo" />
-                <TableHead label="Rango" />
-                <TableHead label="Fecha" />
-                <TableHead label="Tamaño" />
-                <TableHead label="Estado" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[color:var(--hairline)]">
-              {filtered.map((e) => (
-                <tr key={e.id} className="group cursor-pointer bg-[var(--surface-0)] transition-colors hover:bg-[var(--surface-1)]/60 focus-within:bg-[var(--surface-1)]/80" onClick={() => openDrawer({ kind: "export", data: e })} tabIndex={0} onKeyDown={(e2) => { if (e2.key === "Enter" || e2.key === " ") { e2.preventDefault(); openDrawer({ kind: "export", data: e }); } }}>
-                  <td className="px-6 py-4"><ExportTypeBadge type={e.type} /></td>
-                  <td className="px-6 py-4 text-sm font-medium text-ink-0">{e.range}</td>
-                  <td className="px-6 py-4 text-xs font-semibold tabular-nums text-ink-5">{timeFormatter.format(new Date(e.date))}</td>
-                  <td className="px-6 py-4 text-sm font-medium tabular-nums text-ink-5">{e.fileSize}</td>
-                  <td className="px-6 py-4"><FinanceStatusBadge status={e.status} /></td>
                 </tr>
               ))}
             </tbody>

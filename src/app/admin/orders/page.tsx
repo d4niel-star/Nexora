@@ -1,5 +1,6 @@
 import { getAdminOrdersPage } from "@/lib/store-engine/orders/queries";
 import { parsePositiveInt, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import { isRealFiscalIntegrationEnabled } from "@/lib/fiscal/feature-flag";
 import OrdersClient from "./OrdersClient";
 
 export default async function OrdersPage({
@@ -32,6 +33,7 @@ export default async function OrdersPage({
       orders={result.orders}
       pagination={result.pagination}
       counts={result.counts}
+      fiscalReal={isRealFiscalIntegrationEnabled()}
     />
   );
 }

@@ -1,6 +1,10 @@
 import { prisma } from "@/lib/db/prisma";
 import type { Order } from "@prisma/client";
 import { logSystemEvent } from "@/lib/observability/audit";
+import {
+  FiscalRealIntegrationDisabledError,
+  isRealFiscalIntegrationEnabled,
+} from "@/lib/fiscal/feature-flag";
 
 /**
  * Validates if the store is legally set up to emit fiscal documents
@@ -16,8 +20,18 @@ export async function validateFiscalProfile(storeId: string) {
 /**
  * Maps an internal Nexora Order into a generic Fiscal payload,
  * then translates it to ARCA format.
+ *
+ * Fail-closed: refuses to run unless `ARCA_REAL_INTEGRATION=true` is
+ * set. The underlying `mockArcaWebServiceCall` returns simulated CAEs;
+ * we never want a merchant clicking "Emitir AFIP" to think a real
+ * comprobante was issued. The check stays at this layer (not only at
+ * the UI) so any backend caller (cron, webhook, server action, manual
+ * QA script) inherits the same guarantee.
  */
 export async function issueInvoiceForOrder(orderId: string) {
+  if (!isRealFiscalIntegrationEnabled()) {
+    throw new FiscalRealIntegrationDisabledError("issue a fiscal invoice");
+  }
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     include: { store: true, items: true, fiscalInvoice: true }
@@ -148,8 +162,17 @@ async function mockArcaWebServiceCall(invoice: any, profile: any) {
 
 /**
  * Issues a credit note for a given authorized invoice.
+ *
+ * Fail-closed identical to `issueInvoiceForOrder`: the underlying ARCA
+ * call is still mocked, so a credit note "authorized" by this code
+ * path is meaningless from a fiscal point of view. Callers (refund /
+ * cancel flows) must catch this error and either skip the NC or log
+ * a `fiscal_credit_note_skipped_testing_mode` event.
  */
 export async function issueCreditNoteForInvoice(invoiceId: string, reason: string = "Devolución / Cancelación") {
+   if (!isRealFiscalIntegrationEnabled()) {
+      throw new FiscalRealIntegrationDisabledError("issue a fiscal credit note");
+   }
    const originalInvoice = await prisma.fiscalInvoice.findUnique({
       where: { id: invoiceId },
       include: { order: true }
