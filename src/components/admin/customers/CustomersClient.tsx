@@ -6,6 +6,7 @@ import { ExternalLink } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { CustomerBadge } from "./CustomerBadge";
 import type { AggregatedCustomer } from "@/lib/customers/queries";
+import type { CustomerInsightsData } from "@/lib/customers/insights-queries";
 import {
   NexoraPageHeader,
   NexoraTabs,
@@ -24,7 +25,7 @@ const dateFormatter = new Intl.DateTimeFormat("es-AR", {
   year: "numeric",
 });
 
-export function CustomersClient({ initialCustomers }: { initialCustomers: AggregatedCustomer[] }) {
+export function CustomersClient({ initialCustomers, insights }: { initialCustomers: AggregatedCustomer[]; insights?: CustomerInsightsData }) {
   const [activeTab, setActiveTab] = useState<TabValue>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -73,6 +74,39 @@ export function CustomersClient({ initialCustomers }: { initialCustomers: Aggreg
         title="Clientes"
         subtitle="Base agregada de clientes según órdenes abonadas en la plataforma."
       />
+
+      {/* Customer Insights Panel */}
+      {insights && insights.totalCustomers > 0 && (
+        <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] shadow-[var(--shadow-soft)] overflow-hidden">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-[color:var(--hairline)]">
+            <div className="px-4 py-3.5">
+              <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-ink-5">Total clientes</p>
+              <p className="mt-1 text-[18px] font-bold tabular-nums leading-none text-ink-0">{insights.totalCustomers}</p>
+            </div>
+            <div className="px-4 py-3.5">
+              <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-ink-5">Recurrentes</p>
+              <p className="mt-1 text-[18px] font-bold tabular-nums leading-none text-ink-0">{insights.repeatCustomers}</p>
+            </div>
+            <div className="px-4 py-3.5">
+              <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-ink-5">VIP</p>
+              <p className="mt-1 text-[18px] font-bold tabular-nums leading-none text-[color:var(--signal-success)]">{insights.vipCustomers}</p>
+            </div>
+            <div className="px-4 py-3.5">
+              <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-ink-5">LTV promedio</p>
+              <p className="mt-1 text-[18px] font-bold tabular-nums leading-none text-ink-0">{formatCurrency(insights.avgLifetimeValue)}</p>
+            </div>
+            <div className="px-4 py-3.5">
+              <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-ink-5">Carritos abandonados</p>
+              <p className="mt-1 text-[18px] font-bold tabular-nums leading-none text-ink-0">{insights.recovery.abandonedCarts30d}</p>
+              <p className="mt-0.5 text-[10px] text-ink-5">últimos 30d</p>
+            </div>
+            <div className="px-4 py-3.5">
+              <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-ink-5">Tasa recuperación</p>
+              <p className="mt-1 text-[18px] font-bold tabular-nums leading-none text-ink-0">{insights.recovery.recoveryRate}%</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <NexoraTabs
         tabs={tabs.map((t) => ({ value: t.value, label: t.label, count: t.count }))}

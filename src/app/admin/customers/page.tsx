@@ -1,5 +1,6 @@
 import { getAggregatedCustomers } from "@/lib/customers/queries";
 import { CustomersClient } from "@/components/admin/customers/CustomersClient";
+import { getCustomerInsights } from "@/lib/customers/insights-queries";
 
 // Admin surface with tenant-scoped data that depends on session state.
 // Must never be statically prerendered — without a session the client
@@ -7,7 +8,10 @@ import { CustomersClient } from "@/components/admin/customers/CustomersClient";
 export const dynamic = "force-dynamic";
 
 export default async function AdminCustomersPage() {
-  const aggregated = await getAggregatedCustomers();
+  const [aggregated, insights] = await Promise.all([
+    getAggregatedCustomers(),
+    getCustomerInsights(),
+  ]);
   
-  return <CustomersClient initialCustomers={aggregated} />;
+  return <CustomersClient initialCustomers={aggregated} insights={insights} />;
 }
