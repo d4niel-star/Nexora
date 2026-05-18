@@ -22,11 +22,11 @@ export function FeaturedProductsSection({
         <div className="mb-12 flex flex-col gap-8 sm:mb-14 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
             <div className="mb-5 h-px w-10 bg-[var(--accent-500)]" aria-hidden />
-            <h2 className="font-semibold text-[32px] leading-[1.05] tracking-[-0.035em] text-ink-0 sm:text-[44px]">
+            <h2 className="font-semibold text-[32px] leading-[1.05] tracking-[-0.035em] text-ink-0 sm:text-[44px]" data-editable-field="title">
               {settings.title}
             </h2>
             {settings.subtitle && (
-              <p className="mt-3 max-w-lg text-[14px] leading-[1.6] text-ink-5 sm:text-[15px]">
+              <p className="mt-3 max-w-lg text-[14px] leading-[1.6] text-ink-5 sm:text-[15px]" data-editable-field="subtitle">
                 {settings.subtitle}
               </p>
             )}

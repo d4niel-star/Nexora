@@ -12,11 +12,11 @@ export function NewsletterSection({ settings }: NewsletterSectionProps) {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <div className="mx-auto mb-6 h-px w-10 bg-[var(--accent-500)]" aria-hidden />
-          <h2 className="font-semibold text-[30px] leading-[1.08] tracking-[-0.035em] text-ink-0 sm:text-[40px]">
+          <h2 className="font-semibold text-[30px] leading-[1.08] tracking-[-0.035em] text-ink-0 sm:text-[40px]" data-editable-field="title">
             {title}
           </h2>
           {description && (
-            <p className="mx-auto mt-4 max-w-md text-[14px] leading-[1.6] text-ink-5 sm:text-[15px]">
+            <p className="mx-auto mt-4 max-w-md text-[14px] leading-[1.6] text-ink-5 sm:text-[15px]" data-editable-field="description">
               {description}
             </p>
           )}

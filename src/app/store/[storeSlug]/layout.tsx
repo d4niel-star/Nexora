@@ -16,6 +16,15 @@ import {
   normalizeThemeColor,
   resolveStoreFontOption,
 } from "@/lib/store-engine/theme-tokens";
+import { prisma } from "@/lib/db/prisma";
+import {
+  resolveThemeTokens,
+  tokensToCSSVariables,
+  sanitizeCSSVariables,
+  applyVariant,
+  getAutoVariantScript,
+} from "@/lib/store-engine/theme";
+import type { ThemeVariant } from "@/lib/store-engine/theme";
 
 export default async function StorefrontLayout({
   children,
@@ -36,12 +45,16 @@ export default async function StorefrontLayout({
   const fontOption = resolveStoreFontOption(storefrontData.branding.fontFamily);
   const buttonRadius = getStoreButtonRadius(storefrontData.branding.buttonStyle);
 
-  // Fetch communication + cart + tracking + analytics in parallel
-  const [cart, trackingEnabled, commData, analyticsConfig] = await Promise.all([
+  // Fetch communication + cart + tracking + analytics + theme tokens in parallel
+  const [cart, trackingEnabled, commData, analyticsConfig, storeTheme] = await Promise.all([
     getCart(storefrontData.store.id),
     isTrackingWidgetActive(storefrontData.store.id),
     getStorefrontCommunication(storefrontData.store.id),
     getStorefrontAnalyticsConfig(storefrontData.store.id),
+    prisma.storeTheme.findUnique({
+      where: { storeId: storefrontData.store.id },
+      select: { tokensJson: true, themeVariant: true, activePreset: true },
+    }),
   ]);
 
   const config: StoreConfig = {
@@ -75,7 +88,24 @@ export default async function StorefrontLayout({
     whatsapp: commData.whatsapp,
   };
 
+  // ─── Resolve theme tokens (backward-compatible) ───
+  const themeVariant = (storeTheme?.themeVariant as ThemeVariant) ?? "light";
+  const themeConfig = resolveThemeTokens({
+    presetId: storeTheme?.activePreset ?? null,
+    variant: themeVariant,
+    brandingPrimary: primaryColor,
+    brandingSecondary: secondaryColor,
+    brandingFont: storefrontData.branding.fontFamily,
+    brandingButtonStyle: storefrontData.branding.buttonStyle,
+    tokensJson: storeTheme?.tokensJson ?? null,
+  });
+  const resolvedTokens = applyVariant(themeConfig.tokens, themeVariant);
+  const themeVars = sanitizeCSSVariables(tokensToCSSVariables(resolvedTokens, themeVariant));
+
+  // Merge: theme token variables + legacy bridge (backward compat)
   const storefrontStyle = {
+    ...themeVars,
+    // Legacy overrides that components still reference directly
     "--store-primary": primaryColor,
     "--store-secondary": secondaryColor,
     "--store-button-radius": buttonRadius,
@@ -92,9 +122,13 @@ export default async function StorefrontLayout({
       className="flex min-h-screen flex-col bg-[var(--surface-1)] font-sans text-ink-0 selection:bg-ink-0 selection:text-ink-12"
       data-button-style={storefrontData.branding.buttonStyle}
       data-store-tone={storefrontData.branding.tone}
+      data-theme-variant={themeVariant}
       data-storefront=""
       style={storefrontStyle}
     >
+      {themeVariant === "auto" && (
+        <script dangerouslySetInnerHTML={{ __html: getAutoVariantScript() }} />
+      )}
       <StoreHeader config={config} />
       <main className="flex-1">{children}</main>
       <StoreFooter config={config} showTrackingLink={trackingEnabled} />

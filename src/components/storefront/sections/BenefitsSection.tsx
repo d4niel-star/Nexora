@@ -45,11 +45,11 @@ export function BenefitsSection({ settings }: BenefitsSectionProps) {
             <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-ink-5">
               Compra simple
             </p>
-            <h2 className="mt-4 text-[28px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0 sm:text-[38px]">
+            <h2 className="mt-4 text-[28px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink-0 sm:text-[38px]" data-editable-field="title">
               {title}
             </h2>
             {subtitle && (
-              <p className="mt-4 text-[14px] leading-[1.65] text-ink-5 sm:text-[15px]">
+              <p className="mt-4 text-[14px] leading-[1.65] text-ink-5 sm:text-[15px]" data-editable-field="subtitle">
                 {subtitle}
               </p>
             )}

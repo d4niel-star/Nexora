@@ -1962,3 +1962,121 @@ input[type="radio"]:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ─── Storefront Motion System ────────────────────────────────────────── */
+/* Coherent motion language: lightweight, premium, no heavy libs needed.   */
+
+[data-storefront] {
+  --sf-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --sf-dur: 200ms;
+  --sf-dur-slow: 400ms;
+}
+
+/* Hover lift — cards, product tiles */
+[data-storefront] .sf-lift {
+  transition: transform var(--sf-dur) var(--sf-ease), box-shadow var(--sf-dur) var(--sf-ease);
+}
+[data-storefront] .sf-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+}
+
+/* Fade-in on enter */
+[data-storefront] .sf-fade-in {
+  animation: sfFadeIn var(--sf-dur-slow) var(--sf-ease) both;
+}
+@keyframes sfFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Smooth drawer transitions */
+[data-storefront] .sf-drawer-enter {
+  animation: sfDrawerIn var(--sf-dur) var(--sf-ease) both;
+}
+@keyframes sfDrawerIn {
+  from { opacity: 0; transform: translateX(-100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Skeleton shimmer */
+[data-storefront] .sf-skeleton {
+  background: linear-gradient(90deg, var(--surface-1) 25%, var(--surface-2) 50%, var(--surface-1) 75%);
+  background-size: 200% 100%;
+  animation: sfShimmer 1.8s ease-in-out infinite;
+  border-radius: var(--r-md);
+}
+@keyframes sfShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ─── Storefront Mobile UX Enhancements ───────────────────────────────── */
+
+/* Minimum touch targets on mobile */
+@media (max-width: 640px) {
+  [data-storefront] button,
+  [data-storefront] a[class*="inline-flex"],
+  [data-storefront] [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Sticky add-to-cart on product pages */
+  [data-storefront] [data-sticky-cta] {
+    position: sticky;
+    bottom: 0;
+    z-index: 40;
+    background: var(--surface-0);
+    border-top: 1px solid var(--hairline);
+    padding: 12px 16px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  /* Safe area insets */
+  [data-storefront] {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  [data-storefront] header[data-section-type="header"] {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* Smooth scroll behavior for storefront */
+[data-storefront] {
+  scroll-behavior: smooth;
+}
+
+/* ─── Admin Skeleton Utilities ────────────────────────────────────────── */
+
+.nx-skeleton {
+  background: linear-gradient(90deg, var(--surface-1) 25%, var(--surface-0) 50%, var(--surface-1) 75%);
+  background-size: 200% 100%;
+  animation: nxShimmer 1.5s ease-in-out infinite;
+  border-radius: var(--r-sm);
+}
+@keyframes nxShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ─── Admin Micro-interaction Improvements ────────────────────────────── */
+
+/* Row hover enhancement */
+.nx-table tbody tr {
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+/* Button press feedback */
+[data-storefront] button:active:not(:disabled),
+.nx-action:active:not(:disabled) {
+  transform: scale(0.97);
+  transition: transform 60ms ease;
+}
+
+/* Focus ring consistency — pill for text buttons, round for icon-only */
+.nx-action:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--surface-0), 0 0 0 4px var(--brand, var(--accent-500));
+}

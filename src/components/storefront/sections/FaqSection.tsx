@@ -24,7 +24,7 @@ export function FaqSection({ settings }: FaqSectionProps) {
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
         <div className="mb-10 text-center sm:mb-12">
           <div className="mx-auto mb-5 h-px w-10 bg-[var(--accent-500)]" aria-hidden />
-          <h2 className="text-[11px] font-medium uppercase tracking-[0.2em] text-ink-5">
+          <h2 className="text-[11px] font-medium uppercase tracking-[0.2em] text-ink-5" data-editable-field="title">
             {title}
           </h2>
         </div>

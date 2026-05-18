@@ -34,7 +34,7 @@ export function TestimonialsSection({ settings }: TestimonialsSectionProps) {
             <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-ink-5">
               Experiencia de compra
             </p>
-            <h2 className="mt-4 text-[30px] font-semibold leading-[1.06] tracking-[-0.035em] text-ink-0 sm:text-[42px]">
+            <h2 className="mt-4 text-[30px] font-semibold leading-[1.06] tracking-[-0.035em] text-ink-0 sm:text-[42px]" data-editable-field="title">
               {title}
             </h2>
             {subtitle && (

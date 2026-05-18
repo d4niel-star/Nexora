@@ -89,6 +89,7 @@ export function HeroSection({
               "sm:text-[52px] " +
               "lg:text-[64px]"
             }
+            data-editable-field="headline"
           >
             {settings.headline}
           </h1>
@@ -99,6 +100,7 @@ export function HeroSection({
                 "mt-6 text-[16px] leading-[1.65] text-ink-3 sm:mt-8 sm:text-[17px] lg:text-[18px] " +
                 (isCentered ? "mx-auto max-w-xl" : "max-w-lg")
               }
+              data-editable-field="subheadline"
             >
               {settings.subheadline}
             </p>
@@ -114,7 +116,8 @@ export function HeroSection({
           >
             <Link
               href={primaryHref}
-              className="inline-flex h-12 min-h-12 items-center justify-center gap-2.5 rounded-[var(--r-md)] bg-ink-0 px-8 text-[15px] font-semibold text-ink-12 transition-all duration-300 hover:bg-ink-2 hover:shadow-[var(--shadow-elevated)] active:translate-y-px focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+              className="inline-flex h-12 min-h-12 items-center justify-center gap-2.5 bg-ink-0 px-8 text-[15px] font-semibold text-ink-12 transition-all duration-300 hover:bg-ink-2 hover:shadow-[var(--shadow-elevated)] active:translate-y-px focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+              style={{ borderRadius: "var(--theme-radius-buttons, var(--r-md))" }}
             >
               {settings.primaryActionLabel}
               <ArrowRight className="h-4 w-4" strokeWidth={2} />
@@ -122,7 +125,8 @@ export function HeroSection({
             {secondaryActionLabel && secondaryHref && (
               <Link
                 href={secondaryHref}
-                className="inline-flex h-12 min-h-12 items-center justify-center gap-2 rounded-[var(--r-md)] border border-ink-0/20 bg-transparent px-8 text-[15px] font-medium text-ink-0 transition-all duration-300 hover:border-ink-0/40 hover:bg-ink-0/5 active:translate-y-px focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+                className="inline-flex h-12 min-h-12 items-center justify-center gap-2 border border-ink-0/20 bg-transparent px-8 text-[15px] font-medium text-ink-0 transition-all duration-300 hover:border-ink-0/40 hover:bg-ink-0/5 active:translate-y-px focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+                style={{ borderRadius: "var(--theme-radius-buttons, var(--r-md))" }}
               >
                 {secondaryActionLabel}
               </Link>

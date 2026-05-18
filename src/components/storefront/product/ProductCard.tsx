@@ -28,10 +28,17 @@ export function ProductCard({
   return (
     <Link
       href={storePath(storeSlug, `products/${product.handle}`)}
-      className="group block rounded-[var(--r-lg)] outline-none focus-visible:shadow-[var(--shadow-focus)]"
+      className="group block outline-none focus-visible:shadow-[var(--shadow-focus)]"
+      style={{ borderRadius: "var(--theme-radius-cards, var(--r-lg))" }}
     >
       {/* Image container */}
-      <div className="relative overflow-hidden rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] shadow-[var(--shadow-soft)] transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:border-[color:var(--hairline-strong)] group-hover:shadow-[var(--shadow-elevated)] group-hover:-translate-y-0.5">
+      <div
+        className="relative overflow-hidden border border-[color:var(--hairline)] bg-[var(--surface-0)] transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:border-[color:var(--hairline-strong)] group-hover:-translate-y-[var(--theme-card-lift,2px)]"
+        style={{
+          borderRadius: "var(--theme-radius-cards, var(--r-lg))",
+          boxShadow: "var(--theme-shadow-cards, var(--shadow-soft))",
+        }}
+      >
         <div className="aspect-[4/5] w-full overflow-hidden">
           {product.featuredImage ? (
             <div className="relative h-full w-full">
@@ -41,7 +48,7 @@ export function ProductCard({
                 alt={product.title}
                 loading="lazy"
                 className={
-                  "h-full w-full object-cover transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-[1.03]" +
+                  "h-full w-full object-cover transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-[var(--theme-image-hover-zoom,1.03)]" +
                   (hasSecondaryImage ? " group-hover:opacity-0" : "")
                 }
               />

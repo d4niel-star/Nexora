@@ -6,6 +6,8 @@ import {
   ArrowRight,
   Edit3,
   Layers,
+  Monitor,
+  Palette,
   Pencil,
   Sparkles,
   Store,
@@ -92,12 +94,19 @@ export function StoreAIModule({
       {/* ── 3. Quick editor shortcuts ────────────────────── */}
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <ShortcutCard
+          icon={Monitor}
+          label="Visual Editor PRO"
+          value="Edición visual"
+          href="/admin/store-ai/visual-editor"
+          hint="Editor profesional con canvas, estructura e inspector"
+          sparkle
+        />
+        <ShortcutCard
           icon={Pencil}
           label="Editor de tema"
           value="Abrir editor"
           href="/admin/store-ai/editor"
           hint="Editá colores, tipografía, secciones y más"
-          sparkle
         />
         <ShortcutCard
           icon={Layers}
@@ -105,6 +114,14 @@ export function StoreAIModule({
           value={`${templates?.length ?? 0} disponibles`}
           href="/admin/store-ai/themes"
           hint="Explorá y aplicá bases de diseño"
+        />
+        <ShortcutCard
+          icon={Palette}
+          label="Branding Studio"
+          value="Tokens y presets"
+          href="/admin/store-ai/branding"
+          hint="Colores, tipografía, efectos y presets PRO"
+          sparkle
         />
         <ShortcutCard
           icon={Edit3}

@@ -182,9 +182,11 @@ model StoreTheme {
   storeId      String   @unique
   store        Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
   activeTheme  String   @default("minimal")
+  activePreset String?
   themeVariant String   @default("light")
   themeStatus  String   @default("published")
   isPublished  Boolean  @default(true)
+  tokensJson   String?
   updatedAt    DateTime @updatedAt
 }
 
