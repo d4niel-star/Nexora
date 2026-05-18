@@ -153,16 +153,25 @@ export function NexoraEmpty({
   title,
   body,
   actions,
+  icon,
 }: {
   title: string;
   body?: string;
   actions?: ReactNode;
+  icon?: ReactNode;
 }) {
   return (
     <div className="nx-empty">
+      {icon ? (
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
+          <div style={{ width: 44, height: 44, borderRadius: "var(--r-lg)", background: "var(--surface-1)", border: "1px solid var(--hairline)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ink-5)" }}>
+            {icon}
+          </div>
+        </div>
+      ) : null}
       <div className="nx-empty__title">{title}</div>
       {body ? <div className="nx-empty__body">{body}</div> : null}
-      {actions ? <div style={{ display: "inline-flex", gap: 6 }}>{actions}</div> : null}
+      {actions ? <div style={{ display: "inline-flex", gap: 6, marginTop: 4 }}>{actions}</div> : null}
     </div>
   );
 }

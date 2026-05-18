@@ -290,3 +290,137 @@ export async function createManualProductAction(
 
   return { success: true, data: { id: product.id, handle: product.handle } };
 }
+
+// ─── Bulk price adjustment ───────────────────────────────────────────────
+
+export async function bulkAdjustPricesAction(
+  ids: string[],
+  adjustmentPercent: number,
+  field: "price" | "compareAtPrice" = "price",
+): Promise<CatalogActionResult<{ updated: number }>> {
+  const store = await getCurrentStore();
+  if (!store) return { success: false, error: "Sin tienda activa" };
+
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return { success: false, error: "No hay productos seleccionados" };
+  }
+  if (ids.length > 500) {
+    return { success: false, error: "Demasiados productos (máximo 500)" };
+  }
+  if (!Number.isFinite(adjustmentPercent) || adjustmentPercent < -90 || adjustmentPercent > 500) {
+    return { success: false, error: "Porcentaje inválido (rango: -90% a +500%)" };
+  }
+
+  const owned = await ownedProductIds(store.id, ids);
+  if (owned.length === 0) {
+    return { success: false, error: "Los productos seleccionados no pertenecen a tu tienda" };
+  }
+
+  const multiplier = 1 + adjustmentPercent / 100;
+
+  // Update product-level price
+  if (field === "price") {
+    await prisma.$executeRawUnsafe(
+      `UPDATE "Product" SET price = ROUND(price * $1, 2), "updatedAt" = NOW() WHERE "storeId" = $2 AND id = ANY($3::text[])`,
+      multiplier,
+      store.id,
+      owned,
+    );
+    // Also update all variant prices for consistency
+    await prisma.$executeRawUnsafe(
+      `UPDATE "ProductVariant" SET price = ROUND(price * $1, 2) WHERE "productId" = ANY(SELECT id FROM "Product" WHERE "storeId" = $2 AND id = ANY($3::text[]))`,
+      multiplier,
+      store.id,
+      owned,
+    );
+  } else {
+    await prisma.$executeRawUnsafe(
+      `UPDATE "Product" SET "compareAtPrice" = ROUND(COALESCE("compareAtPrice", price) * $1, 2), "updatedAt" = NOW() WHERE "storeId" = $2 AND id = ANY($3::text[])`,
+      multiplier,
+      store.id,
+      owned,
+    );
+  }
+
+  const direction = adjustmentPercent >= 0 ? "+" : "";
+  await logSystemEvent({
+    storeId: store.id,
+    entityType: "product",
+    entityId: "bulk",
+    eventType: "products_price_adjusted",
+    source: "catalog_admin",
+    message: `Ajuste masivo de ${field}: ${direction}${adjustmentPercent}% en ${owned.length} producto(s).`,
+    metadata: { ids: owned, adjustmentPercent, field },
+  });
+
+  revalidateCatalogPaths();
+
+  return { success: true, processed: owned.length, data: { updated: owned.length } };
+}
+
+// ─── Inline quick edit (single product field) ────────────────────────────
+
+export async function inlineEditProductAction(
+  productId: string,
+  field: "price" | "stock" | "compareAtPrice",
+  value: number,
+): Promise<CatalogActionResult> {
+  const store = await getCurrentStore();
+  if (!store) return { success: false, error: "Sin tienda activa" };
+
+  if (!Number.isFinite(value) || value < 0) {
+    return { success: false, error: "Valor inválido" };
+  }
+  if (field === "price" && value <= 0) {
+    return { success: false, error: "El precio debe ser mayor a cero" };
+  }
+
+  const product = await prisma.product.findFirst({
+    where: { id: productId, storeId: store.id },
+    select: { id: true, title: true },
+  });
+  if (!product) return { success: false, error: "Producto no encontrado" };
+
+  if (field === "stock") {
+    // Update stock on the default variant
+    const defaultVariant = await prisma.productVariant.findFirst({
+      where: { productId, isDefault: true },
+      select: { id: true },
+    });
+    if (defaultVariant) {
+      await prisma.productVariant.update({
+        where: { id: defaultVariant.id },
+        data: { stock: Math.round(value) },
+      });
+    }
+  } else if (field === "price") {
+    await prisma.product.update({
+      where: { id: productId },
+      data: { price: value },
+    });
+    // Sync default variant price
+    await prisma.productVariant.updateMany({
+      where: { productId, isDefault: true },
+      data: { price: value },
+    });
+  } else if (field === "compareAtPrice") {
+    await prisma.product.update({
+      where: { id: productId },
+      data: { compareAtPrice: value },
+    });
+  }
+
+  await logSystemEvent({
+    storeId: store.id,
+    entityType: "product",
+    entityId: productId,
+    eventType: "product_inline_edited",
+    source: "catalog_admin",
+    message: `"${product.title}" — ${field} cambiado a ${value}.`,
+    metadata: { field, value },
+  });
+
+  revalidateCatalogPaths();
+
+  return { success: true };
+}

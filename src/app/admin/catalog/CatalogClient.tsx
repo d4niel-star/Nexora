@@ -10,7 +10,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Product, CatalogSignal } from "../../../types/product";
 import { publishDraftProduct } from "@/app/admin/ai/execution-actions";
-import { deleteProductsAction, setProductsStatusAction } from "@/lib/store-engine/catalog/actions";
+import { deleteProductsAction, setProductsStatusAction, bulkAdjustPricesAction, inlineEditProductAction } from "@/lib/store-engine/catalog/actions";
 import { buildVariantHref } from "@/lib/navigation/hrefs";
 import type { PaginationMeta } from "@/lib/pagination";
 import type { CatalogStatusCounts } from "@/lib/store-engine/catalog/queries";
@@ -162,6 +162,46 @@ export default function CatalogClient({
     document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
   };
 
+  // ── Bulk price adjustment ────────────────────────────────────────────
+  const [priceModalOpen, setPriceModalOpen] = useState(false);
+  const [priceAdjustment, setPriceAdjustment] = useState("");
+  const [priceField, setPriceField] = useState<"price" | "compareAtPrice">("price");
+
+  const handleBulkPriceAdjust = () => {
+    const pct = parseFloat(priceAdjustment);
+    if (!Number.isFinite(pct) || pct === 0) return;
+    const ids = [...selectedRows];
+    setBulkError(null);
+    startBulk(async () => {
+      const result = await bulkAdjustPricesAction(ids, pct, priceField);
+      if (!result.success) { setBulkError(result.error); return; }
+      setSelectedRows([]);
+      setPriceModalOpen(false);
+      setPriceAdjustment("");
+      router.refresh();
+    });
+  };
+
+  // ── Inline edit ────────────────────────────────────────────────────
+  const [inlineEditId, setInlineEditId] = useState<string | null>(null);
+  const [inlineEditField, setInlineEditField] = useState<"price" | "stock">("price");
+  const [inlineEditValue, setInlineEditValue] = useState("");
+  const [inlineEditPending, startInlineEdit] = useTransition();
+
+  const handleInlineEditSave = () => {
+    if (!inlineEditId) return;
+    const val = parseFloat(inlineEditValue);
+    if (!Number.isFinite(val) || val < 0) return;
+    const field = inlineEditField;
+    const id = inlineEditId;
+    startInlineEdit(async () => {
+      const result = await inlineEditProductAction(id, field, val);
+      if (!result.success) { setBulkError(result.error); return; }
+      setInlineEditId(null);
+      router.refresh();
+    });
+  };
+
   const tabs: { label: string; value: TabValue; count: number }[] = [
     { label: "Catálogo", value: "all", count: counts.all },
     { label: "Activos", value: "active", count: counts.active },
@@ -206,6 +246,7 @@ export default function CatalogClient({
         <NexoraBulkBar selected={selectedRows.length} onClear={() => setSelectedRows([])}>
           <button type="button" className="nx-action nx-action--sm" onClick={() => runBulkStatus("active")} disabled={isBulkPending}><Upload className="h-3.5 w-3.5" /> Activar</button>
           <button type="button" className="nx-action nx-action--sm" onClick={() => runBulkStatus("archived")} disabled={isBulkPending}><Archive className="h-3.5 w-3.5" /> Archivar</button>
+          <button type="button" className="nx-action nx-action--sm" onClick={() => setPriceModalOpen(true)} disabled={isBulkPending} title="Ajustar precios %"><Edit className="h-3.5 w-3.5" /> Precios %</button>
           <button type="button" onClick={runBulkDelete} disabled={isBulkPending} className={cn("nx-action nx-action--sm", bulkConfirmDelete && "nx-action--primary")} style={bulkConfirmDelete ? { background: "var(--signal-danger)", borderColor: "var(--signal-danger)" } : undefined} title={bulkConfirmDelete ? "Confirmar eliminación" : "Eliminar"}>
             {isBulkPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
             {bulkConfirmDelete ? "Confirmar" : "Eliminar"}
@@ -244,12 +285,30 @@ export default function CatalogClient({
                         </div>
                       </td>
                       <td><SignalChips signals={product.signals} providerName={product.providerName} variantCriticalId={product.variantCriticalId} variantHiddenId={product.variantHiddenId} variantStuckId={product.variantStuckId} variantNegativeId={product.variantNegativeId} variantUrgentReorderId={product.variantUrgentReorderId} /></td>
-                      <td>
-                        <p className="nx-cell-strong" style={{ fontVariantNumeric: "tabular-nums" }}>${product.price.toLocaleString("es-AR")}</p>
-                        {product.costReal ? <p style={{ fontVariantNumeric: "tabular-nums", fontSize: 11 }} className={cn("font-medium", product.margin >= 0.2 ? "text-[color:var(--signal-success)]" : product.margin >= 0.05 ? "text-[color:var(--signal-warning)]" : "text-[color:var(--signal-danger)]")}>margen {Math.round(product.margin * 100)}%</p> : <p className="text-[11px] font-medium text-[color:var(--signal-danger)]">sin costo real</p>}
+                      <td onDoubleClick={(e) => { e.stopPropagation(); setInlineEditId(product.id); setInlineEditField("price"); setInlineEditValue(String(product.price)); }}>
+                        {inlineEditId === product.id && inlineEditField === "price" ? (
+                          <form onSubmit={(e) => { e.preventDefault(); handleInlineEditSave(); }} className="flex items-center gap-1">
+                            <input type="number" step="0.01" min="0" value={inlineEditValue} onChange={(e) => setInlineEditValue(e.target.value)} autoFocus className="w-20 rounded border border-[color:var(--hairline)] bg-[var(--surface-0)] px-1.5 py-0.5 text-[12px] tabular-nums outline-none focus:border-[color:var(--brand)]" onBlur={() => setInlineEditId(null)} onKeyDown={(e) => { if (e.key === "Escape") setInlineEditId(null); }} disabled={inlineEditPending} />
+                            {inlineEditPending && <Loader2 className="h-3 w-3 animate-spin" />}
+                          </form>
+                        ) : (
+                          <>
+                            <p className="nx-cell-strong cursor-pointer" style={{ fontVariantNumeric: "tabular-nums" }} title="Doble clic para editar">${product.price.toLocaleString("es-AR")}</p>
+                            {product.costReal ? <p style={{ fontVariantNumeric: "tabular-nums", fontSize: 11 }} className={cn("font-medium", product.margin >= 0.2 ? "text-[color:var(--signal-success)]" : product.margin >= 0.05 ? "text-[color:var(--signal-warning)]" : "text-[color:var(--signal-danger)]")}>margen {Math.round(product.margin * 100)}%</p> : <p className="text-[11px] font-medium text-[color:var(--signal-danger)]">sin costo real</p>}
+                          </>
+                        )}
                       </td>
                       <td><ProductStatusBadge status={product.status} /></td>
-                      <td className="nx-cell-num">{product.totalStock > 0 ? <span className="font-medium text-ink-0">{product.totalStock} u.</span> : <span className="font-medium text-[color:var(--signal-danger)]">Agotado</span>}</td>
+                      <td className="nx-cell-num" onDoubleClick={(e) => { e.stopPropagation(); setInlineEditId(product.id); setInlineEditField("stock"); setInlineEditValue(String(product.totalStock)); }}>
+                        {inlineEditId === product.id && inlineEditField === "stock" ? (
+                          <form onSubmit={(e) => { e.preventDefault(); handleInlineEditSave(); }} className="flex items-center justify-end gap-1">
+                            <input type="number" step="1" min="0" value={inlineEditValue} onChange={(e) => setInlineEditValue(e.target.value)} autoFocus className="w-16 rounded border border-[color:var(--hairline)] bg-[var(--surface-0)] px-1.5 py-0.5 text-[12px] tabular-nums text-right outline-none focus:border-[color:var(--brand)]" onBlur={() => setInlineEditId(null)} onKeyDown={(e) => { if (e.key === "Escape") setInlineEditId(null); }} disabled={inlineEditPending} />
+                            {inlineEditPending && <Loader2 className="h-3 w-3 animate-spin" />}
+                          </form>
+                        ) : (
+                          product.totalStock > 0 ? <span className="font-medium text-ink-0 cursor-pointer" title="Doble clic para editar">{product.totalStock} u.</span> : <span className="font-medium text-[color:var(--signal-danger)] cursor-pointer" title="Doble clic para editar">Agotado</span>
+                        )}
+                      </td>
                       <td style={{ textAlign: "right" }}>
                         <div className="flex items-center justify-end gap-1">
                           {actionFeedback?.id === product.id ? <span className="text-[11px] font-medium text-[color:var(--signal-success)]">{actionFeedback.label}</span> : (
@@ -281,6 +340,34 @@ export default function CatalogClient({
 
       <ProductDrawer product={selectedProduct} isOpen={selectedProduct !== null} onClose={() => setSelectedProductId(null)} onProductUpdated={() => router.refresh()} focusSection={focusSection} />
       <ManualProductModal open={manualOpen} onClose={() => setManualOpen(false)} onCreated={() => router.refresh()} />
+
+      {/* ── Price Adjustment Modal ──────────────────────────────── */}
+      {priceModalOpen && (
+        <>
+          <div className="fixed inset-0 z-[9998] bg-ink-0/30 backdrop-blur-[2px]" onClick={() => setPriceModalOpen(false)} />
+          <div className="fixed left-1/2 top-1/2 z-[9999] w-[380px] max-w-[92vw] -translate-x-1/2 -translate-y-1/2 rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] shadow-[var(--shadow-overlay)] p-5">
+            <h3 className="text-[14px] font-semibold text-ink-0 mb-3">Ajustar precios ({selectedRows.length} productos)</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="text-[11px] font-medium text-ink-3 mb-1 block">Campo</label>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => setPriceField("price")} className={cn("rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors", priceField === "price" ? "bg-ink-0 text-ink-12" : "bg-[var(--surface-1)] text-ink-5")}>Precio</button>
+                  <button type="button" onClick={() => setPriceField("compareAtPrice")} className={cn("rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors", priceField === "compareAtPrice" ? "bg-ink-0 text-ink-12" : "bg-[var(--surface-1)] text-ink-5")}>Precio anterior</button>
+                </div>
+              </div>
+              <div>
+                <label className="text-[11px] font-medium text-ink-3 mb-1 block">Porcentaje (%)</label>
+                <input type="number" step="0.1" value={priceAdjustment} onChange={(e) => setPriceAdjustment(e.target.value)} placeholder="Ej: 10 para +10%, -15 para -15%" className="w-full rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-1)] px-3 py-2 text-[12px] tabular-nums outline-none focus:border-[color:var(--brand)]" autoFocus />
+                <p className="mt-1 text-[10px] text-ink-5">Positivo sube el precio, negativo lo baja. Rango: -90% a +500%.</p>
+              </div>
+              <div className="flex justify-end gap-2 pt-1">
+                <button type="button" onClick={() => setPriceModalOpen(false)} className="nx-action nx-action--ghost nx-action--sm">Cancelar</button>
+                <button type="button" onClick={handleBulkPriceAdjust} disabled={isBulkPending || !priceAdjustment} className="nx-action nx-action--primary nx-action--sm">{isBulkPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null} Aplicar</button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

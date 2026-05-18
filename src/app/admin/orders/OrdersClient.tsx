@@ -2,12 +2,14 @@
 
 import { useMemo, useState, useTransition, useCallback } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { Package, ShoppingBag, CalendarDays, Zap, Truck, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Package, ShoppingBag, CalendarDays, Zap, Truck, AlertTriangle, ChevronLeft, ChevronRight, Download, CheckCircle2, XCircle, Copy, ExternalLink } from "lucide-react";
 import { Order } from "../../../types/order";
 import { OrderStatusBadge, PaymentStatusBadge } from "../../../components/admin/orders/StatusBadge";
 import { OrderDrawer } from "../../../components/admin/orders/OrderDrawer";
 import { deriveOrderNextAction, orderNeedsAction, type OrderNextAction } from "@/lib/orders/workqueue";
 import { bulkUpdateFulfillment } from "@/lib/store-engine/orders/bulk-actions";
+import { exportOrdersCsv } from "@/lib/store-engine/orders/export-csv";
+import { cancelOrder } from "@/lib/store-engine/orders/actions";
 import type { PaginationMeta } from "@/lib/pagination";
 import type { OrderStatusCounts } from "@/lib/store-engine/orders/queries";
 import {
@@ -65,6 +67,7 @@ export default function OrdersClient({
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [bulkPending, startBulkTransition] = useTransition();
   const [bulkFeedback, setBulkFeedback] = useState<string | null>(null);
+  const [bulkCancelConfirm, setBulkCancelConfirm] = useState(false);
 
   // ── URL navigation helper ────────────────────────────────────────────
   const pushParams = useCallback(
@@ -133,38 +136,79 @@ export default function OrdersClient({
   };
 
   // ── Bulk actions ─────────────────────────────────────────────────────
-  const bulkPreparingEligibleIds = useMemo(() => {
-    const set = new Set(selectedRows);
-    return orders
-      .filter((o) => set.has(o.id))
-      .filter((o) => {
-        const action = nextActions.get(o.id);
-        return action?.kind === "mark_preparing";
-      })
-      .map((o) => o.id);
-  }, [selectedRows, orders, nextActions]);
+  const selectedSet = useMemo(() => new Set(selectedRows), [selectedRows]);
+  const selectedOrders = useMemo(() => orders.filter((o) => selectedSet.has(o.id)), [orders, selectedSet]);
 
-  const handleBulkMarkPreparing = () => {
-    if (bulkPreparingEligibleIds.length === 0 || bulkPending) return;
+  const bulkEligible = useMemo(() => {
+    const preparing = selectedOrders.filter((o) => o.shipping?.shippingStatus === "unfulfilled" && o.paymentStatus === "paid").map((o) => o.id);
+    const shipped = selectedOrders.filter((o) => o.shipping?.shippingStatus === "preparing").map((o) => o.id);
+    const delivered = selectedOrders.filter((o) => o.shipping?.shippingStatus === "shipped").map((o) => o.id);
+    const cancellable = selectedOrders.filter((o) => o.status !== "cancelled" && o.status !== "refunded" && o.shipping?.shippingStatus !== "delivered").map((o) => o.id);
+    return { preparing, shipped, delivered, cancellable };
+  }, [selectedOrders]);
+
+  const runBulkFulfillment = (status: "preparing" | "shipped" | "delivered", ids: string[], label: string) => {
+    if (ids.length === 0 || bulkPending) return;
     setBulkFeedback(null);
     startBulkTransition(async () => {
       try {
-        const result = await bulkUpdateFulfillment(bulkPreparingEligibleIds, "preparing");
-        const okCount = result.succeeded.length;
-        const failCount = result.failed.length;
-        setBulkFeedback(
-          failCount === 0
-            ? `${okCount} ${okCount === 1 ? "pedido pasó" : "pedidos pasaron"} a preparación.`
-            : `${okCount} actualizadas · ${failCount} con error.`,
-        );
+        const result = await bulkUpdateFulfillment(ids, status);
+        const ok = result.succeeded.length;
+        const fail = result.failed.length;
+        setBulkFeedback(fail === 0 ? `${ok} pedido${ok !== 1 ? "s" : ""} → ${label}.` : `${ok} OK · ${fail} con error.`);
         setSelectedRows([]);
         router.refresh();
       } catch (err) {
-        setBulkFeedback(
-          err instanceof Error ? err.message : "Error al actualizar los pedidos.",
-        );
+        setBulkFeedback(err instanceof Error ? err.message : "Error al actualizar.");
       }
     });
+  };
+
+  const handleBulkCancel = () => {
+    if (bulkEligible.cancellable.length === 0 || bulkPending) return;
+    if (!bulkCancelConfirm) { setBulkCancelConfirm(true); setTimeout(() => setBulkCancelConfirm(false), 5000); return; }
+    setBulkFeedback(null);
+    startBulkTransition(async () => {
+      try {
+        const results = await Promise.allSettled(
+          bulkEligible.cancellable.map((id) => cancelOrder(id, "Cancelación masiva", false)),
+        );
+        const ok = results.filter((r) => r.status === "fulfilled").length;
+        const fail = results.length - ok;
+        setBulkFeedback(fail === 0 ? `${ok} pedido${ok !== 1 ? "s" : ""} cancelado${ok !== 1 ? "s" : ""}.` : `${ok} OK · ${fail} con error.`);
+        setSelectedRows([]);
+        setBulkCancelConfirm(false);
+        router.refresh();
+      } catch (err) {
+        setBulkFeedback(err instanceof Error ? err.message : "Error al cancelar.");
+        setBulkCancelConfirm(false);
+      }
+    });
+  };
+
+  const handleExportCsv = () => {
+    setBulkFeedback(null);
+    startBulkTransition(async () => {
+      const result = await exportOrdersCsv({
+        status: currentTab !== "all" ? currentTab : undefined,
+        query: currentQuery || undefined,
+        dateFrom: currentDateFrom || undefined,
+        dateTo: currentDateTo || undefined,
+        orderIds: selectedRows.length > 0 ? selectedRows : undefined,
+      });
+      if (!result.success) { setBulkFeedback(result.error); return; }
+      const blob = new Blob([result.csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const ts = new Date();
+      const stamp = `${ts.getFullYear()}-${String(ts.getMonth() + 1).padStart(2, "0")}-${String(ts.getDate()).padStart(2, "0")}`;
+      const a = document.createElement("a"); a.href = url; a.download = `nexora-pedidos-${stamp}.csv`;
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+      setBulkFeedback(`${result.count} pedidos exportados.`);
+    });
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).catch(() => {});
   };
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -302,26 +346,30 @@ export default function OrdersClient({
             ) : null}
           </NexoraFilters>
           <NexoraActions>
+            <button type="button" onClick={handleExportCsv} disabled={bulkPending || pagination.total === 0} className="nx-action nx-action--ghost nx-action--sm" title="Exportar CSV">
+              <Download className="h-3.5 w-3.5" strokeWidth={1.75} /> CSV
+            </button>
             <span className="nx-cmd-bar__count">
               {pagination.total} pedido{pagination.total !== 1 ? "s" : ""}
             </span>
           </NexoraActions>
         </NexoraCmdBar>
 
-        <NexoraBulkBar selected={selectedRows.length} onClear={() => setSelectedRows([])}>
-          <button
-            type="button"
-            onClick={handleBulkMarkPreparing}
-            disabled={bulkPending || bulkPreparingEligibleIds.length === 0}
-            title={
-              bulkPreparingEligibleIds.length === 0
-                ? "Seleccioná pedidos pagados y sin despacho iniciado."
-                : `Marcar ${bulkPreparingEligibleIds.length} como preparando`
-            }
-            className="nx-action nx-action--sm"
-          >
-            <Package className="h-3.5 w-3.5" strokeWidth={1.75} />
-            {bulkPending ? "Actualizando…" : "Marcar preparando"}
+        <NexoraBulkBar selected={selectedRows.length} onClear={() => { setSelectedRows([]); setBulkCancelConfirm(false); }}>
+          <button type="button" onClick={() => runBulkFulfillment("preparing", bulkEligible.preparing, "preparando")} disabled={bulkPending || bulkEligible.preparing.length === 0} className="nx-action nx-action--sm" title={bulkEligible.preparing.length === 0 ? "Sin pedidos elegibles" : `${bulkEligible.preparing.length} pedido(s)`}>
+            <Package className="h-3.5 w-3.5" strokeWidth={1.75} /> Preparar
+          </button>
+          <button type="button" onClick={() => runBulkFulfillment("shipped", bulkEligible.shipped, "enviado")} disabled={bulkPending || bulkEligible.shipped.length === 0} className="nx-action nx-action--sm" title={bulkEligible.shipped.length === 0 ? "Sin pedidos en preparación" : `${bulkEligible.shipped.length} pedido(s)`}>
+            <Truck className="h-3.5 w-3.5" strokeWidth={1.75} /> Enviado
+          </button>
+          <button type="button" onClick={() => runBulkFulfillment("delivered", bulkEligible.delivered, "entregado")} disabled={bulkPending || bulkEligible.delivered.length === 0} className="nx-action nx-action--sm" title={bulkEligible.delivered.length === 0 ? "Sin pedidos enviados" : `${bulkEligible.delivered.length} pedido(s)`}>
+            <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={1.75} /> Entregado
+          </button>
+          <button type="button" onClick={handleBulkCancel} disabled={bulkPending || bulkEligible.cancellable.length === 0} className={`nx-action nx-action--sm ${bulkCancelConfirm ? "nx-action--primary" : ""}`} style={bulkCancelConfirm ? { background: "var(--signal-danger)", borderColor: "var(--signal-danger)" } : undefined} title={bulkCancelConfirm ? "Confirmar cancelación" : "Cancelar seleccionados"}>
+            <XCircle className="h-3.5 w-3.5" strokeWidth={1.75} /> {bulkCancelConfirm ? "Confirmar" : "Cancelar"}
+          </button>
+          <button type="button" onClick={handleExportCsv} disabled={bulkPending} className="nx-action nx-action--ghost nx-action--sm" title="Exportar seleccionados">
+            <Download className="h-3.5 w-3.5" strokeWidth={1.75} /> CSV
           </button>
           {bulkFeedback ? (
             <span style={{ fontSize: 11, color: "var(--ink-5)", marginLeft: 8 }}>
@@ -377,6 +425,7 @@ export default function OrdersClient({
                   <th>Logística</th>
                   <th>Próxima acción</th>
                   <th style={{ textAlign: "right" }}>Monto</th>
+                  <th style={{ width: 60 }}></th>
                 </tr>
               </thead>
               <tbody>
@@ -389,6 +438,7 @@ export default function OrdersClient({
                       onClick={() => setSelectedOrder(order)}
                       data-selected={isSelected ? "true" : undefined}
                       style={{ cursor: "pointer" }}
+                      className="group/row"
                     >
                       <td onClick={(e) => e.stopPropagation()}>
                         <input
@@ -444,6 +494,20 @@ export default function OrdersClient({
                         )}
                       </td>
                       <td className="nx-cell-num nx-cell-strong">${order.total.toLocaleString("es-AR")}</td>
+                      <td onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover/row:opacity-100 transition-opacity">
+                          {order.shipping?.trackingNumber && (
+                            <button type="button" onClick={() => copyToClipboard(order.shipping.trackingNumber!)} className="nx-action nx-action--ghost nx-action--sm" style={{ padding: "2px 4px" }} title="Copiar tracking">
+                              <Copy className="h-3 w-3" strokeWidth={1.75} />
+                            </button>
+                          )}
+                          {order.customer?.email && (
+                            <a href={`mailto:${order.customer.email}`} className="nx-action nx-action--ghost nx-action--sm" style={{ padding: "2px 4px" }} title="Email cliente" onClick={(e) => e.stopPropagation()}>
+                              <ExternalLink className="h-3 w-3" strokeWidth={1.75} />
+                            </a>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}

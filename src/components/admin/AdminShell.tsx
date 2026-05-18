@@ -32,6 +32,7 @@ import {
   Video,
   Wrench,
   X,
+  Zap,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -40,6 +41,7 @@ import { cn } from "@/lib/utils";
 import { TopbarUserMenu } from "./layout/TopbarUserMenu";
 import { NexoraLogo } from "./layout/NexoraLogo";
 import { NexoraGlobalChat } from "./store-ai/NexoraGlobalChat";
+import { CommandPalette } from "./CommandPalette";
 import type { AssistantMemoryScope } from "@/lib/assistants/memory/scope";
 
 // ─── Admin Shell v4 ──────────────────────────────────────────────────────
@@ -202,6 +204,7 @@ const primaryNav: readonly NavEntry[] = [
     label: "Apps y herramientas",
     icon: Puzzle,
     items: [
+      { kind: "leaf", href: "/admin/automations", label: "Automatizaciones", icon: Zap },
       { kind: "leaf", href: "/admin/marketplace", label: "Marketplace", icon: Puzzle },
       { kind: "leaf", href: "/admin/market", label: "Herramientas", icon: Wrench },
     ],
@@ -436,7 +439,7 @@ export function AdminShell({
         {dunningBanner}
 
         {/* Content area — edge-to-edge paper canvas, no floating wrapper */}
-        {pathname.startsWith("/admin/store-ai/editor") ? (
+        {(pathname.startsWith("/admin/store-ai/editor") || pathname.startsWith("/admin/store-ai/visual-editor")) ? (
           <div className="flex-1 overflow-auto">
             <div className="h-full">{children}</div>
           </div>
@@ -449,9 +452,12 @@ export function AdminShell({
         )}
       </main>
 
+      {/* ── Command Palette (Ctrl+K) ──────────────────────────── */}
+      <CommandPalette />
+
       {/* ── Nexora IA Global Chat ──────────────────────────────── */}
       {/* Visible on ALL admin pages EXCEPT the store editor, which has its own copilot. */}
-      {!pathname.startsWith("/admin/store-ai/editor") && (
+      {!pathname.startsWith("/admin/store-ai/editor") && !pathname.startsWith("/admin/store-ai/visual-editor") && (
         <NexoraGlobalChat memoryScope={assistantMemoryScope} />
       )}
     </div>
