@@ -16,7 +16,14 @@ import { cn } from "@/lib/utils";
 
 type ProductsPageProps = {
   params: Promise<{ storeSlug: string }>;
-  searchParams?: Promise<{ category?: string }>;
+  searchParams?: Promise<{
+    category?: string;
+    q?: string;
+    sort?: string;
+    minPrice?: string;
+    maxPrice?: string;
+    sale?: string;
+  }>;
 };
 
 export async function generateMetadata({
@@ -68,17 +75,39 @@ export default async function ProductsPage({
   if (!storefrontData) notFound();
 
   const selectedCategory = resolvedSearchParams.category?.trim();
-  const products = await getStoreProducts(storefrontData.store.id);
+  const searchQuery = resolvedSearchParams.q?.trim();
+  const sortBy = resolvedSearchParams.sort ?? "newest";
+  const minPrice = resolvedSearchParams.minPrice ? parseFloat(resolvedSearchParams.minPrice) : undefined;
+  const maxPrice = resolvedSearchParams.maxPrice ? parseFloat(resolvedSearchParams.maxPrice) : undefined;
+  const onlySale = resolvedSearchParams.sale === "1";
+
+  const allProducts = await getStoreProducts(storefrontData.store.id);
   const categories = Array.from(
     new Set(
-      products
+      allProducts
         .map((p) => p.category)
         .filter((c): c is string => Boolean(c)),
     ),
   ).sort((a, b) => a.localeCompare(b));
-  const filteredProducts = selectedCategory
-    ? products.filter((p) => p.category === selectedCategory)
-    : products;
+
+  let filteredProducts = allProducts;
+  if (selectedCategory) filteredProducts = filteredProducts.filter((p) => p.category === selectedCategory);
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    filteredProducts = filteredProducts.filter((p) => p.title.toLowerCase().includes(q) || p.category?.toLowerCase().includes(q));
+  }
+  if (minPrice !== undefined) filteredProducts = filteredProducts.filter((p) => p.price >= minPrice);
+  if (maxPrice !== undefined) filteredProducts = filteredProducts.filter((p) => p.price <= maxPrice);
+  if (onlySale) filteredProducts = filteredProducts.filter((p) => p.compareAtPrice && p.compareAtPrice > p.price);
+
+  // Sort
+  if (sortBy === "price_asc") filteredProducts.sort((a, b) => a.price - b.price);
+  else if (sortBy === "price_desc") filteredProducts.sort((a, b) => b.price - a.price);
+  else if (sortBy === "name") filteredProducts.sort((a, b) => a.title.localeCompare(b.title));
+  // default: newest (already sorted by createdAt desc)
+
+  const hasActiveFilters = !!(selectedCategory || searchQuery || minPrice !== undefined || maxPrice !== undefined || onlySale);
+  const products = allProducts;
 
   return (
     <div className="bg-[var(--surface-1)]">
@@ -118,10 +147,48 @@ export default async function ProductsPage({
                 "Explora los productos disponibles de esta tienda."}
             </p>
           </div>
-          <p className="tabular text-[13px] text-ink-5">
-            {filteredProducts.length} de {products.length} productos
-          </p>
+          <div className="flex items-center gap-3">
+            <select
+              defaultValue={sortBy}
+              className="h-11 rounded-[var(--r-md)] border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-3 text-[13px] text-ink-0 outline-none focus-visible:shadow-[var(--shadow-focus)]"
+              onChange={() => {/* Client-side JS will handle this */}}
+              data-sort-select
+            >
+              <option value="newest">Más recientes</option>
+              <option value="price_asc">Menor precio</option>
+              <option value="price_desc">Mayor precio</option>
+              <option value="name">Nombre A-Z</option>
+            </select>
+            <p className="tabular text-[13px] text-ink-5">
+              {filteredProducts.length} de {products.length}
+            </p>
+          </div>
         </header>
+
+        {hasActiveFilters && (
+          <div className="mb-6 flex flex-wrap items-center gap-2">
+            {searchQuery && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-3 py-1.5 text-[12px] font-medium text-ink-0">
+                &ldquo;{searchQuery}&rdquo;
+                <Link href={storePath(resolvedParams.storeSlug, "products")} className="text-ink-5 hover:text-ink-0">×</Link>
+              </span>
+            )}
+            {selectedCategory && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-3 py-1.5 text-[12px] font-medium text-ink-0">
+                {selectedCategory}
+                <Link href={storePath(resolvedParams.storeSlug, "products")} className="text-ink-5 hover:text-ink-0">×</Link>
+              </span>
+            )}
+            {onlySale && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-3 py-1.5 text-[12px] font-medium text-ink-0">
+                En oferta
+              </span>
+            )}
+            <Link href={storePath(resolvedParams.storeSlug, "products")} className="text-[12px] font-medium text-ink-5 hover:text-ink-0 transition-colors">
+              Limpiar filtros
+            </Link>
+          </div>
+        )}
 
         {categories.length > 0 && (
           <div

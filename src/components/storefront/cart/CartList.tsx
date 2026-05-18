@@ -182,12 +182,17 @@ function CartItem({
                 {item.variantTitleSnapshot}
               </p>
             )}
+            {item.quantity > 1 && (
+              <p className="mt-0.5 text-[11px] text-ink-6 tabular-nums">
+                {formatPrice(item.priceSnapshot, currency, locale)} c/u
+              </p>
+            )}
           </div>
           <div className="text-right">
             {isPending ? (
               <Loader2 className="h-4 w-4 animate-spin text-ink-6" />
             ) : (
-              <p className="tabular text-[15px] font-medium text-ink-0">
+              <p className="tabular text-[15px] font-medium text-ink-0 transition-all duration-200">
                 {formatPrice(item.priceSnapshot * item.quantity, currency, locale)}
               </p>
             )}

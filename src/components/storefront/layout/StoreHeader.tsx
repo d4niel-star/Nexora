@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Search, ShoppingBag, Menu, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { StoreConfig } from "@/types/storefront";
 import { storePath } from "@/lib/store-engine/urls";
+import { SearchOverlay } from "@/components/storefront/search/SearchOverlay";
 
 // ─── Store Header ───
 // Solid light surface (tenant logos stay legible). Hairline + soft lift —
@@ -14,6 +15,18 @@ import { storePath } from "@/lib/store-engine/urls";
 export function StoreHeader({ config }: { config: StoreConfig }) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        setSearchOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   return (
     <header data-section-type="header" className="sticky top-0 z-50 w-full border-b border-[color:var(--hairline-strong)] bg-[var(--surface-0)] shadow-[var(--shadow-soft)]">
@@ -73,7 +86,8 @@ export function StoreHeader({ config }: { config: StoreConfig }) {
         <div className="flex flex-1 items-center justify-end gap-x-1">
           <button
             type="button"
-            className="hidden h-11 w-11 items-center justify-center rounded-[var(--r-md)] text-ink-4 transition-colors hover:bg-ink-11 hover:text-ink-0 sm:inline-flex"
+            onClick={() => setSearchOpen(true)}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-[var(--r-md)] text-ink-4 transition-colors hover:bg-ink-11 hover:text-ink-0"
             aria-label="Buscar"
           >
             <Search className="h-[18px] w-[18px]" strokeWidth={1.75} />
@@ -132,6 +146,13 @@ export function StoreHeader({ config }: { config: StoreConfig }) {
           </div>
         </div>
       )}
+      <SearchOverlay
+        storeSlug={config.slug}
+        currency={config.currency}
+        locale="es-AR"
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+      />
     </header>
   );
 }
