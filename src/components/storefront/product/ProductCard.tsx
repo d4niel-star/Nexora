@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { StorefrontProduct } from "@/types/storefront";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
 import { storePath } from "@/lib/store-engine/urls";
 
 // ─── Product Card Pro ───
@@ -22,6 +22,7 @@ export function ProductCard({
   const discountPct = hasCompare
     ? Math.round(100 - (product.price / (product.compareAtPrice as number)) * 100)
     : null;
+  const savingsAmount = hasCompare ? (product.compareAtPrice as number) - product.price : 0;
   const hasSecondaryImage = product.images.length > 1;
   const secondaryImage = hasSecondaryImage ? product.images[1] : null;
 
@@ -117,9 +118,32 @@ export function ProductCard({
                 {formatCurrency(product.compareAtPrice as number)}
               </p>
             )}
+            {hasCompare && savingsAmount > 0 && (
+              <p className="mt-0.5 text-[11px] font-medium text-[color:var(--signal-success)]">
+                Ahorrás {formatCurrency(savingsAmount)}
+              </p>
+            )}
           </div>
         </div>
       </div>
     </Link>
+  );
+}
+
+// ─── Product Card Skeleton ───
+export function ProductCardSkeleton() {
+  return (
+    <div className="animate-pulse">
+      <div
+        className="aspect-[4/5] w-full overflow-hidden border border-[color:var(--hairline)] bg-[var(--surface-2)]"
+        style={{ borderRadius: "var(--theme-radius-cards, var(--r-lg))" }}
+      >
+        <div className="h-full w-full sf-skeleton" />
+      </div>
+      <div className="mt-4 space-y-2 px-0.5">
+        <div className="h-4 w-3/4 rounded sf-skeleton" />
+        <div className="h-3 w-1/2 rounded sf-skeleton" />
+      </div>
+    </div>
   );
 }

@@ -164,17 +164,18 @@ model StoreDomain {
 }
 
 model StoreBranding {
-  id             String   @id @default(uuid())
-  storeId        String   @unique
-  store          Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  logoUrl        String?
-  faviconUrl     String?
-  primaryColor   String   @default("#0F172A")
-  secondaryColor String   @default("#E2E8F0")
-  fontFamily     String   @default("Inter")
-  tone           String   @default("professional")
-  buttonStyle    String   @default("rounded-sm")
-  updatedAt      DateTime @updatedAt
+  id               String   @id @default(uuid())
+  storeId          String   @unique
+  store            Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  logoUrl          String?
+  faviconUrl       String?
+  primaryColor     String   @default("#0F172A")
+  secondaryColor   String   @default("#E2E8F0")
+  fontFamily       String   @default("Inter")
+  tone             String   @default("professional")
+  buttonStyle      String   @default("rounded-sm")
+  announcementJson String?  // JSON: { message, link?, bgColor, textColor, dismissible, icon?, visibility }
+  updatedAt        DateTime @updatedAt
 }
 
 model StoreTheme {
@@ -1775,4 +1776,19 @@ model CashMovement {
 
   @@index([storeId])
   @@index([cashSessionId])
+}
+
+// ─── Automation Configuration ───
+
+model AutomationConfig {
+  id         String  @id @default(uuid())
+  storeId    String
+  automKey   String  // e.g. "abandoned_carts", "dunning", "stock_alerts"
+  enabled    Boolean @default(true)
+  configJson String  @default("{}") // JSON settings per automation
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([storeId, automKey])
 }

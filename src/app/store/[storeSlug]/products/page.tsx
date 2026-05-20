@@ -23,6 +23,7 @@ type ProductsPageProps = {
     minPrice?: string;
     maxPrice?: string;
     sale?: string;
+    inStock?: string;
   }>;
 };
 
@@ -80,6 +81,7 @@ export default async function ProductsPage({
   const minPrice = resolvedSearchParams.minPrice ? parseFloat(resolvedSearchParams.minPrice) : undefined;
   const maxPrice = resolvedSearchParams.maxPrice ? parseFloat(resolvedSearchParams.maxPrice) : undefined;
   const onlySale = resolvedSearchParams.sale === "1";
+  const onlyInStock = resolvedSearchParams.inStock === "1";
 
   const allProducts = await getStoreProducts(storefrontData.store.id);
   const categories = Array.from(
@@ -99,6 +101,7 @@ export default async function ProductsPage({
   if (minPrice !== undefined) filteredProducts = filteredProducts.filter((p) => p.price >= minPrice);
   if (maxPrice !== undefined) filteredProducts = filteredProducts.filter((p) => p.price <= maxPrice);
   if (onlySale) filteredProducts = filteredProducts.filter((p) => p.compareAtPrice && p.compareAtPrice > p.price);
+  if (onlyInStock) filteredProducts = filteredProducts.filter((p) => p.inStock);
 
   // Sort
   if (sortBy === "price_asc") filteredProducts.sort((a, b) => a.price - b.price);
@@ -106,7 +109,7 @@ export default async function ProductsPage({
   else if (sortBy === "name") filteredProducts.sort((a, b) => a.title.localeCompare(b.title));
   // default: newest (already sorted by createdAt desc)
 
-  const hasActiveFilters = !!(selectedCategory || searchQuery || minPrice !== undefined || maxPrice !== undefined || onlySale);
+  const hasActiveFilters = !!(selectedCategory || searchQuery || minPrice !== undefined || maxPrice !== undefined || onlySale || onlyInStock);
   const products = allProducts;
 
   return (
@@ -182,6 +185,11 @@ export default async function ProductsPage({
             {onlySale && (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-3 py-1.5 text-[12px] font-medium text-ink-0">
                 En oferta
+              </span>
+            )}
+            {onlyInStock && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-3 py-1.5 text-[12px] font-medium text-ink-0">
+                Con stock
               </span>
             )}
             <Link href={storePath(resolvedParams.storeSlug, "products")} className="text-[12px] font-medium text-ink-5 hover:text-ink-0 transition-colors">

@@ -76,7 +76,7 @@ export interface ThemeTokens {
   effects: ThemeEffectTokens;
 }
 
-export type ThemeVariant = "light" | "dark" | "auto" | "custom";
+export type ThemeVariant = "light" | "dark" | "auto" | "custom" | "warm" | "contrast";
 
 export interface ThemePreset {
   id: string;

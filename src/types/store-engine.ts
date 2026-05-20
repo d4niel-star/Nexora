@@ -101,6 +101,7 @@ export interface StorefrontData {
     fontFamily: string;
     tone: string;
     buttonStyle: string;
+    announcementJson?: string | null;
   };
   theme: {
     activeTheme: string;
@@ -203,6 +204,7 @@ export interface AdminStoreInitialData {
     fontFamily: string;
     tone: string;
     buttonStyle: string;
+    announcementJson?: string | null;
   } | null;
   theme: {
     activeTheme: string;
@@ -276,6 +278,7 @@ export interface AdminStoreSummary {
     secondaryColor: string;
     fontFamily: string;
     buttonStyle: string;
+    announcementJson?: string | null;
   } | null;
   theme: {
     activeTheme: string;

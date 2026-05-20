@@ -1,33 +1,13 @@
-// ─── Nexora Admin Seed ───
-// Creates an admin user with full access to test the platform.
-// Run: npx tsx --env-file=.env.local scripts/seed-admin.ts
-//
-// Credentials:
-//   Email:    admin@nexora.dev
-//   Password: Nexora2026!
+// ─── Nexora Admin Seed (external Render connection) ───
+// Run: npx tsx scripts/seed-admin.ts
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 import { config } from "dotenv";
 config({ path: ".env" });
 config({ path: ".env.local", override: true });
 
-import { PrismaClient } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
+import pg from "pg";
 import { scryptSync, randomBytes } from "crypto";
-
-function createPrisma() {
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) throw new Error("DATABASE_URL is not set — run with --env-file=.env.local");
-
-  const isRemote = !connectionString.includes("localhost") && !connectionString.includes("127.0.0.1");
-  const url = isRemote && !connectionString.includes("sslmode=")
-    ? `${connectionString}${connectionString.includes("?") ? "&" : "?"}sslmode=require`
-    : connectionString;
-
-  const adapter = new PrismaPg({ connectionString: url });
-  return new PrismaClient({ adapter });
-}
-
-const prisma = createPrisma();
 
 function hashPassword(password: string): string {
   const salt = randomBytes(16).toString("hex");
@@ -41,86 +21,98 @@ async function main() {
   const STORE_NAME = "Nexora Demo Store";
   const STORE_SLUG = "nexora-demo";
 
+  let connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    console.error("❌ DATABASE_URL not found");
+    process.exit(1);
+  }
+
+  // Force external hostname for Render
+  connectionString = connectionString.replace("-a.oregon", "-a.external.oregon");
+
   console.log("🔧 Nexora Admin Seed\n");
 
-  // Check if user already exists
-  const existing = await prisma.user.findUnique({ where: { email: EMAIL } });
-  if (existing) {
-    console.log(`⚠️  User ${EMAIL} already exists (id: ${existing.id})`);
-    console.log(`   Store ID: ${existing.storeId ?? "none"}`);
-    console.log(`   Email verified: ${existing.emailVerified}`);
+  // Use Pool with explicit ssl config
+  const pool = new pg.Pool({
+    connectionString,
+    ssl: { rejectUnauthorized: false },
+    connectionTimeoutMillis: 10000,
+  });
 
-    // Ensure verified
-    if (!existing.emailVerified) {
-      await prisma.user.update({
-        where: { id: existing.id },
-        data: { emailVerified: true },
-      });
-      console.log("   ✅ Marked as email verified");
+  try {
+    const client = await pool.connect();
+    console.log("✅ Connected to database\n");
+
+    // Check if user exists
+    const existingUser = await client.query(
+      'SELECT id, email, "emailVerified", "storeId" FROM "User" WHERE email = $1',
+      [EMAIL],
+    );
+
+    if (existingUser.rows.length > 0) {
+      const user = existingUser.rows[0];
+      console.log(`⚠️  User ${EMAIL} already exists (id: ${user.id})`);
+      await client.query(
+        'UPDATE "User" SET "emailVerified" = true, password = $1 WHERE id = $2',
+        [hashPassword(PASSWORD), user.id],
+      );
+      console.log("   ✅ Password reset + email verified");
+      console.log(`\n🔑 Email:    ${EMAIL}`);
+      console.log(`   Password: ${PASSWORD}`);
+      client.release();
+      return;
     }
 
-    console.log(`\n🔑 Login credentials:`);
-    console.log(`   Email:    ${EMAIL}`);
+    // Check store
+    const existingStore = await client.query(
+      'SELECT id, name FROM "Store" WHERE slug = $1',
+      [STORE_SLUG],
+    );
+
+    let storeId: string;
+    if (existingStore.rows.length > 0) {
+      storeId = existingStore.rows[0].id;
+      console.log(`ℹ️  Store exists (id: ${storeId})`);
+    } else {
+      const storeResult = await client.query(
+        `INSERT INTO "Store" (id, slug, name, status, currency, locale, description, "createdAt", "updatedAt")
+         VALUES (gen_random_uuid(), $1, $2, 'active', 'ARS', 'es-AR', $3, NOW(), NOW())
+         RETURNING id`,
+        [STORE_SLUG, STORE_NAME, "Tienda demo de Nexora con acceso completo."],
+      );
+      storeId = storeResult.rows[0].id;
+      console.log(`✅ Store created (id: ${storeId})`);
+
+      await client.query(
+        `INSERT INTO "StoreOnboarding" (id, "storeId", "currentStage", "createdAt", "updatedAt")
+         VALUES (gen_random_uuid(), $1, 'completed', NOW(), NOW())`,
+        [storeId],
+      );
+    }
+
+    // Create user
+    const userResult = await client.query(
+      `INSERT INTO "User" (id, email, password, name, "emailVerified", "storeId", "createdAt", "updatedAt")
+       VALUES (gen_random_uuid(), $1, $2, $3, true, $4, NOW(), NOW())
+       RETURNING id`,
+      [EMAIL, hashPassword(PASSWORD), "Admin", storeId],
+    );
+    const userId = userResult.rows[0].id;
+    console.log(`✅ User created (id: ${userId})`);
+
+    await client.query('UPDATE "Store" SET "ownerId" = $1 WHERE id = $2', [userId, storeId]);
+    console.log(`✅ Store ownership linked`);
+
+    console.log(`\n🔑 Email:    ${EMAIL}`);
     console.log(`   Password: ${PASSWORD}`);
-    console.log(`   URL:      http://localhost:3000/home/login`);
-    return;
+
+    client.release();
+  } catch (err) {
+    console.error("❌ Error:", err);
+    process.exit(1);
+  } finally {
+    await pool.end();
   }
-
-  // Check if store slug exists
-  let store = await prisma.store.findUnique({ where: { slug: STORE_SLUG } });
-
-  if (!store) {
-    store = await prisma.store.create({
-      data: {
-        slug: STORE_SLUG,
-        name: STORE_NAME,
-        status: "active",
-        currency: "ARS",
-        locale: "es-AR",
-        description: "Tienda demo de Nexora con acceso completo para testing.",
-        onboarding: {
-          create: {
-            currentStage: "completed",
-          },
-        },
-      },
-    });
-    console.log(`✅ Store created: "${STORE_NAME}" (slug: ${STORE_SLUG})`);
-  } else {
-    console.log(`ℹ️  Store "${store.name}" already exists (slug: ${STORE_SLUG})`);
-  }
-
-  // Create user
-  const user = await prisma.user.create({
-    data: {
-      email: EMAIL,
-      password: hashPassword(PASSWORD),
-      name: "Admin",
-      emailVerified: true,
-      storeId: store.id,
-    },
-  });
-
-  // Link store ownership
-  await prisma.store.update({
-    where: { id: store.id },
-    data: { ownerId: user.id },
-  });
-
-  console.log(`✅ Admin user created (id: ${user.id})`);
-  console.log(`✅ Linked to store: ${store.name}`);
-
-  console.log(`\n🔑 Login credentials:`);
-  console.log(`   Email:    ${EMAIL}`);
-  console.log(`   Password: ${PASSWORD}`);
-  console.log(`   URL:      http://localhost:3000/home/login`);
-  console.log(`\n📦 Admin panel: http://localhost:3000/admin/dashboard`);
-  console.log(`🛍️  Storefront:  http://localhost:3000/store/${STORE_SLUG}`);
 }
 
-main()
-  .catch((e) => {
-    console.error("❌ Error:", e);
-    process.exit(1);
-  })
-  .finally(() => prisma.$disconnect());
+main();

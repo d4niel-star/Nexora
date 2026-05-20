@@ -25,6 +25,26 @@ import {
   getAutoVariantScript,
 } from "@/lib/store-engine/theme";
 import type { ThemeVariant } from "@/lib/store-engine/theme";
+import { AnnouncementBar, type AnnouncementConfig } from "@/components/storefront/layout/AnnouncementBar";
+
+function parseAnnouncementJson(json: string | null | undefined): AnnouncementConfig | null {
+  if (!json) return null;
+  try {
+    const parsed = JSON.parse(json);
+    if (!parsed.message) return null;
+    return {
+      message: parsed.message,
+      link: parsed.link || undefined,
+      bgColor: parsed.bgColor || "#0F172A",
+      textColor: parsed.textColor || "#FFFFFF",
+      dismissible: parsed.dismissible ?? true,
+      icon: parsed.icon || undefined,
+      visibility: parsed.visibility || "always",
+    };
+  } catch {
+    return null;
+  }
+}
 
 export default async function StorefrontLayout({
   children,
@@ -86,6 +106,8 @@ export default async function StorefrontLayout({
     contactInfo: commData.contact,
     socialLinks: commData.socialLinks,
     whatsapp: commData.whatsapp,
+    // Announcement bar
+    announcement: parseAnnouncementJson(storefrontData.branding.announcementJson),
   };
 
   // ─── Resolve theme tokens (backward-compatible) ───
@@ -128,6 +150,13 @@ export default async function StorefrontLayout({
     >
       {themeVariant === "auto" && (
         <script dangerouslySetInnerHTML={{ __html: getAutoVariantScript() }} />
+      )}
+      {config.announcement && (
+        <AnnouncementBar
+          config={config.announcement}
+          storeSlug={config.slug}
+          currentPath={`/store/${config.slug}`}
+        />
       )}
       <StoreHeader config={config} />
       <main className="flex-1">{children}</main>

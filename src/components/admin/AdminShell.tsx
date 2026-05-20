@@ -122,6 +122,7 @@ const primaryNav: readonly NavEntry[] = [
     items: [
       { kind: "leaf", href: "/admin/stats", label: "Rendimiento", icon: TrendingUp },
       { kind: "leaf", href: "/admin/conversion", label: "Conversión", icon: Filter },
+      { kind: "leaf", href: "/admin/intelligence", label: "Inteligencia", icon: BarChart3 },
     ],
   },
   {

@@ -116,6 +116,7 @@ export async function getStorefrontData(domainOrSlug: string): Promise<Storefron
           fontFamily: store.branding.fontFamily,
           tone: store.branding.tone,
           buttonStyle: store.branding.buttonStyle,
+          announcementJson: (store.branding as unknown as { announcementJson?: string | null }).announcementJson ?? null,
         }
       : {
           logoUrl: null,
@@ -125,6 +126,7 @@ export async function getStorefrontData(domainOrSlug: string): Promise<Storefron
           fontFamily: "Inter",
           tone: "professional",
           buttonStyle: "rounded-sm",
+          announcementJson: null as string | null,
         },
     theme: store.theme
       ? {

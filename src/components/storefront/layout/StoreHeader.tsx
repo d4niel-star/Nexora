@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import type { StoreConfig } from "@/types/storefront";
 import { storePath } from "@/lib/store-engine/urls";
 import { SearchOverlay } from "@/components/storefront/search/SearchOverlay";
+import { MobileBottomNav } from "@/components/storefront/layout/MobileBottomNav";
 
 // ─── Store Header ───
 // Solid light surface (tenant logos stay legible). Hairline + soft lift —
@@ -152,6 +153,11 @@ export function StoreHeader({ config }: { config: StoreConfig }) {
         locale="es-AR"
         open={searchOpen}
         onClose={() => setSearchOpen(false)}
+      />
+      <MobileBottomNav
+        storeSlug={config.slug}
+        cartCount={config.cartItemCount}
+        onSearchOpen={() => setSearchOpen(true)}
       />
     </header>
   );

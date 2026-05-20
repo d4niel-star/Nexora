@@ -20,8 +20,9 @@ if (!connectionString) {
   process.exit(1);
 }
 
-const url = !connectionString.includes("localhost") && !connectionString.includes("sslmode=")
-  ? `${connectionString}${connectionString.includes("?") ? "&" : "?"}sslmode=require`
+const isRemote = !connectionString.includes("localhost") && !connectionString.includes("127.0.0.1");
+const url = isRemote && !connectionString.includes("sslmode=")
+  ? `${connectionString}${connectionString.includes("?") ? "&" : "?"}sslmode=no-verify`
   : connectionString;
 
 const adapter = new PrismaPg({ connectionString: url });

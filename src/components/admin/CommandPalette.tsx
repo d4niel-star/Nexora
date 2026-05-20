@@ -49,9 +49,15 @@ const STATIC_COMMANDS: CommandItem[] = [
   { id: "nav-billing", label: "Facturación / Plan", keywords: "billing plan facturacion suscripcion", group: "navigate", icon: FileText, href: "/admin/billing" },
   { id: "nav-automations", label: "Automatizaciones", keywords: "automations cron jobs tareas", group: "navigate", icon: Zap, href: "/admin/automations" },
   { id: "nav-apps", label: "Apps", keywords: "apps marketplace integraciones", group: "navigate", icon: Tag, href: "/admin/apps" },
+  { id: "nav-intelligence", label: "Inteligencia Comercial", keywords: "intelligence revenue inventory insights", group: "navigate", icon: BarChart3, href: "/admin/intelligence" },
+  { id: "nav-recovery", label: "Recuperación", keywords: "recovery abandonados carritos", group: "navigate", icon: Zap, href: "/admin/recovery" },
+  { id: "nav-shipping", label: "Envíos", keywords: "shipping envios carrier", group: "navigate", icon: Truck, href: "/admin/shipping/settings" },
+  { id: "nav-branding", label: "Branding", keywords: "branding marca logo colores", group: "navigate", icon: Palette, href: "/admin/store-ai/branding" },
   { id: "act-new-product", label: "Crear producto", keywords: "nuevo producto agregar add product", group: "action", icon: ShoppingBag, href: "/admin/catalog?action=new" },
   { id: "act-export-orders", label: "Exportar pedidos CSV", keywords: "export csv orders pedidos descargar", group: "action", icon: FileText, href: "/admin/orders" },
   { id: "act-visual-editor", label: "Visual Editor PRO", keywords: "editor visual pro diseño", group: "action", icon: Palette, href: "/admin/store-ai/visual-editor" },
+  { id: "act-low-stock", label: "Ver stock bajo", keywords: "low stock bajo critico alerta", group: "action", icon: Package, href: "/admin/inventory?filter=low" },
+  { id: "act-pending-orders", label: "Pedidos pendientes", keywords: "pending orders sin despachar nuevos", group: "action", icon: Package, href: "/admin/orders?status=new" },
 ];
 
 const GROUP_LABELS: Record<string, string> = {

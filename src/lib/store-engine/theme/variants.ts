@@ -15,6 +15,10 @@ export function applyVariant(tokens: ThemeTokens, variant: ThemeVariant): ThemeT
   switch (variant) {
     case "dark":
       return applyDarkVariant(tokens);
+    case "warm":
+      return applyWarmVariant(tokens);
+    case "contrast":
+      return applyContrastVariant(tokens);
     case "auto":
       // Auto mode uses light tokens at SSR time; client JS toggles via
       // prefers-color-scheme media query class switching.
@@ -58,6 +62,42 @@ function applyDarkVariant(tokens: ThemeTokens): ThemeTokens {
       success: "#4ade80",
       warning: "#fbbf24",
       danger: "#f87171",
+    },
+  };
+}
+
+/**
+ * Warm variant — cream/beige tones for a softer, editorial feel.
+ * Surfaces shift to warm cream, text uses warm dark brown.
+ */
+function applyWarmVariant(tokens: ThemeTokens): ThemeTokens {
+  return {
+    ...tokens,
+    colors: {
+      ...tokens.colors,
+      background: "#faf8f5",
+      surface: "#f5f0eb",
+      text: "#2c2216",
+      muted: "#8c7e6f",
+      border: "rgba(44, 34, 22, 0.12)",
+    },
+  };
+}
+
+/**
+ * High-contrast variant — maximum readability for accessibility.
+ * Pure white bg, true black text, strong borders.
+ */
+function applyContrastVariant(tokens: ThemeTokens): ThemeTokens {
+  return {
+    ...tokens,
+    colors: {
+      ...tokens.colors,
+      background: "#ffffff",
+      surface: "#f5f5f5",
+      text: "#000000",
+      muted: "#525252",
+      border: "rgba(0, 0, 0, 0.25)",
     },
   };
 }

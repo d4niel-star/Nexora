@@ -30,6 +30,15 @@ export interface StoreConfig {
     buttonText: string;
     buttonPosition: "bottom-right" | "bottom-left";
   } | null;
+  announcement?: {
+    message: string;
+    link?: string;
+    bgColor: string;
+    textColor: string;
+    dismissible: boolean;
+    icon?: "megaphone" | "tag" | "truck" | "gift" | "sparkles";
+    visibility: "always" | "homepage" | "collection";
+  } | null;
 }
 
 export interface NavItem {

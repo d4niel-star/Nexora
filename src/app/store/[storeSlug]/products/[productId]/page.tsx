@@ -20,6 +20,7 @@ import { UpsellBlock } from "@/components/storefront/bundles/UpsellBlock";
 import { getStorefrontTrustSignals } from "@/lib/storefront/trust";
 import { TrustSignals } from "@/components/storefront/product/TrustSignals";
 import { ReviewSummary } from "@/components/storefront/product/ReviewSummary";
+import { ProductAccordion, type AccordionSection } from "@/components/storefront/product/ProductAccordion";
 
 type ProductPageProps = {
   params: Promise<{ storeSlug: string; productId: string }>;
@@ -293,24 +294,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
               )}
             </div>
 
-            {/* Description */}
-            {product.description ? (
-              <div
-                className="mt-8 max-w-prose text-[15px] leading-[1.65] text-ink-4 [&_p]:mb-4 [&_p:last-child]:mb-0 [&_strong]:text-ink-0 [&_a]:underline [&_a]:decoration-[color:var(--hairline-strong)] [&_a]:underline-offset-2"
-                dangerouslySetInnerHTML={{ __html: product.description }}
-              />
-            ) : (
-              <p className="mt-8 max-w-prose text-[15px] leading-[1.65] text-ink-4">
-                {toPlainText(product.title)}
-              </p>
-            )}
-
             {/* Add to cart */}
-            <AddToCartForm
-              product={product}
-              storeId={storefrontData.store.id}
-              storeSlug={resolvedParams.storeSlug}
-            />
+            <div id="add-to-cart" className="mt-8">
+              <AddToCartForm
+                product={product}
+                storeId={storefrontData.store.id}
+                storeSlug={resolvedParams.storeSlug}
+              />
+            </div>
 
             {/* Trust signals — payment, shipping threshold, returns.
                 Every line here is derived from real store config; the
@@ -324,25 +315,24 @@ export default async function ProductPage({ params }: ProductPageProps) {
               variant="pdp"
             />
 
-            {/* Features (if provided by catalog) */}
-            {product.features && product.features.length > 0 && (
-              <div className="mt-10 border-t border-[color:var(--hairline)] pt-8">
-                <h3 className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-5">
-                  Características
-                </h3>
-                <ul role="list" className="mt-5 space-y-2.5 text-[14px] text-ink-3">
-                  {product.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2.5">
-                      <span
-                        aria-hidden
-                        className="mt-2 inline-block h-1 w-1 shrink-0 rounded-full bg-ink-6"
-                      />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            {/* Accordion tabs — description, specs, shipping, returns */}
+            <ProductAccordion sections={(() => {
+              const s: AccordionSection[] = [];
+              if (product.description) {
+                s.push({ id: "description", title: "Descripción", content: product.description, isHtml: true });
+              }
+              if (product.features && product.features.length > 0) {
+                s.push({
+                  id: "specs",
+                  title: "Características",
+                  content: `<ul>${product.features.map((f) => `<li>${f}</li>`).join("")}</ul>`,
+                  isHtml: true,
+                });
+              }
+              s.push({ id: "shipping", title: "Envío", content: "Los tiempos de envío dependen de tu ubicación. Consultá las opciones disponibles al momento del checkout." });
+              s.push({ id: "returns", title: "Devoluciones", content: "Aceptamos cambios y devoluciones dentro de los 30 días de recibido el producto, en su estado original." });
+              return s;
+            })() }/>
           </div>
         </div>
 
