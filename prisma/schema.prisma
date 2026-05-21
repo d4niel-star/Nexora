@@ -89,6 +89,9 @@ model Store {
 
   orderSequence StoreOrderSequence?
 
+  // Phase 7A: enterprise operations
+  staffMembers StaffMember[]
+
   @@index([ownerId])
 }
 
@@ -121,6 +124,9 @@ model User {
   updatedAt          DateTime                 @updatedAt
 
   nexoraMemories NexoraAssistantMemory[]
+
+  // Phase 7A: staff role memberships across stores
+  staffMemberships StaffMember[]
 
   @@index([email])
 }
@@ -792,11 +798,19 @@ model SystemEvent {
   source       String // e.g. "mercadopago_webhook", "admin_panel", "system"
   message      String // Human readable brief description
   metadataJson String? // Flexible JSON payload
+  // ─── Enterprise audit trail extensions (Phase 7A) ───
+  actorId       String? // User.id of the staff member who triggered this
+  actorRole     String? // "owner" | "admin" | "manager" | "support" | "analyst" | "system"
+  correlationId String? // Group related events (e.g. one bulk action across N rows)
+  requestId     String? // Per-request id, useful for debugging
+  ipHash        String? // SHA-256 of client IP (for forensics, never raw IP)
   createdAt    DateTime @default(now())
 
   @@index([storeId])
   @@index([entityType, entityId])
   @@index([eventType])
+  @@index([correlationId])
+  @@index([actorId])
 }
 
 // ─── AI Store Studio ───
@@ -1776,6 +1790,104 @@ model CashMovement {
 
   @@index([storeId])
   @@index([cashSessionId])
+}
+
+// ─── Phase 7A: Enterprise Operations Foundation ───
+
+// ─── RBAC: Staff Members ──────────────────────────────────────────────
+// A user can belong to a store as staff with a specific role. The owner
+// of the store (Store.ownerId) is implicitly the "owner" role and does
+// NOT need a row here — they always have full access. Staff rows extend
+// the team beyond the owner.
+//
+// Permissions are derived from `role` via a permission registry in
+// src/lib/rbac. We do NOT store individual permissions per row because
+// per-permission overrides are out of scope for 7A.
+model StaffMember {
+  id        String  @id @default(uuid())
+  storeId   String
+  store     Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String  @default("manager") // "admin" | "manager" | "support" | "analyst"
+  status    String  @default("active") // "active" | "invited" | "suspended"
+
+  invitedAt   DateTime?
+  invitedById String?
+  acceptedAt  DateTime?
+  suspendedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([storeId, userId])
+  @@index([storeId])
+  @@index([userId])
+  @@index([role])
+}
+
+// ─── Jobs / Queue ─────────────────────────────────────────────────────
+// Persistent job queue for asynchronous, retryable, idempotent work.
+// Workers (cron + on-demand) pull pending jobs, transition through
+// running → succeeded/failed, and respect runAt for scheduled execution.
+//
+// idempotencyKey lets producers safely re-enqueue the same logical
+// operation without duplicating side effects (e.g. webhook redelivery).
+model Job {
+  id   String @id @default(uuid())
+  type String // e.g. "review_request", "abandoned_cart_email", "stock_alert", "csv_export"
+
+  storeId String?
+  payload String  @default("{}") // JSON. Bounded size enforced by enqueue layer.
+
+  status   String @default("pending") // "pending" | "running" | "succeeded" | "failed" | "dead" | "cancelled"
+  priority Int    @default(100) // lower = higher priority
+
+  // Retry state
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(5)
+  lastError   String? // truncated error message
+  nextAttempt DateTime?
+
+  // Scheduling
+  runAt       DateTime  @default(now())
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  durationMs  Int?
+
+  // Tracing
+  correlationId  String?
+  idempotencyKey String? // unique per (type, idempotencyKey)
+  actorId        String?
+
+  // Locking (cooperative — workers stamp their id on claim)
+  lockedBy String?
+  lockedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([type, idempotencyKey])
+  @@index([status, runAt])
+  @@index([type, status])
+  @@index([storeId])
+  @@index([correlationId])
+}
+
+// ─── Rate Limiting ────────────────────────────────────────────────────
+// Token-bucket primitive backed by Postgres. Suitable for sensitive
+// admin endpoints (refunds, exports, automation triggers) where Redis
+// is overkill. Scoping is up to the caller (per-user, per-IP, per-
+// store, etc.) via the `key` field.
+model RateLimitBucket {
+  id        String   @id @default(uuid())
+  key       String   @unique // e.g. "refund:user:<id>", "export:store:<id>"
+  count     Int      @default(0)
+  resetAt   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([resetAt])
 }
 
 // ─── Automation Configuration ───

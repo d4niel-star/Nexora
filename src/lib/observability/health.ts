@@ -9,6 +9,7 @@ export interface SystemHealthReport {
     payments: SubsystemStatus;
     emails: SubsystemStatus;
     logistics: SubsystemStatus;
+    queue: SubsystemStatus;
   };
   recentActivity: RecentActivityItem[];
   recentErrors: RecentActivityItem[];
@@ -82,6 +83,13 @@ export async function getSystemHealthReport(): Promise<SystemHealthReport> {
     }),
   ]);
 
+  // Queue health: pending backlog + dead jobs in last 24h
+  const [pendingJobs, deadJobs24h, runningJobs] = await Promise.all([
+    prisma.job.count({ where: { status: "pending", runAt: { lte: now } } }),
+    prisma.job.count({ where: { status: "dead", finishedAt: { gte: last24h } } }),
+    prisma.job.count({ where: { status: "running" } }),
+  ]);
+
   const uptimeMs = Date.now() - startTime;
   const uptimeHours = Math.floor(uptimeMs / 3600000);
   const uptimeMins = Math.floor((uptimeMs % 3600000) / 60000);
@@ -108,9 +116,20 @@ export async function getSystemHealthReport(): Promise<SystemHealthReport> {
     ? { status: "ok", message: "Webhooks logísticos procesados correctamente", metric: 0 }
     : { status: "warn", message: `${failedWebhooks24h} webhooks fallidos en 24h`, metric: failedWebhooks24h };
 
+  // Queue health: backlog over 100 = warn; dead jobs > 0 = warn
+  const queue: SubsystemStatus = (() => {
+    if (deadJobs24h > 0) {
+      return { status: "warn" as const, message: `${deadJobs24h} jobs muertos en 24h, ${pendingJobs} pendientes`, metric: pendingJobs };
+    }
+    if (pendingJobs > 100) {
+      return { status: "warn" as const, message: `Cola con ${pendingJobs} jobs pendientes (backlog)`, metric: pendingJobs };
+    }
+    return { status: "ok" as const, message: `${pendingJobs} pendientes, ${runningJobs} en proceso`, metric: pendingJobs };
+  })();
+
   // Determine overall status
   const hasErrors = !dbCheck;
-  const hasWarnings = failedPayments24h > 0 || failedEmails24h > 0 || failedWebhooks24h > 0;
+  const hasWarnings = failedPayments24h > 0 || failedEmails24h > 0 || failedWebhooks24h > 0 || queue.status === "warn";
 
   const overallStatus = hasErrors ? "unhealthy" : hasWarnings ? "degraded" : "healthy";
 
@@ -128,7 +147,7 @@ export async function getSystemHealthReport(): Promise<SystemHealthReport> {
   return {
     status: overallStatus,
     uptime: `${uptimeHours}h ${uptimeMins}m`,
-    subsystems: { database, orders, payments, emails, logistics },
+    subsystems: { database, orders, payments, emails, logistics, queue },
     recentActivity: recentEvents.map(mapEvent),
     recentErrors: recentErrorEvents.map(mapEvent),
   };

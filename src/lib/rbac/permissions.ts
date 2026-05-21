@@ -1,0 +1,112 @@
+// ─── Nexora RBAC: Permission Registry ────────────────────────────────
+// Single source of truth for who can do what. Permissions are derived
+// from roles via PERMISSIONS_BY_ROLE. Owners always have ALL permissions.
+//
+// Adding a new sensitive operation? Add a permission key here, gate the
+// server action with requirePermission(), and (optionally) add a UI
+// disabled state via hasPermission(). No string-matching, no leaks.
+
+export const ALL_PERMISSIONS = [
+  // Catalog
+  "catalog.read",
+  "catalog.write",
+  "catalog.delete",
+  "catalog.bulk",
+  // Inventory
+  "inventory.read",
+  "inventory.adjust",
+  "inventory.bulk",
+  // Orders
+  "orders.read",
+  "orders.fulfill",
+  "orders.refund",
+  "orders.cancel",
+  "orders.export",
+  "orders.bulk",
+  // Customers
+  "customers.read",
+  "customers.write",
+  "customers.export",
+  // Storefront / theme
+  "storefront.read",
+  "storefront.publish",
+  "theme.publish",
+  // Apps & automations
+  "apps.install",
+  "apps.uninstall",
+  "automation.read",
+  "automation.toggle",
+  "automation.config",
+  // Billing & payouts
+  "billing.read",
+  "billing.write",
+  "payouts.request",
+  // Staff & team
+  "staff.read",
+  "staff.invite",
+  "staff.suspend",
+  // Operations
+  "operations.read",
+  "operations.retry",
+  "operations.cancel",
+  // System / dangerous
+  "system.dangerous", // Owner-only escape hatch (delete store, etc.)
+] as const;
+
+export type Permission = (typeof ALL_PERMISSIONS)[number];
+
+export type StaffRole = "owner" | "admin" | "manager" | "support" | "analyst";
+
+// ─── Role → Permission mapping ───
+// "owner" is computed by always returning true; we still list it for
+// completeness so listing-by-role tools render correctly.
+export const PERMISSIONS_BY_ROLE: Record<StaffRole, ReadonlyArray<Permission>> = {
+  owner: ALL_PERMISSIONS,
+  admin: [
+    "catalog.read", "catalog.write", "catalog.delete", "catalog.bulk",
+    "inventory.read", "inventory.adjust", "inventory.bulk",
+    "orders.read", "orders.fulfill", "orders.refund", "orders.cancel", "orders.export", "orders.bulk",
+    "customers.read", "customers.write", "customers.export",
+    "storefront.read", "storefront.publish", "theme.publish",
+    "apps.install", "apps.uninstall",
+    "automation.read", "automation.toggle", "automation.config",
+    "billing.read",
+    "staff.read", "staff.invite", "staff.suspend",
+    "operations.read", "operations.retry", "operations.cancel",
+  ],
+  manager: [
+    "catalog.read", "catalog.write", "catalog.bulk",
+    "inventory.read", "inventory.adjust",
+    "orders.read", "orders.fulfill", "orders.cancel", "orders.export",
+    "customers.read", "customers.write",
+    "storefront.read",
+    "automation.read", "automation.toggle",
+    "operations.read",
+  ],
+  support: [
+    "catalog.read",
+    "inventory.read",
+    "orders.read", "orders.fulfill", "orders.cancel",
+    "customers.read", "customers.write",
+    "automation.read",
+  ],
+  analyst: [
+    "catalog.read",
+    "inventory.read",
+    "orders.read", "orders.export",
+    "customers.read", "customers.export",
+    "storefront.read",
+    "automation.read",
+    "billing.read",
+    "operations.read",
+  ],
+};
+
+export function rolePermissions(role: StaffRole): ReadonlyArray<Permission> {
+  return PERMISSIONS_BY_ROLE[role] ?? [];
+}
+
+export function roleHasPermission(role: StaffRole, perm: Permission): boolean {
+  if (role === "owner") return true;
+  return PERMISSIONS_BY_ROLE[role]?.includes(perm) ?? false;
+}

@@ -33,6 +33,7 @@ import {
   Wrench,
   X,
   Zap,
+  Activity,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -206,6 +207,7 @@ const primaryNav: readonly NavEntry[] = [
     icon: Puzzle,
     items: [
       { kind: "leaf", href: "/admin/automations", label: "Automatizaciones", icon: Zap },
+      { kind: "leaf", href: "/admin/operations", label: "Operaciones", icon: Activity },
       { kind: "leaf", href: "/admin/marketplace", label: "Marketplace", icon: Puzzle },
       { kind: "leaf", href: "/admin/market", label: "Herramientas", icon: Wrench },
     ],
