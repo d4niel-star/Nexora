@@ -50,7 +50,13 @@ export function StoreHeader({ config }: { config: StoreConfig }) {
           className="flex shrink-0 items-center justify-center rounded-[var(--r-xs)] outline-none focus-visible:shadow-[var(--shadow-focus)] lg:flex-1 lg:justify-start"
         >
           {config.logoUrl ? (
-            <img src={config.logoUrl} alt={config.name} className="h-7 w-auto" />
+            <img
+              src={config.logoUrl}
+              alt={config.name}
+              className="h-7 w-auto"
+              height={28}
+              decoding="async"
+            />
           ) : (
             <span
               className="font-semibold text-[22px] leading-none tracking-[-0.03em] text-ink-0"

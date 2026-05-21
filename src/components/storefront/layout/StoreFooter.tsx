@@ -47,6 +47,9 @@ export function StoreFooter({
                 src={config.logoUrl}
                 alt={config.name}
                 className="h-8 w-auto"
+                height={32}
+                loading="lazy"
+                decoding="async"
               />
             ) : (
               <span

@@ -46,6 +46,9 @@ export function HeroSection({
           <img
             src={settings.backgroundImageUrl}
             alt=""
+            loading="eager"
+            fetchPriority="high"
+            decoding="sync"
             className="absolute inset-0 -z-10 h-full w-full object-cover"
           />
           {/* Multi-stop gradient for readability without killing the image */}

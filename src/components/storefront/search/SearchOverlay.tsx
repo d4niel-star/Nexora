@@ -128,7 +128,12 @@ export function SearchOverlay({ storeSlug, currency, locale, open, onClose }: Se
   return (
     <>
       <div className="fixed inset-0 z-[999] bg-ink-0/40 backdrop-blur-[3px]" onClick={onClose} aria-hidden />
-      <div className="fixed inset-x-0 top-0 z-[1000] sm:inset-x-auto sm:left-1/2 sm:top-[10%] sm:w-[520px] sm:max-w-[92vw] sm:-translate-x-1/2">
+      <div
+        className="fixed inset-x-0 top-0 z-[1000] sm:inset-x-auto sm:left-1/2 sm:top-[10%] sm:w-[520px] sm:max-w-[92vw] sm:-translate-x-1/2"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Buscar productos"
+      >
         <div className="flex h-full max-h-[85vh] flex-col bg-[var(--surface-0)] shadow-[var(--shadow-overlay)] sm:rounded-[var(--r-lg)] sm:border sm:border-[color:var(--hairline)] sm:max-h-[480px]">
           {/* Input */}
           <div className="flex items-center gap-3 border-b border-[color:var(--hairline)] px-4 py-3">

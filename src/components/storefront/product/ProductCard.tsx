@@ -48,6 +48,7 @@ export function ProductCard({
                 src={product.featuredImage}
                 alt={product.title}
                 loading="lazy"
+                decoding="async"
                 className={
                   "h-full w-full object-cover transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-[var(--theme-image-hover-zoom,1.03)]" +
                   (hasSecondaryImage ? " group-hover:opacity-0" : "")
@@ -59,6 +60,7 @@ export function ProductCard({
                   src={secondaryImage}
                   alt=""
                   loading="lazy"
+                  decoding="async"
                   aria-hidden
                   className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:opacity-100"
                 />

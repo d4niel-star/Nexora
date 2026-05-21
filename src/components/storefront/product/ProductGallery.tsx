@@ -41,6 +41,7 @@ export function ProductGallery({ images }: { images: string[] }) {
                 src={img}
                 alt=""
                 loading="lazy"
+                decoding="async"
                 className="h-full w-full object-cover object-center"
               />
             </button>
@@ -56,6 +57,8 @@ export function ProductGallery({ images }: { images: string[] }) {
             src={img}
             alt={idx === activeIdx ? "Imagen del producto" : ""}
             loading={idx === 0 ? "eager" : "lazy"}
+            fetchPriority={idx === 0 ? "high" : "auto"}
+            decoding={idx === 0 ? "sync" : "async"}
             className={cn(
               "absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-500",
               activeIdx === idx ? "opacity-100" : "opacity-0 pointer-events-none",

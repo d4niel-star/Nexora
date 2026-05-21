@@ -12,7 +12,8 @@ export async function GET(
 ) {
   const { storeSlug } = await params;
   const url = new URL(request.url);
-  const q = (url.searchParams.get("q") ?? "").trim();
+  // Cap query length to prevent DoS via huge ILIKE patterns
+  const q = (url.searchParams.get("q") ?? "").trim().slice(0, 80);
 
   if (!q || q.length < 2) {
     return NextResponse.json({ results: [] });

@@ -27,19 +27,47 @@ import {
 import type { ThemeVariant } from "@/lib/store-engine/theme";
 import { AnnouncementBar, type AnnouncementConfig } from "@/components/storefront/layout/AnnouncementBar";
 
+// ─── Announcement parsing & sanitization ───
+// Hardens user-provided announcement config against CSS / URL injection.
+// Colors: only hex (#abc, #aabbcc) or rgb()/rgba() with strict shape.
+// Links: only relative paths, http(s) URLs, mailto: and tel: — blocks
+// javascript:, data:, vbscript:, file: and any malformed scheme.
+const SAFE_COLOR_RE = /^(#[0-9a-f]{3,8}|rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*(,\s*[\d.]+\s*)?\))$/i;
+const ALLOWED_ICONS = ["megaphone", "tag", "truck", "gift", "sparkles"] as const;
+const ALLOWED_VISIBILITY = ["always", "homepage", "collection"] as const;
+
+function safeColor(value: unknown, fallback: string): string {
+  if (typeof value !== "string") return fallback;
+  const trimmed = value.trim();
+  return SAFE_COLOR_RE.test(trimmed) ? trimmed : fallback;
+}
+
+function safeLink(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  // Relative path
+  if (trimmed.startsWith("/") && !trimmed.startsWith("//")) return trimmed;
+  // Absolute http(s), mailto, tel
+  if (/^(https?:\/\/|mailto:|tel:)/i.test(trimmed)) return trimmed;
+  return undefined;
+}
+
 function parseAnnouncementJson(json: string | null | undefined): AnnouncementConfig | null {
   if (!json) return null;
   try {
     const parsed = JSON.parse(json);
-    if (!parsed.message) return null;
+    if (!parsed || typeof parsed.message !== "string" || !parsed.message.trim()) return null;
+    const icon = ALLOWED_ICONS.includes(parsed.icon) ? parsed.icon : undefined;
+    const visibility = ALLOWED_VISIBILITY.includes(parsed.visibility) ? parsed.visibility : "always";
     return {
-      message: parsed.message,
-      link: parsed.link || undefined,
-      bgColor: parsed.bgColor || "#0F172A",
-      textColor: parsed.textColor || "#FFFFFF",
+      message: String(parsed.message).slice(0, 200),
+      link: safeLink(parsed.link),
+      bgColor: safeColor(parsed.bgColor, "#0F172A"),
+      textColor: safeColor(parsed.textColor, "#FFFFFF"),
       dismissible: parsed.dismissible ?? true,
-      icon: parsed.icon || undefined,
-      visibility: parsed.visibility || "always",
+      icon,
+      visibility,
     };
   } catch {
     return null;

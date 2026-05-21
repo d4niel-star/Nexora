@@ -124,7 +124,13 @@ export function CommandPalette() {
     return groups;
   }, [filtered]);
 
-  const flatList = useMemo(() => filtered, [filtered]);
+  const flatList = filtered;
+  // O(1) index lookup instead of repeated flatList.indexOf inside render
+  const indexMap = useMemo(() => {
+    const m = new Map<CommandItem, number>();
+    flatList.forEach((cmd, i) => m.set(cmd, i));
+    return m;
+  }, [flatList]);
 
   // ── Execute command ────────────────────────────────────────────────
   const execute = useCallback(
@@ -171,7 +177,12 @@ export function CommandPalette() {
       />
 
       {/* Palette */}
-      <div className="fixed left-1/2 top-[15%] z-[10000] w-[520px] max-w-[92vw] -translate-x-1/2 rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] shadow-[var(--shadow-overlay)] overflow-hidden">
+      <div
+        className="fixed left-1/2 top-[15%] z-[10000] w-[520px] max-w-[92vw] -translate-x-1/2 rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] shadow-[var(--shadow-overlay)] overflow-hidden"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Paleta de comandos"
+      >
         {/* Search input */}
         <div className="flex items-center gap-2.5 border-b border-[color:var(--hairline)] px-4 py-3">
           <Search className="h-4 w-4 shrink-0 text-ink-5" strokeWidth={1.75} />
@@ -201,7 +212,7 @@ export function CommandPalette() {
                   {GROUP_LABELS[group] ?? group}
                 </p>
                 {items.map((cmd) => {
-                  const idx = flatList.indexOf(cmd);
+                  const idx = indexMap.get(cmd) ?? -1;
                   const Icon = cmd.icon;
                   return (
                     <button
