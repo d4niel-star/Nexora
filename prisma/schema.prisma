@@ -1810,12 +1810,15 @@ model StaffMember {
   userId    String
   user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   role      String  @default("manager") // "admin" | "manager" | "support" | "analyst"
-  status    String  @default("active") // "active" | "invited" | "suspended"
+  status    String  @default("active") // "active" | "invited" | "suspended" | "removed"
 
   invitedAt   DateTime?
   invitedById String?
   acceptedAt  DateTime?
   suspendedAt DateTime?
+  removedAt   DateTime?
+  removedById String?
+  lastActiveAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1824,6 +1827,34 @@ model StaffMember {
   @@index([storeId])
   @@index([userId])
   @@index([role])
+}
+
+// ─── Staff Invitations (Phase 7B) ─────────────────────────────────────
+// Token-based invite flow. Tokens are stored as a SHA-256 hash; the raw
+// token only exists in the email link. Single-use, expiring (default
+// 72h). Once accepted, acceptedAt is set and the token is rejected on
+// any further attempt. Revoked invites set revokedAt — the row is kept
+// for audit history.
+model StaffInvitation {
+  id        String  @id @default(uuid())
+  storeId   String
+  email     String
+  role      String  @default("manager") // "admin" | "manager" | "support" | "analyst"
+  tokenHash String  @unique // SHA-256(token)
+
+  invitedById String? // User.id of the actor who issued the invite
+  acceptedAt  DateTime?
+  acceptedById String? // User.id of the user who accepted (after signup)
+  revokedAt   DateTime?
+  revokedById String?
+
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([storeId])
+  @@index([email])
+  @@index([expiresAt])
 }
 
 // ─── Jobs / Queue ─────────────────────────────────────────────────────

@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { requirePermission } from "@/lib/rbac/guard";
 import { logSystemEvent } from "@/lib/observability/logger";
+import { requireRateLimit } from "@/lib/rate-limit";
 import { retryJob, cancelJob, runDueJobs } from "./queue";
+import { ensureJobHandlersRegistered } from "./handlers";
 
 // ─── Operations Center server actions ────────────────────────────────
 // Every action goes through the RBAC guard and writes a SystemEvent for
@@ -47,6 +49,17 @@ export async function cancelJobAction(jobId: string) {
 
 export async function runDueJobsAction() {
   const actor = await requirePermission("operations.retry");
+  // Manual drain is bounded to 6/min per actor — prevents accidental
+  // hot-clicking from saturating the queue worker.
+  await requireRateLimit({
+    key: `ops_drain:user:${actor.userId}`,
+    limit: 6,
+    windowMs: 60_000,
+    route: "operations.drain",
+    actorId: actor.userId,
+    storeId: actor.storeId,
+  });
+  ensureJobHandlersRegistered();
   const result = await runDueJobs({ limit: 25, workerId: `manual:${actor.userId}` });
   await logSystemEvent({
     storeId: actor.storeId,

@@ -1,8 +1,9 @@
 "use server";
 
 import { prisma } from "@/lib/db/prisma";
-import { getCurrentStore } from "@/lib/auth/session";
+import { getCurrentStore, getCurrentUser } from "@/lib/auth/session";
 import { revalidatePath } from "next/cache";
+import { requireRateLimit } from "@/lib/rate-limit";
 import { sendEmailEvent } from "@/lib/email/events";
 import { logSystemEvent } from "../../observability/audit";
 import { issueCreditNoteForInvoice } from "@/lib/fiscal/arca/services";
@@ -42,6 +43,21 @@ export async function createOrderFromDraft(_draftId: string): Promise<never> {
 export async function cancelOrder(orderId: string, reason: string, doRefund: boolean) {
   const currentStore = await getCurrentStore();
   if (!currentStore) throw new Error("No hay tienda activa.");
+
+  // Phase 7B.3 — refunds are sensitive and irreversible, rate-limit
+  // them per actor to 5/min. Plain cancellations (doRefund=false) are
+  // not rate-limited because they don't move money.
+  if (doRefund) {
+    const actor = await getCurrentUser();
+    await requireRateLimit({
+      key: `refund:user:${actor?.id ?? "anon"}:store:${currentStore.id}`,
+      limit: 5,
+      windowMs: 60_000,
+      route: "orders.refund",
+      actorId: actor?.id ?? null,
+      storeId: currentStore.id,
+    });
+  }
 
   const order = await prisma.order.findFirst({
     where: { id: orderId, storeId: currentStore.id },

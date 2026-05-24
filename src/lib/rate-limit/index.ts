@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { logSystemEvent } from "@/lib/observability/audit";
 
 // ─── Rate Limiting ───────────────────────────────────────────────────
 // Postgres-backed fixed-window counter. Designed for sensitive admin
@@ -17,6 +18,12 @@ export interface RateLimitInput {
   key: string;
   limit: number;
   windowMs: number;
+  // Phase 7B.3 — audit trail context. Optional but encouraged so
+  // /admin/operations/timeline can show who tripped which bucket.
+  route?: string;
+  actorId?: string | null;
+  storeId?: string | null;
+  ipHash?: string | null;
 }
 
 export interface RateLimitResult {
@@ -80,6 +87,28 @@ export async function checkRateLimit(input: RateLimitInput): Promise<RateLimitRe
 export async function requireRateLimit(input: RateLimitInput): Promise<void> {
   const result = await checkRateLimit(input);
   if (!result.allowed) {
+    // Audit-log the trigger so /admin/operations/timeline can surface
+    // abuse patterns (per-route, per-actor, per-ipHash). We do this
+    // before throwing so the SystemEvent lands even when the caller
+    // doesn't catch the error.
+    await logSystemEvent({
+      storeId: input.storeId ?? null,
+      entityType: "rate_limit",
+      entityId: input.key,
+      eventType: "rate_limit_triggered",
+      severity: "warn",
+      source: "rate_limit",
+      message: `Rate limit hit on ${input.route ?? input.key}`,
+      actorId: input.actorId ?? null,
+      metadata: {
+        bucket: input.key,
+        route: input.route ?? null,
+        limit: input.limit,
+        windowMs: input.windowMs,
+        retryAfterMs: result.retryAfterMs,
+        ipHash: input.ipHash ?? null,
+      },
+    }).catch(() => undefined); // never let audit failure block the throw
     throw new RateLimitError(input.key, result.retryAfterMs);
   }
 }

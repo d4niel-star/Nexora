@@ -1,5 +1,15 @@
 import { Resend } from "resend";
 import { EmailProvider, EmailPayload } from "../types";
+import { getCircuitBreaker, CircuitBreakerOpenError } from "@/lib/resilience/circuit-breaker";
+
+// Phase 7B.5 — circuit-break the Resend provider. If the API has been
+// unreachable / erroring for 5 consecutive sends, the breaker opens for
+// 60s and we fail fast instead of compounding the outage.
+const resendBreaker = getCircuitBreaker({
+  name: "email_resend",
+  failureThreshold: 5,
+  cooldownMs: 60_000,
+});
 
 // ---------------------------------------------------------------------------
 // Remitente: preferir RESEND_FROM_EMAIL; aceptar EMAIL_FROM como alias para
@@ -34,21 +44,27 @@ export class ResendProvider implements EmailProvider {
 
   async send(payload: EmailPayload): Promise<{ success: boolean; error?: string }> {
     try {
-      const { error } = await this.client.emails.send({
-        from: this.from,
-        to: payload.to,
-        subject: payload.subject,
-        html: payload.html,
-        ...(payload.text ? { text: payload.text } : {}),
+      // The circuit breaker counts thrown errors as failures, so we
+      // re-throw on Resend `error` payloads to record a failure. The
+      // catch below normalizes the response shape for callers.
+      await resendBreaker.exec(async () => {
+        const { error } = await this.client.emails.send({
+          from: this.from,
+          to: payload.to,
+          subject: payload.subject,
+          html: payload.html,
+          ...(payload.text ? { text: payload.text } : {}),
+        });
+        if (error) {
+          throw new Error(error.message || "Resend API error");
+        }
       });
-
-      if (error) {
-        console.error("[ResendProvider] API error:", error);
-        return { success: false, error: error.message || "Resend API error" };
-      }
-
       return { success: true };
     } catch (err: any) {
+      if (err instanceof CircuitBreakerOpenError) {
+        // Fast-fail because the breaker is open — surface a typed message.
+        return { success: false, error: `email_provider_circuit_open:${err.retryAfterMs}ms` };
+      }
       console.error("[ResendProvider] Send failed:", err);
       return { success: false, error: err.message || "Unknown Resend error" };
     }

@@ -8,6 +8,7 @@ import {
   MessageSquare,
   Plug,
   ShieldCheck,
+  Users,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
@@ -198,6 +199,13 @@ export default async function SettingsHubPage() {
               ? { label: `${integrationsCount} activas`, tone: "ok" }
               : { label: "Sin conexiones", tone: "muted" },
           icon: Plug,
+        },
+        {
+          href: "/admin/settings/team",
+          label: "Equipo",
+          summary:
+            "Invitá colaboradores con roles (admin, manager, support, analyst). Cada acción queda auditada.",
+          icon: Users,
         },
       ],
     },

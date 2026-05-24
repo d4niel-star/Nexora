@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db/prisma";
-import { resolveJobHandler } from "./types";
+import { resolveJobHandler, getJobTimeoutMs, PermanentJobError } from "./types";
 import { logSystemEvent } from "@/lib/observability/logger";
+import { withTimeout, TimeoutError } from "@/lib/resilience/timeout";
 
 // ─── Job Queue ───────────────────────────────────────────────────────
 // Postgres-backed durable queue. Producers call enqueueJob(); workers
@@ -135,23 +136,36 @@ export async function runDueJobs(opts: RunDueJobsOptions = {}): Promise<{ proces
     const startMs = Date.now();
     const handler = resolveJobHandler(job.type);
 
-    let result;
+    let result: { ok: boolean; error?: string; permanent?: boolean; metadata?: Record<string, unknown> };
     try {
       if (!handler) {
-        result = { ok: false, error: `No handler registered for type: ${job.type}` };
+        // No handler registered → permanent failure (no retry).
+        result = { ok: false, error: `No handler registered for type: ${job.type}`, permanent: true };
       } else {
         const payloadObj = safeParse(job.payload);
-        result = await handler({
-          jobId: job.id,
-          type: job.type,
-          storeId: job.storeId,
-          payload: payloadObj,
-          attempts: job.attempts + 1,
-          correlationId: job.correlationId,
-        });
+        const timeoutMs = getJobTimeoutMs(job.type);
+        result = await withTimeout(
+          handler({
+            jobId: job.id,
+            type: job.type,
+            storeId: job.storeId,
+            payload: payloadObj,
+            attempts: job.attempts + 1,
+            correlationId: job.correlationId,
+          }),
+          timeoutMs,
+          `job:${job.type}`,
+        );
       }
     } catch (err) {
-      result = { ok: false, error: err instanceof Error ? err.message : String(err) };
+      if (err instanceof PermanentJobError) {
+        result = { ok: false, error: err.message, permanent: true };
+      } else if (err instanceof TimeoutError) {
+        // Timeouts are transient — they get retried.
+        result = { ok: false, error: `Timed out after ${err.timeoutMs}ms`, permanent: false };
+      } else {
+        result = { ok: false, error: err instanceof Error ? err.message : String(err) };
+      }
     }
 
     const durationMs = Date.now() - startMs;
@@ -184,7 +198,10 @@ export async function runDueJobs(opts: RunDueJobsOptions = {}): Promise<{ proces
       });
     } else {
       failed += 1;
-      const dead = newAttempts >= job.maxAttempts;
+      // Permanent failures (validation, missing handler) skip retries and
+      // go straight to dead so they show up in the Operations Center for
+      // human review.
+      const dead = result.permanent === true || newAttempts >= job.maxAttempts;
       const nextRunAt = dead ? null : new Date(Date.now() + computeBackoff(newAttempts));
       await prisma.job.update({
         where: { id },

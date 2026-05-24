@@ -57,10 +57,19 @@ export function OperationsCenterClient({ summary, recentJobs, failedJobs, deadJo
 
   return (
     <div className="space-y-6 pb-16 animate-in fade-in duration-300">
-      <NexoraPageHeader
-        title="Centro de Operaciones"
-        subtitle="Salud del sistema, cola de jobs y trazabilidad operacional. Toda la información es real y proviene del backend."
-      />
+      <div className="flex items-start justify-between">
+        <NexoraPageHeader
+          title="Centro de Operaciones"
+          subtitle="Salud del sistema, cola de jobs y trazabilidad operacional. Toda la información es real y proviene del backend."
+        />
+        <a
+          href="/admin/operations/timeline"
+          className="mt-1 inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-3 py-1.5 text-[12px] font-medium text-ink-0 hover:bg-[var(--surface-2)]"
+        >
+          <Activity className="h-3.5 w-3.5" />
+          Línea de tiempo
+        </a>
+      </div>
 
       {/* ── System Health Strip ────────────────────────────────────── */}
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
@@ -70,6 +79,42 @@ export function OperationsCenterClient({ summary, recentJobs, failedJobs, deadJo
         <SubsystemCard icon={Mail} label="Emails" status={health.subsystems.emails.status} message={health.subsystems.emails.message} />
         <SubsystemCard icon={Truck} label="Logística" status={health.subsystems.logistics.status} message={health.subsystems.logistics.message} />
         <SubsystemCard icon={Layers} label="Cola de jobs" status={health.subsystems.queue.status} message={health.subsystems.queue.message} />
+      </section>
+
+      {/* ── Resilience Strip (Phase 7B.5) ────────────────────────────── */}
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <ResilienceCard
+          label="Lag de cola"
+          value={health.queueDetails.oldestPendingMs == null
+            ? "—"
+            : formatDuration(health.queueDetails.oldestPendingMs)}
+          tone={
+            health.queueDetails.oldestPendingMs == null ? "muted" :
+            health.queueDetails.oldestPendingMs > 5 * 60_000 ? "warn" :
+            "default"
+          }
+          hint={`${health.queueDetails.pending} pendientes / ${health.queueDetails.running} corriendo`}
+        />
+        <ResilienceCard
+          label="Jobs muertos (24h)"
+          value={String(health.queueDetails.dead24h)}
+          tone={health.queueDetails.dead24h > 0 ? "danger" : "default"}
+          hint="Necesitan revisión manual"
+        />
+        <ResilienceCard
+          label="Rate limits"
+          value={`${health.rateLimitPressure.triggered24h} / 24h`}
+          tone={health.rateLimitPressure.triggered24h > 20 ? "warn" : "default"}
+          hint={`${health.rateLimitPressure.activeBuckets} buckets activos`}
+        />
+        <ResilienceCard
+          label="Circuit breakers"
+          value={health.circuitBreakers.length === 0 ? "—" : `${health.circuitBreakers.filter(b => b.state !== "closed").length} abiertos`}
+          tone={health.circuitBreakers.some(b => b.state !== "closed") ? "warn" : "default"}
+          hint={health.circuitBreakers.length === 0
+            ? "Sin tráfico aún"
+            : health.circuitBreakers.map(b => `${b.name}:${b.state}`).join(" · ")}
+        />
       </section>
 
       {/* ── Queue Summary ──────────────────────────────────────────── */}
@@ -114,6 +159,31 @@ export function OperationsCenterClient({ summary, recentJobs, failedJobs, deadJo
 }
 
 // ─── Subcomponents ───
+
+function formatDuration(ms: number): string {
+  if (ms < 1000) return `${ms}ms`;
+  const s = Math.floor(ms / 1000);
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ${s % 60}s`;
+  const h = Math.floor(m / 60);
+  return `${h}h ${m % 60}m`;
+}
+
+function ResilienceCard({ label, value, tone, hint }: { label: string; value: string; tone: "default" | "warn" | "danger" | "muted"; hint: string }) {
+  const toneCls =
+    tone === "danger" ? "text-[color:var(--signal-danger)]" :
+    tone === "warn" ? "text-[color:var(--signal-warning)]" :
+    tone === "muted" ? "text-ink-5" :
+    "text-ink-0";
+  return (
+    <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-3">
+      <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-ink-5">{label}</p>
+      <p className={cn("mt-1.5 text-[18px] font-semibold tabular tracking-[-0.02em]", toneCls)}>{value}</p>
+      <p className="mt-1 text-[11px] text-ink-5 line-clamp-2">{hint}</p>
+    </div>
+  );
+}
 
 function SubsystemCard({ icon: Icon, label, status, message }: { icon: React.ComponentType<{ className?: string }>; label: string; status: "ok" | "warn" | "error"; message: string }) {
   const dotColor = status === "ok" ? "bg-[color:var(--signal-success)]" : status === "warn" ? "bg-[color:var(--signal-warning)]" : "bg-[color:var(--signal-danger)]";

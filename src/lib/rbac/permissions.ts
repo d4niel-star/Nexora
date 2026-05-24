@@ -44,7 +44,8 @@ export const ALL_PERMISSIONS = [
   // Staff & team
   "staff.read",
   "staff.invite",
-  "staff.suspend",
+  "staff.manage", // suspend, reactivate, change role
+  "staff.remove",
   // Operations
   "operations.read",
   "operations.retry",
@@ -71,7 +72,7 @@ export const PERMISSIONS_BY_ROLE: Record<StaffRole, ReadonlyArray<Permission>> =
     "apps.install", "apps.uninstall",
     "automation.read", "automation.toggle", "automation.config",
     "billing.read",
-    "staff.read", "staff.invite", "staff.suspend",
+    "staff.read", "staff.invite", "staff.manage", "staff.remove",
     "operations.read", "operations.retry", "operations.cancel",
   ],
   manager: [

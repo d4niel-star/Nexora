@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { snapshotAllBreakers } from "@/lib/resilience/circuit-breaker";
 
 export interface SystemHealthReport {
   status: "healthy" | "degraded" | "unhealthy";
@@ -11,6 +12,24 @@ export interface SystemHealthReport {
     logistics: SubsystemStatus;
     queue: SubsystemStatus;
   };
+  // Phase 7B.5 — extended observability
+  queueDetails: {
+    pending: number;
+    running: number;
+    dead24h: number;
+    /** Age (ms) of the oldest pending job. Indicates queue lag. */
+    oldestPendingMs: number | null;
+  };
+  rateLimitPressure: {
+    activeBuckets: number;
+    triggered24h: number;
+  };
+  circuitBreakers: Array<{
+    name: string;
+    state: "closed" | "open" | "half_open";
+    failures: number;
+    openedAt: number | null;
+  }>;
   recentActivity: RecentActivityItem[];
   recentErrors: RecentActivityItem[];
 }
@@ -83,12 +102,27 @@ export async function getSystemHealthReport(): Promise<SystemHealthReport> {
     }),
   ]);
 
-  // Queue health: pending backlog + dead jobs in last 24h
-  const [pendingJobs, deadJobs24h, runningJobs] = await Promise.all([
+  // Queue health: pending backlog + dead jobs in last 24h + lag (oldest pending)
+  const [pendingJobs, deadJobs24h, runningJobs, oldestPending, activeBuckets, rateLimitTriggered24h] = await Promise.all([
     prisma.job.count({ where: { status: "pending", runAt: { lte: now } } }),
     prisma.job.count({ where: { status: "dead", finishedAt: { gte: last24h } } }),
     prisma.job.count({ where: { status: "running" } }),
+    prisma.job.findFirst({
+      where: { status: "pending", runAt: { lte: now } },
+      orderBy: { runAt: "asc" },
+      select: { runAt: true },
+    }),
+    prisma.rateLimitBucket.count({ where: { resetAt: { gt: now } } }),
+    prisma.systemEvent.count({ where: { eventType: "rate_limit_triggered", createdAt: { gte: last24h } } }),
   ]);
+
+  const oldestPendingMs = oldestPending?.runAt ? Math.max(0, now.getTime() - oldestPending.runAt.getTime()) : null;
+  const breakerSnapshots = snapshotAllBreakers().map((b) => ({
+    name: b.name,
+    state: b.state,
+    failures: b.failures,
+    openedAt: b.openedAt,
+  }));
 
   const uptimeMs = Date.now() - startTime;
   const uptimeHours = Math.floor(uptimeMs / 3600000);
@@ -148,6 +182,17 @@ export async function getSystemHealthReport(): Promise<SystemHealthReport> {
     status: overallStatus,
     uptime: `${uptimeHours}h ${uptimeMins}m`,
     subsystems: { database, orders, payments, emails, logistics, queue },
+    queueDetails: {
+      pending: pendingJobs,
+      running: runningJobs,
+      dead24h: deadJobs24h,
+      oldestPendingMs,
+    },
+    rateLimitPressure: {
+      activeBuckets,
+      triggered24h: rateLimitTriggered24h,
+    },
+    circuitBreakers: breakerSnapshots,
     recentActivity: recentEvents.map(mapEvent),
     recentErrors: recentErrorEvents.map(mapEvent),
   };
