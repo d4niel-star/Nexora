@@ -50,6 +50,16 @@ export const ALL_PERMISSIONS = [
   "operations.read",
   "operations.retry",
   "operations.cancel",
+  // ─── Phase 7C: Intelligence + CRM + Marketing ───
+  "analytics.view",          // Read access to /admin/analytics
+  "analytics.export",        // Heavy analytics exports (rate-limited)
+  "exports.manage",          // CSV exports of customers / orders
+  "customer.notes.manage",   // Create / edit / delete CRM notes
+  "customer.tags.manage",    // Create / remove tags
+  "customer.tasks.manage",   // Create / assign / complete tasks
+  "marketing.read",          // Read campaigns
+  "marketing.manage",        // Create / send campaigns
+  "crm.manage",              // Aggregate flag for CRM mutations (notes/tags/tasks)
   // System / dangerous
   "system.dangerous", // Owner-only escape hatch (delete store, etc.)
 ] as const;
@@ -74,6 +84,11 @@ export const PERMISSIONS_BY_ROLE: Record<StaffRole, ReadonlyArray<Permission>> =
     "billing.read",
     "staff.read", "staff.invite", "staff.manage", "staff.remove",
     "operations.read", "operations.retry", "operations.cancel",
+    "analytics.view", "analytics.export",
+    "exports.manage",
+    "customer.notes.manage", "customer.tags.manage", "customer.tasks.manage",
+    "marketing.read", "marketing.manage",
+    "crm.manage",
   ],
   manager: [
     "catalog.read", "catalog.write", "catalog.bulk",
@@ -83,6 +98,11 @@ export const PERMISSIONS_BY_ROLE: Record<StaffRole, ReadonlyArray<Permission>> =
     "storefront.read",
     "automation.read", "automation.toggle",
     "operations.read",
+    "analytics.view",
+    "exports.manage",
+    "customer.notes.manage", "customer.tags.manage", "customer.tasks.manage",
+    "marketing.read",
+    "crm.manage",
   ],
   support: [
     "catalog.read",
@@ -90,6 +110,8 @@ export const PERMISSIONS_BY_ROLE: Record<StaffRole, ReadonlyArray<Permission>> =
     "orders.read", "orders.fulfill", "orders.cancel",
     "customers.read", "customers.write",
     "automation.read",
+    "customer.notes.manage", "customer.tags.manage", "customer.tasks.manage",
+    "crm.manage",
   ],
   analyst: [
     "catalog.read",
@@ -100,6 +122,9 @@ export const PERMISSIONS_BY_ROLE: Record<StaffRole, ReadonlyArray<Permission>> =
     "automation.read",
     "billing.read",
     "operations.read",
+    "analytics.view", "analytics.export",
+    "exports.manage",
+    "marketing.read",
   ],
 };
 

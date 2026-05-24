@@ -1829,6 +1829,67 @@ model StaffMember {
   @@index([role])
 }
 
+// ─── Customer CRM Layer (Phase 7C) ────────────────────────────────────
+// Customers in Nexora are derived from Order rows (email is the
+// canonical identifier — there is no Customer table by design). The
+// CRM tables below attach merchant-side context (notes, tags, tasks)
+// to that email-as-id model. Each row is scoped by (storeId, email)
+// so a single shopper that buys from multiple stores keeps separate
+// CRM context per store — multi-tenant safety is preserved.
+model CustomerNote {
+  id            String  @id @default(uuid())
+  storeId       String
+  customerEmail String
+  authorId      String  // User.id of the staff member who wrote it
+  authorRole    String  // Snapshot of the role at write-time for audit
+  body          String  // Plain text, capped at 4000 chars by the action
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([storeId, customerEmail])
+  @@index([authorId])
+}
+
+model CustomerTag {
+  id            String  @id @default(uuid())
+  storeId       String
+  customerEmail String
+  label         String  // Lowercase, dashed; canonicalized by the action
+  color         String? // Optional, hex; UI falls back to a default palette
+
+  createdAt   DateTime @default(now())
+  createdById String?
+
+  @@unique([storeId, customerEmail, label])
+  @@index([storeId, label])
+}
+
+model CustomerTask {
+  id            String  @id @default(uuid())
+  storeId       String
+  customerEmail String
+
+  title       String
+  description String?
+  dueAt       DateTime?
+  status      String  @default("open") // "open" | "completed" | "cancelled"
+  priority    String  @default("normal") // "low" | "normal" | "high"
+
+  assignedToId String? // User.id; nullable for unassigned tasks
+  createdById  String
+
+  completedAt DateTime?
+  cancelledAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([storeId, customerEmail])
+  @@index([assignedToId, status])
+  @@index([status, dueAt])
+}
+
 // ─── Staff Invitations (Phase 7B) ─────────────────────────────────────
 // Token-based invite flow. Tokens are stored as a SHA-256 hash; the raw
 // token only exists in the email link. Single-use, expiring (default

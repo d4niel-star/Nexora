@@ -184,7 +184,10 @@ export function CustomersClient({ initialCustomers, insights }: { initialCustome
                     style={{ cursor: "pointer" }}
                     onClick={() => {
                       if (typeof window !== "undefined") {
-                        window.location.href = `/admin/orders?customer=${encodeURIComponent(c.email)}`;
+                        // Phase 7C.1 — row click opens the new 360 profile.
+                        // The "Pedidos" link in the last cell still pivots
+                        // to /admin/orders?customer= for the legacy view.
+                        window.location.href = `/admin/customers/${encodeURIComponent(c.email)}`;
                       }
                     }}
                   >
