@@ -1890,6 +1890,43 @@ model CustomerTask {
   @@index([status, dueAt])
 }
 
+// ─── Export Artifacts (Phase 7D.4) ────────────────────────────────────
+// Queue-backed exports. The producer (server action) creates a row in
+// status="pending" and enqueues a Job; the handler streams CSV into
+// `csvContent`, flips status to "ready", and sets `readyAt` + `expiresAt`.
+// Downloads happen via `/api/exports/[id]/download` which validates
+// ownership + expiry. Storing CSV inline in Postgres is intentional for
+// the 100k-row cap (~20 MB) — production-scale should swap `csvContent`
+// for an object-storage URL (S3, GCS) keyed off `id`.
+model ExportArtifact {
+  id          String   @id @default(uuid())
+  storeId     String
+  jobId       String?  // Job.id that generated this; null for inline-fallback exports
+  type        String   // "customers" | "orders" | "inventory" | "analytics"
+  status      String   @default("pending") // pending | ready | failed | expired
+  filename    String
+
+  rowCount    Int      @default(0)
+  fileSize    Int      @default(0) // byte length of csvContent
+
+  /// CSV body. Held inline for now (≤100k rows). Cleared on expiry to
+  /// reclaim space. Move to object-storage URL when scaling beyond
+  /// single-store SMB volumes.
+  csvContent  String?
+  errorMessage String?
+
+  createdById String
+  createdAt   DateTime @default(now())
+  readyAt     DateTime?
+  expiresAt   DateTime
+  downloadedAt DateTime?
+  downloadCount Int @default(0)
+
+  @@index([storeId, status])
+  @@index([createdById])
+  @@index([expiresAt])
+}
+
 // ─── Staff Invitations (Phase 7B) ─────────────────────────────────────
 // Token-based invite flow. Tokens are stored as a SHA-256 hash; the raw
 // token only exists in the email link. Single-use, expiring (default

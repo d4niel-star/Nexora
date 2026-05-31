@@ -11,6 +11,9 @@ import type { SegmentId } from "@/lib/customers/segments";
 import { SEGMENT_DEFINITIONS } from "@/lib/customers/segments";
 import { HEALTH_LABELS, type HealthVerdict } from "@/lib/customers/health";
 import { createCustomerNote, updateCustomerNote, deleteCustomerNote, type CustomerNoteRow } from "@/lib/customers/notes-actions";
+import { assignCustomerTag, removeCustomerTag, type TagRow } from "@/lib/customers/tags-actions";
+import { createCustomerTask, completeCustomerTask, cancelCustomerTask, reopenCustomerTask } from "@/lib/customers/tasks-actions";
+import type { TaskRow } from "@/lib/customers/tasks";
 
 interface Props {
   profile: CustomerProfile;
@@ -18,15 +21,20 @@ interface Props {
   health: HealthVerdict;
   timeline: TimelineEntry[];
   notes: CustomerNoteRow[];
-  capabilities: { canManageNotes: boolean };
+  tags: TagRow[];
+  tasks: TaskRow[];
+  capabilities: { canManageNotes: boolean; canManageTags: boolean; canManageTasks: boolean };
 }
 
-export function CustomerProfileClient({ profile, segments, health, timeline, notes, capabilities }: Props) {
+export function CustomerProfileClient({ profile, segments, health, timeline, notes, tags, tasks, capabilities }: Props) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [draftBody, setDraftBody] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingBody, setEditingBody] = useState("");
+  const [tagDraft, setTagDraft] = useState("");
+  const [taskDraft, setTaskDraft] = useState({ title: "", dueAt: "", priority: "normal" });
+  const [showTaskForm, setShowTaskForm] = useState(false);
 
   const handle = (op: () => Promise<unknown>) => {
     setError(null);
@@ -71,6 +79,53 @@ export function CustomerProfileClient({ profile, segments, health, timeline, not
         )}
       </section>
 
+      {/* ── Tags row (Phase 7D.2) ─── */}
+      <section className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[10px] uppercase tracking-[0.12em] text-ink-5">Tags</span>
+          {tags.length === 0 && <span className="text-[11px] text-ink-5">Sin tags.</span>}
+          {tags.map((t) => (
+            <span key={t.id} className="inline-flex items-center gap-1 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-paper)] px-2 py-0.5 text-[11px] text-ink-2" style={t.color ? { borderColor: t.color, color: t.color } : undefined}>
+              #{t.label}
+              {capabilities.canManageTags && (
+                <button
+                  type="button"
+                  onClick={() => handle(() => removeCustomerTag({ customerEmail: profile.email, label: t.label }))}
+                  disabled={isPending}
+                  aria-label={`Remover tag ${t.label}`}
+                  className="ml-0.5 inline-flex items-center justify-center rounded-full p-0.5 hover:bg-[var(--surface-2)]"
+                >
+                  <XCircle className="h-2.5 w-2.5" />
+                </button>
+              )}
+            </span>
+          ))}
+          {capabilities.canManageTags && (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!tagDraft.trim()) return;
+                handle(async () => {
+                  await assignCustomerTag({ customerEmail: profile.email, label: tagDraft });
+                  setTagDraft("");
+                });
+              }}
+              className="inline-flex items-center gap-1"
+            >
+              <input
+                type="text"
+                value={tagDraft}
+                onChange={(e) => setTagDraft(e.target.value)}
+                placeholder="agregar-tag"
+                maxLength={40}
+                className="rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-paper)] px-2 py-0.5 text-[11px] outline-none focus-visible:shadow-[var(--shadow-focus)]"
+              />
+              <button type="submit" disabled={isPending || !tagDraft.trim()} className="rounded-full bg-ink-0 px-2 py-0.5 text-[11px] text-ink-12 disabled:opacity-50">+</button>
+            </form>
+          )}
+        </div>
+      </section>
+
       {error && (
         <div className="rounded-[var(--r-md)] border border-[color:var(--signal-danger)]/30 bg-[color:var(--signal-danger)]/5 px-3 py-2 text-[12px] text-[color:var(--signal-danger)]">
           {error}
@@ -112,6 +167,96 @@ export function CustomerProfileClient({ profile, segments, health, timeline, not
           <Kpi label="Métodos envío" value={profile.operational.shippingMethods.length === 0 ? "—" : profile.operational.shippingMethods.join(", ")} />
           <Kpi label="Reseñas" value="—" hint="Telemetría no disponible" />
         </div>
+      </section>
+
+      {/* ── Tasks panel (Phase 7D.3) ─── */}
+      <section>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-[12px] font-medium uppercase tracking-[0.18em] text-ink-5">Tareas</h2>
+          {capabilities.canManageTasks && (
+            <button type="button" onClick={() => setShowTaskForm(!showTaskForm)} className="inline-flex items-center gap-1 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-0)] px-2 py-1 text-[11px] font-medium text-ink-0 hover:bg-[var(--surface-2)]">
+              <Plus className="h-3 w-3" /> Nueva tarea
+            </button>
+          )}
+        </div>
+
+        {showTaskForm && capabilities.canManageTasks && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!taskDraft.title.trim()) return;
+              handle(async () => {
+                await createCustomerTask({
+                  customerEmail: profile.email,
+                  title: taskDraft.title,
+                  dueAt: taskDraft.dueAt || null,
+                  priority: taskDraft.priority,
+                });
+                setTaskDraft({ title: "", dueAt: "", priority: "normal" });
+                setShowTaskForm(false);
+              });
+            }}
+            className="mb-3 rounded-[var(--r-md)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-3 grid grid-cols-1 sm:grid-cols-[1fr_auto_auto_auto] gap-2"
+          >
+            <input type="text" value={taskDraft.title} onChange={(e) => setTaskDraft({ ...taskDraft, title: e.target.value })} placeholder="Título de la tarea…" maxLength={200} className="rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-paper)] px-2 py-1 text-[12px] outline-none focus-visible:shadow-[var(--shadow-focus)]" />
+            <input type="date" value={taskDraft.dueAt} onChange={(e) => setTaskDraft({ ...taskDraft, dueAt: e.target.value })} className="rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-paper)] px-2 py-1 text-[12px] outline-none" />
+            <select value={taskDraft.priority} onChange={(e) => setTaskDraft({ ...taskDraft, priority: e.target.value })} className="rounded-[var(--r-sm)] border border-[color:var(--hairline-strong)] bg-[var(--surface-paper)] px-2 py-1 text-[12px] outline-none">
+              <option value="low">Baja</option>
+              <option value="normal">Normal</option>
+              <option value="medium">Media</option>
+              <option value="high">Alta</option>
+              <option value="urgent">Urgente</option>
+            </select>
+            <button type="submit" disabled={isPending || !taskDraft.title.trim()} className="rounded-full bg-ink-0 px-3 py-1 text-[11px] font-medium text-ink-12 disabled:opacity-50">Crear</button>
+          </form>
+        )}
+
+        {tasks.length === 0 ? (
+          <div className="rounded-[var(--r-lg)] border border-dashed border-[color:var(--hairline-strong)] bg-[var(--surface-0)] p-6 text-center text-[12px] text-ink-5">
+            Sin tareas para este cliente.
+          </div>
+        ) : (
+          <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] divide-y divide-[color:var(--hairline)]">
+            {tasks.map((t) => (
+              <div key={t.id} className="flex items-start gap-3 px-3 py-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className={cn("inline-flex shrink-0 items-center rounded-[var(--r-xs)] px-1.5 py-0.5 text-[10px] font-medium",
+                      t.status === "completed" ? "bg-[color:var(--signal-success)]/10 text-[color:var(--signal-success)]" :
+                      t.status === "cancelled" ? "bg-[var(--surface-2)] text-ink-5" :
+                      "bg-[var(--surface-2)] text-ink-3"
+                    )}>{t.status}</span>
+                    <span className="text-[10px] uppercase tracking-[0.1em] text-ink-5">{t.priority}</span>
+                    <p className={cn("truncate text-[12px]", t.status === "completed" ? "text-ink-5 line-through" : "text-ink-0")}>{t.title}</p>
+                  </div>
+                  <div className="mt-0.5 flex items-center gap-3 text-[10px] text-ink-5">
+                    {t.dueAt && <span>Vence {new Date(t.dueAt).toLocaleDateString()}</span>}
+                    {t.assignedToName && <span>· {t.assignedToName}</span>}
+                  </div>
+                </div>
+                {capabilities.canManageTasks && (
+                  <div className="shrink-0 flex items-center gap-1">
+                    {t.status === "open" && (
+                      <>
+                        <button type="button" onClick={() => handle(() => completeCustomerTask(t.id))} disabled={isPending} className="rounded-[var(--r-sm)] p-1 text-ink-5 hover:bg-[var(--surface-2)] hover:text-[color:var(--signal-success)]" aria-label="Completar">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                        </button>
+                        <button type="button" onClick={() => handle(() => cancelCustomerTask(t.id))} disabled={isPending} className="rounded-[var(--r-sm)] p-1 text-ink-5 hover:bg-[var(--surface-2)] hover:text-[color:var(--signal-danger)]" aria-label="Cancelar">
+                          <XCircle className="h-3.5 w-3.5" />
+                        </button>
+                      </>
+                    )}
+                    {(t.status === "completed" || t.status === "cancelled") && (
+                      <button type="button" onClick={() => handle(() => reopenCustomerTask(t.id))} disabled={isPending} className="rounded-[var(--r-sm)] p-1 text-ink-5 hover:bg-[var(--surface-2)] hover:text-ink-0" aria-label="Reabrir">
+                        <RotateCcw className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* ── Two-column: Timeline + Notes ─── */}

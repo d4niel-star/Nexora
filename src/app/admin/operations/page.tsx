@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { resolveActor } from "@/lib/rbac/guard";
 import { getJobSummary, listJobs } from "@/lib/jobs/queries";
 import { getSystemHealthReport } from "@/lib/observability/health";
+import { listRecentExports } from "@/lib/exports/queries";
 import { OperationsCenterClient } from "./OperationsCenterClient";
 
 // ─── Operations Center (Phase 7A) ─────────────────────────────────────
@@ -18,12 +19,14 @@ export default async function OperationsCenterPage() {
     redirect("/admin/dashboard");
   }
 
-  const [summary, recentJobs, failedJobs, deadJobs, health] = await Promise.all([
+  const canManageExports = roleHasPermission(actor.role, "exports.manage");
+  const [summary, recentJobs, failedJobs, deadJobs, health, exports] = await Promise.all([
     getJobSummary(actor.storeId),
     listJobs({ storeId: actor.storeId, limit: 25 }),
     listJobs({ storeId: actor.storeId, status: "failed", limit: 25 }),
     listJobs({ storeId: actor.storeId, status: "dead", limit: 25 }),
     getSystemHealthReport(),
+    listRecentExports(actor.storeId, 50),
   ]);
 
   return (
@@ -33,6 +36,8 @@ export default async function OperationsCenterPage() {
       failedJobs={failedJobs}
       deadJobs={deadJobs}
       health={health}
+      exports={exports}
+      canManageExports={canManageExports}
       actorRole={actor.role}
     />
   );

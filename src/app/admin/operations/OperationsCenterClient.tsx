@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Activity, AlertTriangle, CheckCircle2, Clock, RefreshCcw, XCircle, Zap, Database, Mail, Truck, ShoppingCart, Layers } from "lucide-react";
+import { Activity, AlertTriangle, CheckCircle2, Clock, RefreshCcw, XCircle, Zap, Database, Mail, Truck, ShoppingCart, Layers, Download, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { retryJobAction, cancelJobAction, runDueJobsAction } from "@/lib/jobs/actions";
 import type { JobSummary, JobRow } from "@/lib/jobs/queries";
 import type { SystemHealthReport } from "@/lib/observability/health";
+import type { ExportRow } from "@/lib/exports/queries";
+import { enqueueExportAction } from "@/lib/exports/enqueue-export";
 import { NexoraPageHeader } from "@/components/admin/nexora";
 
 // ─── Operations Center Client ────────────────────────────────────────
@@ -18,15 +20,27 @@ interface Props {
   failedJobs: JobRow[];
   deadJobs: JobRow[];
   health: SystemHealthReport;
+  exports: ExportRow[];
+  canManageExports: boolean;
   actorRole: string;
 }
 
-type Tab = "overview" | "failed" | "dead" | "recent";
+type Tab = "overview" | "failed" | "dead" | "recent" | "exports";
 
-export function OperationsCenterClient({ summary, recentJobs, failedJobs, deadJobs, health, actorRole }: Props) {
+export function OperationsCenterClient({ summary, recentJobs, failedJobs, deadJobs, health, exports, canManageExports, actorRole }: Props) {
   const [tab, setTab] = useState<Tab>("overview");
   const [isPending, startTransition] = useTransition();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  const handleEnqueueExport = (type: "customers" | "orders" | "inventory" | "analytics") => {
+    if (!canManageExports) return;
+    setExportError(null);
+    startTransition(async () => {
+      try { await enqueueExportAction({ type }); }
+      catch (e) { setExportError(e instanceof Error ? e.message : "Error"); }
+    });
+  };
 
   const canMutate = actorRole === "owner" || actorRole === "admin" || actorRole === "manager";
 
@@ -149,13 +163,99 @@ export function OperationsCenterClient({ summary, recentJobs, failedJobs, deadJo
         <TabButton active={tab === "overview"} onClick={() => setTab("overview")} count={recentJobs.length} label="Recientes" />
         <TabButton active={tab === "failed"} onClick={() => setTab("failed")} count={failedJobs.length} label="Fallidos" tone="warn" />
         <TabButton active={tab === "dead"} onClick={() => setTab("dead")} count={deadJobs.length} label="Muertos" tone="danger" />
+        <TabButton active={tab === "exports"} onClick={() => setTab("exports")} count={exports.length} label="Exportaciones" />
       </div>
 
       {tab === "overview" && <JobsTable rows={recentJobs} onRetry={handleRetry} onCancel={handleCancel} busyId={busyId} canMutate={canMutate} />}
       {tab === "failed" && <JobsTable rows={failedJobs} onRetry={handleRetry} onCancel={handleCancel} busyId={busyId} canMutate={canMutate} />}
       {tab === "dead" && <JobsTable rows={deadJobs} onRetry={handleRetry} onCancel={handleCancel} busyId={busyId} canMutate={canMutate} />}
+      {tab === "exports" && (
+        <ExportsPanel
+          rows={exports}
+          canManage={canManageExports}
+          isPending={isPending}
+          error={exportError}
+          onEnqueue={handleEnqueueExport}
+        />
+      )}
     </div>
   );
+}
+
+// ─── Exports Panel (Phase 7D.4) ─────────────────────────────────────
+function ExportsPanel({ rows, canManage, isPending, error, onEnqueue }: {
+  rows: ExportRow[];
+  canManage: boolean;
+  isPending: boolean;
+  error: string | null;
+  onEnqueue: (type: "customers" | "orders" | "inventory" | "analytics") => void;
+}) {
+  return (
+    <div className="space-y-4">
+      {canManage && (
+        <div className="flex flex-wrap items-center gap-2 rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] p-3">
+          <span className="text-[11px] uppercase tracking-[0.12em] text-ink-5">Nuevo export</span>
+          {(["customers", "orders", "inventory", "analytics"] as const).map((t) => (
+            <button key={t} type="button" onClick={() => onEnqueue(t)} disabled={isPending}
+              className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-paper)] px-3 py-1.5 text-[12px] font-medium text-ink-0 hover:bg-[var(--surface-2)] disabled:opacity-50">
+              <FileText className="h-3.5 w-3.5" /> {t}
+            </button>
+          ))}
+          <span className="ml-auto text-[10px] text-ink-6">Límite 10/hora · vencen a los 7 días</span>
+        </div>
+      )}
+
+      {error && <div className="rounded-[var(--r-md)] border border-[color:var(--signal-danger)]/30 bg-[color:var(--signal-danger)]/5 px-3 py-2 text-[12px] text-[color:var(--signal-danger)]">{error}</div>}
+
+      {rows.length === 0 ? (
+        <div className="rounded-[var(--r-lg)] border border-dashed border-[color:var(--hairline-strong)] bg-[var(--surface-0)] p-8 text-center text-[12px] text-ink-5">
+          Sin exportaciones todavía.
+        </div>
+      ) : (
+        <div className="rounded-[var(--r-lg)] border border-[color:var(--hairline)] bg-[var(--surface-0)] divide-y divide-[color:var(--hairline)]">
+          {rows.map((r) => {
+            const expired = new Date(r.expiresAt) <= new Date();
+            return (
+              <div key={r.id} className="flex items-center gap-3 px-3 py-2.5">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] uppercase tracking-[0.1em] text-ink-5">{r.type}</span>
+                    <ExportStatusPill status={expired ? "expired" : r.status} />
+                    <p className="truncate text-[12px] text-ink-0">{r.filename}</p>
+                  </div>
+                  <div className="mt-0.5 flex items-center gap-3 text-[10px] text-ink-5">
+                    <span>{r.createdByName ?? "—"}</span>
+                    <span className="tabular">{new Date(r.createdAt).toLocaleString()}</span>
+                    {r.status === "ready" && <span className="tabular">{r.rowCount.toLocaleString()} filas · {(r.fileSize / 1024).toFixed(0)} KB</span>}
+                    {r.downloadCount > 0 && <span>{r.downloadCount} descargas</span>}
+                  </div>
+                  {r.status === "failed" && r.errorMessage && (
+                    <p className="mt-0.5 text-[10px] text-[color:var(--signal-danger)]">{r.errorMessage}</p>
+                  )}
+                </div>
+                {r.status === "ready" && !expired && (
+                  <a href={`/api/exports/${r.id}/download`} className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[color:var(--hairline-strong)] bg-[var(--surface-paper)] px-3 py-1.5 text-[12px] font-medium text-ink-0 hover:bg-[var(--surface-2)]">
+                    <Download className="h-3.5 w-3.5" /> Descargar
+                  </a>
+                )}
+                {r.status === "pending" && <span className="shrink-0 text-[11px] text-ink-5">Procesando…</span>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ExportStatusPill({ status }: { status: string }) {
+  const map: Record<string, string> = {
+    ready: "bg-[color:var(--signal-success)]/10 text-[color:var(--signal-success)]",
+    pending: "bg-[var(--surface-2)] text-ink-3",
+    failed: "bg-[color:var(--signal-danger)]/10 text-[color:var(--signal-danger)]",
+    expired: "bg-[var(--surface-2)] text-ink-5",
+  };
+  return <span className={cn("rounded-[var(--r-xs)] px-1.5 py-0.5 text-[10px] font-medium", map[status] ?? map.pending)}>{status}</span>;
 }
 
 // ─── Subcomponents ───

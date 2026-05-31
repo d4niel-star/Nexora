@@ -1,5 +1,6 @@
 import { registerJobHandler } from "./types";
 import { ensureAutomationHandlersRegistered } from "./automation-handlers";
+import { ensureExportHandlersRegistered } from "@/lib/exports/handlers";
 
 // ─── Job Handler Registrations ────────────────────────────────────────
 // Central registration module — imported once by the queue runner so
@@ -19,6 +20,9 @@ export function ensureJobHandlersRegistered(): void {
 
   // Phase 7B.2 — automation handlers (abandoned_cart, dunning, etc.)
   ensureAutomationHandlersRegistered();
+
+  // Phase 7D.4 — queue-backed export handlers
+  ensureExportHandlersRegistered();
 
   // ─── webhook_redelivery ───
   // A no-op handler that proves the round-trip. Real webhook redelivery

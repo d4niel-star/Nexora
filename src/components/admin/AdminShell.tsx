@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   Boxes,
+  CheckSquare,
   ChevronRight,
   Code2,
   LayoutDashboard,
@@ -135,6 +136,7 @@ const primaryNav: readonly NavEntry[] = [
     items: [
       { kind: "leaf", href: "/admin/orders", label: "Pedidos", icon: ShoppingCart },
       { kind: "leaf", href: "/admin/customers", label: "Clientes", icon: Users },
+      { kind: "leaf", href: "/admin/customers/tasks", label: "Tareas", icon: CheckSquare },
       { kind: "leaf", href: "/admin/recovery", label: "Recuperación", icon: Recycle },
     ],
   },
@@ -179,6 +181,7 @@ const primaryNav: readonly NavEntry[] = [
     icon: Megaphone,
     basePath: "/admin/ads",
     items: [
+      { kind: "leaf", href: "/admin/marketing", label: "Campañas", icon: Mail },
       { kind: "leaf", href: "/admin/ads/meta", label: "Meta Ads", icon: Target },
       { kind: "leaf", href: "/admin/ads/tiktok", label: "TikTok Ads", icon: Video },
       { kind: "leaf", href: "/admin/ads/google", label: "Google Ads", icon: Search },

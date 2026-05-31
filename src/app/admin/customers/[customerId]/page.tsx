@@ -6,6 +6,8 @@ import { getCustomerTimeline } from "@/lib/customers/timeline";
 import { classifyCustomer } from "@/lib/customers/segments";
 import { classifyHealth } from "@/lib/customers/health";
 import { listCustomerNotes } from "@/lib/customers/notes-actions";
+import { listTagsForCustomer } from "@/lib/customers/tags-actions";
+import { listTasksForCustomer } from "@/lib/customers/tasks";
 import { logSystemEvent } from "@/lib/observability/audit";
 import { CustomerProfileClient } from "./CustomerProfileClient";
 
@@ -43,9 +45,11 @@ export default async function CustomerProfilePage({ params }: PageProps) {
   const segments = classifyCustomer(stats);
   const health = classifyHealth({ stats });
 
-  const [timeline, notes] = await Promise.all([
+  const [timeline, notes, tags, tasks] = await Promise.all([
     getCustomerTimeline(actor.storeId, customerEmail),
     listCustomerNotes(actor.storeId, customerEmail, actor.userId, actor.role),
+    listTagsForCustomer(actor.storeId, customerEmail),
+    listTasksForCustomer(actor.storeId, customerEmail),
   ]);
 
   // Audit-log the access — viewing a customer profile is a sensitive
@@ -63,6 +67,8 @@ export default async function CustomerProfilePage({ params }: PageProps) {
   }).catch(() => undefined);
 
   const canManageNotes = roleHasPermission(actor.role, "customer.notes.manage");
+  const canManageTags = roleHasPermission(actor.role, "customer.tags.manage");
+  const canManageTasks = roleHasPermission(actor.role, "customer.tasks.manage");
 
   return (
     <CustomerProfileClient
@@ -71,7 +77,9 @@ export default async function CustomerProfilePage({ params }: PageProps) {
       health={health}
       timeline={timeline}
       notes={notes}
-      capabilities={{ canManageNotes }}
+      tags={tags}
+      tasks={tasks}
+      capabilities={{ canManageNotes, canManageTags, canManageTasks }}
     />
   );
 }
